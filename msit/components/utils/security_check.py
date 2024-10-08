@@ -2,11 +2,13 @@ import os
 import stat
 import sys
 import re
+import shutil
 
 PATH_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9/.-]")
 STR_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9\"'><=\[\])(,}{: /.~-]")
 MAX_READ_FILE_SIZE_4G = 4294967296  # 4G, 4 * 1024 * 1024 * 1024
 MAX_READ_FILE_SIZE_32G = 34359738368  # 32G, 32 * 1024 * 1024 * 1024
+MIN_DUMP_DISK_SPACE = 2147483648  # 2G, 2 * 1024 * 1024 * 1024
 READ_FILE_NOT_PERMITTED_STAT = stat.S_IWGRP | stat.S_IWOTH
 WRITE_FILE_NOT_PERMITTED_STAT = stat.S_IWGRP | stat.S_IWOTH
 
@@ -175,3 +177,9 @@ def check_dict_character(dict_value, key_max_len=512, param_name="dict"):
 
     check_dict_character_recursion(dict_value)
 
+
+def check_disk_space(dump_path):
+    empty_disk_space = shutil.disk_usage(dump_path).free
+    if empty_disk_space < MIN_DUMP_DISK_SPACE:
+        return False
+    return True
