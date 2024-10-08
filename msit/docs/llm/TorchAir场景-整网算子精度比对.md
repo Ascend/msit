@@ -36,9 +36,9 @@
 
   | 参数名                | 参数描述                                               | 是否必选                |
   |--------------------|----------------------------------------------------|---------------------|
-  | dump_path          | dump数据的存放路径                                        | 是                   |
-  | dump_model         | data dump模式，用于指定dump算子输入还是输出数据                     | 否                   |
-  | fusion_switch_file | 是否关闭融合dump功能                                       | 否(默认为false，开启融合)    | 
+  | dump_path          | dump数据的存放路径                                        | 否(默认为ait_ge_dump)                   |
+  | dump_mode         | data dump模式，用于指定dump算子输入还是输出数据                     | 否                   |
+  | fusion_switch_file | 是否关闭融合dump功能                                       | 否(默认为None，开启融合)    | 
   | dump_token         | 指定token进行dump,格式：[1,2,5],代表dump第1、2、5个token数据      | 否(默认为None，dump全量数据) |, 
   | dump_layer         | 指定layer进行dump，格式：["Add","Conv_1"],代表dump Add和Conv_1两层数据 | 否(默认为None，dump全量数据) | 
 
