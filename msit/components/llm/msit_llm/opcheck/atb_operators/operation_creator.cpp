@@ -48,8 +48,12 @@ static atb::Operation *ActivationOperationCreate(const nlohmann::json &paramJson
 static atb::Operation *AllGatherOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::AllGatherParam param;
-    param.rank = paramJson["rank"].get<int>();
-    param.rankSize = paramJson["rankSize"].get<int>();
+    if (paramJson.contains("rank")) {
+        param.rank = paramJson["rank"].get<int>();
+    }
+    if (paramJson.contains("rankSize")) {
+        param.rankSize = paramJson["rankSize"].get<int>();
+    }
     if (paramJson.find("rankRoot") != paramJson.end()) {
         param.rankRoot = paramJson["rankRoot"].get<int>();
     }
@@ -73,8 +77,12 @@ static atb::Operation *AllGatherOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *AllReduceOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::AllReduceParam param;
-    param.rank = paramJson["rank"].get<int>();
-    param.rankSize = paramJson["rankSize"].get<int>();
+    if (paramJson.contains("rank")) {
+        param.rank = paramJson["rank"].get<int>();
+    }
+    if (paramJson.contains("rankSize")) {
+        param.rankSize = paramJson["rankSize"].get<int>();
+    }
     if (paramJson.find("rankRoot") != paramJson.end()) {
         param.rankRoot = paramJson["rankRoot"].get<int>();
     }
@@ -101,14 +109,20 @@ static atb::Operation *AllReduceOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *AsStridedOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::AsStridedParam param;
-    for (auto item : paramJson["size"]) {
-        param.size.push_back(item.get<int64_t>());
+    if (paramJson.contains("size")) {
+        for (auto item : paramJson["size"]) {
+            param.size.push_back(item.get<int64_t>());
+        }
     }
-    for (auto item : paramJson["stride"]) {
-        param.stride.push_back(item.get<int64_t>());
+    if (paramJson.contains("stride")) {
+        for (auto item : paramJson["stride"]) {
+            param.stride.push_back(item.get<int64_t>());
+        }
     }
-    for (auto item : paramJson["offset"]) {
-        param.offset.push_back(item.get<int64_t>());
+    if (paramJson.contains("offset")) {
+        for (auto item : paramJson["offset"]) {
+            param.offset.push_back(item.get<int64_t>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
@@ -118,8 +132,12 @@ static atb::Operation *AsStridedOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *BroadcastOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::BroadcastParam param;
-    param.rank = paramJson["rank"].get<int>();
-    param.rankSize = paramJson["rankSize"].get<int>();
+    if (paramJson.contains("rank")) {
+        param.rank = paramJson["rank"].get<int>();
+    }
+    if (paramJson.contains("rankSize")) {
+        param.rankSize = paramJson["rankSize"].get<int>();
+    }
     if (paramJson.find("rankRoot") != paramJson.end()) {
         param.rankRoot = paramJson["rankRoot"].get<int>();
     }
@@ -154,8 +172,10 @@ static atb::Operation *ConcatOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *CumsumOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::CumsumParam param;
-    for (auto item : paramJson["axes"]) {
-        param.axes.push_back(item.get<int64_t>());
+    if (paramJson.contains("axes")) {
+        for (auto item : paramJson["axes"]) {
+            param.axes.push_back(item.get<int64_t>());
+        }
     }
     if (paramJson.contains("exclusive")) {
         param.exclusive = paramJson["exclusive"].get<bool>();
@@ -171,7 +191,9 @@ static atb::Operation *CumsumOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *ElewiseOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::ElewiseParam param;
-    param.elewiseType = paramJson["elewiseType"].get<atb::infer::ElewiseParam::ElewiseType>();
+    if (paramJson.contains("elewiseType")) {
+        param.elewiseType = paramJson["elewiseType"].get<atb::infer::ElewiseParam::ElewiseType>();
+    }
     if (paramJson.contains("varAttr")) {
         param.mulsParam.varAttr = paramJson["varAttr"].get<float>();
     }
@@ -265,8 +287,10 @@ static atb::Operation *GenAttentionMaskOperationCreate(const nlohmann::json &par
     if (paramJson.contains("headNum")) {
         param.headNum = paramJson["headNum"].get<int32_t>();
     }
-    for (auto item : paramJson["seqLen"]) {
-        param.seqLen.push_back(item.get<int>());
+    if (paramJson.contains("SeqLen")) {
+        for (auto item : paramJson["seqLen"]) {
+            param.seqLen.push_back(item.get<int>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
@@ -290,8 +314,12 @@ static atb::Operation *GatingOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *IndexAddOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::IndexAddParam param;
-    param.indexType = paramJson["indexType"].get<atb::infer::IndexAddParam::IndexType>();
-    param.axis = paramJson["axis"].get<int32_t>();
+    if (paramJson.contains("indexType")) {
+        param.indexType = paramJson["indexType"].get<atb::infer::IndexAddParam::IndexType>();
+    }
+    if (paramJson.contains("axis")) {
+        param.axis = paramJson["axis"].get<int32_t>();
+    }
     atb::Operation *op;
     CreateOperation(param, &op);
     return op;
@@ -409,7 +437,7 @@ static atb::Operation *LinearParallelOperationCreate(const nlohmann::json &param
         param.type = atb::infer::LinearParallelParam::ParallelType(paramJson["type"].get<int>());
     }
     if (paramJson.contains("hasResidual")) {
-        param.hasResidual = paramJson["hasResidual"].get<bool>();   
+        param.hasResidual = paramJson["hasResidual"].get<bool>();
     }
     if (paramJson.contains("keepIntermediate")) {
         param.keepIntermediate = paramJson["keepIntermediate"].get<bool>();
@@ -453,8 +481,12 @@ static atb::Operation *LinearSparseOperationCreate(const nlohmann::json &paramJs
 static atb::Operation *MultinomialOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::MultinomialParam param;
-    param.numSamples = paramJson["numSamples"].get<uint32_t>();
-    param.randSeed = paramJson["randSeed"].get<uint32_t>();
+    if (paramJson.contains("numSamples")) {
+        param.numSamples = paramJson["numSamples"].get<uint32_t>();
+    }
+    if (paramJson.contains("randSeed")) {
+        param.randSeed = paramJson["randSeed"].get<uint32_t>();
+    }
     atb::Operation *op;
     CreateOperation(param, &op);
     return op;
@@ -509,9 +541,13 @@ static atb::Operation *PadWithHiddenStateOperationCreate(const nlohmann::json &p
 static atb::Operation *ReduceOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::ReduceParam param;
-    param.reduceType = paramJson["reduceType"].get<atb::infer::ReduceParam::ReduceType>();
-    for (auto item : paramJson["axis"]) {
-        param.axis.push_back(item.get<int64_t>());
+    if (paramJson.contains("reduceType")) {
+        param.reduceType = paramJson["reduceType"].get<atb::infer::ReduceParam::ReduceType>();
+    }
+    if (paramJson.contains("axis")) {
+        for (auto item : paramJson["axis"]) {
+            param.axis.push_back(item.get<int64_t>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
@@ -521,9 +557,15 @@ static atb::Operation *ReduceOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *PagedAttentionOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::PagedAttentionParam param;
-    param.headNum = paramJson["headNum"].get<int>();
-    param.qkScale = paramJson["qkScale"].get<float>();
-    param.kvHeadNum = paramJson["kvHeadNum"].get<int>();
+    if (paramJson.contains("headNum")) {
+        param.headNum = paramJson["headNum"].get<int>();
+    }
+    if (paramJson.contains("qkScale")) {
+        param.qkScale = paramJson["qkScale"].get<float>();
+    }
+    if (paramJson.contains("kvHeadNum")) {
+        param.kvHeadNum = paramJson["kvHeadNum"].get<int>();
+    }
     if (paramJson.contains("maskType")) {
         param.maskType = atb::infer::PagedAttentionParam::MaskType(paramJson["maskType"].get<int>());
     }
@@ -550,8 +592,10 @@ static atb::Operation *PagedAttentionOperationCreate(const nlohmann::json &param
 static atb::Operation *RepeatOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::RepeatParam param;
-    for (auto item : paramJson["multiples"]) {
-        param.multiples.push_back(item.get<int64_t>());
+    if (paramJson.contains("multiples")) {
+        for (auto item : paramJson["multiples"]) {
+            param.multiples.push_back(item.get<int64_t>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
@@ -598,9 +642,8 @@ static atb::Operation *RmsNormOperationCreate(const nlohmann::json &paramJson)
             param.normParam.rstd = normParam["rstd"].get<bool>();
         }
         if (normParam.contains("precisionMode")) {
-            param.normParam.precisionMode = atb::infer::RmsNormParam::PrecisionMode(
-                normParam["precisionMode"].get<int>()
-            );
+            param.normParam.precisionMode =
+                atb::infer::RmsNormParam::PrecisionMode(normParam["precisionMode"].get<int>());
         }
         if (normParam.contains("modelType")) {
             param.normParam.modelType = atb::infer::RmsNormParam::ModelType(normParam["modelType"].get<int>());
@@ -641,8 +684,10 @@ static atb::Operation *RmsNormOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *RopeGradOperationCreate(const nlohmann::json &paramJson)
 {
     atb::train::RopeGradParam param;
-    for (auto item : paramJson["qSeqLen"]) {
-        param.qSeqLen.push_back(item.get<int>());
+    if (paramJson.contains("qSeqLen")) {
+        for (auto item : paramJson["qSeqLen"]) {
+            param.qSeqLen.push_back(item.get<int>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
@@ -703,7 +748,7 @@ static atb::Operation *SelfAttentionOperationCreate(const nlohmann::json &paramJ
         param.clampMax = paramJson["clampMax"].get<float>();
     }
 
-#if defined(ATB_VERSION) && (ATB_VERSION >= 8000003000)  // equal or above 8.0.RC3
+#if defined(ATB_VERSION) && (ATB_VERSION >= 8000003000) // equal or above 8.0.RC3
     if (paramJson.contains("kvcacheCfg")) {
         param.kvcacheCfg = atb::infer::SelfAttentionParam::KvCacheCfg(paramJson["kvcacheCfg"].get<int>());
     }
@@ -717,14 +762,20 @@ static atb::Operation *SelfAttentionOperationCreate(const nlohmann::json &paramJ
 static atb::Operation *SetValueOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::SetValueParam param;
-    for (auto item : paramJson["starts"]) {
-        param.starts.push_back(item.get<int>());
+    if (paramJson.contains("starts")) {
+        for (auto item : paramJson["starts"]) {
+            param.starts.push_back(item.get<int>());
+        }
     }
-    for (auto item : paramJson["ends"]) {
-        param.ends.push_back(item.get<int>());
+    if (paramJson.contains("ends")) {
+        for (auto item : paramJson["ends"]) {
+            param.ends.push_back(item.get<int>());
+        }
     }
-    for (auto item : paramJson["strides"]) {
-        param.strides.push_back(item.get<int>());
+    if (paramJson.contains("strides")) {
+        for (auto item : paramJson["strides"]) {
+            param.strides.push_back(item.get<int>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
@@ -734,11 +785,15 @@ static atb::Operation *SetValueOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *SliceOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::SliceParam param;
-    for (auto item : paramJson["offsets"]) {
-        param.offsets.push_back(item.get<int64_t>());
+    if (paramJson.contains("offsets")) {
+        for (auto item : paramJson["offsets"]) {
+            param.offsets.push_back(item.get<int64_t>());
+        }
     }
-    for (auto item : paramJson["size"]) {
-        param.size.push_back(item.get<int64_t>());
+    if (paramJson.contains("size")) {
+        for (auto item : paramJson["size"]) {
+            param.size.push_back(item.get<int64_t>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
@@ -748,8 +803,10 @@ static atb::Operation *SliceOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *SoftmaxOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::SoftmaxParam param;
-    for (auto item : paramJson["axes"]) {
-        param.axes.push_back(item.get<int64_t>());
+    if (paramJson.contains("axes")) {
+        for (auto item : paramJson["axes"]) {
+            param.axes.push_back(item.get<int64_t>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
@@ -759,8 +816,10 @@ static atb::Operation *SoftmaxOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *SortOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::SortParam param;
-    for (auto item : paramJson["num"]) {
-        param.num.push_back(item.get<int>());
+    if (paramJson.contains("num")) {
+        for (auto item : paramJson["num"]) {
+            param.num.push_back(item.get<int>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
@@ -796,32 +855,38 @@ static atb::Operation *StridedBatchMatmulOperationCreate(const nlohmann::json &p
     if (paramJson.contains("headNum")) {
         param.headNum = paramJson["headNum"].get<int32_t>();
     }
-    for (auto item : paramJson["m"]) {
-        param.m.push_back(item.get<int32_t>());
+    if (paramJson.contains("m") && paramJson.contains("n") && paramJson.contains("k")) {
+        for (auto item : paramJson["m"]) {
+            param.m.push_back(item.get<int32_t>());
+        }
+        for (auto item : paramJson["n"]) {
+            param.n.push_back(item.get<int32_t>());
+        }
+        for (auto item : paramJson["k"]) {
+            param.k.push_back(item.get<int32_t>());
+        }
     }
-    for (auto item : paramJson["n"]) {
-        param.n.push_back(item.get<int32_t>());
+    if (paramJson.contains("lda") && paramJson.contains("ldb") && paramJson.contains("ldc")) {
+        for (auto item : paramJson["lda"]) {
+            param.lda.push_back(item.get<int32_t>());
+        }
+        for (auto item : paramJson["ldb"]) {
+            param.ldb.push_back(item.get<int32_t>());
+        }
+        for (auto item : paramJson["ldc"]) {
+            param.ldc.push_back(item.get<int32_t>());
+        }
     }
-    for (auto item : paramJson["k"]) {
-        param.k.push_back(item.get<int32_t>());
-    }
-    for (auto item : paramJson["lda"]) {
-        param.lda.push_back(item.get<int32_t>());
-    }
-    for (auto item : paramJson["ldb"]) {
-        param.ldb.push_back(item.get<int32_t>());
-    }
-    for (auto item : paramJson["ldc"]) {
-        param.ldc.push_back(item.get<int32_t>());
-    }
-    for (auto item : paramJson["strideA"]) {
-        param.strideA.push_back(item.get<int32_t>());
-    }
-    for (auto item : paramJson["strideB"]) {
-        param.strideB.push_back(item.get<int32_t>());
-    }
-    for (auto item : paramJson["strideC"]) {
-        param.strideC.push_back(item.get<int32_t>());
+    if (paramJson.contains("strideA") && paramJson.contains("strideB") && paramJson.contains("strideC")) {
+        for (auto item : paramJson["strideA"]) {
+            param.strideA.push_back(item.get<int32_t>());
+        }
+        for (auto item : paramJson["strideB"]) {
+            param.strideB.push_back(item.get<int32_t>());
+        }
+        for (auto item : paramJson["strideC"]) {
+            param.strideC.push_back(item.get<int32_t>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
@@ -831,17 +896,22 @@ static atb::Operation *StridedBatchMatmulOperationCreate(const nlohmann::json &p
 static atb::Operation *TopkToppSamplingOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::TopkToppSamplingParam param;
-    param.topkToppSamplingType = atb::infer::TopkToppSamplingParam::TopkToppSamplingType(
-        paramJson["topkToppSamplingType"].get<int>()
-    );
+    if (paramJson.contains("topkToppSamplingType")) {
+        param.topkToppSamplingType =
+            atb::infer::TopkToppSamplingParam::TopkToppSamplingType(paramJson["topkToppSamplingType"].get<int>());
+    }
     if (paramJson.contains("randSeeds")) {
         param.randSeeds.clear();
         for (auto item : paramJson["randSeeds"]) {
             param.randSeeds.push_back(item.get<uint32_t>());
         }
     }
-    param.randSeed = paramJson["randSeed"].get<uint32_t>();
-    param.topk = paramJson["topk"].get<uint32_t>();
+    if (paramJson.contains("randSeed")) {
+        param.randSeed = paramJson["randSeed"].get<uint32_t>();
+    }
+    if (paramJson.contains("topk")) {
+        param.topk = paramJson["topk"].get<uint32_t>();
+    }
     atb::Operation *op;
     CreateOperation(param, &op);
     return op;
@@ -867,8 +937,10 @@ static atb::Operation *TransdataOperationCreate(const nlohmann::json &paramJson)
 static atb::Operation *TransposeOperationCreate(const nlohmann::json &paramJson)
 {
     atb::infer::TransposeParam param;
-    for (auto item : paramJson["perm"]) {
-        param.perm.push_back(item.get<int>());
+    if (paramJson.contains("perm")) {
+        for (auto item : paramJson["perm"]) {
+            param.perm.push_back(item.get<int>());
+        }
     }
     atb::Operation *op;
     CreateOperation(param, &op);
