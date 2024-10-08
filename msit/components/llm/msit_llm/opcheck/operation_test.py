@@ -244,6 +244,9 @@ class OperationTest(unittest.TestCase):
         except ZeroDivisionError as e:
             error_text = f"get ZeroDivisionError when calc {self.op_name} golden"
             raise RuntimeError(error_text) from e
+        except IndexError as e:
+            error_text = f"get IndexError when calc {self.op_name} golden: {str(e)}"
+            raise RuntimeError(error_text) from e
 
         if self.atb_rerun:
             if self.op_name in ("AllGatherOperation", "AllReduceOperation", "LinearParallelOperation"):
