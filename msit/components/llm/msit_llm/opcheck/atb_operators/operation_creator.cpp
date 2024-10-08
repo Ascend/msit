@@ -287,7 +287,7 @@ static atb::Operation *GenAttentionMaskOperationCreate(const nlohmann::json &par
     if (paramJson.contains("headNum")) {
         param.headNum = paramJson["headNum"].get<int32_t>();
     }
-    if (paramJson.contains("SeqLen")) {
+    if (paramJson.contains("seqLen")) {
         for (auto item : paramJson["seqLen"]) {
             param.seqLen.push_back(item.get<int>());
         }
