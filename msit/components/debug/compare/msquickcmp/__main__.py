@@ -15,7 +15,7 @@ import os
 import subprocess
 
 from components.utils.parser import BaseCommand
-from components.utils.security_check import check_disk_space
+from components.utils.security_check import is_enough_disk_space_left
 from components.debug.compare.msquickcmp.adapter_cli.args_adapter import CmpArgsAdapter
 from components.debug.compare.msquickcmp.cmp_process import cmp_process
 from components.debug.compare.msquickcmp.common.args_check import (
@@ -363,7 +363,7 @@ class DumpCommand(BaseCommand):
 
     def handle(self, args):
         output_path = "./" if args.output == '' else args.output
-        if not check_disk_space(output_path):
+        if not is_enough_disk_space_left(output_path):
             raise OSError("Please make sure that the remaining disk space in the dump path is greater than 2 GB")
         if args.exec:
             from components.debug.compare.msquickcmp.dump.mietorch.dump_config import DumpConfig
