@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2023 Huawei Technologies Co., Ltd.
+# Copyright (c) 2023-2024 Huawei Technologies Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,6 +21,9 @@ class NumConverter:
     def __init__(self, convert_type=float):
         self.convert_type = convert_type
 
+    def __call__(self, value) -> Any:
+        return self.convert(value)
+
     def convert(self, value: str):
         try:
             if self.convert_type == int:
@@ -31,9 +34,6 @@ class NumConverter:
                 return value, True, ""
         except ValueError as er:
             return value, False, str(er)
-
-    def __call__(self, value) -> Any:
-        return self.convert(value)
 
 
 class Rule:

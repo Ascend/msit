@@ -32,9 +32,9 @@ def check_overlapping_names(
     Optionally, it takes an io_map, representing the output/inputs to be connected. It provided, overlapping
     present in the io_map argument will be ignored.
     """
-    if type(g1) is not GraphProto:
+    if not isinstance(g1, GraphProto):
         raise ValueError("g1 argument is not an ONNX graph")
-    if type(g2) is not GraphProto:
+    if not isinstance(g2, GraphProto):
         raise ValueError("g2 argument is not an ONNX graph")
 
     def _overlapping(c1: List[str], c2: List[str]) -> List[str]:
@@ -146,9 +146,9 @@ def merge_graphs(  # pylint: disable=too-many-branches,too-many-statements
     outputs = merge_graphs_info.outputs
     prefix1 = merge_graphs_info.prefix1
     prefix2 = merge_graphs_info.prefix2
-    if type(g1) is not GraphProto:
+    if not isinstance(g1, GraphProto):
         raise ValueError("g1 argument is not an ONNX graph")
-    if type(g2) is not GraphProto:
+    if not isinstance(g2, GraphProto):
         raise ValueError("g2 argument is not an ONNX graph")
 
     # Prefixing names in the graph if requested, adjusting io_map accordingly
@@ -344,9 +344,9 @@ def merge_models(  # pylint: disable=too-many-branches
     Returns:
         ModelProto
     """
-    if type(m1) is not ModelProto:
+    if not isinstance(m1, ModelProto):
         raise ValueError("m1 argument is not an ONNX model")
-    if type(m2) is not ModelProto:
+    if not isinstance(m2, ModelProto):
         raise ValueError("m2 argument is not an ONNX model")
 
     if m1.ir_version != m2.ir_version:
@@ -473,7 +473,7 @@ def add_prefix_graph(  # pylint: disable=too-many-branches
     Returns:
         GraphProto
     """
-    if type(graph) is not GraphProto:
+    if not isinstance(graph, GraphProto):
         raise ValueError("graph argument is not an ONNX graph")
 
     if not inplace:
@@ -590,7 +590,7 @@ def add_prefix(
     Returns:
         ModelProto
     """
-    if type(model) is not ModelProto:
+    if not isinstance(model, ModelProto):
         raise ValueError("model argument is not an ONNX model")
 
     if not inplace:

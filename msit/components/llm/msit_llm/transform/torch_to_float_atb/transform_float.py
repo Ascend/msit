@@ -39,7 +39,7 @@ def try_setting_small_model(config):
         'rotary_emb_base',
         'seq_length',
         'vocab_size',
-        ]
+    ]
     for attr in attr_list:
         config.__setattr__(attr, SMALL_NUM_CONFIG)
     return config

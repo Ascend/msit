@@ -39,31 +39,31 @@ def get_nhead(df, n) -> any:
 
 
 # 属性获取或设置指定位置的值。指定要返回的单元格的行（索引）和列（标签）
-def get_value_from_str(df, rowStr, colStr) -> any:
-    return df.loc[rowStr, colStr]
+def get_value_from_str(df, row_str, col_str) -> any:
+    return df.loc[row_str, col_str]
 
 
 # 属性获取或设置指定位置的值。指定要返回的单元格的行（索引）和列（标签）
-def get_value_from_index(df, rowNum, colNum) -> any:
-    return df.iat[rowNum, colNum]
+def get_value_from_index(df, row_num, col_num) -> any:
+    return df.iat[row_num, col_num]
 
 
 def get_label_and_content(df) -> any:
-    labelList = []
-    contentList = []
+    label_list = []
+    content_list = []
     for label, content in df.iteritems():
-        labelList.append(label)
-        contentList.append(content)
-    return labelList, contentList
+        label_list.append(label)
+        content_list.append(content)
+    return label_list, content_list
 
 
 def get_index_and_row(df) -> any:
-    indexList = []
-    rowList = []
+    index_list = []
+    row_list = []
     for index, row in df.iterrows():
-        indexList.append(index)
-        rowList.append(row)
-    return indexList, rowList
+        index_list.append(index)
+        row_list.append(row)
+    return index_list, row_list
 
 
 # 方法检查 DataFrame 是否包含指定的值。

@@ -18,7 +18,8 @@ from components.utils.install import AitInstaller
 
 
 class ConvertInstall(AitInstaller):
-    def check(self):
+    @staticmethod
+    def check():
         check_res = []
 
         if not os.path.exists(os.path.join(os.path.dirname(__file__), "aie", "aie_convert")):
@@ -32,7 +33,8 @@ class ConvertInstall(AitInstaller):
         else:
             return "\n".join(check_res)
 
-    def build_extra(self, find_links=None):
+    @staticmethod
+    def build_extra(find_links=None):
         if sys.platform == 'win32':
             return
 

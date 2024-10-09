@@ -72,10 +72,12 @@ def args_rules(args):
 
     #application校验
     if args.application is None:
-        logger.error("parameter --application is required. " "Please use it together with the parameter --application!\n")
+        logger.error(
+            "parameter --application is required. " "Please use it together with the parameter --application!\n")
         raise RuntimeError('error bad parameters --application')
     if args.application is not None and len(args.application) > PATH_MAX_LENGTH:
-        logger.error("parameter --application length out of range. " "Please use it together with the parameter --application!\n")
+        logger.error(
+            "parameter --application length out of range." "Please use it together with the parameter --application!\n")
         raise RuntimeError('error bad parameters --application')
     
     #其他参数校验，只可能为on/off
@@ -93,8 +95,9 @@ def args_rules(args):
 
     for args_name, args_value in args_list.items():
         if args_value is not None and args_value not in ['on', 'off']:
-            logger.error(f"parameter --{args_name} is not valid. " f"Please use it together with the parameter --{args_name}!\n")
-            raise RuntimeError(f'error bad parameters --{args_name}') 
+            logger.error(
+                f"parameter --{args_name} is not valid. " f"Please use it together with the parameter --{args_name}!\n")
+            raise RuntimeError(f'error bad parameters --{args_name}')
 
     return args
 
