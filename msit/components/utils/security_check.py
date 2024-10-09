@@ -178,8 +178,6 @@ def check_dict_character(dict_value, key_max_len=512, param_name="dict"):
     check_dict_character_recursion(dict_value)
 
 
-def is_enough_disk_space_left(dump_path, min_space=MIN_DUMP_DISK_SPACE):
+def is_enough_disk_space_left(dump_path, required_space=MIN_DUMP_DISK_SPACE):
     empty_disk_space = shutil.disk_usage(dump_path).free
-    if empty_disk_space < min_space:
-        return False
-    return True
+    return empty_disk_space >= required_space
