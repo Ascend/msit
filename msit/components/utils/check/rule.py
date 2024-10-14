@@ -82,6 +82,7 @@ class Rule:
         return (
             PathChecker()
             .exists()
+            .forbidden_softlink()
             .is_file()
             .is_readable()
             .is_not_writable_to_others()

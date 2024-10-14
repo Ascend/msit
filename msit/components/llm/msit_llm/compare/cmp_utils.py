@@ -133,8 +133,10 @@ def set_tensor_basic_info_in_row_data(golden_data, my_data):
 
 
 def save_compare_reault_to_csv(gathered_row_data, output_path=".", columns=CSV_GOLDEN_HEADER):
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+    try:
+        os.makedirs(output_path, exist_ok=True)
+    except OSError:
+        logger.error("cannot create file directory under output path, please check it!")
 
     cur_time = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d%H%M%S')
     csv_save_path = os.path.join(output_path, f"msit_cmp_report_{cur_time}.csv")
