@@ -158,7 +158,8 @@ msit llm transform [-h] -s SOURCE [-atb ATB_MODEL_PATH] [--enable-sparse] [--to-
   ```
 
 ### Transformers LLava 迁移到 ATB python 模型
-- 从 huggingface 获取相应 LLava 模型
+- 从 huggingface 获取相应 LLava 模型  
+（注：transformers==4.44.2）
 - **迁移生成 ATB python 浮点模型**，将生成迁移完成的 ATB python 模型代码 py 文件，以及模型配置参数，并给出调用示例
   ```sh
   msit llm transform -s test_llava/ -py
@@ -199,7 +200,9 @@ msit llm transform [-h] -s SOURCE [-atb ATB_MODEL_PATH] [--enable-sparse] [--to-
   | 参数名                 | 描述                                                                                                                                                                | 必选 |
   | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
   | -i, --image           | 多模态模型推理中需要的图片路径                          | 是   |
-  | -t, --text          | 多模态模型推理中需要的对于输入图片的文字描述                                                                                                           | 否   |
+  | -t, --text          | 多模态模型推理中需要的对于输入图片的文字描述，默认值为"Describe the image."                                                                                                           | 否   |
+  | -w, --weight             | 多模态模型的权重路径，默认使用输入的模型路径中的浮点权重，可更改为量化后权重路径|  否 |
+  | -h, --help             | 命令行参数帮助信息|  否 |
 ***
 
 ## ATB cpp 迁移示例
