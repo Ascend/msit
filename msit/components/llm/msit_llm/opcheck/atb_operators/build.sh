@@ -119,7 +119,7 @@ import os
 from msit_llm.common.utils import check_data_file_size
 version = "8.0.RC3.B020" # Default value
 atb_version_file = os.path.abspath(os.path.join(os.getenv("ATB_HOME_PATH", ""), "..", "..", "version.info"))
-if os.path.exists(atb_version_file) and os.path.isfile(jatb_version_file) and check_data_file_size(atb_version_file):
+if os.path.exists(atb_version_file) and os.path.isfile(atb_version_file) and check_data_file_size(atb_version_file):
     with open(atb_version_file) as ff:
         for ii in ff.readlines():
             if "version" in ii.lower():
