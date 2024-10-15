@@ -16,12 +16,10 @@
 import os
 import argparse
 import re
-
 from components.utils.file_open_check import FileStat
 from msit_llm.common.constant import MAX_DATA_SIZE
 from components.utils.check.rule import Rule
 from msit_llm.common.log import logger
-
 
 STR_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9\"'><=\[\])(,}{: /.~-]")
 INVALID_CHARS = ['|', ';', '&', '&&', '||', '>', '>>', '<', '`', '\\', '!', '\n']
