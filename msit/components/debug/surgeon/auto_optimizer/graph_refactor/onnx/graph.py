@@ -28,6 +28,7 @@ from auto_optimizer.graph_refactor import BaseGraph, Initializer, PlaceHolder, N
 from auto_optimizer.graph_refactor.onnx.node import OnnxPlaceHolder, OnnxInitializer, OnnxNode
 from components.debug.common import logger
 from auto_optimizer.common.utils import check_output_model_path
+from components.utils.check.rule import Rule
 
 
 class OnnxGraph(BaseGraph):
@@ -84,7 +85,13 @@ class OnnxGraph(BaseGraph):
     @classmethod
     def parse(cls, path_or_bytes: Union[str, ModelProto, GraphProto], add_name_suffix: bool = False) -> 'OnnxGraph':
         if isinstance(path_or_bytes, str):
-            onnx_model = onnx.load(path_or_bytes)
+            try:
+                Rule.input_file().max_size(200 * 1024 * 1024 * 1024).check(path_or_bytes, will_raise=True)
+                onnx_model = onnx.load(path_or_bytes)
+            except Exception as err:
+                logger.error("Load onnx failed, because %r", err)
+                raise OSError("Failed to load onnx model")
+
         if isinstance(path_or_bytes, ModelProto):
             onnx_model = path_or_bytes
         if isinstance(path_or_bytes, GraphProto):
@@ -450,7 +457,13 @@ class OnnxGraph(BaseGraph):
                 onnx.shape_inference.infer_shapes_path(
                     os.path.join(tmpdirname, 'model.onnx'), os.path.join(tmpdirname, 'inferred_model.onnx')
                 )
-                inferred_model = onnx.load(os.path.join(tmpdirname, 'inferred_model.onnx'))
+                try:
+                    infer_model_path = os.path.join(tmpdirname, 'inferred_model.onnx')
+                    Rule.input_file().max_size(200 * 1024 * 1024 * 1024).check(infer_model_path, will_raise=True)
+                    inferred_model = onnx.load(infer_model_path)
+                except Exception as err:
+                    logger.error("Load inferred model failed, because %r", err)
+                    raise OSError("Failed to load inferred model")
 
         # update value_infos
         graph = inferred_model.graph

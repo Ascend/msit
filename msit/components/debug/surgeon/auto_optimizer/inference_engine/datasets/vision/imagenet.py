@@ -19,6 +19,7 @@ from abc import ABC
 from auto_optimizer.inference_engine.datasets.dataset_base import DatasetBase
 from auto_optimizer.inference_engine.data_process_factory import DatasetFactory
 from components.debug.common import logger
+from components.utils.file_open_check import is_legal_args_path_string
 
 
 @DatasetFactory.register("imagenet")
@@ -37,6 +38,9 @@ class ImageNetDataset(DatasetBase, ABC):
                 for label_file in f:
                     image_name, label = re.split(r"\s+", label_file.strip())
                     file_path = os.path.join(dataset_path, image_name)
+                    if not is_legal_args_path_string(file_path):
+                        logger.warning("The file path of %r is not legal, skip this image and label", image_name)
+                        continue
 
                     labels.append(label)
                     data.append(file_path)

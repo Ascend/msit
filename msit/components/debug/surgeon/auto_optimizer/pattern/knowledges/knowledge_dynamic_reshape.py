@@ -24,6 +24,7 @@ from auto_optimizer.pattern.knowledges.knowledge_base import KnowledgeBase
 from auto_optimizer.pattern.utils import insert_squeeze, insert_unsqueeze
 from auto_optimizer.common.utils import dump_op_outputs
 from components.debug.common import logger
+from components.utils.check.rule import Rule
 
 
 class DynamicReshapeMatch(MatchBase):
@@ -216,8 +217,16 @@ class KnowledgeDynamicReshape(KnowledgeBase):
                 dump_file = f'{prev_node.name}_{prev_node.get_output_id(reshape.inputs[0])}.npy'
             else:
                 raise RuntimeError('Reshape prev node is Constant type.')
-            data_in = np.load(os.path.join(real_dump_path, dump_file))
-            data_out = np.load(os.path.join(real_dump_path, f'{reshape.name}_0.npy'))
+            try:
+                data_in_path = os.path.join(real_dump_path, dump_file)
+                data_out_path = os.path.join(real_dump_path, f'{reshape.name}_0.npy')
+                Rule.input_file().max_size(200 * 1024 * 1024 * 1024).check(data_in_path, will_raise=True)
+                Rule.input_file().max_size(200 * 1024 * 1024 * 1024).check(data_out_path, will_raise=True)
+                data_in = np.load(data_in_path)
+                data_out = np.load(data_out_path)
+            except Exception as err:
+                logger.error("Load data failed, because %r", err)
+                raise OSError("Failed to load data")
 
             in_shapes.append(data_in.shape)
             out_shapes.append(data_out.shape)
