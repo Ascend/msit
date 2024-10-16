@@ -16,7 +16,7 @@ from array import array
 import torch
 from torch import float16, float32, int8, int32, int64, bfloat16
 
-from components.utils.file_open_check import ms_open
+from components.utils.file_open_check import ms_open, MAX_SIZE_LIMITE_NORMAL_FILE
 from components.utils.log import logger
 
 ATTR_END = "$End"
@@ -37,7 +37,7 @@ def read_atb_data(path: str) -> torch.Tensor:
     dtype = 0
     dims = []
 
-    with open(path, "rb") as fd:
+    with ms_open(path, "rb", MAX_SIZE_LIMITE_NORMAL_FILE) as fd:
         file_data = fd.read()
 
     offset = 0
