@@ -13,13 +13,25 @@
 # limitations under the License.
 import os
 
+from components.debug.compare.msquickcmp.common.args_check import (
+    safe_string, check_cann_path_legality
+)
 
-mindie_rt_dump_so_path = "tools/ait_backend/mindie_torch_dump/libmindiedump.so"
-if os.environ.get("ASCEND_TOOLKIT_HOME", None) is None:
-    raise EnvironmentError("Please set ASCEND_TOOLKIT_HOME by running set_env.sh.")
-mindie_rt_dump_so_path = os.path.join(os.environ["ASCEND_TOOLKIT_HOME"], mindie_rt_dump_so_path)
+ascend_toolkit_home_path = os.getenv("ASCEND_TOOLKIT_HOME")
+if not ascend_toolkit_home_path:
+    raise EnvironmentError("Please first source CANN environment by running set_env.sh.")
+ascend_toolkit_home_path = safe_string(ascend_toolkit_home_path)
+ascend_toolkit_home_path = check_cann_path_legality(ascend_toolkit_home_path)  # check cann path
+
+path_components = ["tools", "ait_backend", "mindie_torch_dump", "libmindiedump.so"]
+mindie_rt_dump_so_path = os.path.join(ascend_toolkit_home_path, *path_components)
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 mindie_rt_dump_config = os.path.join(cur_dir, "acl.json")
-os.environ["LD_PRELOAD"] = f'{mindie_rt_dump_so_path}:{os.environ.get("LD_PRELOAD", "")}'
+ld_preload = os.getenv("LD_PRELOAD")
+if ld_preload:
+    os.environ["LD_PRELOAD"] = f'{mindie_rt_dump_so_path}:{ld_preload}'
+else:
+    os.environ["LD_PRELOAD"] = mindie_rt_dump_so_path
+
 os.environ["MINDIE_RT_DUMP_CONFIG_PATH"] = mindie_rt_dump_config
