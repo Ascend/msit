@@ -375,7 +375,7 @@ class NpuDumpData(DumpData):
             raise AccuracyCompareException(utils.ACCURACY_COMPARISON_INVALID_PATH_ERROR)
         self._convert_net_output_to_numpy(npu_net_output_data_path, npu_dump_data_path)
         if self.is_golden:
-            return npu_dump_data_path
+            return npu_dump_data_path, ""
         else:
             return npu_dump_data_path, npu_net_output_data_path
 
