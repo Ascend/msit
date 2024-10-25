@@ -109,6 +109,11 @@ msit llm transform [-h] -s SOURCE [-atb ATB_MODEL_PATH] [--enable-sparse] [--to-
   # Input: 好雨知时节，当春
   # Output: 好雨知时节，当春乃发生。
   ```
+    | 参数名          | 描述                                                                                                                                                                | 必选 |
+  |--------------| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |----|
+  | -i, --inputs | 多模态模型推理中需要的对于输入图片的文字描述，默认值为"Who's there?"                            | 否  |
+  | -w, --weight | 多模态模型的权重路径，默认使用输入的模型路径中的浮点权重| 否  |
+  | -h, --help   | 命令行参数帮助信息| 否  |
 ### Transformers LLaMA 迁移到 ATB python 量化模型
 - 从 huggingface 获取相应 LLaMA 模型
 - **需要相应量化权重**
@@ -233,6 +238,8 @@ msit llm transform [-h] -s SOURCE [-atb ATB_MODEL_PATH] [--enable-sparse] [--to-
   ```sh
   python qwen/run.py --model_path=/data/qwen-14b-chat
   ```
+  run.py的参数说明见[MindIE-LLM中run_pa.py的参数说明](https://gitee.com/ascend/MindIE-LLM/blob/master/examples/atb_models/examples/README.md#run_papy%E8%84%9A%E6%9C%AC%E5%8F%82%E6%95%B0%E4%BB%8B%E7%BB%8D)
+
   由于迁移的适配性问题，以及 `MindIE-LLM` 迭代更新，推理过程可能存在报错，仍依赖用户手动修复 python 文件中错误。
 ### ATB cpp 仅生成 python 调用代码
 - 若已存在 model 的 cpp 和 h 代码，可通过指定 -atb 或 --atb_model_path 来生成 python 调用代码
