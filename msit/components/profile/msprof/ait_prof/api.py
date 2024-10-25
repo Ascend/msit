@@ -19,6 +19,9 @@ import pandas as pd
 # 读取
 def get_csv_to_df(file_path) -> any:
     '''返回pd类型数据'''
+    if not Rule.input_file().check(file_path):
+        logger.error("read csv file failed, please check %r", file_path)
+        raise OSError
     return pd.read_csv(file_path)
 
 

@@ -16,6 +16,7 @@ import os
 import pandas as pd
 import utils
 from components.utils.log import logger
+from components.utils.check.rule import Rule
 
 
 analysis_apis = {
@@ -53,6 +54,9 @@ def evaluate(path):
 
 def analyze_dvpp_vpc(profiling_path, api):
     acl_statistic_data = utils.get_statistic_profile_data_path(profiling_path)
+    if not Rule.input_file().check(acl_statistic_data):
+        logger.error("read csv file failed, please check %r", acl_statistic_data)
+        raise OSError
     data = pd.read_csv(acl_statistic_data)
     count_crop = 0
     count_resize = 0
@@ -109,6 +113,9 @@ def analyze_dvpp_vpc(profiling_path, api):
 
 def analyze_dvpp_vdec(profiling_path, api):
     acl_statistic_data = utils.get_statistic_profile_data_path(profiling_path)
+    if not Rule.input_file().check(acl_statistic_data):
+        logger.error("read csv file failed, please check %r", acl_statistic_data)
+        raise OSError
     data = pd.read_csv(acl_statistic_data)
     count_vpc_cca = 0
     count_vdec_sf = 0

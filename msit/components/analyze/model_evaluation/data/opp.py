@@ -1,4 +1,5 @@
-# Copyright (c) 2023 Huawei Technologies Co., Ltd.
+# -*- coding: utf-8 -*-
+# Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +22,7 @@ from model_evaluation.common import utils, Const
 from components.utils.log import logger
 from model_evaluation.common.enum import SocType, Engine
 from model_evaluation.bean import OpInnerInfo
+from components.utils.check.rule import Rule
 
 
 class Opp:
@@ -66,6 +68,7 @@ class Opp:
     @classmethod
     def parse_opp_json(cls, opp_json: str, soc_type: str) -> Dict[str, Dict]:
         try:
+            Rule.input_file().check(opp_json, will_raise=True)
             with open(opp_json) as f:
                 data = json.load(f)
         except Exception as e:
