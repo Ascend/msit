@@ -14,6 +14,7 @@
 
 
 import pandas as pd
+from components.utils.check.rule import Rule
 
 
 # 读取
