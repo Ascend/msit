@@ -289,7 +289,8 @@ def update_weight_prefix(parsed_model, source_path):
         if weight_name_list:
             break
         fp = check_input_path_legality(str(fp))
-        if not check_data_file_size(fp):
+        if (not Path(fp).is_file() or 
+            not check_data_file_size(fp)):
             return
         try:
             with open(fp) as ff:

@@ -16,12 +16,10 @@
 import os
 import argparse
 import re
-
 from components.utils.file_open_check import FileStat
 from msit_llm.common.constant import MAX_DATA_SIZE
 from components.utils.check.rule import Rule
 from msit_llm.common.log import logger
-
 
 STR_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9\"'><=\[\])(,}{: /.~-]")
 INVALID_CHARS = ['|', ';', '&', '&&', '||', '>', '>>', '<', '`', '\\', '!', '\n']
@@ -156,7 +154,7 @@ def check_data_file_size(data_path, max_size=MAX_DATA_SIZE):
         raise Exception(f"data path: {data_path} is illegal. Please check it.") from e
 
     if not file_stat.is_legal_file_size(max_size):
-        raise Exception(f"the size of file: {data_path} is out of max limit {MAX_DATA_SIZE} byte.")
+        raise Exception(f"the size of file: {data_path} is out of max limit {max_size} byte.")
 
     return True
 
@@ -200,7 +198,7 @@ def load_file_to_read_common_check(value):
     
     # other writeable
     if (os.st.S_IWOTH & file_status.st_mode) == os.st.S_IWOTH:
-        logger.error("Vulnerable csv path: %r should not be other writeable", value)
+        logger.error("Vulnerable path: %r should not be other writeable", value)
         raise PermissionError
 
     # uid
@@ -217,4 +215,12 @@ def load_file_to_read_common_check(value):
             logger.waring("Privilege escalation risk detected. Trying to read a file that belongs to"
                           " a normal user and is writeable to the user itself or the user group")
 
+    return value
+
+
+def load_file_to_read_common_check_for_cli(value):
+    try:
+        value = load_file_to_read_common_check(value)
+    except Exception as e:
+        raise argparse.ArgumentTypeError("%r" % value) from e
     return value

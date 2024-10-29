@@ -9,6 +9,8 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from msit_llm.transform.torch_to_atb_python import ATBModel
 from msit_llm.transform.utils import load_model_dict
+from msit_llm.common.utils import load_file_to_read_common_check_for_cli, check_input_path_legality
+from msit_llm.common.log import logger
 from atb_model_placeholder import Model
 
 TEXT_CONFIG_ATTR_CANDIDATES = ["text_config", "llm_config"]
@@ -112,11 +114,14 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-i", "--image", type=str, required=True, help="image path")
-    parser.add_argument("-w", "--weight", type=str, default=MODEL_PATH, help="Model weight path")
+    parser.add_argument("-i", "--image", type=load_file_to_read_common_check_for_cli, required=True, help="image path")
+    parser.add_argument(
+        "-w", "--weight", type=check_input_path_legality, default=MODEL_PATH, help="model weight path"
+    )
     parser.add_argument("-t", "--text", type=str, default="Describe the image.", help="input text for model")
     args = parser.parse_known_args()[0]
 
+    MODEL_PATH = args.weight
     processor = AutoProcessor.from_pretrained(MODEL_PATH)
     model = VLForConditionalGeneration.from_pretrained(MODEL_PATH)
 
@@ -125,15 +130,14 @@ if __name__ == "__main__":
             text = "USER: <image>\n" + args.text + "ASSISTANT:"
             inputs = processor(text=text, images=image, return_tensors="pt")
     except Exception as e:
-        logger = logging.getLogger()
         logger.error("An errer occurred: %s", e)
+        raise
     
     generate_ids = model.generate(**inputs, max_new_tokens=15)
     output = processor.batch_decode(
         generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
     )[0]
 
-    logger = logging.getLogger()
     logger.info("-" * 40)
     logger.info("Input: %s", args.text)
     logger.info("Output: %s", output)
