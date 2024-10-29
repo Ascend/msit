@@ -17,7 +17,7 @@ import argparse
 from ait_tensor_view.operation import SliceOperation, PermuteOperation
 from ait_tensor_view.handler import handle_tensor_view
 from components.utils.parser import BaseCommand
-from components.utils.file_open_check import FileStat
+from components.utils.file_open_check import FileStat, MAX_SIZE_LIMITE_NORMAL_FILE
 
 
 def check_input_path_legality(value):
@@ -29,7 +29,8 @@ def check_input_path_legality(value):
         file_stat = FileStat(value)
     except Exception as err:
         raise argparse.ArgumentTypeError(f"input path:{value} is illegal. Please check.") from err
-    if not file_stat.is_basically_legal('read', strict_permission=False):
+    if not (file_stat.is_basically_legal('read', strict_permission=False) and 
+            file_stat.is_legal_file_size(MAX_SIZE_LIMITE_NORMAL_FILE)):
         raise argparse.ArgumentTypeError(f"input path:{value} is illegal. Please check.")
     return value
 
