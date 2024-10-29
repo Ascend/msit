@@ -45,11 +45,11 @@ class DumpHookModule:
         def add_hook(module, prefix=""):
             module.ait_forward_handle = module.register_forward_hook(dump_module_data())
             module.ait_forward_pre_handle = module.register_forward_pre_hook(pre_forward_module())
-            module.name = prefix
+            module.msit_name = prefix
             for name, child_module in module.named_children():
                 add_hook(child_module, prefix + "." + name)
 
-        self.model.name = model_name
+        self.model.msit_name = model_name
         self.model.ait_forward_pre_handle = self.model.register_forward_pre_hook(set_dump_flag())
         self.model.model_ait_forward_handle = self.model.register_forward_hook(dump_logits())
         add_hook(self.model, prefix=model_name)
@@ -162,7 +162,7 @@ def dump_module_data():
         nonlocal exec_count
         exec_count += 1
         dump_config = DumpConfig()
-        module_name = module.name
+        module_name = module.msit_name
         dump_config.cur_module_name.pop()
 
         if not dump_config.is_dump_cur_device:
@@ -202,7 +202,7 @@ def pre_forward_module():
 
     def hook_func(module: torch.nn.Module, _):
         dump_config = DumpConfig()
-        module_name = module.name
+        module_name = module.msit_name
         dump_config.cur_module_name.append(module_name)
 
     return hook_func

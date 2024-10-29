@@ -59,7 +59,7 @@ dump功能可以直接通过msit命令行形式启动精度对比。启动方式
 
 | 参数名                       | 描述                                                                                                                                                                                                | 必选 |
 |---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----|
-| -m，--model           | 模型文件 [.pb与saved_model，.onnx，.prototxt] 路径，分别对应 TF, ONNX, Caffe。<br/>其中.pb为TF1.15.5版本模型文件，saved_model为TF2.6.5版本模型文件                                                                                | 是  |
+| -m，--model           | 模型文件 [.pb与saved_model，.onnx，.prototxt] 路径，分别对应 TF, ONNX, Caffe。<br/>其中.pb为TF1.15.5版本模型文件，saved_model为TF2.6.5版本模型文件                                                                                | 否  |
 | -w，--weight               | -w 为权重文件，当模型为caffe模型时，该参数为必选参数                                                                                                                                                                    | 否  |
 | -i，--input                | 模型的输入数据路径，默认根据模型的input随机生成，多个输入以逗号分隔，例如：/home/input\_0.bin,/home/input\_1.bin,/home/input\_2.npy。注意：使用aipp模型时该输入为om模型的输入,且支持自动将npy文件转为bin文件                                                       | 否  |
 | -c，--cann-path            | CANN包安装完后路径，默认会从从系统环境变量`ASCEND_TOOLKIT_HOME`中获取`CANN` 包路径，如果不存在则默认为 `/usr/local/Ascend/ascend-toolkit/latest`                                                                                     | 否  |

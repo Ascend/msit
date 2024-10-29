@@ -15,6 +15,7 @@ import os
 import subprocess
 
 from components.utils.parser import BaseCommand
+from components.utils.security_check import is_enough_disk_space_left
 from components.debug.compare.msquickcmp.adapter_cli.args_adapter import CmpArgsAdapter
 from components.debug.compare.msquickcmp.cmp_process import cmp_process
 from components.debug.compare.msquickcmp.common.args_check import (
