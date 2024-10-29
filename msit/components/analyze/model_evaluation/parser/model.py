@@ -1,4 +1,5 @@
-# Copyright (c) 2023 Huawei Technologies Co., Ltd.
+# -*- coding: utf-8 -*-
+# Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +23,7 @@ from model_evaluation.common.enum import AtcErr, Framework
 from components.utils.log import logger
 from model_evaluation.parser.atc import AtcErrParser
 from model_evaluation.bean import OpInfo, ConvertConfig
+from components.utils.check.rule import Rule
 
 
 class ModelParser:
@@ -50,6 +52,7 @@ class ModelParser:
                 return []
 
         try:
+            Rule.input_file().check(self._json_path, will_raise=True)
             with open(self._json_path) as f:
                 data = json.load(f)
         except Exception as e:
