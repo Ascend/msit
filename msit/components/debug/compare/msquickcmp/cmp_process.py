@@ -316,7 +316,10 @@ def run_om_model_compare(args, use_cli):
         golden_dump_data_path = golden_dump.generate_dump_data(output_json_path)
     else:
         golden_dump.generate_inputs_data(npu_dump_data_path, use_aipp)
-        golden_dump_data_path = golden_dump.generate_dump_data(npu_dump_npy_path, npu_dump.om_parser)
+        if isinstance(golden_dump, NpuDumpData):
+            golden_dump_data_path, _ = golden_dump.generate_dump_data(npu_dump_npy_path, npu_dump.om_parser)
+        else:
+            golden_dump_data_path = golden_dump.generate_dump_data(npu_dump_npy_path, npu_dump.om_parser)
     golden_net_output_info = golden_dump.get_net_output_info()
 
     # if it's dynamic batch scenario, golden data files should be renamed
