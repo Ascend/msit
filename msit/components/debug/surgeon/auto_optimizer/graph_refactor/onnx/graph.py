@@ -28,6 +28,8 @@ from auto_optimizer.graph_refactor import BaseGraph, Initializer, PlaceHolder, N
 from auto_optimizer.graph_refactor.onnx.node import OnnxPlaceHolder, OnnxInitializer, OnnxNode
 from components.debug.common import logger
 from auto_optimizer.common.utils import check_output_model_path
+from components.utils.check.rule import Rule
+from components.utils.constants import MAX_FILE_SIZE_200G
 
 
 class OnnxGraph(BaseGraph):
@@ -84,6 +86,9 @@ class OnnxGraph(BaseGraph):
     @classmethod
     def parse(cls, path_or_bytes: Union[str, ModelProto, GraphProto], add_name_suffix: bool = False) -> 'OnnxGraph':
         if isinstance(path_or_bytes, str):
+            if not Rule.input_file().max_size(MAX_FILE_SIZE_200G).check(path_or_bytes):
+                logger.error("Load onnx failed")
+                raise OSError
             onnx_model = onnx.load(path_or_bytes)
         if isinstance(path_or_bytes, ModelProto):
             onnx_model = path_or_bytes
@@ -444,13 +449,17 @@ class OnnxGraph(BaseGraph):
 
         try:
             inferred_model = onnx.shape_inference.infer_shapes(model, strict_mode=True)
-        except ValueError:
+        except ValueError as e:
             with tempfile.TemporaryDirectory() as tmpdirname:
                 onnx.save(model, os.path.join(tmpdirname, 'model.onnx'), save_as_external_data=True)
                 onnx.shape_inference.infer_shapes_path(
                     os.path.join(tmpdirname, 'model.onnx'), os.path.join(tmpdirname, 'inferred_model.onnx')
                 )
-                inferred_model = onnx.load(os.path.join(tmpdirname, 'inferred_model.onnx'))
+                infer_model_path = os.path.join(tmpdirname, 'inferred_model.onnx')
+                if not Rule.input_file().max_size(MAX_FILE_SIZE_200G).check(infer_model_path):
+                    logger.error("Load inferred model failed")
+                    raise OSError from e
+                inferred_model = onnx.load(infer_model_path)
 
         # update value_infos
         graph = inferred_model.graph

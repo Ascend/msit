@@ -20,12 +20,14 @@ with open('requirements.txt', encoding='utf-8') as f:
 with open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
-ait_sub_tasks = [{
+ait_sub_tasks = [
+    {
     "name": "profile",
     "help_info": "get profiling data of a given programma",
     "module": "ait_prof.main_cli",
     "attr": "get_cmd_instance"
-}]
+}
+]
 
 ait_sub_task_entry_points = [
     f"{t.get('name')}:{t.get('help_info')} = {t.get('module')}:{t.get('attr')}"

@@ -16,7 +16,8 @@ import pkg_resources
 
 
 class SurgeonInstall(AitInstaller):
-    def check(self):
+    @staticmethod
+    def check():
         check_res = []
         installed_pkg = [pkg.key for pkg in pkg_resources.working_set]
 

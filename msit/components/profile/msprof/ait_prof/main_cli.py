@@ -116,8 +116,7 @@ class ProfileCommand(BaseCommand):
         args_adapter = MsProfArgsAdapter(args.application, args.output, args.model_execution, args.sys_hardware_mem,
                                          args.sys_cpu_profiling, args.sys_profiling, args.sys_pid_profiling,
                                          args.dvpp_profiling, args.runtime_api, args.task_time, args.aicpu)
-        ret = msprof_process(args_adapter)
-        exit(ret)
+        return msprof_process(args_adapter)
 
 
 def get_cmd_instance():

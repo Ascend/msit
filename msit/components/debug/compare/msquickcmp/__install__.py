@@ -19,7 +19,8 @@ from components.utils.install import AitInstaller
 
 
 class CompareInstall(AitInstaller):
-    def check(self):
+    @staticmethod
+    def check():
         check_res = []
         installed_pkg = [pkg.key for pkg in pkg_resources.working_set]
 
@@ -37,7 +38,8 @@ class CompareInstall(AitInstaller):
         else:
             return "\n".join(check_res)
 
-    def build_extra(self, find_links=None):
+    @staticmethod
+    def build_extra(find_links=None):
         if sys.platform == 'win32':
             return
         

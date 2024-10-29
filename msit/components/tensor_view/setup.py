@@ -17,12 +17,14 @@ from setuptools import setup, find_packages  # type: ignore
 with open('requirements.txt', encoding='utf-8') as f:
     required = f.read().splitlines()
 
-ait_sub_tasks = [{
+ait_sub_tasks = [
+    {
     "name": "tensor-view",
     "help_info": "view、slice、permute、save the dumped tensor",
     "module": "ait_tensor_view.main_cli",
     "attr": "get_cmd_instance"
-}]
+}
+]
 
 ait_sub_task_entry_points = [
     f"{t.get('name')}:{t.get('help_info')} = {t.get('module')}:{t.get('attr')}"
