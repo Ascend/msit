@@ -382,9 +382,8 @@ def load_mapping(mapping_file_path):
         "ATB_TORCH_CUSTOM_OP_OUTPUT_MAPPING": ATB_TORCH_CUSTOM_OP_OUTPUT_MAPPING,
     }
     mapping_file = os.path.join(mapping_file_path, "op_mapping_file.json")
+    
     if os.path.exists(mapping_file):
-        from msit_llm.common.utils import load_file_to_read_common_check
-
         mapping_file = load_file_to_read_common_check(mapping_file)
         with open(mapping_file, "r") as file:
             file_content = json.load(file)
