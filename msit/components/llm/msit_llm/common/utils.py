@@ -180,21 +180,11 @@ def confirmation_interaction(prompt):
     return bool(confirm_pattern.match(user_action))
 
 
-def load_file_to_read_common_check(value: str, max_size=MAX_WEIGHT_DATA_SIZE, exts=None):
-    if isinstance(exts, (tuple, list)):
-        if not all(isinstance(ext, str) for ext in exts):
-            logger.error("Expected type 'List[str]', got %r instead", exts)
-            raise TypeError
-
-        value_ext = os.path.splitext(value)[1]
-        if all(value_ext != ext for ext in exts):
-            logger.error("Expected extenstion to be one of %r, got %r instead", exts, value_ext)
-            raise ValueError
-        
-    elif exts is not None:
-        logger.error("Expected 'exts' to be 'List[str]', got %r instead", type(exts))
-        raise TypeError
+def load_file_to_read_common_check(value, max_size=MAX_DATA_SIZE):
+    if not isinstance(value, str):
+        raise ValueError("%r should be str, but got other type instead" % value)
     
+    # invalid charcters
     if re.search(STR_WHITE_LIST_REGEX, value):
         logger.error("Invalid character: %r", value)
         raise ValueError
@@ -215,9 +205,10 @@ def load_file_to_read_common_check(value: str, max_size=MAX_WEIGHT_DATA_SIZE, ex
         logger.error("Not a regular file: %r", value)
         raise ValueError
     
-    confirmation_prompt = "The file %r is larger than expected. " \
-                          "Attempting to read such a file could potentially impact system performance.\n" \
-                          "Please confirm your awareness of the risks associated with this action ([y]/n): " % value
+    # file size
+    confirmation_prompt = "The file '%r' exceeds the anticipated size, which is considered atypical. " \
+      "Attempting to process an excessively large file may adversely affect system performance. " \
+      "Please confirm that you are fully aware of the implications of proceeding ([y]/n): " % value
     
     if file_status.st_size > max_size and not confirmation_interaction(confirmation_prompt):
         logger.error("File too large: %r", value)
@@ -245,9 +236,15 @@ def load_file_to_read_common_check(value: str, max_size=MAX_WEIGHT_DATA_SIZE, ex
     return value
 
 
+<<<<<<< HEAD
 def load_file_to_read_common_check_for_cli(value, max_size=MAX_WEIGHT_DATA_SIZE, exts=None):
     try:
         value = load_file_to_read_common_check(value, max_size, exts)
+=======
+def load_file_to_read_common_check_for_cli(value, max_size=MAX_DATA_SIZE):
+    try:
+        value = load_file_to_read_common_check(value, max_size)
+>>>>>>> 2236dd0be (torch.load -> torch.load(weights_only=True); add checks before open and open)
     except Exception as e:
         raise argparse.ArgumentTypeError("%r" % value) from e
     return value

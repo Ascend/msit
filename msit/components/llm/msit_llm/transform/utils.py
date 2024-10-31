@@ -21,7 +21,7 @@ import torch
 from safetensors.torch import safe_open
 
 from msit_llm.common.log import logger
-from msit_llm.common.utils import check_data_file_size
+from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.common.constant import MAX_WEIGHT_DATA_SIZE
 
 _SCENARIOS = ["torch_to_float_atb", "float_atb_to_quant_atb", "torch_to_float_python_atb"]
@@ -54,8 +54,9 @@ def write_file(save_path, string):
 
 
 def load_model_dict(model_path):
-    if Path(model_path).is_file() and check_data_file_size(model_path, max_size=MAX_WEIGHT_DATA_SIZE):
-        state_dict = torch.load(model_path)
+    if Path(model_path).is_file():
+        model_path = load_file_to_read_common_check(model_path, max_size=MAX_WEIGHT_DATA_SIZE)
+        state_dict = torch.load(model_path, weights_only=True)
         return state_dict
     elif Path(model_path).is_dir():
         suffix_list = ['.bin', '.safetensors', '.pt']
@@ -65,15 +66,14 @@ def load_model_dict(model_path):
                 continue
             state_dict = {}
             for fp in file_list:
-                fp = str(fp)
-                if (not Path(fp).is_file() or 
-                    not check_data_file_size(fp, max_size=MAX_WEIGHT_DATA_SIZE)):
-                    continue  # 如果不是普通文件或者文件大小超过限制，则跳过该文件(实际上会报错并终止)
+                fp = load_file_to_read_common_check(str(fp), max_size=MAX_WEIGHT_DATA_SIZE)
+                
                 if suffix == '.safetensors':
                     with safe_open(fp, framework='pt') as ff:
                         ss = {kk: ff.get_tensor(kk).half() for kk in ff.keys()}
                 else:
-                    ss = torch.load(fp)
+                    ss = torch.load(fp, weights_only=True)
+                    
                 state_dict.update(ss)
             return state_dict
     return {}

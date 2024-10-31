@@ -23,8 +23,7 @@ import torch_npu
 
 from msit_llm.common.log import logger
 from msit_llm.common.constant import GLOBAL_HISTORY_AIT_DUMP_PATH_LIST, RAW_INPUT_PATH
-from msit_llm.common.utils import check_data_file_size
-from components.utils.check.rule import Rule
+from msit_llm.common.utils import load_file_to_read_common_check
 
 
 NAMEDTUPLE_PRECISION_METRIC = namedtuple('precision_metric', ['abs', 'kl', 'cos_sim'])('abs', 'kl', 'cos_sim')
@@ -360,11 +359,11 @@ class OpChecker:
         tensor_path = dirpath
 
         op_param = {}
-        json_path = os.path.join(dirpath, 'op_param.json')
-        try:
-            if os.path.isfile(json_path) and check_data_file_size(json_path):
-                with open(json_path, 'r') as f:
-                    op_param = json.load(f)
+        json_path = load_file_to_read_common_check(os.path.join(dirpath, 'op_param.json'))
+
+        try:    
+            with open(json_path, 'r') as f:
+                op_param = json.load(f)
         except Exception as e:
             logger_text = f"Cannot loads json file to json! Json file: {json_path} \n Exception: {e}"
             logger.debug(logger_text)

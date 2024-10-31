@@ -19,6 +19,7 @@ import pandas as pd
 import onnx
 
 from msit_llm.common.log import logger
+from msit_llm.common.utils import load_file_to_read_common_check
 from components.utils.check import Rule, validate_params
 
 
@@ -187,6 +188,7 @@ def atb_json_to_onnx_json(atb_json_dict, target_level, shape_contents):
 decorator_csv = validate_params(op_info_file=Rule.input_file())
 @decorator_csv.to_return({}, logger)
 def csv_to_content(op_info_file):
+    op_info_file = load_file_to_read_common_check(op_info_file)
     pd_csv = pd.read_csv(op_info_file, sep="|")
     csv_content = {}  # csv_content like {nodename:inputs[{type, shape:[]}]}
     for index in range(len(pd_csv)):
@@ -211,6 +213,7 @@ decorator_atb = validate_params(atb_json_path=Rule.input_file())
 def atb_json_to_onnx(atb_json_path, target_level=-1, cache_csv_file: typing.Union[typing.Dict, None] = None):
     from google.protobuf.json_format import Parse
 
+    atb_json_path = load_file_to_read_common_check(atb_json_path)
     with open(atb_json_path, "r") as file:
         json_content = json.loads(file.read(), parse_constant=lambda x: None)
 

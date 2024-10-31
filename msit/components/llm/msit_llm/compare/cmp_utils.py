@@ -20,6 +20,7 @@ import pandas as pd
 import torch
 
 from msit_llm.common.tool import read_atb_data
+from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.common.constant import (TOKEN_ID, DATA_ID, GOLDEN_DATA_PATH, MY_DATA_PATH,
                                       CMP_FAIL_REASON, GOLDEN_DTYPE, GOLDEN_SHAPE,
                                       GOLDEN_MAX_VALUE, GOLDEN_MIN_VALUE,
@@ -162,18 +163,18 @@ def compare_data(golden_data, my_data):
 
 
 def read_data(data_path):
-    from msit_llm.common.utils import check_input_path_legality, check_data_file_size
-    data_path = check_input_path_legality(data_path)
-    if check_data_file_size(data_path):
-        if data_path.endswith(".npy"):
-            data = torch.as_tensor(np.load(data_path))
-        elif data_path.endswith(".bin"):
-            data = read_atb_data(data_path)
-        elif data_path.endswith(".pth") or data_path.endswith(".pt"):
-            data = torch.load(data_path, map_location=torch.device("cpu"))
-        else:
-            logger.error("Unsupported data format %s", data_path)
-            raise TypeError("Unsupported data format.")
+    data_path = load_file_to_read_common_check(data_path)
+
+    if data_path.endswith(".npy"):
+        data = torch.as_tensor(np.load(data_path))
+    elif data_path.endswith(".bin"):
+        data = read_atb_data(data_path)
+    elif data_path.endswith(".pth") or data_path.endswith(".pt"):
+        data = torch.load(data_path, weights_only=True, map_location=torch.device("cpu"))
+    else:
+        logger.error("Unsupported data format %s", data_path)
+        raise TypeError("Unsupported data format.")
+    
     return data.cpu()
 
 

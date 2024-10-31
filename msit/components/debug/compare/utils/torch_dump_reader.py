@@ -36,7 +36,7 @@ class TorchDumpFileReader(DumpFileReader):
         for file_name in os.listdir(folder_path):
             if file_name.startswith('output'):
                 key_path = os.path.join(folder_path, file_name)
-                cpu_tensor = torch.load(key_path)
+                cpu_tensor = torch.load(key_path, weights_only=True)
                 return cpu_tensor
             else:
                 continue 
