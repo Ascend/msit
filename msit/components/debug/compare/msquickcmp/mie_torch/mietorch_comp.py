@@ -21,7 +21,7 @@ from components.debug.common import logger
 from components.debug.compare.utils.ge_dump_reader import GEDumpFileReader
 from components.debug.compare.utils.torch_dump_reader import TorchDumpFileReader
 from components.utils.cmp_algorithm import CMP_ALG_MAP, CUSTOM_ALG_MAP
-from components.utils.file_open_check import ms_open
+from components.utils.file_open_check import ms_open, sanitize_csv_value
 
 
 class MIETorchCompare:
@@ -102,8 +102,14 @@ class MIETorchCompare:
             key=lambda x: self.cpu_reader.key_to_id.get(x["Key"], float('inf'))
             )
         
+        for header in sorted_rows[0].keys():
+            sanitize_csv_value(header)
+        for row in sorted_rows:
+            for _, row_value in row.items():
+                sanitize_csv_value(row_value)
+        
         csv_file_path = os.path.join(self.output_path, 'comparison_results.csv')
-
+        
         with ms_open(csv_file_path, mode="w") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=sorted_rows[0].keys())
             writer.writeheader()
