@@ -1,9 +1,10 @@
+import os
+import stat
 from unittest.mock import patch
 import pytest
 
-from msit_llm.opcheck.opchecker import _is_atb_only_saved_before
+from msit_llm.opcheck.opchecker import _is_atb_only_saved_before, OpChecker
 from msit_llm.common.log import logger
-
 
 @pytest.fixture()
 def mock_logger():
@@ -36,3 +37,35 @@ def test_is_atb_only_saved_before_false_no_folders(mock_logger, tmpdir):
 
     assert res is False
     mock_logger.assert_called_once()
+
+
+def third_party_init_env_path(tmp_path_factory):
+    # 预置so加载环境变量
+    dir_path = tmp_path_factory.mktemp("test_ait_opcheck_lib_path")
+    file_path = os.path.join( dir_path / "libopchecker.so")
+    os.environ['AIT_OPCHECK_LIB_PATH'] = file_path
+    return file_path
+
+def test_third_party_init_load_not_exist_file(tmp_path_factory):
+    third_party_init_env_path(tmp_path_factory)
+
+    res = OpChecker().third_party_init()
+
+    del os.environ['AIT_OPCHECK_LIB_PATH']
+    assert res is False
+
+
+def test_third_party_init_load_other_writable_file(tmp_path_factory):
+    file_path = third_party_init_env_path(tmp_path_factory)
+
+    # 创建他人可写文件
+    file_permissions = stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
+    with os.fdopen(os.open(file_path, os.O_CREAT, file_permissions), 'w'):
+        pass
+
+    res = OpChecker().third_party_init()
+
+    del os.environ['AIT_OPCHECK_LIB_PATH']
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    assert res is False
