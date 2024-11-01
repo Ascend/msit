@@ -206,9 +206,9 @@ def load_file_to_read_common_check(value, max_size=MAX_DATA_SIZE):
         raise ValueError
     
     # file size
-    confirmation_prompt = "The file '%r' exceeds the anticipated size, which is considered atypical. " \
-      "Attempting to process an excessively large file may adversely affect system performance. " \
-      "Please confirm that you are fully aware of the implications of proceeding ([y]/n): " % value
+    confirmation_prompt = "The file %r is larger than expected. " \
+                          "Attempting to read such a file could potentially impact system performance.\n" \
+                          "Please confirm your awareness of the risks associated with this action ([y]/n): " % value
     
     if file_status.st_size > max_size and not confirmation_interaction(confirmation_prompt):
         logger.error("File too large: %r", value)

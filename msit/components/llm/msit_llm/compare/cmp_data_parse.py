@@ -19,6 +19,7 @@ from typing import List
 
 
 from msit_llm.common.log import logger
+from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.compare.cmp_op_match import MatchLocation
 from msit_llm.dump.torch_dump.topo import ModelTree, TreeNode
 from msit_llm.common.constant import GLOBAL_HISTORY_AIT_DUMP_PATH_LIST
@@ -269,7 +270,6 @@ class CompareDataATB(CompareDataParse):
         topo_infos = []
         for topo_file in topo_files:
             json_start_order = 0
-            from msit_llm.common.utils import load_file_to_read_common_check
             
             topo_file = load_file_to_read_common_check(topo_file)
             with open(topo_file, "r") as file:
