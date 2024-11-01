@@ -21,11 +21,6 @@ echo SCRIPT_DIR: $SCRIPT_DIR
 
 function download_nlohmann_json()
 {
-    if [ -d "$SCRIPT_DIR/dependency/nlohmann" ]; then
-        echo "[INFO] $SCRIPT_DIR/dependency/nlohmann already exists, skip downloading"
-        return
-    fi
-
     JSON_BASE_URL=$(python3 -c "from components.utils.install import get_public_url; print(get_public_url('json_base_url'))")
     if [[ "$NLOHMAN_JSON_LINE" =~ "v3_11_1" ]]; then
         JSON_VERSION="3.11.1"
@@ -41,8 +36,14 @@ function download_nlohmann_json()
     JSON_URL="$JSON_BASE_URL/$JSON_TAR"
     echo "JSON_URL=$JSON_URL"
 
+    if [[ -d "$SCRIPT_DIR/dependency/nlohmann" && -e "$SCRIPT_DIR/dependency/$JSON_TAR" ]]; then
+        echo "[INFO] $SCRIPT_DIR/dependency/nlohmann already exists, skip downloading"
+        return
+    fi
+
     mkdir -p $SCRIPT_DIR/dependency
     cd $SCRIPT_DIR/dependency
+    rm -f *.tar.gz
     if [ "$AIT_INSTALL_FIND_LINKS" != "" ]; then 
         cp "$AIT_INSTALL_FIND_LINKS/$JSON_TAR" ./
     else
@@ -61,6 +62,7 @@ function download_nlohmann_json()
         echo "[ERROR] $JSON_FILE_NAME not exists. Check if anything wrong with downloading. $IGNORE_INFO"
         exit 1
     fi
+    rm -rf ./nlohmann
     mv $JSON_FILE_NAME/include/nlohmann ./
 
     rm -rf $JSON_FILE_NAME
@@ -114,9 +116,10 @@ download_nlohmann_json
 
 ATB_VERSION=`python3 -c '
 import os
+from msit_llm.common.utils import check_data_file_size
 version = "8.0.RC3.B020" # Default value
 atb_version_file = os.path.abspath(os.path.join(os.getenv("ATB_HOME_PATH", ""), "..", "..", "version.info"))
-if os.path.exists(atb_version_file):
+if os.path.exists(atb_version_file) and os.path.isfile(atb_version_file) and check_data_file_size(atb_version_file):
     with open(atb_version_file) as ff:
         for ii in ff.readlines():
             if "version" in ii.lower():
