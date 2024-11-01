@@ -169,8 +169,32 @@ def check_data_can_convert_to_int(value):
     return int(value)
 
 
-def load_file_to_read_common_check(value):
-    # invalid charcters
+def confirmation_interaction(prompt):
+    confirm_pattern = re.compile(r'y(?:es)?', re.IGNORECASE)
+    
+    try:
+        user_action = input(prompt)
+    except Exception:
+        return False
+    
+    return bool(confirm_pattern.match(user_action))
+
+
+def load_file_to_read_common_check(value: str, max_size=MAX_WEIGHT_DATA_SIZE, exts=None):
+    if isinstance(exts, (tuple, list)):
+        if not all(isinstance(ext, str) for ext in exts):
+            logger.error("Expected type 'List[str]', got %r instead", exts)
+            raise TypeError
+
+        value_ext = os.path.splitext(value)[1]
+        if all(value_ext != ext for ext in exts):
+            logger.error("Expected extenstion to be one of %r, got %r instead", exts, value_ext)
+            raise ValueError
+        
+    elif exts is not None:
+        logger.error("Expected 'exts' to be 'List[str]', got %r instead", type(exts))
+        raise TypeError
+    
     if re.search(STR_WHITE_LIST_REGEX, value):
         logger.error("Invalid character: %r", value)
         raise ValueError
@@ -191,8 +215,11 @@ def load_file_to_read_common_check(value):
         logger.error("Not a regular file: %r", value)
         raise ValueError
     
-    # file size
-    if file_status.st_size > MAX_DATA_SIZE:
+    confirmation_prompt = "The file %r is larger than expected. " \
+                          "Attempting to read such a file could potentially impact system performance.\n" \
+                          "Please confirm your awareness of the risks associated with this action ([y]/n): " % value
+    
+    if file_status.st_size > max_size and not confirmation_interaction(confirmation_prompt):
         logger.error("File too large: %r", value)
         raise ValueError
     
@@ -218,9 +245,9 @@ def load_file_to_read_common_check(value):
     return value
 
 
-def load_file_to_read_common_check_for_cli(value):
+def load_file_to_read_common_check_for_cli(value, max_size=MAX_WEIGHT_DATA_SIZE, exts=None):
     try:
-        value = load_file_to_read_common_check(value)
+        value = load_file_to_read_common_check(value, max_size, exts)
     except Exception as e:
         raise argparse.ArgumentTypeError("%r" % value) from e
     return value

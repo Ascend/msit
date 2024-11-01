@@ -165,3 +165,116 @@ def test_str2bool_valid(value, expected):
 def test_str2bool_invalid(value):
     with pytest.raises(ArgumentTypeError):
         str2bool(value)
+
+
+class TestCommon(unittest.TestCase):
+
+    def test_load_file_to_read_common_check_invalid_char(self):
+        with self.assertLogs('msit_logger', 'ERROR') as cm:
+            self.assertRaises(ValueError, load_file_to_read_common_check, "\n\r")
+            logger_output = cm.output
+            self.assertEqual(len(logger_output), 1)
+            self.assertRegex(logger_output[0], r'Invalid character')
+
+    def test_load_file_to_read_common_check_invalid_exts_input(self):
+        with self.assertLogs('msit_logger', 'ERROR') as cm:
+            self.assertRaises(TypeError, load_file_to_read_common_check, "abc.abc", exts='abc')
+            logger_output = cm.output
+            self.assertEqual(len(logger_output), 1)
+            self.assertRegex(logger_output[0], r"Expected 'exts' to be")
+
+    def test_load_file_to_read_common_check_invalid_exts_value(self):
+        with self.assertLogs('msit_logger', 'ERROR') as cm:
+            self.assertRaises(ValueError, load_file_to_read_common_check, "abc.abc", 
+                              exts=['a', 'b', 'c'])
+            logger_output = cm.output
+            self.assertEqual(len(logger_output), 1)
+            self.assertRegex(logger_output[0], r"Expected extenstion to be one")
+    
+
+    def test_load_file_to_read_common_check_file_name_too_long(self):
+        with self.assertLogs('msit_logger', 'ERROR') as cm:
+            self.assertRaises(OSError, load_file_to_read_common_check, "s" * 256)
+            logger_output = cm.output
+            self.assertEqual(len(logger_output), 1)
+            self.assertRegex(logger_output[0], r'File name too long')
+
+    def test_load_file_to_read_common_check_file_not_exist(self):
+        with self.assertLogs('msit_logger', 'ERROR') as cm:
+            self.assertRaises(FileNotFoundError, load_file_to_read_common_check, "abcde12345")
+            logger_output = cm.output
+            self.assertEqual(len(logger_output), 1)
+            self.assertRegex(logger_output[0], r'No such file or directory')
+
+    def test_load_file_to_read_common_check_file_dir_not_readable(self):
+        temp_dir = 'perm_dir'
+        os.makedirs(temp_dir, 0, exist_ok=True)
+        original_euid = os.geteuid()
+
+        try:
+            os.seteuid(1001)
+            self.assertRaises(PermissionError, load_file_to_read_common_check, os.path.join(temp_dir, 'a'))
+        finally:
+            os.seteuid(original_euid)
+            os.rmdir(temp_dir)
+
+    def test_load_file_to_read_common_check_not_reg_file(self):
+        temp_dir = 'perm_dir'
+        os.makedirs(temp_dir, 0, exist_ok=True)
+
+        try:
+            self.assertRaises(ValueError, load_file_to_read_common_check, temp_dir)
+        finally:
+            os.rmdir(temp_dir)
+
+    def test_load_file_to_read_common_check_file_too_large(self):
+        file_stat = list(os.stat(__file__))
+        file_stat[6] = 300 * 1024 * 1024 * 1024
+        file_stat = os.stat_result(file_stat)
+        with patch('os.stat', return_value=file_stat):
+            with patch('builtins.input', return_value='n'):
+                with self.assertLogs('msit_logger', 'ERROR') as cm:
+                    self.assertRaises(ValueError, load_file_to_read_common_check, __file__)
+                    logger_output = cm.output
+                    self.assertEqual(len(logger_output), 1)
+                    self.assertRegex(logger_output[0], r'File too large')
+
+    def test_load_file_to_read_common_check_file_other_writeable(self):
+        file_stat = list(os.stat(__file__))
+        file_stat[0] |= os.st.S_IWOTH
+        file_stat = os.stat_result(file_stat)
+        with patch('os.stat', return_value=file_stat):
+            with self.assertLogs('msit_logger', 'ERROR') as cm:
+                self.assertRaises(PermissionError, load_file_to_read_common_check, __file__)
+                logger_output = cm.output
+                self.assertEqual(len(logger_output), 1)
+                self.assertRegex(logger_output[0], r'Vulnerable path')
+
+    def test_load_file_to_read_common_check_file_uid_not_matched(self):
+        file_stat = list(os.stat(__file__))
+
+        with patch('os.geteuid', return_value=1001):
+            file_stat[4] = 1002
+            file_stat = os.stat_result(file_stat)
+
+            with patch('os.stat', return_value=file_stat):
+                with self.assertLogs('msit_logger', 'ERROR') as cm:
+                    self.assertRaises(PermissionError, load_file_to_read_common_check, __file__)
+                    logger_output = cm.output
+                    self.assertEqual(len(logger_output), 1)
+                    self.assertRegex(logger_output[0], r'File owner and current user')        
+
+    def test_load_file_to_read_common_check_file_uid_not_matched_root(self):
+        file_stat = list(os.stat(__file__))
+        file_stat[4] = os.getuid() + 1
+
+        with patch('os.getuid', return_value=0):
+            file_stat[0] |= os.st.S_IWGRP | os.st.S_IWUSR
+            file_stat = os.stat_result(file_stat)
+
+            with patch('os.stat', return_value=file_stat):
+                with self.assertLogs('msit_logger', 'WARNING') as cm:
+                    load_file_to_read_common_check(__file__)
+                    logger_output = cm.output
+                    self.assertEqual(len(logger_output), 1)
+                    self.assertRegex(logger_output[0], r'Privilege escalation risk detected')
