@@ -31,6 +31,8 @@ import numpy as np
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
 
+from components.utils import util
+
 MSACCUCMP_DIR_PATH = "toolkit/tools/operator_cmp/compare"
 MSACCUCMP_FILE_NAME = ["msaccucmp.py", "msaccucmp.pyc"]
 PYC_FILE_TO_PYTHON_VERSION = "3.7.5"
@@ -169,7 +171,9 @@ class NetCompare(object):
             for each_file in sorted(files):
                 if each_file.endswith(".npy"):
                     npu_dump_file[file_index] = os.path.join(dir_path, each_file)
+                    npu_dump_file[file_index] = util.load_file_to_read_common_check(npu_dump_file.get(file_index))
                     npu_data = np.load(npu_dump_file.get(file_index))
+                    golden_net_output_info[file_index] = util.load_file_to_read_common_check(golden_net_output_info.get(file_index))
                     golden_data = np.load(golden_net_output_info.get(file_index))
                     np.save(npu_dump_file.get(file_index), npu_data.reshape(golden_data.shape))
                     msaccucmp_cmd = [self.python_version, self.msaccucmp_command_file_path, "compare", "-m",

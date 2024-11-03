@@ -18,6 +18,8 @@ import numpy as np
 
 from msquickcmp.common import utils
 
+from components.utils import util
+
 
 MSACCUCMP_FILE_PATH = "toolkit/tools/operator_cmp/compare/msaccucmp.py"
 
@@ -82,6 +84,7 @@ def convert_npy_to_bin(npy_input_path):
         if input_item_path.endswith('.npy'):
             bin_item = input_item[:-4] + '.bin'
             bin_path = input_item_path[:-4] + '.bin'
+            input_item_path = util.load_file_to_read_common_check(input_item_path)
             npy_data = np.load(input_item_path)
             if os.path.islink(bin_path):
                 os.unlink(bin_path)

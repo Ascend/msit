@@ -26,6 +26,8 @@ from msquickcmp.common import utils
 from msquickcmp.common.dynamic_argument_bean import DynamicArgumentEnum
 from msquickcmp.common.utils import AccuracyCompareException
 
+from components.utils import util
+
 GRAPH_OBJECT = "graph"
 OP_OBJECT = "op"
 NAME_OBJECT = "name"
@@ -96,6 +98,7 @@ class OmParser(object):
             when invalid json file path throw exception
         """
         try:
+            input_file = util.load_file_to_read_common_check(input_file)
             with open(json_file_path, "r") as input_file:
                 try:
                     return json.load(input_file)

@@ -29,6 +29,8 @@ if tf_common.check_tf_version(tf_common.VERSION_TF2X):
     import tfdbg_ascend as dbg
 from msquickcmp.common.utils import AccuracyCompareException
 
+from components.utils import util
+
 
 class TfDebugRunner(object):
     """
@@ -61,6 +63,7 @@ class TfDebugRunner(object):
 
     def _load_graph(self):
         try:
+            self.args.model_path = util.load_file_to_read_common_check(self.args.model_path)
             with tf.io.gfile.GFile(self.args.model_path, 'rb') as f:
                 global_graph_def = tf.compat.v1.GraphDef.FromString(f.read())
         except Exception as err:

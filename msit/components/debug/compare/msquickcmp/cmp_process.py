@@ -49,6 +49,7 @@ from msquickcmp.single_op import single_op as sp
 from components.utils.security_check import check_write_directory
 from components.utils.file_open_check import ms_open
 from components.utils.check.rule import Rule
+from components.utils import util
 
 WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
 READ_WRITE_FLAGS = os.O_RDWR | os.O_CREAT
@@ -116,8 +117,6 @@ def _get_single_csv_in_folder(csv_path):
 
 def _append_is_npu_ops_to_csv(csv_path):
     csv_path = _get_single_csv_in_folder(csv_path)
-    if os.path.islink(csv_path):
-        os.unlink(csv_path)
     if Rule.input_file().check(csv_path):
         with open(csv_path, 'r') as f:
             reader = csv.reader(f)
@@ -353,6 +352,7 @@ def print_advisor_info(out_path):
     advisor_info_txt_path = os.path.join(out_path, 'advisor_summary.txt')
     if Rule.input_file().check(advisor_info_txt_path):
         utils.logger.info(f"The advisor summary (.txt) is saved in :\"{advisor_info_txt_path}\"")
+        advisor_info_txt_path = util.load_file_to_read_common_check(advisor_info_txt_path)
         with open(advisor_info_txt_path, 'r') as advisor_file:
             lines = advisor_file.readlines()
             for line in lines:

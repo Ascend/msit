@@ -19,6 +19,7 @@ from collections import namedtuple
 
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
+from components.utils import util
 
 INVALID_ROW_VALUES = {
     "OpType": ["TransData"],
@@ -107,6 +108,7 @@ class Analyser:
         if strategy not in STRATEGIES:
             raise ValueError(f"strategy Should be one of {list(STRATEGIES)}")
         try:
+            self.csv_path = util.load_file_to_read_common_check(self.csv_path)
             with open(self.csv_path, "r") as csv_file:
                 csv_rows = [row for row in csv.DictReader(csv_file) if self._is_valid_row(row)]
         except IOError as csv_file_except:
