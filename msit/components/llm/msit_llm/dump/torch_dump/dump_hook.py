@@ -142,7 +142,7 @@ def dump_tensor(feat, feat_path):
             feat_path += ".pth"
         torch.save(feat, feat_path)
     else:
-        logger.debug("Unrecognized data type %s, cannot be saved in path %s.", type(feat), feat_path)
+        logger.error("Unrecognized data type %r, cannot be saved in path %r.", type(feat), feat_path)
 
 
 def dump_data(inputs, outputs, dump_path, tensor_part):
