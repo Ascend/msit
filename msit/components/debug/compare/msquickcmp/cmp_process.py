@@ -480,7 +480,8 @@ def single_op_compare(args, input_shape):
 
         # set single op output data
         tmp_out_path = os.path.join(single_op_dir, f"single_op_{idx}")
-        os.makedirs(tmp_out_path)
+        if not os.path.exists(tmp_out_path):
+            os.makedirs(tmp_out_path)
         time_dir = time.strftime("%Y%m%d%H%M%S", time.localtime())
         original_out_path = os.path.realpath(os.path.join(args.out_path, time_dir))
 

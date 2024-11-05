@@ -15,7 +15,7 @@ import json
 import os.path
 
 from components.utils.file_open_check import ms_open
-
+from msquickcmp.common import utils
 
 class DumpConfig:
     def __init__(
@@ -38,6 +38,14 @@ class DumpConfig:
         )
         cur_dir = os.path.dirname(os.path.abspath(__file__))
         config_path = os.path.join(cur_dir, "acl.json")
-        with ms_open(config_path, "w") as f:
-            json.dump(self.config, f, indent=4)
+        try:
+            with ms_open(config_path, "w") as f:
+                json.dump(self.config, f, indent=4)
+        except FileNotFoundError:
+            utils.logger.error("File not found.")
+            raise
+        except json.JSONDecodeError as e:
+            utils.logger.error(f"JSON decode error:{e}")
+            raise
+
 
