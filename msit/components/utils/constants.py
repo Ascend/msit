@@ -12,4 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MAX_FILE_SIZE_200G = 200 * 1024 * 1024 * 1024
+import re
+
+
+PATH_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9/.-]")
+
+CONFIG_FILE_MAX_SIZE = 1 * 1024 * 1024 # work for .ini config file
+TEXT_FILE_MAX_SIZE = 10 * 1024 * 1024 # work for json, txt, csv
+ONNX_MODEL_MAX_SIZE = 2 * 1024 * 1024 * 1024
+TENSOR_MAX_SIZE = 10 * 1024 * 1024 * 1024
+MODEL_WEIGHT_MAX_SIZE = 300 * 1024 * 1024 * 1024

@@ -25,7 +25,7 @@ from auto_optimizer.pattern.utils import insert_squeeze, insert_unsqueeze
 from auto_optimizer.common.utils import dump_op_outputs
 from components.debug.common import logger
 from components.utils.check.rule import Rule
-from components.utils.constants import MAX_FILE_SIZE_200G
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 class DynamicReshapeMatch(MatchBase):
@@ -220,8 +220,8 @@ class KnowledgeDynamicReshape(KnowledgeBase):
                 raise RuntimeError('Reshape prev node is Constant type.')
             data_in_path = os.path.join(real_dump_path, dump_file)
             data_out_path = os.path.join(real_dump_path, f'{reshape.name}_0.npy')
-            if not Rule.input_file().max_size(MAX_FILE_SIZE_200G).check(data_in_path) \
-                or not Rule.input_file().max_size(MAX_FILE_SIZE_200G).check(data_out_path):
+            if not Rule.input_file().max_size(TENSOR_MAX_SIZE).check(data_in_path) \
+                or not Rule.input_file().max_size(TENSOR_MAX_SIZE).check(data_out_path):
                 logger.error("Load data failed")
                 raise OSError
             data_in = np.load(data_in_path)
