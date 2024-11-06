@@ -22,21 +22,11 @@ HOOK_TYPE = ""
 
 
 def get_device(model):
-    try:
-        next_device = next(model.parameters())
-    except StopIteration as e:
-        logger.error('Model has no parameters left, please check')
-        raise
-    except Exception as e:
-        logger.error('There is something wrong with the model, please check')
-        raise
+    device = "cpu"
 
-    try:
-        device = str(next_device.device)
-    except Exception as e:
-        logger.error("Error occured during converting 'device' to string, please check")
-        raise
-        
+    for param in model.parameters():
+        device = str(param).device
+
     return device.replace(":", "")
 
 
