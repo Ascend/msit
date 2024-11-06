@@ -15,7 +15,7 @@
 import re
 import os
 
-from components.utils.constants import CONFIG_FILE_MAX_SIZE, TEXT_FILE_MAX_SIZE, ONNX_MODEL_MAX_SIZE, TENSOR_MAX_SIZE, MODEL_WEIGHT_MAX_SIZE
+from components.utils.constants import MODEL_WEIGHT_MAX_SIZE, EXT_SIZE_MAPPING
 
 
 def get_entry_points(entry_points_name):
@@ -52,27 +52,17 @@ def check_file_ext(path, ext: str):
     return True
 
 
-def check_file_size_based_on_ext(path):
+def check_file_size_based_on_ext(path, ext=None):
     """Check the file size based on extension. This function uses `os.stat` to get file size may lead to OSError"""
-    ext_size_mapping = {
-        ".ini": CONFIG_FILE_MAX_SIZE,
-        '.csv': TEXT_FILE_MAX_SIZE,
-        '.json': TEXT_FILE_MAX_SIZE,
-        '.txt': TEXT_FILE_MAX_SIZE,
-        '.py': TEXT_FILE_MAX_SIZE,
-        '.pth': TENSOR_MAX_SIZE,
-        '.bin': TENSOR_MAX_SIZE,
-        '.onnx': ONNX_MODEL_MAX_SIZE,
-    }
-
+    
     if not isinstance(path, str):
         raise TypeError("Expected path to be 'str', got %r instead" % type(path))
     
-    ext = os.path.splitext(path)[1]
+    ext = ext or os.path.splitext(path)[1]
     size = os.path.getsize(path) # may lead to errors
-
-    if ext in ext_size_mapping:
-        if size > ext_size_mapping[ext]:
+    
+    if ext in EXT_SIZE_MAPPING:
+        if size > EXT_SIZE_MAPPING[ext]:
             return False
     else:
         if size > MODEL_WEIGHT_MAX_SIZE:
