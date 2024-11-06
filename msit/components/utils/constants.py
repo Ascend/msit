@@ -24,12 +24,12 @@ TENSOR_MAX_SIZE = 10 * 1024 * 1024 * 1024
 MODEL_WEIGHT_MAX_SIZE = 300 * 1024 * 1024 * 1024
 
 EXT_SIZE_MAPPING = {
-        ".ini": CONFIG_FILE_MAX_SIZE,
-        '.csv': TEXT_FILE_MAX_SIZE,
-        '.json': TEXT_FILE_MAX_SIZE,
-        '.txt': TEXT_FILE_MAX_SIZE,
-        '.py': TEXT_FILE_MAX_SIZE,
-        '.pth': TENSOR_MAX_SIZE,
-        '.bin': TENSOR_MAX_SIZE,
-        '.onnx': ONNX_MODEL_MAX_SIZE,
-    }
+    ".ini": CONFIG_FILE_MAX_SIZE,
+    '.csv': TEXT_FILE_MAX_SIZE,
+    '.json': TEXT_FILE_MAX_SIZE,
+    '.txt': TEXT_FILE_MAX_SIZE,
+    '.py': TEXT_FILE_MAX_SIZE,
+    '.pth': MODEL_WEIGHT_MAX_SIZE,
+    '.bin': MODEL_WEIGHT_MAX_SIZE,
+    '.onnx': ONNX_MODEL_MAX_SIZE,
+}

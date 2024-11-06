@@ -15,7 +15,7 @@
 import re
 import os
 
-from components.utils.constants import MODEL_WEIGHT_MAX_SIZE, EXT_SIZE_MAPPING
+from components.utils.constants import TENSOR_MAX_SIZE, EXT_SIZE_MAPPING
 
 
 def get_entry_points(entry_points_name):
@@ -54,18 +54,18 @@ def check_file_ext(path, ext: str):
 
 def check_file_size_based_on_ext(path, ext=None):
     """Check the file size based on extension. This function uses `os.stat` to get file size may lead to OSError"""
-    
+
     if not isinstance(path, str):
         raise TypeError("Expected path to be 'str', got %r instead" % type(path))
     
     ext = ext or os.path.splitext(path)[1]
     size = os.path.getsize(path) # may lead to errors
-    
+
     if ext in EXT_SIZE_MAPPING:
         if size > EXT_SIZE_MAPPING[ext]:
             return False
     else:
-        if size > MODEL_WEIGHT_MAX_SIZE:
+        if size > TENSOR_MAX_SIZE:
             confirmation_prompt = "The file %r is larger than expected. " \
                                 "Attempting to read such a file could potentially impact system performance.\n" \
                                 "Please confirm your awareness of the risks associated with this action ([y]/n): " % path
