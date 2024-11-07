@@ -55,9 +55,9 @@ def check_file_security(filepath: str) -> bool:
     if not os.path.exists(filepath):
         return True
     if os.path.islink(filepath):
-        logger.error(f'{filepath} is link.')
+        logger.error('%r is link.', filepath)
         return False
     if not os.path.isfile(filepath):
-        logger.error(f'{filepath} is not file.')
+        logger.error('%r is not file.', filepath)
         return False
     return True

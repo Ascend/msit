@@ -49,7 +49,7 @@ class Convert:
 
     def convert_model(self) -> None:
         cur_dir = os.path.dirname(__file__)
-        aie_convert = os.path.join(cur_dir, "../aie_convert")
+        aie_convert = os.path.join(cur_dir, "..", "aie_convert")
         if not self._config.output.endswith(".om"):
             self._config.output += ".om"
         run_cmd = [aie_convert, self._config.model, self._config.output, self._config.soc_version]

@@ -15,6 +15,7 @@
 import os
 import re
 import argparse
+
 from components.utils.parser import BaseCommand
 from model_evaluation.common import utils
 from model_evaluation.common.enum import Framework
@@ -78,9 +79,9 @@ def check_output_path_legality(value):
     try:
         file_stat = FileStat(path_value)
     except Exception as err:
-        raise argparse.ArgumentTypeError(f"weight path:{path_value} is illegal. Please check.") from err
+        raise argparse.ArgumentTypeError("Output path is illegal, please check.") from err
     if not file_stat.is_basically_legal("write"):
-        raise argparse.ArgumentTypeError(f"output path:{path_value} is illegal. Please check.")
+        raise argparse.ArgumentTypeError("The current output path does not have right write permission, please check.")
     return path_value
 
 

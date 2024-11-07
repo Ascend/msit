@@ -12,13 +12,13 @@ def check_in_path_legality(value):
     try:
         file_stat = FileStat(path_value)
     except Exception as err:
-        raise argparse.ArgumentTypeError(f"input path:{path_value} is illegal. Please check.") from err
+        raise argparse.ArgumentTypeError("Input path or file is illegal, please check.") from err
     if not file_stat.is_basically_legal('read'):
-        raise argparse.ArgumentTypeError(f"input path:{path_value} is illegal. Please check.")
+        raise argparse.ArgumentTypeError("The current input file does not have right read permission, please check.")
     if file_stat.is_file and not file_stat.is_legal_file_type(["onnx"]):
-        raise argparse.ArgumentTypeError(f"input path:{path_value} is illegal. Please check.")
+        raise argparse.ArgumentTypeError("The file type of input path is illegal. Only support [.onnx] file.")
     if file_stat.is_file and not file_stat.is_legal_file_size(MAX_SIZE_LIMITE_NORMAL_MODEL):
-        raise argparse.ArgumentTypeError(f"input path:{path_value} is illegal. Please check.")
+        raise argparse.ArgumentTypeError("The current software version only supports input files up to 32GB in size.")
     return path_value
 
 
@@ -27,13 +27,14 @@ def check_in_model_path_legality(value):
     try:
         file_stat = FileStat(path_value)
     except Exception as err:
-        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.") from err
+        raise argparse.ArgumentTypeError("Input model path is illegal, please check.") from err
     if not file_stat.is_basically_legal('read'):
-        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.")
+        err_msg = "The current input model file does not have right read permission, please check."
+        raise argparse.ArgumentTypeError(err_msg)
     if not file_stat.is_legal_file_type(["onnx"]):
-        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.")
+        raise argparse.ArgumentTypeError("The input model type is illegal. Only support [.onnx] model.")
     if not file_stat.is_legal_file_size(MAX_SIZE_LIMITE_NORMAL_MODEL):
-        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.")
+        raise argparse.ArgumentTypeError("The current software version only supports input model up to 32GB in size.")
     return path_value
 
 
@@ -44,15 +45,18 @@ def check_out_model_path_legality(value):
     try:
         file_stat = FileStat(path_value)
     except Exception as err:
-        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.") from err
+        raise argparse.ArgumentTypeError("Output model path is illegal, please check.") from err
     if not file_stat.is_basically_legal('write'):
-        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.")
+        err_msg = "The current output model path does not have right write permission, please check."
+        raise argparse.ArgumentTypeError(err_msg)
     if not file_stat.is_legal_file_type(["onnx"]):
-        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.")
+        raise argparse.ArgumentTypeError("The output model type is illegal. Only support [.onnx] model.")
     return path_value
 
 
 def check_soc(value):
+    if isinstance(value, str) and not re.match("^[0-9]+?$", value):
+        raise argparse.ArgumentTypeError("The input 'device' param is not valid.")
     ivalue = int(value)
     pre_cmd = "npu-smi info -l"
     res = subprocess.run(pre_cmd.split(), shell=False, stdout=subprocess.PIPE)
@@ -68,23 +72,29 @@ def check_soc(value):
 
 
 def check_range(value):
+    if isinstance(value, str) and not re.match("^[0-9]+?$", value):
+        raise argparse.ArgumentTypeError("The input 'processes' param is not valid.")
     ivalue = int(value)
     if ivalue < 1 or ivalue > 64:
-        raise argparse.ArgumentTypeError(f"{value} is not a valid value.Range 1 ~ 64.")
+        raise argparse.ArgumentTypeError(f"{value} is not a valid value. Range 1 ~ 64.")
     return ivalue
 
 
 def check_min_num_1(value):
+    if isinstance(value, str) and not re.match("^[0-9]+?$", value):
+        raise argparse.ArgumentTypeError("The input 'loop' param is not valid.")
     ivalue = int(value)
     if ivalue < 1:
-        raise argparse.ArgumentTypeError(f"{value} is not a valid value.Minimum value 1.")
+        raise argparse.ArgumentTypeError(f"{value} is not a valid value. Minimum value 1.")
     return ivalue
 
 
 def check_min_num_2(value):
+    if isinstance(value, str) and not re.match("^[-]?[0-9]+?$", value):
+        raise argparse.ArgumentTypeError("The input 'threshold' param is not valid.")
     ivalue = int(value)
     if ivalue < -1:
-        raise argparse.ArgumentTypeError(f"{value} is not a valid value.Minimum value -1.")
+        raise argparse.ArgumentTypeError(f"{value} is not a valid value. Minimum value -1.")
     return ivalue
 
 
