@@ -5,7 +5,7 @@
 ### 前提条件
 
 - 仅支持在以下产品中使用。
-    - Atlas 推理系列产品（Ascend 310P处理器）。
+    - Atlas 推理系列产品（Atlas 300I Duo 推理卡）。
     - Atlas 训练系列产品。
     - Atlas A2训练系列产品/Atlas 800I A2推理产品。
 
