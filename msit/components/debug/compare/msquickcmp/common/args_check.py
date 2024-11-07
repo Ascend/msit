@@ -172,11 +172,10 @@ def check_device_range_valid(value):
         ivalue = int(value)
     except Exception as e:
         raise argparse.ArgumentTypeError(f"input:{value} is illegal.Please check") from e
-    else:
-        if ivalue < min_value or ivalue > max_value:
-            raise argparse.ArgumentTypeError(
-                "device:{} is invalid. valid value range is [{}, {}]".format(ivalue, min_value, max_value)
-            )
+    if ivalue < min_value or ivalue > max_value:
+        raise argparse.ArgumentTypeError(
+            "device:{} is invalid. valid value range is [{}, {}]".format(ivalue, min_value, max_value)
+        )
     return value
 
 
