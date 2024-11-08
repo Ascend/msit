@@ -53,11 +53,11 @@ def safe_string(value):
 
 def check_input_path(input_path):
     if not os.access(input_path, os.F_OK):
-        logger.error("Input path {} is not exist.".format(input_path))
+        logger.error("Input path %r is not exist.", input_path)
         return False
 
     if not os.access(input_path, os.R_OK):
-        logger.error("Input path {} is not readable.".format(input_path))
+        logger.error("Input path %r is not readable.", input_path)
         return False
 
     return True
@@ -65,12 +65,12 @@ def check_input_path(input_path):
 
 def check_output_model_path(output_model):
     if os.path.isdir(output_model):
-        logger.error("Output path {} is a directory.".format(output_model))
+        logger.error("Output path %r is a directory.", output_model)
         return False
 
     model_dir = os.path.dirname(os.path.abspath(output_model))
     if not os.path.exists(model_dir):
-        logger.error("Output path {} is not exist.".format(output_model))
+        logger.error("Output path %r is not exist.", output_model)
         return False
 
     return True

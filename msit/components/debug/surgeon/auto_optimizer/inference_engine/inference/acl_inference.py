@@ -68,10 +68,15 @@ class AclInference(InferenceBase, ABC):
             ]
             out = subprocess.run(msame_cmd, capture_output=True, shell=False)
             log = out.stdout.decode('utf-8')
-            match = re.search("Inference average time without first time: (.+) ms", log)
+            match = re.search("Inference average time without first time: (.{1,350}) ms", log)
             if not match or out.returncode:
                 raise RuntimeError("msame inference failed!\n{}".format(log))
-            time = float(match.group(1))
+            try:
+                time = float(match.group(1))
+            except ValueError as err:
+                logger.error("Received an unexpected runtime value from msame's log.")
+                raise RuntimeError("Please check your msame inference runtime environment.") from err
+            
         elif self.tool == 'pyacl':
             from pyacl.acl_infer import AclNet, init_acl
 
