@@ -36,18 +36,18 @@ msit profile --application "msit benchmark -om /home/HwHiAiUser/resnet101_bs1.om
 | ----- | ----- | ----- |
 |msprof*.json| 所有可生成数据的参数均会在此文件写入数据。|timeline数据总表。对采集到的timeline性能数据按照迭代粒度进行性能展示。详情请参见[timeline数据总表](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0064.html)|
 |ddr_*.json|--sys-hardware-mem|DDR内存读写速率。详情请参见DDR[DDR内存读写速率数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0087.html)|
-|llc_aicpu_*.json|--sys-hardware-mem|AI CPU的三级缓存使用量，LLC Profiling采集事件设置为capacity时才会导出该文件。文件详情请参见[AI CPU的三级缓存使用量数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0099.html)（昇腾310 AI处理器）|
-|llc_ctrlcpu_*.json|--sys-hardware-mem|Control CPU三级缓存使用量，LLC Profiling采集事件设置为capacity时才会导出该文件。文件详情请参见[Control CPU三级缓存使用量数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0100.html)（昇腾310 AI处理器）|
-|llc_read_write_*.json|--sys-hardware-mem|三级缓存读写速率数据。文件详情请参见[三级缓存读写速率数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0097.html)（昇腾310P AI处理器）|
+|llc_aicpu_*.json|--sys-hardware-mem|AI CPU的三级缓存使用量，LLC Profiling采集事件设置为capacity时才会导出该文件。文件详情请参见[AI CPU的三级缓存使用量数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0099.html)（Atlas200/300/500推理产品）|
+|llc_ctrlcpu_*.json|--sys-hardware-mem|Control CPU三级缓存使用量，LLC Profiling采集事件设置为capacity时才会导出该文件。文件详情请参见[Control CPU三级缓存使用量数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0100.html)（Atlas200/300/500推理产品）|
+|llc_read_write_*.json|--sys-hardware-mem|三级缓存读写速率数据。文件详情请参见[三级缓存读写速率数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0097.html)（Atlas推理系列产品）|
 
 - **采集内容（summary文件夹内）**
 
 | summary文件名 | 关联参数 | 说明 |
 | ----- | ----- | ----- |
 |ddr_*.csv|--sys-hardware-mem|DDR内存读写速率。详情请参见[DDR内存读写速率数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0087.html)|
-|llc_aicpu_*.csv|--sys-hardware-mem|AI CPU三级缓存使用量，LLC Profiling采集事件设置为capacity时才会导出该文件。文件详情请参见[AI CPU的三级缓存使用量数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0099.html)（昇腾310 AI处理器）|
-|llc_ctrlcpu_*.csv|--sys-hardware-mem|Control CPU三级缓存使用量，LLC Profiling采集事件设置为capacity时才会导出该文件。文件详情请参见[Control CPU三级缓存使用量数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0100.html)（昇腾310 AI处理器）|
-|llc_read_write_*.csv|--sys-hardware-mem|三级缓存读写速率数据。文件详情请参见[三级缓存读写速率数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0097.html)（昇腾310P AI处理器）|
+|llc_aicpu_*.csv|--sys-hardware-mem|AI CPU三级缓存使用量，LLC Profiling采集事件设置为capacity时才会导出该文件。文件详情请参见[AI CPU的三级缓存使用量数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0099.html)（Atlas200/300/500推理产品）|
+|llc_ctrlcpu_*.csv|--sys-hardware-mem|Control CPU三级缓存使用量，LLC Profiling采集事件设置为capacity时才会导出该文件。文件详情请参见[Control CPU三级缓存使用量数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0100.html)（Atlas200/300/500推理产品）|
+|llc_read_write_*.csv|--sys-hardware-mem|三级缓存读写速率数据。文件详情请参见[三级缓存读写速率数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0097.html)（Atlas推理系列产品）|
 |ai_cpu_top_function_*.csv|--sys-cpu-profiling|AI CPU热点函数。文件详情请参见[AI CPU热点函数数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0102.html)|
 |ai_cpu_pmu_events_*.csv|--sys-cpu-profiling|AI CPU PMU事件。文件详情请参见[AI CPU PMU事件数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0103.html)|
 |ctrl_cpu_top_function_*.csv|--sys-cpu-profiling|Ctrl CPU热点函数。文件详情请参见[Ctrl CPU热点函数数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0104.html)|

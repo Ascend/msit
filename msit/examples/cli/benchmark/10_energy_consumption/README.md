@@ -12,7 +12,7 @@ npu-smi info -m
 输出结果示例如下：
 ```bash
 NPU ID                         Chip ID                        Chip Logic ID                  Chip Name
-4                              0                              0                              Ascend 310P3
+4                              0                              0                              <soc_version>
 4                              1                              -                              Mcu
 ```
 输出说明：

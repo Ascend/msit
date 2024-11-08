@@ -16,7 +16,7 @@ onnxsim {your_old_onnx_model} {your_new_output_onnx_model}
 如果是静态onnx则跳过此步.
 * 将onnx模型转为om,命令示例:
 ```
-atc --framework=5 --output={your_model_name} --soc_version=Ascend310P3 --model={your_onnx_model_path}
+atc --framework=5 --output={your_model_name} --soc_version=<soc_version> --model={your_onnx_model_path}
 ```
 * 执行精度比对命令,示例:
 ```
