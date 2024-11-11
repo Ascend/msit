@@ -58,7 +58,7 @@ class DumpCommand(BaseCommand):
             dest="range",
             type=check_number_list,
             default="0,0",
-            help='The range of saving tensor.Eg:0,10')
+            help='The range of saving tensor.Eg:0,10.And please ensure that the input length does not exceed 500.')
 
         parser.add_argument(
             '--save-operation-child',
