@@ -10,7 +10,7 @@ import torch.nn as nn
 import onnx
 import numpy as np
 from ascend_utils.common.security.pytorch import check_torch_module
-from ascend_utils.common.security import check_type, get_valid_write_path, SafeWriteUmask
+from ascend_utils.common.security import check_type, get_valid_write_path, get_valid_read_path, safe_delete_path_if_exists, SafeWriteUmask
 from ascend_utils.common import security
 from msmodelslim.pytorch.quant.ptq_tools.quant_modules import Quantizer, Conv2dQuantizer, LinearQuantizer
 from msmodelslim.pytorch.quant.ptq_tools.quant_deploy import quantize_model_deploy, convert_linear_params
@@ -33,7 +33,7 @@ class Calibrator(object):
         if not isinstance(calib_data, list):
             raise ValueError("calib_data should be a list of tensor data")
 
-        if fuse_module_call_back is not None:
+        if fuse_module_call_back is not None and callable(fuse_module_call_back):
             fuse_module_call_back(model)
         else:
             fuse_module(model)
@@ -182,6 +182,7 @@ class Calibrator(object):
     def export_param(self, save_path):
         logger.info("Path of quant param is %s ", save_path)
         if not os.path.exists(save_path):
+            save_path = get_valid_write_path(save_path)
             os.makedirs(save_path)
         input_scale, input_offset, weight_scale, weight_offset, quant_weight = self.get_quant_params()
         self.save_param(save_path, "input_scale.npy", input_scale)
@@ -192,9 +193,11 @@ class Calibrator(object):
         logger.info("Save quant param success!")
 
     def export_onnx(self, model_arch, save_path, input_names):
-        security.check_character(model_arch)
+        security.check_type(model_arch, str, param_name="model_arch")
+        security.check_character(model_arch, param_name="model_arch")
         security.check_write_directory(save_path)
-        security.check_character(input_names)
+        security.check_element_type(input_names, str, list, param_name="input_names")
+        security.check_character(input_names, param_name="input_names")
 
         if self.cfg.input_shape:
             input_shape = self.cfg.input_shape
@@ -222,14 +225,18 @@ class Calibrator(object):
                 raise ex
 
     def export_quant_onnx(self, model_arch, save_path, input_names=None, fuse_add=True, save_fp=False):
-        security.check_character(model_arch)
+        security.check_type(model_arch, str, param_name="model_arch")
+        security.check_character(model_arch, param_name="model_arch")
         security.check_write_directory(save_path)
-        security.check_character(input_names)
+        security.check_element_type(input_names, str, list, param_name="input_names")
+        security.check_character(input_names, param_name="input_names")
         check_type(fuse_add, bool, param_name="fuse_add")
         check_type(save_fp, bool, param_name="save_fp")
 
         self.export_onnx(model_arch, save_path, input_names)
-        model = onnx.load(os.path.join(save_path, "{}_fp.onnx".format(model_arch)))
+        onnx_path = os.path.join(save_path, "{}_fp.onnx".format(model_arch))
+        onnx_path = get_valid_read_path(onnx_path)
+        model = onnx.load(onnx_path)
 
         if "swinv2" in model_arch.lower() or "solov2" in model_arch.lower():
             from onnxsim import simplify
@@ -284,7 +291,8 @@ class Calibrator(object):
             logger.info("Quantification ended and onnx is stored in %s ", temp_quant_model_file)
 
         if not save_fp:
-            os.remove(os.path.join(save_path, "{}_fp.onnx".format(model_arch)))
+            save_fp_path = os.path.join(save_path, "{}_fp.onnx".format(model_arch))
+            safe_delete_path_if_exists(save_fp_path)
 
     def _run(self, calib_amp=10):
         logger.info("Calibration start!")
