@@ -7,12 +7,14 @@ import logging
 import torch.nn as nn
 import torch
 
-from ascend_utils.common.security import get_valid_read_path, get_valid_write_path
+from ascend_utils.common.security.pytorch import check_torch_module
+from ascend_utils.common.security import check_type, get_valid_read_path, get_valid_write_path
 from msmodelslim import logger as msmodelslim_logger
 from msmodelslim.pytorch.quant.qat_tools.common.factory import ModelWrapperFactory
 from msmodelslim.pytorch.quant.qat_tools.common.config import Config
 from msmodelslim.pytorch.quant.qat_tools.utils.utils import CallParams
 from .compression.qat.qat_config import QatConfig
+
 
 
 class Compressor(object):
@@ -22,6 +24,8 @@ class Compressor(object):
                  model: nn.Module,
                  cfg: Config,
                  logger=None):
+        check_type(cfg, Config, param_name="cfg")
+        check_torch_module(model)
         self.model = model
         if cfg is None:
             raise ValueError('Compress related config is needed!')

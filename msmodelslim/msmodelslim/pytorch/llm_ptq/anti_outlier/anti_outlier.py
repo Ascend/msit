@@ -187,8 +187,7 @@ class AntiOutlier(object):
             raise TypeError("norm_class_name must be str, please check it.")
         if not isinstance(model, nn.Module):
             raise TypeError("model must be nn.Module, please check it.")
-        if not isinstance(calib_data, list):
-            raise TypeError("calib_data must be list, please check it.")
+        self.calib_data = [] if calib_data is None else self.check_calib_data(calib_data)
         check_type(cfg, AntiOutlierConfig, param_name="config")
         self.with_accelerate = judge_model_with_accelerate(model)
 
@@ -433,6 +432,23 @@ class AntiOutlier(object):
             )
         return num_attention_heads
 
+    def check_calib_data(self, calib_data):
+        check_type(calib_data, list, param_name='calib_data')
+        for i, calib_data_item in enumerate(calib_data):
+            element_not_tensor = False
+            check_type(calib_data_item, list, param_name=f'calib_data[{i}]')
+            for item in calib_data_item:
+                if not isinstance(item, torch.Tensor):
+                    element_not_tensor = True
+                    break
+            if element_not_tensor:
+                break
+                
+        if element_not_tensor:
+            self.logger.warning("Not all elements in calib_data are torch.Tensor, "
+                                "please make sure that the model can run with model(*(calib_data[0]))")
+        return calib_data
+
     def _process(self):
         act_stats = self.os_stats()
         if self.cfg.anti_method == 'm4':
@@ -466,3 +482,6 @@ class AntiOutlier(object):
                 weight_aware(self.cfg, norm_module, linear_modules, stats)
             elif self.cfg.anti_method == 'm4':
                 iter_smooth(self.cfg, norm_module, linear_modules, stats, num_attention_heads)
+
+
+    

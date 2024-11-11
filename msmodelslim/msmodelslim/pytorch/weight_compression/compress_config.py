@@ -2,8 +2,10 @@
 # Copyright Huawei Technologies Co., Ltd. 2023-2023. All rights reserved.
 from multiprocessing import cpu_count
 
+from ascend_utils.common.security.type import check_type, check_element_type, check_character
+
 from msmodelslim import logger
-from ascend_utils.common.security.type import check_type
+
 
 
 class CompressConfig:
@@ -46,9 +48,8 @@ class CompressConfig:
 
         check_type(self.is_debug, bool, param_name="is_debug") 
         
-        if not isinstance(self.compress_disable_layers, (tuple, list)):
-            raise ValueError('compress_disable_layers is invalid, expected a tuple or list, but got {}'.format(
-                                self.compress_disable_layers))
+        check_element_type(self.compress_disable_layers, str, (tuple, list), param_name="compress_disable_layers")
+        check_character(self.compress_disable_layers, param_name="compress_disable_layers")
 
         if not isinstance(self.record_detail_root, str):
             raise ValueError('record_detail_root is invalid, expected a string, but got {}'.format(

@@ -1,7 +1,7 @@
 # Copyright Huawei Technologies Co., Ltd. 2023-2023. All rights reserved.
 import torch.nn as nn
 
-from ascend_utils.common.security import check_type
+from ascend_utils.common.security import check_type, check_element_type, check_character
 from msmodelslim.pytorch.sparse.sparse_tools.common.factory import ModelWrapperFactory
 from msmodelslim.pytorch.sparse.sparse_tools.compression.sparse.sparse_config import SparseConfig
 from msmodelslim import logger
@@ -29,7 +29,9 @@ class Compressor(object):
     def compress(self,
                  dataset):
         """ Wrap the model for compression."""
-        check_type(dataset, list, param_name="dataset")
+        check_element_type(dataset, str, list, param_name="dataset")
+        check_character(dataset, param_name="dataset")
+        
         try:
             self.model_wrapper = ModelWrapperFactory.create_model_wrapper(self.cfg.mode,
                                                                           self.model,

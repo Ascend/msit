@@ -6,7 +6,7 @@ import subprocess
 import numpy as np 
 from ascend_utils.common.security import safe_delete_path_if_exists, get_valid_write_path, SafeWriteUmask
 
-
+ 
 def pseudo_sparse(arr, ratio):
     mask = np.random.choice([0, 1], size=arr.shape, p=[1 - ratio, ratio])
     arr = arr * mask
