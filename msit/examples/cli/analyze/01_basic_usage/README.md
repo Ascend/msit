@@ -28,7 +28,7 @@ OPTIONS参数说明如下：
 | -w, --weight   | 权重文件，输入模型是caffe时，需要传入该文件                  | 否       |
 | -soc, --soc-version | 芯片类型，不指定则会通过[acl](https://www.hiascend.com/document/detail/zh/canncommercial/63RC1/inferapplicationdev/aclpythondevg/aclpythondevg_01_0008.html)接口获取 | 否       |
 
-**特别说明**：当在Ascend310B系列平台上使用analyze工具进行模型支持度分析时，请手动指定-soc参数为Ascend310B。
+**特别说明**：当在Atlas200/500A2推理产品上使用analyze工具进行模型支持度分析时，请手动指定-soc参数为具体的芯片类型。
 
 ## 运行示例
 

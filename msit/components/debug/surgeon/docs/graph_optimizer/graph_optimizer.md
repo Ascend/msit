@@ -17,7 +17,7 @@ classDiagram
 
     class InferTestCfg {
         +converter: str = 'atc'
-        +soc: str = 'Ascend310P3'
+        +soc: str = '<soc_version>'
         +device: int = 0
         +loop: int = 100
         +threshold: float = -0.02

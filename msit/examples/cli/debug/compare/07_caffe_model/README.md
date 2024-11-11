@@ -18,12 +18,12 @@ Caffe 一键式精度比对
   ```
 - 使用 `atc` 命令将 caffe 转化为 om 模型
   ```sh
-  atc --model=caffe_demo.prototxt --weight=caffe_demo.caffemodel --framework=0 --soc_version=Ascend310P3 --output=caffe_demo
+  atc --model=caffe_demo.prototxt --weight=caffe_demo.caffemodel --framework=0 --soc_version=<soc_version> --output=caffe_demo
   ```
 - 注：执行量化原始模型（GPU/CPU） vs 量化离线模型 （**关闭融合规则**）（NPU） 。由于ATC工具的模型转换操作默认开启了算子融合功能，故为了排除融合后算子无法直接进行精度比对，模型转换先关闭算子融合,配置方法参见：[如何关闭/开启融合规则](https://www.hiascend.com/document/detail/zh/canncommercial/63RC1/reference/graphubfusionref/graphubfusionref_000003.html)
   ```sh
   atc --model=resnet50_deploy_model.prototxt --weight=resnet50_deploy_weights.caffemodel --framework=0   \
-  --output=caffe_resnet50_off --soc_version=Ascend310P3  --fusion_switch_file=fusion_switch.cfg
+  --output=caffe_resnet50_off --soc_version=<soc_version>  --fusion_switch_file=fusion_switch.cfg
   ```  
   
 
@@ -63,7 +63,7 @@ Caffe 一键式精度比对
 ## 使用示例二
 - Caffe非量化原始模型 vs 量化离线模型场景时，使用 `atc` 命令将**量化**后caffe 转化为 om 模型：
   ```sh
-  atc --model=caffe_demo.prototxt --weight=caffe_demo.caffemodel --framework=0 --soc_version=Ascend310P3 --output=caffe_demo
+  atc --model=caffe_demo.prototxt --weight=caffe_demo.caffemodel --framework=0 --soc_version=<soc_version> --output=caffe_demo
   ```
 - 再转出json文件：
   ```sh
