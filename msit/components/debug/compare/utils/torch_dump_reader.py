@@ -13,13 +13,13 @@
 # limitations under the License.
 
 import os
-import re 
 import json 
-
 from typing import Optional
+
 import torch 
 
 from components.debug.compare.utils.base_dump_reader import DumpFileReader
+from components.utils.util import safe_torch_load
 
 
 class TorchDumpFileReader(DumpFileReader):
@@ -36,7 +36,7 @@ class TorchDumpFileReader(DumpFileReader):
         for file_name in os.listdir(folder_path):
             if file_name.startswith('output'):
                 key_path = os.path.join(folder_path, file_name)
-                cpu_tensor = torch.load(key_path, weights_only=True)
+                cpu_tensor = safe_torch_load(key_path)
                 return cpu_tensor
             else:
                 continue 

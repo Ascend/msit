@@ -14,6 +14,9 @@
 
 import re
 import os
+import pickle
+
+import torch
 
 from components.utils.constants import TENSOR_MAX_SIZE, EXT_SIZE_MAPPING
 
@@ -41,8 +44,11 @@ def confirmation_interaction(prompt):
 
 
 def check_file_ext(path, ext: str):
+    if not isinstance(path, str):
+        raise TypeError("Expected first positional argument type 'str', got %r instead" % type(path))
+
     if not isinstance(ext, str):
-        raise TypeError("Expected type 'str', got %r instead" % type(exts))
+        raise TypeError("Expected second positional argument type 'str', got %r instead" % type(ext))
     
     path_ext = os.path.splitext(path)[1]
 
@@ -72,3 +78,24 @@ def check_file_size_based_on_ext(path, ext=None):
             return confirmation_interaction(confirmation_prompt)
 
     return True
+
+
+def safe_torch_load(path, **kwargs):
+    kwargs['weights_only'] = True
+    tensor = None
+    
+    while True:
+        try:
+            tensor = torch.load(path, **kwargs)
+        except pickle.UnpicklingError:
+            confirmation_prompt = "Weights only load failed. Re-running `torch.load` with `weights_only` " \
+                                  "set to `False` will likely succeed, but it can result in arbitrary code " \
+                                  "execution. Do it only if you get the file from a trusted source.\n" \
+                                  "Please confirm your awareness of the risks associated with this action ([y]/n): "
+            if not confirmation_interaction(confirmation_prompt):
+                raise
+            kwargs['weights_only'] = False
+        else:
+            break
+    
+    return tensor

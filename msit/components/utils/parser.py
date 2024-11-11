@@ -14,10 +14,9 @@
 
 import argparse
 from abc import abstractmethod
-from .util import get_entry_points
 
-AIT_FAQ_HOME = "gitee repo: Ascend/msit, wiki"
-MIND_STUDIO_LOGO = "[Powered by MindStudio]"
+from components.utils.util import get_entry_points
+from components.utils.constants import MIND_STUDIO_LOGO
 
 
 class AitCommand:

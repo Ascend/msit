@@ -17,7 +17,7 @@ import torch
 
 from components.utils.file_open_check import ms_open
 from msit_llm.common.log import logger
-from msit_llm.common.utils import check_input_path_legality, check_output_path_legality, load_file_to_read_common_check
+from msit_llm.common.utils import check_output_path_legality, load_file_to_read_common_check
 from msit_llm.common.constant import get_ait_dump_path
 
 

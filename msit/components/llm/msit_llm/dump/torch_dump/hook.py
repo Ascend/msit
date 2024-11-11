@@ -25,7 +25,7 @@ def get_device(model):
     device = "cpu"
 
     for param in model.parameters():
-        device = str(param.device)
+        device = str(param).device
 
     return device.replace(":", "")
 

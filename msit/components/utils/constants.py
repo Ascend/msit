@@ -15,6 +15,9 @@
 import re
 
 
+AIT_FAQ_HOME = "gitee repo: Ascend/msit, wiki"
+MIND_STUDIO_LOGO = "[Powered by MindStudio]"
+
 PATH_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9/.-]")
 
 CONFIG_FILE_MAX_SIZE = 1 * 1024 * 1024 # work for .ini config file

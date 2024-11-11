@@ -172,9 +172,18 @@ def check_data_can_convert_to_int(value):
     return int(value)
 
 
-def load_file_to_read_common_check(path: str):
+def load_file_to_read_common_check(path: str, exts=None):
     if not isinstance(path, str):
         raise TypeError("'path' should be 'str'")
+    
+    if isinstance(exts, (tuple, list)):
+        if not all(check_file_ext(path, ext) for ext in exts):
+            logger.error("Expected extenstion to be one of %r", exts)
+            raise ValueError
+        
+    elif exts is not None:
+        logger.error("Expected 'exts' to be 'List[str]', got %r instead", type(exts))
+        raise TypeError
     
     if re.search(PATH_WHITE_LIST_REGEX, path):
         logger.error("Invalid character: %r", path)

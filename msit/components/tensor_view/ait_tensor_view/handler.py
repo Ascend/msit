@@ -19,6 +19,7 @@ import torch
 from ait_tensor_view.atb import read_atb_data, write_atb_data
 from ait_tensor_view.print_stat import print_stat
 from components.utils.log import logger
+from components.utils.util import safe_torch_load
 
 
 def replace(in_path: str, out_path: str) -> str:
@@ -36,7 +37,7 @@ def handle_tensor_view(args):
     if in_ext == ".bin":
         tensor = read_atb_data(args.bin)
     else:
-        tensor = torch.load(args.bin, weights_only=True, map_location="cpu")
+        tensor = safe_torch_load(args.bin, map_location="cpu")
 
     logger.info(f"source tensor shape: {tensor.shape}")
 

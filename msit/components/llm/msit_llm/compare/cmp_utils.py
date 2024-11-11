@@ -20,6 +20,7 @@ import pandas as pd
 import torch
 
 from msit_llm.common.tool import read_atb_data
+from components.utils.util import safe_torch_load
 from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.common.constant import (TOKEN_ID, DATA_ID, GOLDEN_DATA_PATH, MY_DATA_PATH,
                                       CMP_FAIL_REASON, GOLDEN_DTYPE, GOLDEN_SHAPE,
@@ -170,7 +171,7 @@ def read_data(data_path):
     elif data_path.endswith(".bin"):
         data = read_atb_data(data_path)
     elif data_path.endswith(".pth") or data_path.endswith(".pt"):
-        data = torch.load(data_path, weights_only=True, map_location=torch.device("cpu"))
+        data = safe_torch_load(data_path, map_location=torch.device("cpu"))
     else:
         logger.error("Unsupported data format %s", data_path)
         raise TypeError("Unsupported data format.")

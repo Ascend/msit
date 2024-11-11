@@ -21,6 +21,7 @@ from collections import namedtuple
 import torch
 import torch_npu
 
+from components.utils.check.rule import Rule
 from msit_llm.common.log import logger
 from msit_llm.common.constant import GLOBAL_HISTORY_AIT_DUMP_PATH_LIST, RAW_INPUT_PATH
 from msit_llm.common.utils import load_file_to_read_common_check

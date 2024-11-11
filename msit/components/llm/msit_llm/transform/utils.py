@@ -20,6 +20,7 @@ from pathlib import Path
 import torch
 from safetensors.torch import safe_open
 
+from components.utils.util import safe_torch_load
 from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.common.constant import MAX_WEIGHT_DATA_SIZE
@@ -56,7 +57,7 @@ def write_file(save_path, string):
 def load_model_dict(model_path):
     if Path(model_path).is_file():
         model_path = load_file_to_read_common_check(model_path, max_size=MAX_WEIGHT_DATA_SIZE)
-        state_dict = torch.load(model_path, weights_only=True)
+        state_dict = safe_torch_load(model_path)
         return state_dict
     elif Path(model_path).is_dir():
         suffix_list = ['.bin', '.safetensors', '.pt']
@@ -72,7 +73,7 @@ def load_model_dict(model_path):
                     with safe_open(fp, framework='pt') as ff:
                         ss = {kk: ff.get_tensor(kk).half() for kk in ff.keys()}
                 else:
-                    ss = torch.load(fp, weights_only=True)
+                    ss = safe_torch_load(fp)
                     
                 state_dict.update(ss)
             return state_dict
