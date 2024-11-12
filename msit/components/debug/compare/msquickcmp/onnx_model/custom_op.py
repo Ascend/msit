@@ -24,6 +24,8 @@ from auto_optimizer import OnnxGraph
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
 
+from components.utils.check.rule import Rule
+
 
 DEFORMABLE_CONV2D_TYPE = "DeformableConv2D"
 BATCH_MULTI_CLASS_NMS_TYPE = "BatchMultiClassNMS"
@@ -97,7 +99,13 @@ def get_deformable_conv2d_inputs_from_npu_dump(npu_dump_path):
         dump_type = file_name_info[-3]
 
         if DEFORMABLE_CONV2D_TYPE in op_name and op_type == "Conv2D" and dump_type == "output":
-            np_data = np.load(os.path.join(npu_dump_path, item), allow_pickle=True)
+            dump_path = os.path.join(npu_dump_path, item)
+            try:
+                Rule.input_file().check(dump_path, will_raise=True)
+                np_data = np.load(dump_path)
+            except Exception as err:
+                utils.logger.error(f"Load npu dump failed, exception is {err}, please check!")
+                raise
 
             if len(np_data.shape) == 5:
                 np_data = convert_NC1HWC0_to_NCHW(np_data.shape, np_data.flatten())
@@ -146,7 +154,13 @@ def get_BatchMultiClassNMS_inputs_from_npu_dump(npu_dump_path):
 
         if BATCH_MULTI_CLASS_NMS_TYPE in op_name and \
             op_type == "BatchMultiClassNonMaxSuppression" and dump_type == "output":
-            np_data = np.load(os.path.join(npu_dump_path, item), allow_pickle=True)
+            dump_path = os.path.join(npu_dump_path, item)
+            try:
+                Rule.input_file().check(dump_path, will_raise=True)
+                np_data = np.load(dump_path)
+            except Exception as err:
+                utils.logger.error(f"Load npu dump failed, exception is {err}, please check!")
+                raise
 
             op_name_info = op_name.split('_')
             op_name = op_name_info[0] + '_' + op_name_info[1]
@@ -206,7 +220,13 @@ def get_RoiExtractor_inputs_from_npu_dump(npu_dump_path):
 
         dump_type = file_name_info[-3]
         if ROI_EXTRACTOR_TYPE in op_name and op_type == ROI_EXTRACTOR_TYPE and dump_type == "output":
-            np_data = np.load(os.path.join(npu_dump_path, item), allow_pickle=True)
+            dump_path = os.path.join(npu_dump_path, item)
+            try:
+                Rule.input_file().check(dump_path, will_raise=True)
+                np_data = np.load(dump_path)
+            except Exception as err:
+                utils.logger.error(f"Load npu dump failed, exception is {err}, please check!")
+                raise
 
             if len(np_data.shape) == 5:
                 np_data = convert_NC1HWC0_to_NCHW(np_data.shape, np_data.flatten())

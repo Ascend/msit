@@ -22,7 +22,11 @@ HOOK_TYPE = ""
 
 
 def get_device(model):
-    device = str(next(model.parameters()).device)
+    device = "cpu"
+
+    for param in model.parameters():
+        device = str(param).device
+
     return device.replace(":", "")
 
 

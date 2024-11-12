@@ -118,7 +118,7 @@ def _append_is_npu_ops_to_csv(csv_path):
     csv_path = _get_single_csv_in_folder(csv_path)
     if os.path.islink(csv_path):
         os.unlink(csv_path)
-    if os.path.exists(csv_path):
+    if Rule.input_file().check(csv_path):
         with open(csv_path, 'r') as f:
             reader = csv.reader(f)
             rows = [row for row in reader]
@@ -354,7 +354,7 @@ def run_om_model_compare(args, use_cli):
 
 def print_advisor_info(out_path):
     advisor_info_txt_path = os.path.join(out_path, 'advisor_summary.txt')
-    if os.path.exists(advisor_info_txt_path):
+    if Rule.input_file().check(advisor_info_txt_path):
         utils.logger.info(f"The advisor summary (.txt) is saved in :\"{advisor_info_txt_path}\"")
         with open(advisor_info_txt_path, 'r') as advisor_file:
             lines = advisor_file.readlines()
@@ -460,6 +460,7 @@ def single_op_compare(args, input_shape):
         subog = OnnxGraph.parse(subonnx)
 
         # load onnx input description
+        Rule.input_file().check(subonnx, will_raise=True)
         inputs_list = [(ii.name, ii.shape) for ii in onnxruntime.InferenceSession(subonnx).get_inputs()]
 
         # find all the data needed
@@ -482,7 +483,8 @@ def single_op_compare(args, input_shape):
 
         # set single op output data
         tmp_out_path = os.path.join(single_op_dir, f"single_op_{idx}")
-        os.makedirs(tmp_out_path)
+        if not os.path.exists(tmp_out_path):
+            os.makedirs(tmp_out_path)
         time_dir = time.strftime("%Y%m%d%H%M%S", time.localtime())
         original_out_path = os.path.realpath(os.path.join(args.out_path, time_dir))
 
@@ -568,9 +570,10 @@ def subgraph_check(og, node_interval, args, onnx_data_path, input_shape):
     utils.logger.info("atc conversion Success!")
     utils.logger.info("Start to loading input data")
     subog = OnnxGraph.parse(subgraph_onnx_file)
-    inputs_list = [(ii.name, ii.shape) for ii in onnxruntime.InferenceSession(subgraph_onnx_file).get_inputs()]
-    input_need_list = al.input_completion(og, inputs_list)
-    pattern = '|'.join(input_need_list)
+    if Rule.input_file().check(subgraph_onnx_file):
+        inputs_list = [(ii.name, ii.shape) for ii in onnxruntime.InferenceSession(subgraph_onnx_file).get_inputs()]
+        input_need_list = al.input_completion(og, inputs_list)
+        pattern = '|'.join(input_need_list)
     try:
         matched_files = al.find_npy_files_with_prefix(onnx_data_path, pattern)
     except Exception as e:
@@ -660,5 +663,6 @@ def csv_sum(original_out_path):
     with os.fdopen(os.open(xlsx_file_summary, WRITE_FLAGS, WRITE_MODES), 'wb') as fp_write:
         with pd.ExcelWriter(fp_write) as writer:
             for i, csv_file in enumerate(csv_file_list):
-                data = pd.read_csv(csv_file, na_values=['NAN'])
-                data.to_excel(writer, sheet_name=sheet_name_list[i], index=False, na_rep='NAN')
+                if Rule.input_file().check(csv_file):
+                    data = pd.read_csv(csv_file, na_values=['NAN'])
+                    data.to_excel(writer, sheet_name=sheet_name_list[i], index=False, na_rep='NAN')

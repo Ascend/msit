@@ -104,6 +104,7 @@ class OperationTest(unittest.TestCase):
     def read_tensor_from_file(self, tensor_files):
         res = []
         for tensor_file in tensor_files:
+            tensor_file = os.path.realpath(tensor_file)
             tensor = read_atb_data(tensor_file).npu()
             res.append(tensor)
         return res

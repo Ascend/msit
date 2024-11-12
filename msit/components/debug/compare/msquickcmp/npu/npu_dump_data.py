@@ -33,6 +33,9 @@ from msquickcmp.common.utils import AccuracyCompareException, parse_input_shape_
 from msquickcmp.common.dynamic_argument_bean import DynamicArgumentEnum
 from msquickcmp.npu.om_parser import OmParser
 
+from components.utils.check.rule import Rule
+
+
 BENCHMARK_DIR = "benchmark"
 ACL_JSON_PATH = "acl.json"
 NPU_DUMP_DATA_BASE_PATH = "dump_data/npu"
@@ -388,6 +391,7 @@ class NpuDumpData(DumpData):
         import aclruntime
 
         options = aclruntime.session_options()
+        Rule.input_file().check(self.offline_model_path, will_raise=True)
         aa = aclruntime.InferenceSession(self.offline_model_path, int(self.device), options)
         shape_list = [ii.shape for ii in aa.get_inputs()]
         dtype_list = [ii.datatype.name for ii in aa.get_inputs()]
@@ -537,6 +541,7 @@ class NpuDumpData(DumpData):
                 file_size.append(os.path.getsize(item))
             elif item.endswith("npy") or item.endswith("NPY"):
                 try:
+                    Rule.input_file().check(item, will_raise=True)
                     file_size.append(np.load(item).size)
                 except (ValueError, FileNotFoundError) as e:
                     utils.logger.error("The path {} can not get its size through numpy".format(item))

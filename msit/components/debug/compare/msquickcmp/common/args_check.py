@@ -168,7 +168,10 @@ def check_dict_kind_string(value):
 def check_device_range_valid(value):
     min_value = 0
     max_value = 255
-    ivalue = int(value)
+    try:
+        ivalue = int(value)
+    except Exception as e:
+        raise argparse.ArgumentTypeError(f"input:{value} is illegal.Please check") from e
     if ivalue < min_value or ivalue > max_value:
         raise argparse.ArgumentTypeError(
             "device:{} is invalid. valid value range is [{}, {}]".format(ivalue, min_value, max_value)

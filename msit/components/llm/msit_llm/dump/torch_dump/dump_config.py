@@ -143,16 +143,16 @@ class DumpConfig:
     def _check_args(self):
         utils.check_output_path_legality(self.dump_path)
         if not isinstance(self.token_range, list):
-            logger.error("dump_path must be list.")
+            logger.error("The type of token_range must be list, please check.")
             return False
         if not isinstance(self.module_list, list):
-            logger.error("module_list must be list.")
+            logger.error("The type of module_list must be list, please check.")
             return False
         if not isinstance(self.tensor_part, int):
-            logger.error("tensor_part must be int.")
+            logger.error("The type of tensor_part must be int, please check.")
             return False
         if self.device_id is not None and not isinstance(self.device_id, int):
-            logger.error("device_id must be int.")
+            logger.error("The type of device_id must be int, please check.")
             return False
         if self.tensor_part not in [0, 1, 2]:
             logger.error("tensor_part must be 0 or 1 or 2.")
