@@ -31,7 +31,7 @@ from msquickcmp.common.dynamic_argument_bean import DynamicArgumentEnum
 
 from components.utils.security_check import get_valid_write_path
 from components.debug.common import logger
-from components.utils import util
+from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 ACCURACY_COMPARISON_INVALID_PARAM_ERROR = 1
 ACCURACY_COMPARISON_INVALID_DATA_ERROR = 2
@@ -635,7 +635,7 @@ def str2bool(v):
 def merge_csv(csv_list, output_dir, output_csv_name):
     df_list = []
     for csv_file in csv_list:
-        csv_file = util.load_file_to_read_common_check(csv_file)
+        csv_file = load_file_to_read_common_check(csv_file)
         df = pd.read_csv(csv_file)
         df_list.append(df)
     merged_df = pd.concat(df_list)
@@ -662,7 +662,7 @@ def safe_delete_path_if_exists(path, is_log=False):
 
 def parse_json_file(json_path):
     try:
-        json_path = util.load_file_to_read_common_check(json_path)
+        json_path = load_file_to_read_common_check(json_path)
         with open(json_path, 'r', encoding='utf-8') as file:
             return json.load(file)
     except FileNotFoundError as e:

@@ -49,7 +49,7 @@ from msquickcmp.single_op import single_op as sp
 from components.utils.security_check import check_write_directory
 from components.utils.file_open_check import ms_open
 from components.utils.check.rule import Rule
-from components.utils import util
+from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
 READ_WRITE_FLAGS = os.O_RDWR | os.O_CREAT
@@ -352,7 +352,7 @@ def print_advisor_info(out_path):
     advisor_info_txt_path = os.path.join(out_path, 'advisor_summary.txt')
     if Rule.input_file().check(advisor_info_txt_path):
         utils.logger.info(f"The advisor summary (.txt) is saved in :\"{advisor_info_txt_path}\"")
-        advisor_info_txt_path = util.load_file_to_read_common_check(advisor_info_txt_path)
+        advisor_info_txt_path = load_file_to_read_common_check(advisor_info_txt_path)
         with open(advisor_info_txt_path, 'r') as advisor_file:
             lines = advisor_file.readlines()
             for line in lines:

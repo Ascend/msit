@@ -31,7 +31,7 @@ from msquickcmp.atc import atc_utils
 from msquickcmp.common import utils, tf_common
 from tensorflow.core.protobuf.rewriter_config_pb2 import RewriterConfig
 
-from components.utils import util
+from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 class NpuTfAdapterDumpData(object):
     """
@@ -116,7 +116,7 @@ class NpuTfAdapterDumpData(object):
         # sess run predict
         with tf.compat.v1.Session(config=config_proto) as sess:
             tag_set = {tf.compat.v1.saved_model.tag_constants.SERVING} if self.tag_set == "" else self.tag_set
-            self.model_path = util.load_file_to_read_common_check(self.model_path)
+            self.model_path = load_file_to_read_common_check(self.model_path)
             model = tf.compat.v1.saved_model.load(sess, tag_set, self.model_path)
             feed_dict = {
                 sess.graph.get_tensor_by_name(input_name + ":0"): input_data

@@ -12,8 +12,8 @@
 # limitations under the License.
 
 from typing import Any
-from components.utils.check.checker import Checker
 from argparse import ArgumentTypeError
+from components.utils.check.checker import Checker
 
 class ArgsChecker:
     """
@@ -27,5 +27,5 @@ class ArgsChecker:
         try:
             self.rule.check(value, will_raise=True)
         except ValueError as err:
-            raise ArgumentTypeError(str(err))
+            raise ArgumentTypeError(str(err)) from err
         return self.rule.get_value()

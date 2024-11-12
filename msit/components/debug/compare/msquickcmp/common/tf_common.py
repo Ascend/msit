@@ -24,7 +24,7 @@ import tensorflow as tf
 
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
-from components.utils import util
+from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 
 DTYPE_MAP = {
@@ -178,7 +178,7 @@ def get_model_inputs_dtype(model_path, serving, tag_set):
     inputs_dtype = {}
     with tf.compat.v1.Session() as sess:
         tag_set = {tf.compat.v1.saved_model.tag_constants.SERVING} if tag_set == "" else tag_set
-        model_path = util.load_file_to_read_common_check(model_path)
+        model_path = load_file_to_read_common_check(model_path)
         model = tf.compat.v1.saved_model.load(sess, tag_set, model_path)
         inputs = model.signature_def[serving].inputs
         for key, input_tensor in inputs.items():
