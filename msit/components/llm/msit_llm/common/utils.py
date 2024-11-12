@@ -177,7 +177,7 @@ def load_file_to_read_common_check(path: str, exts=None):
         raise TypeError("'path' should be 'str'")
     
     if isinstance(exts, (tuple, list)):
-        if not all(check_file_ext(path, ext) for ext in exts):
+        if not any(check_file_ext(path, ext) for ext in exts):
             logger.error("Expected extenstion to be one of %r", exts)
             raise ValueError
         
