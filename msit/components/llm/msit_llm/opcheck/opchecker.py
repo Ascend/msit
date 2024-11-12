@@ -360,9 +360,10 @@ class OpChecker:
         tensor_path = dirpath
 
         op_param = {}
-        json_path = load_file_to_read_common_check(os.path.join(dirpath, 'op_param.json'))
-
-        try:    
+        
+        json_path = os.path.join(dirpath, 'op_param.json')
+        try:  
+            json_path = load_file_to_read_common_check(json_path)  
             with open(json_path, 'r') as f:
                 op_param = json.load(f)
         except Exception as e:
