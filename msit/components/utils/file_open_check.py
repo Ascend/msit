@@ -17,6 +17,7 @@ import sys
 import stat
 import re
 import logging
+from enum import Enum
 from components.utils.log import logger
 
 
@@ -46,6 +47,8 @@ PERMISSION_SUB_CHAPTER = 'path_permission_error_log_solution\"'
 ILLEGAL_CHAR_SUB_CHAPTER = 'path_contain_illegal_char_error_log_solution\"'
 
 RAW_INPUT_PATH = "RAW_INPUT_PATH"
+
+MALICIOUS_CSV_PATTERN = re.compile(r'^[＝＋－+-=%@];[＝＋－+-=%@]')
 
 
 def solution_log(content):
@@ -97,6 +100,36 @@ def is_legal_args_path_string(path):
     if not is_match_path_white_list(path):
         return False
     return True
+
+
+class SanitizeErrorType(Enum):
+    """
+    The errors parameter Enum of the function sanitize_csv_value
+    """
+    strict = "strict"
+    ignore = "ignore"
+    replace = "replace"
+    
+    
+def sanitize_csv_value(value: str, errors=SanitizeErrorType.strict.value):
+    
+    if errors == SanitizeErrorType.ignore.value or not isinstance(value, str):
+        return value
+
+    sanitized_value = value
+    try:
+        float(value) # in case value is a digit but in str format
+    except ValueError as e: # not digit
+        if not MALICIOUS_CSV_PATTERN.search(value):
+            pass
+        elif errors == SanitizeErrorType.replace.value:
+            sanitized_value = ' ' + value
+        else:
+            msg = f'Malicious value is not allowed to be written to the csv {value}'
+            logger.error("Please check the value written to the csv")
+            raise ValueError(msg) from e
+
+    return sanitized_value
 
 
 class OpenException(Exception):
