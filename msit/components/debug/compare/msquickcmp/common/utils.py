@@ -480,6 +480,16 @@ def parse_input_shape_to_list(input_shape):
         tensor_shape_list = tensor.rsplit(':', maxsplit=1)
         if len(tensor_shape_list) == 2:
             shape_list_int = [int(i) for i in tensor_shape_list[1].split(',')]
+            for dim_int in shape_list_int:
+                if dim_int < 0:
+                    raise ValueError("The input of --input-shape parameter is unreasonable, " \
+                                     "possibly because the upper bound is smaller than 0.")
+                prompt = "The --input-shape %r is larger than expected. " \
+                            "Attempting to input such a shape could potentially impact system performance.\n" \
+                            "Please confirm your awareness of the risks associated with this action ([y]/n): " % tensor
+                if dim_int > DYM_SHAPE_END_MAX and not dym_shape_range_interaction(prompt):
+                     raise ValueError("The dim of --input-shape %r is too large." % (str(dim_int)))
+                
             input_shape_list.append(shape_list_int)
         else:
             logger.error(get_shape_not_match_message(InputShapeError.FORMAT_NOT_MATCH, input_shape))
