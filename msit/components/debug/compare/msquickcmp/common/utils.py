@@ -24,6 +24,7 @@ import re
 import shutil
 import subprocess
 import json
+import psutil
 
 import numpy as np
 import pandas as pd
@@ -68,6 +69,7 @@ ASCEND_BATCH_FIELD = "ascend_mbatch_batch_"
 BATCH_SCENARIO_OP_NAME = "{0}_ascend_mbatch_batch_{1}"
 INVALID_CHARS = ['|', ';', '&', '&&', '||', '>', '>>', '<', '`', '\\', '!', '\n']
 MAX_READ_FILE_SIZE_4G = 4294967296  # 4G, 4 * 1024 * 1024 * 1024
+DYM_SHAPE_END_MAX = 1000000
 
 
 class AccuracyCompareException(Exception):
@@ -487,6 +489,17 @@ def parse_input_shape_to_list(input_shape):
     return input_shape_list
 
 
+def dym_shape_range_interaction(prompt):
+    confirm_pattern = re.compile(r'y(?:es)?', re.IGNORECASE)
+    
+    try:
+        user_action = input(prompt)
+    except Exception:
+        return False
+    
+    return bool(confirm_pattern.match(user_action))
+
+
 def parse_dym_shape_range(dym_shape_range):
     """
     Function Description:
@@ -501,6 +514,7 @@ def parse_dym_shape_range(dym_shape_range):
     input_shapes = {}
     tensor_list = dym_shape_range.split(";")
     info_list = []
+
     for tensor in tensor_list:
         _check_colon_exist(dym_shape_range)
         shapes = []
@@ -517,6 +531,15 @@ def parse_dym_shape_range(dym_shape_range):
                 start = int(content_split[0])
                 end = int(content_split[1])
                 step = int(content_split[2]) if len(content_split) == 3 else 1
+                if start > end or start < 0:
+                    raise ValueError("The input of --dym-shape parameter is unreasonable, " \
+                                     "possibly because the upper bound of the shape is greater than the lower bound" \
+                                     "or the upper bound is smaller than 0.")
+                prompt = "The --dym-shape-range %r is larger than expected. " \
+                            "Attempting to input such a shape could potentially impact system performance.\n" \
+                            "Please confirm your awareness of the risks associated with this action ([y]/n): " % content
+                if (end - start) / step > DYM_SHAPE_END_MAX and not dym_shape_range_interaction(prompt):
+                     raise ValueError("--dym-shape-range is too large, start: %r, end: %r, step: %r" % (str(start), str(end), str(step)))
                 ranges = [str(i) for i in range(start, end + 1, step)]
             elif "-" in content:
                 ranges = content.split("-")
