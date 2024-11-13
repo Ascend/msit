@@ -19,7 +19,7 @@ import re
 
 import numpy as np
 from msit_llm.common.log import logger
-from msit_llm.common.utils import safe_string
+from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.compare.cmp_utils import BasicDataInfo, fill_row_data, save_compare_reault_to_csv
 from components.utils.acc_cmp import parse_torchair_dump_data, set_msaccucmp_path_from_cann
 
@@ -70,6 +70,7 @@ def get_unique_key(cur_dict, cur_key):
 
 
 def parse_pbtxt_to_dict(pbtxt_path):
+    pbtxt_path = load_file_to_read_common_check(pbtxt_path)
     with open(pbtxt_path) as ff:
         contents = ff.read()
 

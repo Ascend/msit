@@ -19,6 +19,7 @@ import re
 
 from tqdm import tqdm
 from msit_llm.common.log import logger
+from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.compare.cmp_utils import BasicDataInfo, fill_row_data, save_compare_reault_to_csv, compare_data, read_data
 from msit_llm.compare.cmp_op_match import MatchLocation
 from msit_llm.compare.op_mapping import ATB_TORCH_BUILT_IN_OP_OUTPUT_MAPPING, ATB_TORCH_CUSTOM_OP_OUTPUT_MAPPING, \
@@ -85,16 +86,13 @@ def compare_file(golden_path, my_path):
 # 手动映射比对能力
 def compare_metadata(golden_path, output_path="."):
     golden_meta_path = os.path.join(golden_path, "metadata.json")
-    from msit_llm.common.utils import check_input_path_legality, check_data_file_size
-    golden_meta_path = check_input_path_legality(golden_meta_path)
-    if check_data_file_size(golden_meta_path):
-        with open(golden_meta_path, "r") as file:
-            golden_meta = json.load(file)
-        gathered_row_data = fill_in_data(golden_meta)
-        return save_compare_reault_to_csv(gathered_row_data, output_path)
-    else:
-        raise ValueError("The golden path is invalid.")
 
+    golden_meta_path = load_file_to_read_common_check(golden_meta_path)
+    with open(golden_meta_path, "r") as file:
+        golden_meta = json.load(file)
+
+    gathered_row_data = fill_in_data(golden_meta)
+    return save_compare_reault_to_csv(gathered_row_data, output_path)
 
 def fill_in_data(golden_meta):
     gathered_row_data = []
@@ -384,12 +382,12 @@ def load_mapping(mapping_file_path):
         "ATB_TORCH_CUSTOM_OP_OUTPUT_MAPPING": ATB_TORCH_CUSTOM_OP_OUTPUT_MAPPING,
     }
     mapping_file = os.path.join(mapping_file_path, "op_mapping_file.json")
+    
     if os.path.exists(mapping_file):
-        from msit_llm.common.utils import check_input_path_legality, check_data_file_size
-        mapping_file = check_input_path_legality(mapping_file)
-        if check_data_file_size(mapping_file):
-            with open(mapping_file, "r") as file:
-                file_content = json.load(file)
+        mapping_file = load_file_to_read_common_check(mapping_file)
+        with open(mapping_file, "r") as file:
+            file_content = json.load(file)
+
         if validate_json(file_content):
             for k, v in file_content.items():
                 mapping_dic["ATB_TORCH_CUSTOM_OP_OUTPUT_MAPPING"][k] = v
