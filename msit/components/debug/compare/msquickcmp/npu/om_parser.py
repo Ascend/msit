@@ -98,7 +98,7 @@ class OmParser(object):
             when invalid json file path throw exception
         """
         try:
-            input_file = load_file_to_read_common_check(input_file)
+            json_file_path = load_file_to_read_common_check(json_file_path)
             with open(json_file_path, "r") as input_file:
                 try:
                     return json.load(input_file)

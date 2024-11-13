@@ -116,7 +116,9 @@ class NpuTfAdapterDumpData(object):
         # sess run predict
         with tf.compat.v1.Session(config=config_proto) as sess:
             tag_set = {tf.compat.v1.saved_model.tag_constants.SERVING} if self.tag_set == "" else self.tag_set
-            self.model_path = load_file_to_read_common_check(self.model_path)
+            for root, _, files in os.walk(self.model_path):
+                for filename in files:
+                    load_file_to_read_common_check(os.path.join(root, filename))
             model = tf.compat.v1.saved_model.load(sess, tag_set, self.model_path)
             feed_dict = {
                 sess.graph.get_tensor_by_name(input_name + ":0"): input_data

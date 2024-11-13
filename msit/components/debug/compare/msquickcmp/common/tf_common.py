@@ -178,7 +178,9 @@ def get_model_inputs_dtype(model_path, serving, tag_set):
     inputs_dtype = {}
     with tf.compat.v1.Session() as sess:
         tag_set = {tf.compat.v1.saved_model.tag_constants.SERVING} if tag_set == "" else tag_set
-        model_path = load_file_to_read_common_check(model_path)
+        for root, _, files in os.walk(model_path):
+            for filename in files:
+                load_file_to_read_common_check(os.path.join(root, filename))
         model = tf.compat.v1.saved_model.load(sess, tag_set, model_path)
         inputs = model.signature_def[serving].inputs
         for key, input_tensor in inputs.items():
