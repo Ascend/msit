@@ -30,16 +30,14 @@ model_path = "/home/wgw/Meta-Llama-3.1-70B-Instruct/"
 model = AutoModelForCausalLM.from_pretrained(
         pretrained_model_name_or_path=model_path,
         torch_dtype=torch.bfloat16, 
-        trust_remote_code=True,
-        device_map="auto",
+        device_map="auto"
     ).eval()
  
 tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=model_path,
         pad_token='<|extra_0|>',
         eos_token='<|endoftext|>',
-        padding_side='left',
-        trust_remote_code=True
+        padding_side='left'
     ) 
  
 ra = RARopeCompressor(model, tokenizer, config) 
