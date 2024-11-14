@@ -43,6 +43,8 @@ DTYPE_MAP = {
 TF_DEBUG_TIMEOUT = 3600
 VERSION_TF2X = "2."
 VERSION_TF1X = "1."
+MAX_DEPTH = 5
+FILE_MAX_CNT = 100
 
 
 def check_tf_version(version):
@@ -199,16 +201,17 @@ def split_tag_set(saved_model_tag_set):
 
 def load_file_to_read_common_check_with_walk(model_path):
     file_cnt = 0
+    model_path = os.path.realpath(model_path)
     for root, _, files in os.walk(model_path):
         model_path_len = len(model_path.split('/'))
         root_len = len(root.split('/'))
-        if root_len - model_path_len >= 5:
+        if root_len - model_path_len >= MAX_DEPTH:
             utils.logger.error("Parse of TF module depth exceeds the max recursion limit 5.")
             raise RecursionError("Maximum recursion depth exceeded in comparison.")
         for filename in files:
             load_file_to_read_common_check(os.path.join(root, filename))
             file_cnt += 1
-            if file_cnt > 100:
+            if file_cnt > FILE_MAX_CNT:
                 utils.logger.error("The number of tf module files shall not exceed 100.")
                 raise ValueError("Files are too much.")
         

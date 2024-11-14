@@ -70,6 +70,7 @@ BATCH_SCENARIO_OP_NAME = "{0}_ascend_mbatch_batch_{1}"
 INVALID_CHARS = ['|', ';', '&', '&&', '||', '>', '>>', '<', '`', '\\', '!', '\n']
 MAX_READ_FILE_SIZE_4G = 4294967296  # 4G, 4 * 1024 * 1024 * 1024
 DYM_SHAPE_END_MAX = 1000000
+MAX_TENSOR_SHAPE_CONUT = 200
 
 
 class AccuracyCompareException(Exception):
@@ -478,10 +479,19 @@ def parse_input_shape_to_list(input_shape):
         return input_shape_list
     _check_colon_exist(input_shape)
     tensor_list = input_shape.split(';')
+    if len(tensor_list) > MAX_TENSOR_SHAPE_CONUT:
+        raise ValueError("The input of --input-shape parameter is unreasonable, " \
+                                     "because the number of tensor shape is much than 200.")
     for tensor in tensor_list:
         tensor_shape_list = tensor.rsplit(':', maxsplit=1)
         if len(tensor_shape_list) == 2:
-            shape_list_int = [int(i) for i in tensor_shape_list[1].split(',')]
+            shape_list_int = []
+            for dim in tensor_shape_list[1].split(','):
+                if dim.isdigit(): 
+                    shape_list_int.append(int(dim))
+                else:
+                    raise ValueError("The input of --input-shape parameter is unreasonable, " \
+                                     "because the tensor shape is not digit.")
             for dim_int in shape_list_int:
                 if dim_int < 0:
                     raise ValueError("The input of --input-shape parameter is unreasonable, " \
