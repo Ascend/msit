@@ -18,7 +18,9 @@ import torch
 from tqdm import tqdm
 
 from safetensors.torch import load_file
+from components.utils.util import safe_torch_load
 from msit_llm.common.log import logger
+from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.common.constant import CSV_CMP_WEIGHT_HEADER
 from msit_llm.compare.cmp_utils import (
     save_compare_reault_to_csv,
@@ -54,14 +56,16 @@ def compare_weight(gp_path, mp_path, output_path):
 
     gathered_row_data = []
     sorted_gp_path_list = sorted(gp_path_list)
+
+    mp_path_list[0] = load_file_to_read_common_check(mp_path_list[0])
     mp_dict = load_file(mp_path_list[0])
 
     for g_path in tqdm(sorted_gp_path_list, desc="Comparing"):
-        
+        g_path = load_file_to_read_common_check(g_path)
         if g_path.endswith(".safetensors"):
             gp_dict = load_file(g_path)
         elif g_path.endswith(".bin"):
-            gp_dict = torch.load(g_path, map_location="cpu")
+            gp_dict = safe_torch_load(g_path, map_location="cpu")
 
         for ft_weight_key, ft_weight_value in gp_dict.items():
 

@@ -19,6 +19,7 @@ from typing import List
 
 
 from msit_llm.common.log import logger
+from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.compare.cmp_op_match import MatchLocation
 from msit_llm.dump.torch_dump.topo import ModelTree, TreeNode
 from msit_llm.common.constant import GLOBAL_HISTORY_AIT_DUMP_PATH_LIST
@@ -269,17 +270,16 @@ class CompareDataATB(CompareDataParse):
         topo_infos = []
         for topo_file in topo_files:
             json_start_order = 0
-            from msit_llm.common.utils import check_input_path_legality, check_data_file_size
-            topo_file = check_input_path_legality(topo_file)
-            if check_data_file_size(topo_file):
-                with open(topo_file, "r") as file:
-                    node_dict = json.loads(file.read(), parse_constant=lambda x: None)
-                    nodes = node_dict.get("nodes", [])
-                    if len(nodes) != 0:
-                        start_order_str: str = nodes[0].get("opName", "0").split("_")[-1]
-                        if start_order_str.isdigit():
-                            json_start_order = int(start_order_str)
-                topo_infos.append(dict(path=topo_file, json_start_order=json_start_order, node_cnt=len(nodes)))
+            
+            topo_file = load_file_to_read_common_check(topo_file)
+            with open(topo_file, "r") as file:
+                node_dict = json.loads(file.read(), parse_constant=lambda x: None)
+                nodes = node_dict.get("nodes", [])
+                if len(nodes) != 0:
+                    start_order_str: str = nodes[0].get("opName", "0").split("_")[-1]
+                    if start_order_str.isdigit():
+                        json_start_order = int(start_order_str)
+            topo_infos.append(dict(path=topo_file, json_start_order=json_start_order, node_cnt=len(nodes)))
 
         topo_infos.sort(key=lambda x: x.get("json_start_order"))
 

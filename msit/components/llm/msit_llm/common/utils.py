@@ -16,8 +16,11 @@
 import os
 import argparse
 import re
+
+from components.utils.constants import PATH_WHITE_LIST_REGEX
+from components.utils.util import check_file_size_based_on_ext, check_file_ext
 from components.utils.file_open_check import FileStat
-from msit_llm.common.constant import MAX_DATA_SIZE, MAX_WEIGHT_DATA_SIZE
+from msit_llm.common.constant import MAX_DATA_SIZE
 from components.utils.check.rule import Rule
 from msit_llm.common.log import logger
 
@@ -169,63 +172,44 @@ def check_data_can_convert_to_int(value):
     return int(value)
 
 
-def confirmation_interaction(prompt):
-    confirm_pattern = re.compile(r'y(?:es)?', re.IGNORECASE)
+def load_file_to_read_common_check(path: str, exts=None):
+    if not isinstance(path, str):
+        raise TypeError("'path' should be 'str'")
     
-    try:
-        user_action = input(prompt)
-    except Exception:
-        return False
-    
-    return bool(confirm_pattern.match(user_action))
-
-
-def load_file_to_read_common_check(value: str, max_size=MAX_WEIGHT_DATA_SIZE, exts=None):
     if isinstance(exts, (tuple, list)):
-        if not all(isinstance(ext, str) for ext in exts):
-            logger.error("Expected type 'List[str]', got %r instead", exts)
-            raise TypeError
-
-        value_ext = os.path.splitext(value)[1]
-        if all(value_ext != ext for ext in exts):
-            logger.error("Expected extenstion to be one of %r, got %r instead", exts, value_ext)
+        if not any(check_file_ext(path, ext) for ext in exts):
+            logger.error("Expected extenstion to be one of %r", exts)
             raise ValueError
         
     elif exts is not None:
         logger.error("Expected 'exts' to be 'List[str]', got %r instead", type(exts))
         raise TypeError
     
-    if re.search(STR_WHITE_LIST_REGEX, value):
-        logger.error("Invalid character: %r", value)
+    if re.search(PATH_WHITE_LIST_REGEX, path):
+        logger.error("Invalid character: %r", path)
         raise ValueError
     
-    # expand soft link
-    value = os.path.realpath(value)
+    path = os.path.realpath(path)
     
     # file name too long, file not exists, directory readable
     # no need to catch, argparse will handle that
     try:
-        file_status = os.stat(value)
+        file_status = os.stat(path)
     except OSError as e:
-        logger.error("%s: %r", e.strerror, value)
+        logger.error("%s: %r", e.strerror, path)
         raise
     
     # not regular file
     if not os.st.S_ISREG(file_status.st_mode):
-        logger.error("Not a regular file: %r", value)
+        logger.error("Not a regular file: %r", path)
         raise ValueError
-    
-    confirmation_prompt = "The file %r is larger than expected. " \
-                          "Attempting to read such a file could potentially impact system performance.\n" \
-                          "Please confirm your awareness of the risks associated with this action ([y]/n): " % value
-    
-    if file_status.st_size > max_size and not confirmation_interaction(confirmation_prompt):
-        logger.error("File too large: %r", value)
+
+    if not check_file_size_based_on_ext(path):
+        logger.error("File too large: %r", path)
         raise ValueError
-    
-    # other writeable
+
     if (os.st.S_IWOTH & file_status.st_mode) == os.st.S_IWOTH:
-        logger.error("Vulnerable path: %r should not be other writeable", value)
+        logger.error("Vulnerable path: %r should not be other writeable", path)
         raise PermissionError
 
     # uid
@@ -233,7 +217,7 @@ def load_file_to_read_common_check(value: str, max_size=MAX_WEIGHT_DATA_SIZE, ex
     if file_status.st_uid != cur_euid:
         # not root
         if cur_euid != 0:
-            logger.error("Inconsistent owner: %r", value)
+            logger.error("File owner and current user are inconsistent: %r", path)
             raise PermissionError
         
         # root but reading a other writeable file
@@ -242,12 +226,12 @@ def load_file_to_read_common_check(value: str, max_size=MAX_WEIGHT_DATA_SIZE, ex
             logger.waring("Privilege escalation risk detected. Trying to read a file that belongs to"
                           " a normal user and is writeable to the user itself or the user group")
 
-    return value
+    return path
 
 
-def load_file_to_read_common_check_for_cli(value, max_size=MAX_WEIGHT_DATA_SIZE, exts=None):
+def load_file_to_read_common_check_for_cli(value, exts=None):
     try:
-        value = load_file_to_read_common_check(value, max_size, exts)
+        value = load_file_to_read_common_check(value, exts)
     except Exception as e:
         raise argparse.ArgumentTypeError("%r" % value) from e
     return value

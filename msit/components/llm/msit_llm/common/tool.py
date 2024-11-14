@@ -21,7 +21,7 @@ import numpy as np
 from msit_llm.common.constant import ATTR_END, ATTR_OBJECT_LENGTH, LCCL_DETERMINISTIC, HCCL_DETERMINISTIC, \
     ATB_MATMUL_SHUFFLE_K_ENABLE, ATB_LLM_LCOC_ENABLE, PYTHON_HASH_SEED
 from msit_llm.common.log import logger
-from msit_llm.common.utils import check_input_path_legality, check_data_file_size
+from msit_llm.common.utils import check_input_path_legality, check_data_file_size, load_file_to_read_common_check
 
 
 class TensorBinFile:
@@ -52,6 +52,7 @@ class TensorBinFile:
         return tensor
 
     def _parse_bin_file(self):
+        self.file_path = load_file_to_read_common_check(self.file_path)
         with open(self.file_path, "rb") as fd:
             file_data = fd.read()
 

@@ -24,7 +24,7 @@ from msit_llm.transform.float_atb_to_quant_atb.utils import (
     update_contents,
 )
 from msit_llm.common.log import logger
-from msit_llm.common.utils import check_data_file_size
+from msit_llm.common.utils import load_file_to_read_common_check
 
 USING_SCALE_BIAS_ITEMS = ["IN_QKV", "IN_QMIX", "IN_KMIX", "IN_VMIX", "IN_SELFOUTLINEAR", "IN_MLP"]
 USING_SPARSE_INDEX_ITEMS = ["IN_QKV", "IN_QMIX", "IN_KMIX", "IN_VMIX"]
@@ -95,10 +95,8 @@ class TransformQuant:
         file_ext = os.path.splitext(file_path)[-1]
         temp_file = CPP_TEMP_FILE_NAME if file_ext in [".c", ".cpp"] else HPP_TEMP_FILE_NAME
 
-        if not Path(file_path).is_file():
-            raise ValueError(f"The file {file_path} is not an ordinary file.") 
-        check_data_file_size(file_path)
-           
+        file_path = load_file_to_read_common_check(file_path)
+
         contents = open(file_path).read()
         contents = filter_chinese_char(contents)
         args, options = get_args_and_options()

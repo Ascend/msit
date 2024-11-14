@@ -502,7 +502,7 @@ class Transform(BaseCommand):
 
             quant_disable_names = ["lm_head"]
             if args.quant_disable_names is not None and os.path.isfile(args.quant_disable_names):
-                check_input_path_legality(args.quant_disable_names)
+                args.quant_disable_names = load_file_to_read_common_check(args.quant_disable_names)
                 with open(args.quant_disable_names) as ff:
                     quant_disable_names = [ii.strip() for ii in ff.readlines()]
             elif args.quant_disable_names is not None:

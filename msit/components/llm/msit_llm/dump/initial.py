@@ -21,7 +21,7 @@ import pandas as pd
 
 from components.utils.file_open_check import FileStat
 from msit_llm.common.log import logger
-from msit_llm.common.utils import safe_string
+from msit_llm.common.utils import safe_string, load_file_to_read_common_check
 from msit_llm.common.constant import ATB_HOME_PATH, ATB_SAVE_TENSOR_TIME, ATB_SAVE_TENSOR_IDS, \
     ATB_SAVE_TENSOR_RUNNER, ATB_SAVE_TENSOR, ATB_SAVE_TENSOR_RANGE, \
     ATB_SAVE_TILING, LD_PRELOAD, ATB_OUTPUT_DIR, ATB_SAVE_CHILD, ATB_SAVE_TENSOR_PART, \
@@ -144,6 +144,7 @@ def json_to_onnx(args):
     if not os.path.exists(subprocess_info_file):
         return
 
+    subprocess_info_file = load_file_to_read_common_check(subprocess_info_file)
     with open(subprocess_info_file) as f:
         from msit_llm.common.json_fitter import atb_json_to_onnx
         cache_csv_file = {}
@@ -207,7 +208,9 @@ def merge_cpu_profiling_data(path):
             data = {}
             headers = set()
             csv_buffer_data = list()
-            with open(os.path.join(root, file), 'r') as f:
+            
+            file_path = load_file_to_read_common_check(os.path.join(root, file))
+            with open(file_path, 'r') as f:
                 lines = f.readlines()
                 read_cpu_profiling_data(lines, data)
                 for opname in data.keys():

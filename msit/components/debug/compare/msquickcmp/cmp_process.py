@@ -47,7 +47,7 @@ from msquickcmp.npu.om_parser import OmParser
 from msquickcmp.single_op import single_op as sp
 
 from components.utils.security_check import check_write_directory
-from components.utils.file_open_check import ms_open
+from components.utils.file_open_check import ms_open, sanitize_csv_value
 from components.utils.check.rule import Rule
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
@@ -129,6 +129,9 @@ def _append_is_npu_ops_to_csv(csv_path):
             row.append(is_npu_ops)
         with ms_open(csv_path, mode='w') as f:
             writer = csv.writer(f)
+            for line in rows:
+                for ele in line:
+                    sanitize_csv_value(ele)
             writer.writerows(rows)
 
 

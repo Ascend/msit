@@ -175,7 +175,7 @@ class TestCommon(unittest.TestCase):
             logger_output = cm.output
             self.assertEqual(len(logger_output), 1)
             self.assertRegex(logger_output[0], r'Invalid character')
-
+            
     def test_load_file_to_read_common_check_invalid_exts_input(self):
         with self.assertLogs('msit_logger', 'ERROR') as cm:
             self.assertRaises(TypeError, load_file_to_read_common_check, "abc.abc", exts='abc')
@@ -190,7 +190,6 @@ class TestCommon(unittest.TestCase):
             logger_output = cm.output
             self.assertEqual(len(logger_output), 1)
             self.assertRegex(logger_output[0], r"Expected extenstion to be one")
-    
 
     def test_load_file_to_read_common_check_file_name_too_long(self):
         with self.assertLogs('msit_logger', 'ERROR') as cm:
@@ -210,12 +209,11 @@ class TestCommon(unittest.TestCase):
         temp_dir = 'perm_dir'
         os.makedirs(temp_dir, 0, exist_ok=True)
         original_euid = os.geteuid()
-
+        
         try:
-            os.seteuid(1001)
-            self.assertRaises(PermissionError, load_file_to_read_common_check, os.path.join(temp_dir, 'a'))
-        finally:
-            os.seteuid(original_euid)
+            with patch('os.geteuid', return_value=1001):
+                self.assertRaises(PermissionError, load_file_to_read_common_check, os.path.join(temp_dir, 'a'))
+        finally: 
             os.rmdir(temp_dir)
 
     def test_load_file_to_read_common_check_not_reg_file(self):
@@ -228,16 +226,12 @@ class TestCommon(unittest.TestCase):
             os.rmdir(temp_dir)
 
     def test_load_file_to_read_common_check_file_too_large(self):
-        file_stat = list(os.stat(__file__))
-        file_stat[6] = 300 * 1024 * 1024 * 1024
-        file_stat = os.stat_result(file_stat)
-        with patch('os.stat', return_value=file_stat):
-            with patch('builtins.input', return_value='n'):
-                with self.assertLogs('msit_logger', 'ERROR') as cm:
-                    self.assertRaises(ValueError, load_file_to_read_common_check, __file__)
-                    logger_output = cm.output
-                    self.assertEqual(len(logger_output), 1)
-                    self.assertRegex(logger_output[0], r'File too large')
+        with patch('os.path.getsize', return_value=300 * 1024 * 1024 * 1024):
+            with self.assertLogs('msit_logger', 'ERROR') as cm:
+                self.assertRaises(ValueError, load_file_to_read_common_check, __file__)
+                logger_output = cm.output
+                self.assertEqual(len(logger_output), 1)
+                self.assertRegex(logger_output[0], r'File too large')
 
     def test_load_file_to_read_common_check_file_other_writeable(self):
         file_stat = list(os.stat(__file__))
@@ -266,9 +260,9 @@ class TestCommon(unittest.TestCase):
 
     def test_load_file_to_read_common_check_file_uid_not_matched_root(self):
         file_stat = list(os.stat(__file__))
-        file_stat[4] = os.getuid() + 1
+        file_stat[4] = os.geteuid() + 1
 
-        with patch('os.getuid', return_value=0):
+        with patch('os.geteuid', return_value=0):
             file_stat[0] |= os.st.S_IWGRP | os.st.S_IWUSR
             file_stat = os.stat_result(file_stat)
 

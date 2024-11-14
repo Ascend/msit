@@ -20,7 +20,7 @@ import torch.nn as nn
 
 from msit_llm.transform.model_parser.kind import mlp, attention, convert, mname
 from components.utils.file_open_check import ms_open
-from msit_llm.common.utils import check_input_path_legality, check_data_file_size
+from msit_llm.common.utils import load_file_to_read_common_check
 
 
 def has_child(module: nn.Module) -> bool:
@@ -288,10 +288,8 @@ def update_weight_prefix(parsed_model, source_path):
     for fp in Path(source_path).glob('*.index.json'):
         if weight_name_list:
             break
-        fp = check_input_path_legality(str(fp))
-        if (not Path(fp).is_file() or 
-            not check_data_file_size(fp)):
-            return
+
+        fp = load_file_to_read_common_check(str(fp))
         try:
             with open(fp) as ff:
                 dd = json.load(ff)            

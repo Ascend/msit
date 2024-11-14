@@ -30,6 +30,7 @@ import numpy as np
 
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
+from components.utils.file_open_check import sanitize_csv_value
 
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
@@ -119,7 +120,7 @@ class NetCompare(object):
                         header = info_content
             return result, header
         except (OSError, SystemError, ValueError, TypeError, RuntimeError, MemoryError) as error:
-            utils.logger.warning('Failed to parse the alg compare result!')
+            utils.logger.error('Failed to parse the alg compare result!')
             raise AccuracyCompareException(utils.ACCURACY_COMPARISON_NET_OUTPUT_ERROR) from error
         finally:
             pass
@@ -273,6 +274,8 @@ class NetCompare(object):
                 utils.logger.warning('The content of line is {}'.format(line))
                 continue
             if line[npu_dump_index] != "Node_Output":
+                for ele in line:
+                    sanitize_csv_value(ele)
                 writer.writerow(line)
             else:
                 new_content = [line[0], "NaN", "Node_Output", "NaN", "NaN",

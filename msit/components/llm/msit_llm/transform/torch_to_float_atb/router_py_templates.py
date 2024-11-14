@@ -46,7 +46,6 @@ class {model_name_capital}Router(BaseRouter):
         config = AutoConfig.from_pretrained(
             self.model_name_or_path,
             revision=self.revision,
-            trust_remote_code=self.trust_remote_code,
         )
 
         if not hasattr(config, 'max_position_embeddings'):
