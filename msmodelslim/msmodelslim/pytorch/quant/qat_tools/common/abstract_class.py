@@ -6,7 +6,8 @@ from typing import List, Union, Tuple
 from torch import nn as nn
 import torch
 
-from msmodelslim.pytorch.quant.qat_tools.utils.utils import AciLogger, CallParams
+from msmodelslim import logger as msmodelslim_logger
+from msmodelslim.pytorch.quant.qat_tools.utils.utils import CallParams
 from msmodelslim.pytorch.quant.qat_tools.qat_kia.quantize import QuantBaseOperation
 
 
@@ -25,7 +26,7 @@ class CompressModelWrapper(ABC):
         self.logger = logger
 
         if self.logger is None:
-            self.logger = AciLogger()
+            self.logger = msmodelslim_logger
         self.disable_names = cfg.disable_names
         self.orin_model = copy.deepcopy(model)
         self._dummy_input = dummy_input

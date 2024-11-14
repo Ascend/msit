@@ -3,9 +3,12 @@
 
 import os
 from multiprocessing import Pool
+
 import numpy as np
 import torch
+from tqdm import tqdm
 from safetensors.torch import save_file
+
 from msmodelslim import logger
 from ascend_utils.common.security import get_valid_read_path, get_valid_write_path, get_write_directory, \
                 SafeWriteUmask, MAX_READ_FILE_SIZE_512G, safe_delete_path_if_exists, check_type
@@ -16,10 +19,13 @@ from .compress_utils import pseudo_sparse
 from .compress_utils import transform_nd2nz
 
 
+SUPPORT_DTYPE = [np.int8, np.int64]
+
+
 class Compressor:
     def __init__(self, config: CompressConfig, weight_path=None, weight=None, quant_model_description=None):
         if not isinstance(config, CompressConfig):
-            raise ValueError("config is invalid, expected a CompressConfig, but got {}".format(config))
+            raise ValueError("Invalid `config`: expected a CompressConfig instance, but received {}".format(config))
 
         self.config = config
         self.logger = logger
@@ -30,21 +36,21 @@ class Compressor:
 
     @classmethod
     def export(cls, arr, path, dtype=np.int8):
-        if not isinstance(arr, dict):
-            raise ValueError("the arr is invalid, expected a dict, but got {}".format(type(arr)))
-        if not isinstance(path, str):
-            raise ValueError("the path is invalid, expected a str, but got {}".format(type(path)))
+        if dtype not in SUPPORT_DTYPE:
+            raise ValueError("dtype must be numpy.int8, numpy.int64!")
+        check_type(arr, dict, param_name="arr")
+        check_type(path, str, param_name="path")
         get_write_directory(path, write_mode=0o750)
-        logger.info(f"files are going to be saved in {path}")
+        logger.info(f"The output files will be saved in: {path}")
 
         for key in arr.keys():
             save_path = os.path.join(path, key + '.dat')
-            safe_delete_path_if_exists(save_path)
+            safe_delete_path_if_exists(save_path, logger_level="debug")
             get_valid_write_path(save_path)
             with SafeWriteUmask(0o377):
                 arr[key].astype(dtype).tofile(os.path.join(path, key + '.dat'))
 
-        logger.info("Save files success!")
+        logger.info("Files saved successfully!")
 
     def export_safetensors(self, path, safetensors_name=None, json_name=None):
         if not self.quant_model_description:
@@ -53,11 +59,11 @@ class Compressor:
         compress_model_description = QuantModelJsonDescription(QuantType.W8A8SC)
 
         if not isinstance(safetensors_name, str) or not safetensors_name.endswith('.safetensors'):
-            self.logger.warning("invalid safetensors_name, set safetensors_name to default")
+            self.logger.warning("Invalid `safetensors_name` provided. Reverting `safetensors_name` to default.")
             safetensors_name = \
                 f"quant_model_weight_{compress_model_description.model_quant_type.lower()}.safetensors"
         if not isinstance(json_name, str) or not json_name.endswith('.json'):
-            self.logger.warning("invalid json_name, set json_name to default")
+            self.logger.warning("Invalid `json_name` provided. Reverting `json_name` to default.")
             json_name = f"quant_model_description_{compress_model_description.model_quant_type.lower()}.json"
 
         for key, value in self.quant_model_description.items():
@@ -81,7 +87,7 @@ class Compressor:
 
         get_write_directory(path, write_mode=0o750)
         output_path = os.path.join(path, safetensors_name)
-        self.logger.info(f"Path of compressed quant_model_weight.safetensors is {output_path}")
+        self.logger.info(f"The compressed quant weight safetensors file will be saved in: {output_path}")
         output_path = get_valid_write_path(output_path, extensions='.safetensors')
         self.quant_model_description = compress_model_description
         QuantModelJsonDescription.check_description_match(
@@ -91,6 +97,7 @@ class Compressor:
             save_file(compress_weight, output_path)
         json_path = os.path.join(path, json_name)
         compress_model_description.save(json_path)
+        self.logger.info("Files saved successfully!")
 
     def run(self, weight_transpose: bool = False):
         self.config.record_detail_root = get_write_directory(self.config.record_detail_root, write_mode=0o750)
@@ -101,7 +108,7 @@ class Compressor:
 
         p = Pool(self.config.multiprocess_num)
         result_list = []
-        self.logger.info("Multiprocessing process number: {}".format(self.config.multiprocess_num))
+        self.logger.info(f"The weight compressor will run with {self.config.multiprocess_num} processes.")
 
         if self.quant_model_description:
             keys_list = []
@@ -113,7 +120,16 @@ class Compressor:
             keys_list = sorted(self.weights.keys())
 
         if len(keys_list) == 0:
-            raise ValueError("No sparse weight find in input weight. Please check your input weight.")
+            raise ValueError("No sparse weight found in input weight. Please check the input weight.")
+
+        # 初始化进度条
+        pbar = tqdm(total=len(keys_list))
+        pbar.set_description("Compression Process")
+
+        # 进度条更新的内嵌函数
+        def update(*args):
+            # Pool.apply_async方法中，callback参数回接收任何返回值作为其唯一的参数，所以这里需要接收*args，不过并不会使用
+            pbar.update()
 
         for key_index, key in enumerate(keys_list):
             each_weight = self.weights[key]
@@ -127,7 +143,8 @@ class Compressor:
                 each_weight = pseudo_sparse(each_weight, self.config.sparse_ratio)
 
             if each_weight.ndim != 2:
-                raise ValueError("the ndim of input weights must be 2, but got {}".format(each_weight.ndim))
+                raise ValueError(f"The number of dimensions (ndim) of input weights must be 2, "
+                                 f"but received {each_weight.ndim}.")
 
             if weight_transpose:
                 each_weight = each_weight.T
@@ -146,8 +163,12 @@ class Compressor:
 
             self.compress_result_info[key] = np.array([8, 8, k, n, 1], dtype=np.int64)
 
-            self.logger.info("Compressing weight_part {}".format(key_index))
-            res = p.apply_async(compress_weight_fun, args=(each_weight, self.config.record_detail_root))
+            self.logger.debug("Compressing weight_part {}".format(key_index))
+            res = p.apply_async(
+                compress_weight_fun,
+                args=(each_weight, self.config.record_detail_root),
+                callback=update
+            )
             result_list.append((save_key, ori_length, res))
 
         p.close()
@@ -164,14 +185,14 @@ class Compressor:
 
             tmp_num = len(compress_info)
             if tmp_num < 3:
-                raise ValueError("compress_info should have at least 3 elements, but only got {}".format(tmp_num))
+                raise ValueError("`compress_info` should contains at least 3 elements, but only had {}".format(tmp_num))
             tiling_k, tiling_n, compress_length = compress_info[:3]
 
             ori_total_length += ori_length
             now_total_length += compress_length
 
             if ori_length == 0:
-                raise ValueError("Calculating {} length but got zero. Please check your input weight.".format(save_key))
+                raise ValueError("Calculating {} length but got zero. Please check the input weight.".format(save_key))
 
             cur_compress_ratio = round(float(compress_length) / ori_length, 4)
 
@@ -179,23 +200,22 @@ class Compressor:
                 self.logger.info("[%d/%d]  %-80s%-20s" % (key_index + 1, len(keys_list), save_key, cur_compress_ratio))
 
         if ori_total_length == 0:
-            raise ValueError("Calculating sparse weight size but got zero. Please check your input weight.")
+            raise ValueError("Calculating sparse weight size but got zero. Please check the input weight.")
 
         if self.config.is_debug:
-            self.logger.info("The final compress ratio is {:.4f}\t({} -> {})".format(
+            self.logger.info("The final compression ratio is {:.4f}\t(from {} to {})".format(
                 float(now_total_length) / ori_total_length, ori_total_length, now_total_length))
         return self.compress_result_weight, self.compress_result_index, self.compress_result_info
 
     def load_from_file(self, weight_path):
-        self.logger.info("Only load data from trusted sources and avoid loading data from unknown or untrusted sources")
-        self.logger.info("Are you sure you want to load data from path [{}]?".format(weight_path))
-        message = input("Please enter yes or no\n")
+        self.logger.info("Only load data from trusted sources. Avoid loading data from unknown or untrusted sources.")
+        self.logger.info("Are you sure you want to load data from the following path: {}".format(weight_path))
+        message = input("Please enter 'yes' or 'no'\n")
         if message != "yes":
-            self.logger.info("As the data may from untrusted sources, the loading is prohibited")
-            raise Exception("The data is not trusted, please check")
-        self.logger.info("Loading data")
+            raise Exception("Loading is prohibited because the data may be from untrusted sources.")
         weight_path = get_valid_read_path(weight_path, extensions='.npy', size_max=MAX_READ_FILE_SIZE_512G)
         self.weights = np.load(weight_path, allow_pickle=True).item()
+        self.logger.info("Data loaded")
 
     def load_weights(self, weight_path, weight, quant_model_description):
         if weight_path:
@@ -208,4 +228,4 @@ class Compressor:
             QuantModelJsonDescription.check_description_match(quant_model_json_description=quant_model_description,
                                                               quant_model_safetensor=self.weights)
         else:
-            raise ValueError("weight_path, or weight and quant_model_description should be given")
+            raise ValueError("Weight Loading failed! Please provide valid quant weight input")

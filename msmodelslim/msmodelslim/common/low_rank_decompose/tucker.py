@@ -1,7 +1,8 @@
 # Copyright Huawei Technologies Co., Ltd. 2022-2022. All rights reserved.
 
-import logging
 import numpy as np
+
+from msmodelslim import logger
 
 
 def positive_largest_trunked_svd_u(source_tensor, rank):
@@ -53,7 +54,7 @@ def tucker(source_tensor, ranks=None, modes=None, iter_max=100, error_tolerance=
 
     sorted_modes_with_ranks = sorted(zip(ranks, modes), key=lambda xx: xx[1])
     sorted_modes = [ii[1] for ii in sorted_modes_with_ranks]
-    logging.info(
+    logger.info(
         "modes: %s, ranks: %s, sorted_modes_with_ranks: %s",
         str(modes), str(ranks), str(sorted_modes_with_ranks)
     )
@@ -81,7 +82,7 @@ def tucker(source_tensor, ranks=None, modes=None, iter_max=100, error_tolerance=
         cur_rec_error = np.sqrt(np.abs(norm_tensor_square - np.linalg.norm(core) ** 2))
         cur_rec_error = np.divide(cur_rec_error, np.maximum(norm_tensor, 1e-6))
         if iteration > 1 and error_tolerance and np.abs(pre_rec_error - cur_rec_error) < error_tolerance:
-            logging.info("converged in %s iterations.", str(iteration))
+            logger.info("converged in %s iterations.", str(iteration))
             break
         pre_rec_error = cur_rec_error
 

@@ -225,6 +225,7 @@ def _find_index(nodes, weight_name):
     for idx, item in enumerate(nodes):
         if weight_name in item.input or weight_name + ".weight" in item.input:
             return idx
+    raise LookupError
 
 
 def _init_quant_param(weight_name, quant_params_dict: QuantParamsDict):
@@ -257,7 +258,6 @@ def quantize_model_deploy(graph, quantized_weight_name,
     dequant_index = 0
     for weight_name in quantized_weight_name:
         quant_index = get_quant_index(quant_index)
-        logger.info("enter this quantized module: %s", weight_name)
         index = _find_index(nodes, weight_name)
         fp_node = nodes[index]
         node_input = copy.deepcopy(fp_node.input)
@@ -267,15 +267,18 @@ def quantize_model_deploy(graph, quantized_weight_name,
 
         onnx_node_quant = _convert_quant(quant_param, node_input, weight_name, quant_index)
         onnx_node_add = None
-        if fp_node.op_type == "Conv":
+        fp_node_op_type = fp_node.op_type
+        if fp_node_op_type in ["Conv", "MatMul", "Gemm"]:
+            logger.info(f"deploy quantized weight {weight_name} to type {fp_node_op_type}")
+        if fp_node_op_type == "Conv":
             onnx_node_compute = _convert_conv(graph, fp_node, quant_param, quant_index)
-        elif fp_node.op_type == "MatMul":
+        elif fp_node_op_type == "MatMul":
             onnx_node_compute = _convert_matmul(graph, fp_node, quant_param, quant_index)
             next_node = nodes[index + 1]
-            if fuse_add and fp_node.op_type == "MatMul" and next_node.op_type == "Add":
+            if fuse_add and next_node.op_type == "Add":
                 add_output = copy.deepcopy(next_node.output)
                 onnx_node_add = _convert_add(graph, next_node, quant_param, node_output, quant_index)
-        elif fp_node.op_type == "Gemm":
+        elif fp_node_op_type == "Gemm":
             onnx_node_compute = _convert_gemm(graph, fp_node, quant_param, quant_index)
 
         if onnx_node_add is not None:

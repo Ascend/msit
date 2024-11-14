@@ -1,6 +1,7 @@
 # Copyright Huawei Technologies Co., Ltd. 2021-2022. All rights reserved.
 import collections
 from typing import Optional, Any, List, Iterable, Generator, Union, Set
+import torch
 
 from ascend_utils.core.dag.dag_node_io import DagNodeIO
 
@@ -19,6 +20,7 @@ class DagNode:
         self._inputs: List[DagNodeIO] = []
         self._outputs: List[DagNodeIO] = []
         self.set_node_io(inputs, outputs)
+        self.input_param = []
 
     def __repr__(self):
         return "{} [{}] ({}) >> * >> ({}) ".format(self.name, self.op_type,
@@ -99,3 +101,8 @@ class DagNode:
         self._outputs: List[DagNodeIO] = outputs if outputs is not None else []
         for one_output in self._outputs:
             one_output.set_node_from(self)
+
+    def set_input_param(self, input_param) -> None:
+        for param in input_param:
+            if not torch.is_tensor(param):
+                self.input_param.append(param)

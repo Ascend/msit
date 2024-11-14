@@ -103,6 +103,31 @@ class WidthScaleNetwork:
 
         return in_chn, out_chn, groups
 
+    @staticmethod
+    def rescale_weight(weight, target_shape):
+        if weight is None or len(weight.shape) == 0:
+            return weight
+
+        num_dims = len(weight.shape)
+        while weight.shape[0] < target_shape[0] or (num_dims > 1 and weight.shape[1] < target_shape[1]):
+            source_shape = weight.shape
+            if num_dims == 1:
+                if source_shape[0] < target_shape[0]:
+                    weight = torch.stack([weight, weight], dim=0).contiguous().view([-1])
+            elif source_shape[0] < target_shape[0] and source_shape[1] < target_shape[1]:
+                left_weight = F.pad(weight, [0, 0] * (num_dims - 2) + [0, 0, 0, source_shape[0]])
+                right_weight = F.pad(weight, [0, 0] * (num_dims - 2) + [0, 0, source_shape[0], 0])
+                weight = torch.stack([left_weight, right_weight], dim=1)
+                weight = weight.contiguous().view([left_weight.shape[0], -1, *source_shape[2:]])
+            elif source_shape[0] < target_shape[0]:
+                weight = torch.stack([weight, weight], dim=0)
+                weight = weight.contiguous().view([-1, *source_shape[1:]])
+            elif source_shape[1] < target_shape[1]:
+                weight = torch.stack([weight, weight], dim=1)
+                weight = weight.contiguous().view([source_shape[0], -1, *source_shape[2:]])
+        new_weight = weight[:target_shape[0]] if num_dims == 1 else weight[:target_shape[0], :target_shape[1]]
+        return new_weight.clone()
+
     @classmethod
     def prune_node(cls, dag_node, in_chn, out_chn, groups):
         if hasattr(dag_node.node, "num_features"):
@@ -134,31 +159,6 @@ class WidthScaleNetwork:
             dag_node.node.weight = torch.nn.Parameter(cls.rescale_weight(dag_node.node.weight.data, target_shape))
         if hasattr(dag_node.node, "bias") and dag_node.node.bias is not None:
             dag_node.node.bias = torch.nn.Parameter(cls.rescale_weight(dag_node.node.bias.data, [out_chn]))
-
-    @staticmethod
-    def rescale_weight(weight, target_shape):
-        if weight is None or len(weight.shape) == 0:
-            return weight
-
-        num_dims = len(weight.shape)
-        while weight.shape[0] < target_shape[0] or (num_dims > 1 and weight.shape[1] < target_shape[1]):
-            source_shape = weight.shape
-            if num_dims == 1:
-                if source_shape[0] < target_shape[0]:
-                    weight = torch.stack([weight, weight], dim=0).contiguous().view([-1])
-            elif source_shape[0] < target_shape[0] and source_shape[1] < target_shape[1]:
-                left_weight = F.pad(weight, [0, 0] * (num_dims - 2) + [0, 0, 0, source_shape[0]])
-                right_weight = F.pad(weight, [0, 0] * (num_dims - 2) + [0, 0, source_shape[0], 0])
-                weight = torch.stack([left_weight, right_weight], dim=1)
-                weight = weight.contiguous().view([left_weight.shape[0], -1, *source_shape[2:]])
-            elif source_shape[0] < target_shape[0]:
-                weight = torch.stack([weight, weight], dim=0)
-                weight = weight.contiguous().view([-1, *source_shape[1:]])
-            elif source_shape[1] < target_shape[1]:
-                weight = torch.stack([weight, weight], dim=1)
-                weight = weight.contiguous().view([source_shape[0], -1, *source_shape[2:]])
-        new_weight = weight[:target_shape[0]] if num_dims == 1 else weight[:target_shape[0], :target_shape[1]]
-        return new_weight.clone()
 
     def get_nodes_input_output(self, list_nodes) -> Tuple[Set[DagNode], Set[DagNode]]:
         set_input_nodes = set()

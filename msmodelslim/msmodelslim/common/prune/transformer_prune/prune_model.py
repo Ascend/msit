@@ -19,7 +19,20 @@ class PruneConfig(object):
     def __init__(self):
         self.prune_state_dict_steps = []
         self.prune_blocks_params = []
+    
+    @staticmethod
+    def check_prune_config(config, target_steps: list):
+        check_type(config, PruneConfig, param_name="config")
+        PruneConfig.check_steps_list(config, target_steps)
 
+    @staticmethod
+    def check_steps_list(config, target_steps):
+        if hasattr(config, "prune_state_dict_steps"):
+            prune_state_dict_steps = getattr(config, "prune_state_dict_steps")
+            for step in prune_state_dict_steps:
+                if step not in target_steps:
+                    raise ValueError("Step {} not exist! Step must in {}".format(step, target_steps))
+    
     @staticmethod
     def _check_steps(steps: list):
         if not steps:
@@ -38,18 +51,7 @@ class PruneConfig(object):
             check_type(layer_after, int, param_name="layer_after")
             check_type(layer_before, int, param_name="layer_before")
 
-    @staticmethod
-    def check_prune_config(config, target_steps: list):
-        check_type(config, PruneConfig, param_name="config")
-        PruneConfig.check_steps_list(config, target_steps)
 
-    @staticmethod
-    def check_steps_list(config, target_steps):
-        if hasattr(config, "prune_state_dict_steps"):
-            prune_state_dict_steps = getattr(config, "prune_state_dict_steps")
-            for step in prune_state_dict_steps:
-                if step not in target_steps:
-                    raise ValueError("Step {} not exist! Step must in {}".format(step, target_steps))
 
     def get(self, config_name: str, default=None):
         if hasattr(self, config_name):

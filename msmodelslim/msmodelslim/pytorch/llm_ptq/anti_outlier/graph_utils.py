@@ -30,8 +30,9 @@ class GraphOpt:
 def extract_dag(
         model: nn.Module,
         dummy_input=None,
-        hook_nodes=None):
-    return TorchDAGAdapter(model, dummy_input, hook_nodes=hook_nodes)
+        hook_nodes=None,
+        anti_method=None):
+    return TorchDAGAdapter(model, dummy_input, hook_nodes=hook_nodes, anti_method=anti_method)
 
 
 def norm_class_detect(
@@ -42,6 +43,17 @@ def norm_class_detect(
     norm_class = [norm_class_list[0]]
 
     return norm_class
+
+
+def class_detect(
+        model: nn.Module,
+        name: str,
+):
+    class_list = list(
+        OrderedDict.fromkeys([m.__class__ for m in model.modules() if name in m.__class__.__name__.lower()]))
+    class_name = class_list[0] if len(class_list) != 0 else None
+
+    return class_name
 
 
 def input_to_cpu(ipt):

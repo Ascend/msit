@@ -18,7 +18,9 @@ LF_QUANTIZED_OP_TYPES = ["Conv", "Gemm", "MatMul"]  # quantized operator types i
 
 INPUT_DTYPE_DICT = {
     "tensor(float)": np.float32,
-    "tensor(int64)": np.int64 if hasattr(np, "int64") else np.int
+    "tensor(int64)": np.int64 if hasattr(np, "int64") else np.int,
+    "tensor(int32)": np.int32,
+
 }
 
 ONNX_MODEL_SUFFIX = ".onnx"

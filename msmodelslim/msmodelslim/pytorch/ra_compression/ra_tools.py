@@ -9,7 +9,6 @@ from ascend_utils.common.security import check_type, check_int, SafeWriteUmask, 
 from ascend_utils.pytorch.dag.dag_torch_hook import DagTorchHook
 from msmodelslim.pytorch.ra_compression.ra_config import RACompressConfig
 from msmodelslim.pytorch.ra_compression.ra_compression_kia import get_wins
-from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_outlier import deepcopy_model
 from msmodelslim import logger
 
 
@@ -35,6 +34,7 @@ class RACompressor(object):
         check_int(self.head_dim, min_value=1, max_value=1000, param_name="head_dim")
     
     def get_alibi_windows(self, save_path):
+        check_type(save_path, str, param_name="save_path")
         wins = []
         qk_list = self._get_qk_weight_and_reshape_by_num_heads()
         slopes = torch.Tensor(self._get_interleave(self.model.config.num_attention_heads))
@@ -55,7 +55,6 @@ class RACompressor(object):
         return None
     
     def _get_qkv_name(self, attention_mlp_block, hidden_size):
-        attention_mlp_block = deepcopy_model(attention_mlp_block).float().cpu()
         dag = DagTorchHook(attention_mlp_block, torch.ones([1, 1, hidden_size]).float())
 
         norm_node_met, attn_linears = 0, []

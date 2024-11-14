@@ -6,7 +6,7 @@
 执行训练后量化前，需参考环境准备，完成CANN开发环境的部署及Python环境变量配置。
 
 ### 操作步骤
-1. 用户自行准备预训练模型和数据集。本样例以 ResNet50为例，获取模型结构定义脚本，并参考README下载所需数据集， 以cifar10为例，在config/resnet50_cifar10_config.yaml里配置data_path和checkpoint_file_path，并在eval.py的基础上进行修改。
+1. 用户自行准备预训练模型和数据集。本样例以 ResNet50为例，获取模型结构定义脚本，并参考[README](https://gitee.com/mindspore/models/blob/master/official/cv/ResNet/README_CN.md)下载所需数据集， 以cifar10为例，在config/resnet50_cifar10_config.yaml里配置data_path和checkpoint_file_path，并在eval.py的基础上进行修改。
 
 2. 新建模型量化脚本resnet50_quant.py，将eval.py内容复制到该文件中，删除eval_net()函数中定义损失，定义metric，计算metric相关的代码，保留如下初始化模型和加载权重相关的代码，并修改加粗字体信息。
 ```

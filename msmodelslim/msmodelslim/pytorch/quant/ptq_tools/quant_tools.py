@@ -9,14 +9,15 @@ import torch
 import torch.nn as nn
 import onnx
 import numpy as np
-from msmodelslim.pytorch.quant.ptq_tools.quant_modules import Quantizer, Conv2dQuantizer, LinearQuantizer
-from msmodelslim.pytorch.quant.ptq_tools.quant_deploy import quantize_model_deploy, convert_linear_params
-from msmodelslim.pytorch.quant.ptq_tools.ptq_kia.quant_funcs import amp_decision  # squant algorithm api
 from ascend_utils.common.security.pytorch import check_torch_module
 from ascend_utils.common.security import check_type, get_valid_write_path, SafeWriteUmask
+from ascend_utils.common import security
+from msmodelslim.pytorch.quant.ptq_tools.quant_modules import Quantizer, Conv2dQuantizer, LinearQuantizer
+from msmodelslim.pytorch.quant.ptq_tools.quant_deploy import quantize_model_deploy, convert_linear_params
+from msmodelslim.pytorch.quant.ptq_tools.quant_deploy import ConvertLinearParams, ModelDeployQuantParams
+from msmodelslim.pytorch.quant.ptq_tools.ptq_kia.quant_funcs import amp_decision  # squant algorithm api
 from msmodelslim import logger
 from msmodelslim.pytorch.quant.ptq_tools import QuantConfig
-from ascend_utils.common import security
 
 
 class Calibrator(object):
@@ -67,6 +68,7 @@ class Calibrator(object):
         if calib_data:
             if not isinstance(calib_data, list):
                 raise ValueError("calib_data should be list of tensors")
+            self.check_calib_data(calib_data)
             return calib_data
 
         if self.cfg.input_shape:
@@ -76,13 +78,21 @@ class Calibrator(object):
                     requires_grad=False
                 )
             except RuntimeError as ex:
-                logging.error("calib_data init failed, please check input_shape. %s", str(ex))
+                logger.error("calib_data init failed, please check input_shape. %s", str(ex))
                 raise ex
             calib_data = [[rand_input]]
             return calib_data
 
         raise ValueError("The calib_data or input_shape"
                          " should be offered")
+
+    def check_calib_data(self, calib_data):
+        for i, calib_data_item in enumerate(calib_data):
+            check_type(calib_data_item, (list, dict), param_name=f'calib_data[{i}]')
+            for _, item in enumerate(calib_data_item):
+                if not isinstance(item, torch.Tensor):
+                    raise ValueError("Not all elements in calib_data are torch.Tensor, "
+                                     "please make sure that the model can run with model(*(calib_data[0]))")
 
     def amp(self, calib_amp=10):
         # for quantized model
@@ -208,7 +218,7 @@ class Calibrator(object):
                 torch.onnx.export(self.fp_model, dummpy_input, temp_fp_model_file,
                                   input_names=input_names, verbose=True, opset_version=11)
             except RuntimeError as ex:
-                logging.error("Export fp_model to onnx failed, please check model. %s", str(ex))
+                logger.error("Export fp_model to onnx failed, please check model. %s", str(ex))
                 raise ex
 
     def export_quant_onnx(self, model_arch, save_path, input_names=None, fuse_add=True, save_fp=False):
@@ -230,9 +240,16 @@ class Calibrator(object):
 
         input_scale, input_offset, weight_scale, weight_offset, quant_weight = \
             self.get_quant_params()
+        linear_params = ConvertLinearParams(
+            onnx_model=model,
+            input_scale=input_scale,
+            input_offset=input_offset,
+            weight_scale=weight_scale,
+            weight_offset=weight_offset,
+            quant_weight=quant_weight
+        )
         input_scale, input_offset, weight_scale, weight_offset, quant_weight = \
-            convert_linear_params(model, input_scale, input_offset,
-                                  weight_scale, weight_offset, quant_weight)
+            convert_linear_params(linear_params)
         quantized_weight_namd = []
         for item in nodes:
             if item.op_type == "Conv":
@@ -249,21 +266,23 @@ class Calibrator(object):
                     quantized_weight_namd.append(weight_name)
                     logger.info("MatMul, item.name :%s, weight_name :%s ", item.name, weight_name)
 
-        quantize_model_deploy(graph,
-                    quantized_weight_namd,
-                    quant_weight,
-                    input_scale,
-                    input_offset,
-                    weight_scale,
-                    weight_offset,
-                    fuse_add)
+        quantize_model_deploy_params = ModelDeployQuantParams(
+            quantized_weight_name=quantized_weight_namd, 
+            quant_weight_dict=quant_weight,
+            input_scale_dict=input_scale,
+            input_offset_dict=input_offset,
+            weight_scale_dict=weight_scale,
+            weight_offset_dict=weight_offset,
+            fuse_add=fuse_add
+        )
+        quantize_model_deploy(graph, quantize_model_deploy_params)
 
         temp_quant_model_file = os.path.join(save_path, "{}_quant.onnx".format(model_arch))
         temp_quant_model_file = get_valid_write_path(temp_quant_model_file)
         with SafeWriteUmask():
             onnx.save(model, temp_quant_model_file)
             logger.info("Quantification ended and onnx is stored in %s ", temp_quant_model_file)
-            
+
         if not save_fp:
             os.remove(os.path.join(save_path, "{}_fp.onnx".format(model_arch)))
 

@@ -119,7 +119,7 @@ def onnx2om(
             soc_version: str,
             device_id: int,
             om_method: str) -> None:
-    output_nodes, input_shape = get_model_info(model_path, batch_size)
+    _, input_shape = get_model_info(model_path, batch_size)
     model_folder, filename = os.path.split(model_path)
     model_name, ext = os.path.splitext(filename)
 

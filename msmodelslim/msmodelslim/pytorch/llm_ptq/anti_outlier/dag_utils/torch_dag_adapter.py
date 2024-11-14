@@ -4,7 +4,7 @@
 Adapter for DAG, 
 including DAG info, conv-bn pattern etc. 
 """
-from typing import List, Any, Union, Tuple
+from typing import List, Any, Union, Tuple, OrderedDict
 from collections import defaultdict, deque
 
 import torch.nn as nn
@@ -46,7 +46,8 @@ class TorchDAGAdapter(object):
                      torch.Tensor, List[torch.Tensor], Tuple[torch.Tensor],
                      CallParams, None
                  ] = None,
-                 hook_nodes: list = None):
+                 hook_nodes: list = None,
+                 anti_method=None):
 
         self._model = model
         self._model.eval()
@@ -64,9 +65,14 @@ class TorchDAGAdapter(object):
             hook_nodes = []
         self.norm_nodes = [m.__name__.lower() for m in hook_nodes if "norm" in m.__name__.lower()]
 
-        self._dag_hook = DagTorchHook(self._model, self._dummy_input, hook_nodes)
+        self._dag_hook = DagTorchHook(self._model, self._dummy_input, hook_nodes, anti_method=anti_method)
 
         self._node_list = self._dag_hook.dag_node_list
+
+        self.norm_node_list = [m for m in self._node_list if m.op_type.lower() in self.norm_nodes][:-1]
+        
+        self.v_up_name_list = []
+
         self.dark_name_list = (
             '_TensorBase.__getitem__', '_TensorBase.__setitem__', '_TensorBase.size',
             'Tensor.__hash__', '_TensorBase.is_floating_point', 'view', 'unsqueeze',
@@ -94,6 +100,18 @@ class TorchDAGAdapter(object):
             trav_node = item
         return trav_node
 
+    def add_mhsa_norm_linears(self, mhsa_linear, mhsa_o, mhsa_ln, interval):
+        start, end = interval[0], interval[1]
+        inter_linears = self._node_list[start+1:end]
+        if len(inter_linears) <= 4:
+            mhsa_linear.append([node.name_in_network for node in self._node_list[start+1:end-1]])
+            mhsa_o.append(self._node_list[end-1].name_in_network)
+            mhsa_ln.append(self._node_list[start].name_in_network)
+        else:
+            mhsa_linear.append([node.name_in_network for node in self._node_list[start+1:start+4]])
+            mhsa_o.append(self._node_list[start+4].name_in_network)
+            mhsa_ln.append(self._node_list[start].name_in_network)
+
     def get_llm_network_pattern_auto(self):
         mhsa_linear = []
         mhsa_o = []  # multi head self attention中的o的linear
@@ -104,37 +122,15 @@ class TorchDAGAdapter(object):
         num_norm = len(norm_positions)
 
         for i in range(num_norm - 1):
-            start = norm_positions[i]
-            end = norm_positions[i + 1]
+            start, end = norm_positions[i], norm_positions[i + 1]
+            interval = [start, end]
             if i % 2 == 0:
-                mhsa_linear.extend([node.name_in_network for node in self._node_list[start+1:end-1]])
-                mhsa_o.append(self._node_list[end-1].name_in_network)
-                mhsa_ln.append(self._node_list[start].name_in_network)
+                self.add_mhsa_norm_linears(mhsa_linear, mhsa_o, mhsa_ln, interval)
             else:
-                ffn_linear.extend([node.name_in_network for node in self._node_list[start+1:end]])
+                ffn_linear.append([node.name_in_network for node in self._node_list[start+1:end]])
                 ffn_ln.append(self._node_list[start].name_in_network)
 
-        nlayer_mhsa_linear, nlayer_ffn_linear, nlayer = len(mhsa_linear), len(ffn_linear), len(mhsa_ln)
-        if nlayer == 0:
-            raise ValueError("norm of multi head self attention is zero, please check your model")
-        mhsa_r, ffn_r = nlayer_mhsa_linear // nlayer, nlayer_ffn_linear // nlayer
-        if mhsa_r == 1:
-            attn_list = mhsa_linear
-        else:
-            attn_list = []
-            for i in range(0, len(mhsa_linear), mhsa_r):
-                tmp = [mhsa_linear[i+k] for k in range(mhsa_r)]
-                attn_list.append(tmp)
-
-        if ffn_r == 1:
-            ffn_list = ffn_linear
-        else:
-            ffn_list = []
-            for i in range(0, len(ffn_linear), ffn_r):
-                tmp = [ffn_linear[i+k] for k in range(ffn_r)]
-                ffn_list.append(tmp)
-
-        ret = attn_list, mhsa_o, mhsa_ln, ffn_list, ffn_ln
+        ret = mhsa_linear, mhsa_o, mhsa_ln, ffn_linear, ffn_ln
         return ret
 
     def get_node_name_in_order(self):
@@ -262,16 +258,18 @@ class TorchDAGAdapter(object):
         norm_linear_subgraph = defaultdict(list)
         norm_positions = [i for i, x in enumerate(self._node_list) if x.op_type.lower() in self.norm_nodes]
         num_norm = len(norm_positions)
-
+ 
         for i in range(num_norm - 1):
             start = norm_positions[i]
             end = norm_positions[i + 1]
             interval_linears = [node.name_in_network for node in self._node_list[start+1:end-1]]
+            norm_node = self._node_list[start].name_in_network
             
-            if interval_linears:
-                norm_node = self._node_list[start].name_in_network
+            if len(interval_linears) <= 4:
                 norm_linear_subgraph[norm_node].extend(interval_linears)
-
+            else:
+                qkv_linears = [node.name_in_network for node in self._node_list[start+1:start+4]]
+                norm_linear_subgraph[norm_node].extend(qkv_linears)
         return norm_linear_subgraph
 
     def get_kv_linears(self):
@@ -299,6 +297,7 @@ class TorchDAGAdapter(object):
         return kv_linears, num_kv
 
     def get_linear_linear_subgraph(self, structured_linear_order=True):
+ 
         linear_linear_subgraph = defaultdict(list)
         norm_positions = [i for i, x in enumerate(self._node_list) if x.op_type.lower() in self.norm_nodes]
         num_norm = len(norm_positions)
@@ -311,7 +310,11 @@ class TorchDAGAdapter(object):
             origin_node = self._node_list[norm_positions[i + 1] - 1]
             origin_node_name = origin_node.name_in_network # o_proj_name or down_proj_name
             target_node_name = None # (qk)v_proj_name or up_proj_name
-            if num_of_linears > 2: # q k v o || gate up down
+            if num_of_linears > 4:
+                origin_node = self._node_list[norm_positions[i] + 4]
+                origin_node_name = origin_node.name_in_network
+                target_node_name = self._node_list[norm_positions[i] + 3].name_in_network
+            elif num_of_linears > 2: # q k v o || gate up down
                 if structured_linear_order:
                     target_node_name = self._node_list[norm_positions[i + 1] - 2].name_in_network
                 else:
@@ -327,6 +330,18 @@ class TorchDAGAdapter(object):
             if target_node_name is not None:
                 linear_linear_subgraph[target_node_name].extend([origin_node_name])
         return linear_linear_subgraph
+
+    def get_allreduce_linear(self):
+        down_o_linear = list()
+        norm_pos = [i for i, x in enumerate(self._node_list) if x.op_type.lower() in self.norm_nodes]
+        num_norm = len(norm_pos)
+
+        for i in range(num_norm - 1):
+            start = norm_pos[i]
+            end = norm_pos[i + 1]
+            down_o_linear.append(self._node_list[end - 1].name_in_network)
+
+        return down_o_linear
 
     def _find_module_by_name(self, name):
         if name is None:

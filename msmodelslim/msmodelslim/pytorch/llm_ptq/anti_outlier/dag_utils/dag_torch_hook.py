@@ -29,7 +29,8 @@ class DagTorchHook(DagHook, ABC):
     def __init__(self,
                  network: Module,
                  inputs: Union[Tensor, List[Tensor], Tuple[Tensor], CallParams],
-                 hook_ops: Union[List[Any], None] = None):
+                 hook_ops: Union[List[Any], None] = None,
+                 anti_method=None):
         if not isinstance(network, torch.nn.Module):
             raise TypeError("network must be type torch.nn.Module")
         if not isinstance(inputs, (Tensor, list, tuple, dict, CallParams)):
@@ -39,7 +40,7 @@ class DagTorchHook(DagHook, ABC):
 
         self._tmp_device = "CPU"
 
-        super().__init__(network, inputs, hook_ops)
+        super().__init__(network, inputs, hook_ops, anti_method=anti_method)
 
     @staticmethod
     def get_obj_module_attrs(obj):
@@ -191,9 +192,10 @@ class DagTorchHook(DagHook, ABC):
         return io_info
 
     def _get_all_hook_ops(self, user_hook_ops) -> List[Tuple[Any, Any, str, str]]:
+        forward_str = "forward"
         nn_modules_hook_infos = self._get_class_hook_infos(torch.nn, torch.nn.Module)
         hook_modules = [torch.nn.Linear]
-        linear_hook_infos = [(getattr(cell, "forward"), (cell, "forward"), name)
+        linear_hook_infos = [(getattr(cell, forward_str), (cell, forward_str), name)
                                  for cell, _, name in nn_modules_hook_infos
                                  if cell in hook_modules]
         
@@ -201,7 +203,34 @@ class DagTorchHook(DagHook, ABC):
         if user_hook_ops is not None:
             for hook_op in user_hook_ops:
                 if inspect.isclass(hook_op) and issubclass(hook_op, torch.nn.Module):
-                    user_hook_infos.append((getattr(hook_op, "forward"), (hook_op, "forward"), hook_op.__name__))
+                    user_hook_infos.append((getattr(hook_op, forward_str), (hook_op, forward_str), hook_op.__name__))
                 else:
                     user_hook_infos.append((hook_op, hook_op, hook_op.__qualname__))
         return linear_hook_infos + user_hook_infos
+
+    def _get_hook_ops(self, user_hook_ops) -> List[Tuple[Any, Any, str, str]]:
+        forward_str = "forward"
+        torch_func_hook_infos = self._get_function_hook_infos(torch)
+        tensor_func_hook_infos = self._get_function_hook_infos(Tensor)
+        functional_func_hook_infos = self._get_function_hook_infos(functional)
+        tensor_operator_hook_infos = self._get_operator_hook_infos(Tensor)
+
+        unhook_modules = [
+                              torch.nn.Sequential, torch.nn.Container, torch.nn.ModuleList, torch.nn.ModuleDict,
+                              torch.nn.ParameterList, torch.nn.ParameterDict, torch.nn.modules.module.Module, 
+                              torch.nn.modules.dropout.Dropout, torch.nn.modules.activation.SiLU
+        ]
+        nn_modules_hook_infos = self._get_class_hook_infos(torch.nn, torch.nn.Module)
+        nn_modules_hook_infos = [(getattr(cell, forward_str), (cell, forward_str), name)
+                                 for cell, _, name in nn_modules_hook_infos
+                                 if cell not in unhook_modules]
+
+        user_hook_infos = []
+        if user_hook_ops is not None:
+            for hook_op in user_hook_ops:
+                if inspect.isclass(hook_op) and issubclass(hook_op, torch.nn.Module):
+                    user_hook_infos.append((getattr(hook_op, forward_str), (hook_op, forward_str), hook_op.__name__))
+                else:
+                    user_hook_infos.append((hook_op, hook_op, hook_op.__qualname__))
+        return torch_func_hook_infos + tensor_func_hook_infos + functional_func_hook_infos + \
+               tensor_operator_hook_infos + nn_modules_hook_infos + user_hook_infos

@@ -16,7 +16,7 @@ class FunctionReplace:
         elif inspect.isfunction(ori_function_define):
             self.ori_function = ori_function_define
             self.location, self.attr_name = self.get_location(self.ori_function)
-        elif hasattr(ori_function_define, "__call__"):
+        elif callable(ori_function_define):
             self.ori_function = ori_function_define.__call__
             self.location, self.attr_name = self.get_location(self.ori_function)
         elif isinstance(ori_function_define, tuple) and len(ori_function_define) == 2:

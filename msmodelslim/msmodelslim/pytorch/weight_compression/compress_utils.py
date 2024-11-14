@@ -52,7 +52,7 @@ def compress_weight_fun(weights, record_detail_root='./'):
         info = np.fromfile(compress_info_path, dtype=np.uint32)
         result = list(info), output, index
         tmp_dir = os.path.join(record_detail_root, str(os.getpid()))
-        safe_delete_path_if_exists(tmp_dir)
+        safe_delete_path_if_exists(tmp_dir, logger_level="debug")
     else:
         result = None, None, None 
     

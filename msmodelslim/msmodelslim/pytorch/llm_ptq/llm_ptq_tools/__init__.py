@@ -2,5 +2,6 @@
 
 from .quant_config.quant_config import QuantConfig
 from .quant_tools import Calibrator
+from .calibrator.calibrator_classes.fakequantize_calibrator import FakeQuantizeCalibrator
 
-__all__ = ['Calibrator', 'QuantConfig']
+__all__ = ['Calibrator', 'QuantConfig', 'FakeQuantizeCalibrator']
