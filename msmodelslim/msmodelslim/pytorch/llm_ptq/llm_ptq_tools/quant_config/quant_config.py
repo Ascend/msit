@@ -54,6 +54,7 @@ class QuantConfig:
                  open_outlier: bool = True,
                  is_dynamic: bool = False,
                  group_size: int = 64,
+                 percdamp: float = 0.01,
                  ):
         """
         Args:
@@ -78,6 +79,7 @@ class QuantConfig:
             use_kvcache_quant: 是否使用kv cache量化
             open_outlier: 是否开启权重异常值划分
             is_dynamic: 是否使用动态量化，即w8a8中的activation动态生成
+            percdamp: GPTQ所使用的矩阵正定偏置系数,当GPTQ运行出现非正定矩阵导致的报错时可以增大该参数
         """
         self._cur_config = QuantConfigFactory. \
             get_quant_config('base', w_bit=w_bit, a_bit=a_bit, act_method=act_method, w_method=w_method,
@@ -86,7 +88,7 @@ class QuantConfig:
                              is_lowbit=is_lowbit, do_smooth=do_smooth, use_sigma=use_sigma,
                              sigma_factor=sigma_factor, disable_last_linear=disable_last_linear,
                              use_kvcache_quant=use_kvcache_quant, open_outlier=open_outlier, is_dynamic=is_dynamic,
-                             group_size=group_size)
+                             group_size=group_size, percdamp=percdamp)
         self._modify_quant_param()
 
     def weight_quant(self,
@@ -156,12 +158,51 @@ class QuantConfig:
         self._modify_quant_param()
         return self
 
-    def kv_quant(self):
+    def kv_quant(self, kv_sym: bool = True):
         """
         kv cache 量化的参数初始化，
         无需输入参数，调用本函数即可，会自动将 use_kvcache_quant 置为True
         """
-        self._cur_config = QuantConfigFactory.get_quant_config('kv', last_config=self._cur_config)
+        self._cur_config = QuantConfigFactory.get_quant_config('kv', last_config=self._cur_config, kv_sym=kv_sym)
+        self._modify_quant_param()
+        return self
+    
+    def fa_quant(self,
+                 fa_amp: int = 0
+                 ):
+        """
+        FA量化的参数初始化
+        调用fa_quant()，默认自动打开
+
+        Arg:
+            fa_amp: 自动回退层数，以整个attention为单位进行回退
+        """
+        self._cur_config = QuantConfigFactory.get_quant_config('fa_quant', 
+                                                                last_config=self._cur_config,
+                                                                fa_amp=fa_amp
+                                                                )
+        self._modify_quant_param()
+        return self
+        
+
+    def simulate_tp(self,
+                    tp_size,
+                    enable_communication_quant=True,
+                    enable_per_device_quant=True,
+                    ):
+        """
+        多卡量化模拟的参数初始化
+
+        Arg:
+            tp_size: 模拟多卡量化的卡数
+            allreduce_quant: 是否启用模拟通信量化
+            quant_per_tp: 模拟多卡通信量化，每张卡是否使用同一个scale
+        """
+        self._cur_config = QuantConfigFactory.get_quant_config('simulate_tp',
+                                                               last_config=self._cur_config,
+                                                               tp_size=tp_size,
+                                                               enable_communication_quant=enable_communication_quant,
+                                                               enable_per_device_quant=enable_per_device_quant)
         self._modify_quant_param()
         return self
 
@@ -172,4 +213,3 @@ class QuantConfig:
         """
         config_attribute = self._cur_config.__dict__
         self.__dict__.update(**config_attribute)
-

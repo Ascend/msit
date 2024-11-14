@@ -2,15 +2,17 @@
 import inspect
 import itertools
 from abc import ABC
-from typing import Union, Any, List, Tuple
+from typing import Union, Optional, Callable, Any, List, Tuple, Dict, Iterable, NoReturn, Set
 
 import torch
 from torch import Tensor
 from torch.nn import Module, functional
+import torch.nn as nn
 
 from ascend_utils.common.utils import CallParams
 from ascend_utils.core.dag.dag_hook import DagHook
 from ascend_utils.core.dag.dag_node import DagNode
+from ascend_utils.common.utils import CallParams, ResListToRelease, concatenate_name_in_network, OperatorAttrName
 
 
 class DagTorchHook(DagHook, ABC):
@@ -29,14 +31,15 @@ class DagTorchHook(DagHook, ABC):
     def __init__(self,
                  network: Module,
                  inputs: Union[Tensor, List[Tensor], Tuple[Tensor], CallParams],
-                 hook_ops: Union[List[Any], None] = None):
+                 hook_ops: Union[List[Any], None] = None,
+                 collapse_repeat_block=False):
         if not isinstance(network, torch.nn.Module):
             raise TypeError("network must be type torch.nn.Module")
         if not isinstance(inputs, (Tensor, list, tuple, CallParams)):
             raise TypeError("inputs must be type Tensor, list, tuple, CallParams")
         if hook_ops is not None and not isinstance(hook_ops, list):
             raise TypeError("hook_nodes must be type list")
-
+        self._collapse_repeat_block = collapse_repeat_block
         super().__init__(network, inputs, hook_ops)
 
     @staticmethod
@@ -141,6 +144,11 @@ class DagTorchHook(DagHook, ABC):
 
     def _get_module_children(self, module):
         return module.named_children()
+
+    def _is_repeat_block(self, module):
+        if isinstance(module, nn.ModuleList) and self._collapse_repeat_block:
+            return True
+        return False
 
     def _get_module_cls(self):
         return torch.nn.Module

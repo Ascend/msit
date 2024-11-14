@@ -43,23 +43,35 @@ def set_lowbit_param(config):
     config.optimizate_msd = False
     config.fold = 3
     config.do_msd = False
-    config.use_hqq = False
     config.down_proj_type = ['c_proj', 'down_proj', 'dense_4h_to_h']
     config.norm_class_name = 'RMSNorm'
 
 
 def set_per_group_param(config):
-    is_per_group = config.w_bit == 4 and config.a_bit == 16 and not config.open_outlier and config.is_lowbit
+    is_per_group = config.a_bit == 16 and not config.open_outlier and config.is_lowbit
     if is_per_group:
         if config.group_size not in GROUP_SIZE_LIST:
             raise ValueError(f"group_size must be among choice {GROUP_SIZE_LIST}, please check it.")
         config.do_msd = True
         config.fold = 3
         config.optimizate_msd = True
-        config.use_hqq = False
         config.do_smooth = False
         config.amp_num = 0
         config.mm_tensor = False
+    else:
+        config.group_size = -1
+        if config.is_lowbit and (config.w_method == 'HQQ' or config.w_method == 'GPTQ'):
+            raise ValueError("When is_lowbit is set to True, the w_method configuration is only supported in a "
+                             "per-group scenario. Please check the config.")
+
+
+def set_fa_quant_param(config):
+    if not hasattr(config, "use_fa_quant"):
+        config.use_fa_quant = False
+    if not hasattr(config, "fa_amp"):
+        config.fa_amp = 0
+    if not hasattr(config, "fa_tp_size"):
+        config.fa_tp_size = 1
 
 
 def check_dynamic_config(config):
@@ -73,7 +85,7 @@ def check_dynamic_config(config):
 
 def check_sparse_config(config):
     check_type(config.nonuniform, bool, param_name="nonuniform")
-    check_number(config.fraction, float, 0.0, 0.1, param_name="fraction")
+    check_number(config.fraction, float, 0.01, 0.1, param_name="fraction")
 
     if config.co_sparse and config.is_lowbit:
         config.co_sparse = False
@@ -83,11 +95,11 @@ def check_sparse_config(config):
         if config.w_bit != 4:
             config.w_bit = 4
             msmodelslim_logger.warning("Running in sparse requires `w_bit` of 4, "
-                                     "your config `w_bit` will replaced to 4 instead.")
+                                       "your config `w_bit` will replaced to 4 instead.")
         if config.a_bit != 8:
             config.a_bit = 8
             msmodelslim_logger.warning("Running in sparse requires `a_bit` of 8, "
-                                     "your config `a_bit` will replaced to 8 instead.")
+                                       "your config `a_bit` will replaced to 8 instead.")
     else:
         check_number(config.pr, float, 0, 1, param_name="pr")
         if config.w_bit not in W_BIT_LIST:
@@ -112,6 +124,7 @@ def check_and_generate_config_param(config):
     """
     set_quant_param(config)
     set_lowbit_param(config)
+    set_fa_quant_param(config)
     config.device, config.dev_id = validate_device(config.dev_type, config.dev_id, _SUPPORTED_DEVICES)
     check_type(config.w_bit, int, param_name="w_bit")
     check_type(config.a_bit, int, param_name="a_bit")
@@ -129,6 +142,10 @@ def check_and_generate_config_param(config):
     check_type(config.disable_last_linear, bool, param_name='disable_last_linear')
     check_type(config.use_kvcache_quant, bool, param_name="use_kvcache_quant")
     check_type(config.group_size, int, param_name="group_size")
+    check_number(config.percdamp, float, 0, 1, param_name="percdamp")
+
+    if config.use_kvcache_quant and config.use_fa_quant:
+        raise ValueError("KV-cache and FA cannot be quantized at the same time!")
 
     check_sparse_config(config)
     check_lowbit_config(config)

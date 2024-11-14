@@ -52,7 +52,7 @@ def preprocess_quant_model(model):
     graph = model.graph
     param_dict = get_model_params(graph.initializer)
     new_initializer = []
-    for index, param in enumerate(graph.initializer):
+    for _, param in enumerate(graph.initializer):
         param_name = param.name
         param_value = param_dict.get(param_name)
         if ".weight_zero_point" in param_name and isinstance(param_value, np.ndarray) \

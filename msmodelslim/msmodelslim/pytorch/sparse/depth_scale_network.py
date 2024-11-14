@@ -43,52 +43,11 @@ class DepthScaleNetwork:
     def repeat_operators(self):
         return self._repeat_operators
 
-    def _analysis(self, module: Module):
-        sub_module_list = list(module.named_children())
-        sub_module_list.sort(key=lambda x: self.dag.calc_order.index(x[1]) if x[1] in self.dag.calc_order else -1)
-
-        last_module = None
-        no_analysis_opts = []
-        repeat_opts: List[DepthScaleNetwork.RepeatOperatorInfo] = list()
-        if len(sub_module_list) >= 2:
-            for attr_name, sub_module in sub_module_list:
-                is_repeat = self._is_repeat_opts_with_weight(last_module, sub_module)
-                if not is_repeat and repeat_opts:
-                    self._repeat_operators.append(repeat_opts)
-                    repeat_opts = []
-                if not is_repeat:
-                    last_module = sub_module
-                    continue
-
-                if not repeat_opts:
-                    repeat_opts.append(
-                        self.RepeatOperatorInfo(self._get_module_name(last_module), module, attr_name, last_module,
-                                                enable=True))
-                    no_analysis_opts.append(last_module)
-
-                repeat_opts.append(
-                    self.RepeatOperatorInfo(self._get_module_name(sub_module), module, attr_name, sub_module,
-                                            enable=True))
-                no_analysis_opts.append(sub_module)
-
-            if repeat_opts:
-                self._repeat_operators.append(repeat_opts)
-
-        for _, sub_module in module.named_children():
-            if sub_module in no_analysis_opts:
-                continue
-            self._analysis(sub_module)
-
-    def _get_module_name(self, module):
-        if module not in self.dag.structure_tree:
-            return ""
-        return self.dag.structure_tree[module].get("name_in_network", "")
-
     @staticmethod
     def _is_repeat_opts_with_weight(last_module: Module, this_module: Module):
         if this_module is None:
             return False
-        if type(this_module) != type(last_module):
+        if this_module.__class__ != last_module.__class__:
             return False
 
         last_param_info = [(name, parameter.shape) for name, parameter in last_module.named_parameters()]
@@ -160,6 +119,46 @@ class DepthScaleNetwork:
                 else:
                     self.disable_operator(repeat_operator_list[index])
 
+    def _analysis(self, module: Module):
+        sub_module_list = list(module.named_children())
+        sub_module_list.sort(key=lambda x: self.dag.calc_order.index(x[1]) if x[1] in self.dag.calc_order else -1)
+
+        last_module = None
+        no_analysis_opts = []
+        repeat_opts: List[DepthScaleNetwork.RepeatOperatorInfo] = list()
+        if len(sub_module_list) >= 2:
+            for attr_name, sub_module in sub_module_list:
+                is_repeat = self._is_repeat_opts_with_weight(last_module, sub_module)
+                if not is_repeat and repeat_opts:
+                    self._repeat_operators.append(repeat_opts)
+                    repeat_opts = []
+                if not is_repeat:
+                    last_module = sub_module
+                    continue
+
+                if not repeat_opts:
+                    repeat_opts.append(
+                        self.RepeatOperatorInfo(self._get_module_name(last_module), module, attr_name, last_module,
+                                                enable=True))
+                    no_analysis_opts.append(last_module)
+
+                repeat_opts.append(
+                    self.RepeatOperatorInfo(self._get_module_name(sub_module), module, attr_name, sub_module,
+                                            enable=True))
+                no_analysis_opts.append(sub_module)
+
+            if repeat_opts:
+                self._repeat_operators.append(repeat_opts)
+
+        for _, sub_module in module.named_children():
+            if sub_module in no_analysis_opts:
+                continue
+            self._analysis(sub_module)
+
+    def _get_module_name(self, module):
+        if module not in self.dag.structure_tree:
+            return ""
+        return self.dag.structure_tree[module].get("name_in_network", "")
 
 class JumpingOffOperator(Module):
     def forward(self, *args):

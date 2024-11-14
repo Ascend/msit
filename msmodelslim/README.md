@@ -18,16 +18,17 @@ msModelSlim当前处于逐步开源过程中，计划通过630,930,1230三个版
 **注意** 该版本存在已知问题，使用modelslim调用接口时，部分功能存在异常。请使用msmodelslim调用。 
 
 版本交替期间提供两种方式使用msModelSlim工具：  
-1、下载安装CANN并配置环境变量  
-2、下载安装CANN并配置环境变量，下载安装开源版本msModelSlim  
-    操作步骤：
-    git clone下载本仓代码；
-    设置CANN环境变量；
-    进入msmodelslim目录，运行脚本install.sh。
+1. 下载安装CANN并配置环境变量  
+2. 下载安装开源版本msModelSlim  
+    **操作步骤：**
+    - git clone下载本仓代码；
+    - 进入到刚刚clone下来的msmodelslim的目录 `cd msit/msmodelslim`；
+    - 设置CANN环境变量；
+    - 进入msmodelslim目录，运行安装脚本 `bash install.sh`;
+    - 进入python环境路径 `cd 环境路径/env/.../site-packages/msmodelslim/pytorch/weight_compression/compress_graph/`
+    - 给build文件夹相关权限 `sudo chown -R 750 build`
+    - 编译weight_compression组件 `sudo bash build.sh {CANN包安装路径}/ascend-toolkit/latest`
 
-930版本尚未发布。  
-
-1230版本尚未发布，只支持通过开源方式使用。
 
 ### 环境准备
 
@@ -53,7 +54,7 @@ export PATH=/usr/local/python3.7.5/bin:$PATH
         - 请参考《[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/60RC1/configandinstg/instg/insg_0001.html)》，安装PyTorch框架、torch_npu插件、Torchvision依赖和Apex混合精度模块。
         - 若PyTorch下需要统计模型的参数量信息，则执行如下命令安装依赖thop。
           如下命令如果使用非root用户安装，需要在安装命令后加上--user，例如：pip3 install thop --user。
-### 特性清单
+## 特性清单
 - msModelSlim针对开发者的差异化需求，提供了以下模型压缩方案：
 
 | 功能名称                          | 功能简介                                                                                                                                                  |
@@ -68,5 +69,6 @@ export PATH=/usr/local/python3.7.5/bin:$PATH
 | [Transformer类模型权重剪枝调优](msmodelslim/pytorch/prune/transformer_prune)          | 模型权重剪枝是一种通过移除模型中不重要的权重（即那些对模型性能影响较小的权重）来减少模型复杂度的技术。剪枝后的模型权重更少，从而可以减少模型的存储需求，并可能加快模型的推理速度。                                                             |
 | [基于重要性评估的剪枝调优](msmodelslim/pytorch/prune)                  | 基于重要性评估进行剪枝调优是一种常用的方法，它涉及到评估模型中每个权重的重要性，并据此决定哪些权重应该被剪枝。  基于重要性评估的剪枝调优可以显著减少模型的大小，提高模型的推理效率，同时尽量保持模型的性能。这种方法在深度学习模型压缩和加速中非常有用，特别是在需要部署模型到资源受限的环境中的情况下。 |
 
+### [Python API接口说明](docs/Python-API接口说明) 
 #### 许可证
 [Apache License 2.0](LICENSE)

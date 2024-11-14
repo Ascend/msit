@@ -1,6 +1,6 @@
 # Copyright Huawei Technologies Co., Ltd. 2024-2024. All rights reserved.
 #!/bin/bash
-if [ ! -d "$ASCED_HOME_PATH/" ]; then
+if [ ! -d "$ASCEND_HOME_PATH/" ]; then
     echo "ASCEND_HOME_PATH not exist.\
     Please check that the cann package is installed.\
     Please run 'source set_env.sh' in the CANN installation path."

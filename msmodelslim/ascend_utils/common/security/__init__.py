@@ -1,3 +1,5 @@
+# Copyright Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
+
 from ascend_utils.common.security.type import (
     check_type,
     check_number,

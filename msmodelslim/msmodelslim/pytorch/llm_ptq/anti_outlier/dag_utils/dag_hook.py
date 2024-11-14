@@ -2,7 +2,6 @@
 
 import functools
 import inspect
-import logging
 from abc import ABC, abstractmethod
 from typing import Union, Optional, Callable, Any, List, Tuple, Dict, Iterable, NoReturn, Set
 
@@ -15,6 +14,7 @@ from ascend_utils.common.utils import (
 from ascend_utils.core.dag.dag import DirectedAcyclicGraph
 from ascend_utils.core.dag.dag_node import DagNode
 from ascend_utils.core.dag.dag_node_io import DagNodeIO
+from msmodelslim import logger
 
 
 class DagHook(DirectedAcyclicGraph, ABC):
@@ -33,7 +33,8 @@ class DagHook(DirectedAcyclicGraph, ABC):
     def __init__(self,
                  network,
                  inputs,
-                 hook_ops: Union[List[Any], None] = None):
+                 hook_ops: Union[List[Any], None] = None,
+                 anti_method=None):
         super().__init__(network)
         self._inputs = inputs
         self._hook_ops = self._get_all_hook_ops(hook_ops)
@@ -195,19 +196,21 @@ class DagHook(DirectedAcyclicGraph, ABC):
 
         # 在多卡的情况下，deepcopy的这个模型需要去掉之前accelerate备份的每个module的forward函数，来保持正常的forward流程
         init_with_accelerate = hasattr(self.network, 'hf_device_map')
+        forward_str = 'forward'
         if init_with_accelerate:
             ops_list = []
             for op_hook_info in self._hook_ops:
                 node_ins, ops_location, ops_name = op_hook_info
-                ops_list.append(ops_location[0])
+                if ops_location[1] == forward_str:
+                    ops_list.append(ops_location[0])
             ops_tuple = tuple(ops_list)
 
             for mod in self.network.modules():
                 values = set(self.network.hf_device_map.values())
                 init_with_accelerate_parallel = False if len(values) == 1 else True
                 is_target_ops = isinstance(mod, ops_tuple)
-                if hasattr(mod, 'forward') and is_target_ops and init_with_accelerate_parallel:
-                    delattr(mod, "forward")
+                if hasattr(mod, forward_str) and is_target_ops and init_with_accelerate_parallel:
+                    delattr(mod, forward_str)
 
         # network construct and parse network
         with ResListToRelease(*replace_functions):
@@ -223,7 +226,7 @@ class DagHook(DirectedAcyclicGraph, ABC):
             except RuntimeError as ex:
                 raise ValueError("Check whether the input is of the current network.") from ex
 
-        logging.info("parse network over")
+        logger.info("parse network over")
 
     def _get_node_wrapper(self, op_hook_info: Tuple[Callable, Any, str], replace_stack: List[Any],
                           node_io_dict: Dict[int, DagNodeIO],

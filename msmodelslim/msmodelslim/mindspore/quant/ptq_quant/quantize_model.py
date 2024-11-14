@@ -1,7 +1,6 @@
 # Copyright Huawei Technologies Co., Ltd. 2022-2022. All rights reserved.
 
-import logging
-
+from msmodelslim import logger
 from msmodelslim.mindspore.quant.ptq_quant.rollback_quant_nodes import get_rollback_nodes
 from ascend_utils.mindspore.quant.ptq_quant.weight_quantization import quant_weight
 from ascend_utils.mindspore.quant.ptq_quant.featuremap_quantization import quant_activation
@@ -33,7 +32,7 @@ def quantize_model(config_file, model, *input_data):
         rollback_nodes = get_rollback_nodes(model_original, model_quant,
                                             input_data, num_rollback_nodes, layer_need_quantization_list)
         newline = "\n"
-        logging.info("rollback node(s): %s", newline + newline.join(rollback_nodes))
+        logger.info("rollback node(s): %s", newline + newline.join(rollback_nodes))
         for node in rollback_nodes:
             if node in layer_need_quantization_list:
                 layer_need_quantization_list.remove(node)
@@ -72,7 +71,7 @@ def get_config_file_param(dict_value):
             is_fuse_bn = False
         if isinstance(value, dict) and value.get("quant"):
             layer_need_quantization_list.append(key)
-    logging.info("Config file read successfully")
+    logger.info("Config file read successfully")
     return is_fuse_bn, num_rollback_nodes, layer_need_quantization_list
 
 

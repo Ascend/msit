@@ -162,20 +162,6 @@ class Quantizer(nn.Module):
         )
         return tensor
 
-    def _forward(self, data):
-        self.input_scale,\
-        self.input_offset = linear_quantization_params(
-            self.bit, self.x_min, self.x_max, q_signed=True, sym=self.is_sym
-        )
-        return self.new_quant_tensor(data)
-
-    def _update_input_observer(self, data):
-        self.observer.update(data)
-
-    def _observer_forward(self, data):
-        self.input_scale, self.input_offset = self.observer.get_scale_offset()
-        return self.new_quant_tensor(data)
-
     def tensor_forward(self, tensor):
         if not self.is_enable:
             return tensor
@@ -200,6 +186,20 @@ class Quantizer(nn.Module):
                     return self._forward(tensor)
             else:
                 return self.quant_weight_tensor
+            
+    def _forward(self, data):
+        self.input_scale,\
+        self.input_offset = linear_quantization_params(
+            self.bit, self.x_min, self.x_max, q_signed=True, sym=self.is_sym
+        )
+        return self.new_quant_tensor(data)
+
+    def _update_input_observer(self, data):
+        self.observer.update(data)
+
+    def _observer_forward(self, data):
+        self.input_scale, self.input_offset = self.observer.get_scale_offset()
+        return self.new_quant_tensor(data)
 
     def _init_weight_quant_normal(self,
                                   weight,

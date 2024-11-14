@@ -5,6 +5,8 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config_classes
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config_classes import WeightActivationQuantConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config_classes import SparseQuantConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config_classes import KVQuantConfig
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config_classes import FAQuantConfig
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config_classes import SimulateTPConfig
 
 
 class QuantConfigFactory:
@@ -16,7 +18,9 @@ class QuantConfigFactory:
         'weight': WeightQuantConfig,
         'weight_activation': WeightActivationQuantConfig,
         'sparse': SparseQuantConfig,
-        'kv': KVQuantConfig
+        'kv': KVQuantConfig,
+        'fa_quant': FAQuantConfig,
+        'simulate_tp': SimulateTPConfig,
     }
 
     @classmethod

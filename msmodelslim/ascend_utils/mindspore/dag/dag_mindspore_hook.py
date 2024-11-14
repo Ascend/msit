@@ -27,6 +27,11 @@ class DagMindSporeHook(DagHook, ABC):
         self._tmp_device = dict(device_target="CPU", mode=mindspore.PYNATIVE_MODE)
         super(DagMindSporeHook, self).__init__(network, inputs, hook_ops)
 
+    @staticmethod
+    def _parse_network_device():
+        return dict(device_target=mindspore.context.get_context("device_target"),
+                    mode=mindspore.context.get_context("mode"))
+        
     def get_params(self) -> int:
         model: mindspore.nn.Cell = self.network
         return sum([numpy.prod(param.shape) for param in model.get_parameters()])
@@ -184,8 +189,4 @@ class DagMindSporeHook(DagHook, ABC):
             ops_func_hook_infos + ops_call_hook_infos + ops_new_hook_infos + \
             nn_modules_hook_infos + user_hook_infos
 
-    @staticmethod
-    def _parse_network_device():
-        return dict(device_target=mindspore.context.get_context("device_target"),
-                    mode=mindspore.context.get_context("mode"))
 

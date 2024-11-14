@@ -73,9 +73,9 @@ class OnnxCalibrator(object):
                                            (self.temp_onnx_path, self.temp_om_model))
         self._set_quant()
         if cfg.disable_first_layer:
-            disable_first_layer(self.graph, self.graph_nodes)
+            disable_first_layer(self.graph, self.graph_nodes, self.logger)
         if cfg.disable_last_layer:
-            disable_last_layer(self.graph, self.graph_nodes)
+            disable_last_layer(self.graph, self.graph_nodes, self.logger)
 
 
     def __del__(self):
@@ -276,8 +276,8 @@ class OnnxCalibrator(object):
                 random_data = np.array(
                     np.random.random(self.input_shapes[i]),
                     dtype=get_np_datatype()[self.input_types[i]])
-                calib_data.append([random_data])
-            return calib_data
+                calib_data.append(random_data)
+            return [calib_data]
 
     def _amp(self):
         dequant_index = onnx_amp(self.graph_nodes, self.cfg.amp_num)

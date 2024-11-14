@@ -1,10 +1,9 @@
 # Copyright Huawei Technologies Co., Ltd. 2022-2022. All rights reserved.
 
-import logging
-
 from ascend_utils.mindspore.quant.ptq_quant.utils import is_quant_cell
 from ascend_utils.common.security.mindspore import check_mindspore_cell
 from ascend_utils.common.security import json_safe_dump
+from msmodelslim import logger
 
 
 def create_quant_config(config_file, model):
@@ -36,4 +35,4 @@ def generate_config(config_file, name_list):
     for name in name_list:
         raw_data[name] = {"quant": True}
     json_safe_dump(raw_data, config_file, indent=4)
-    logging.info("Config file generated successfully: %s", config_file)
+    logger.info("Config file generated successfully: %s", config_file)
