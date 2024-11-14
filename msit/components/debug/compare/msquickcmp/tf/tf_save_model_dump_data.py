@@ -28,6 +28,7 @@ import tensorflow as tf
 from msquickcmp.common import utils, tf_common
 from msquickcmp.common.dump_data import DumpData
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
+from components.debug.compare.msquickcmp.common.tf_common import load_file_to_read_common_check_with_walk
 
 
 def parse_ops_name_from_om_json(tf_json_path):
@@ -165,9 +166,10 @@ class TfSaveModelDumpData(DumpData):
         op_names = parse_ops_name_from_om_json(tf_json_path)
         sess = tf.compat.v1.keras.backend.get_session()
         tag_set = {tf.compat.v1.saved_model.tag_constants.SERVING} if self.tag_set == "" else self.tag_set
-        for root, _, files in os.walk(self.model_path):
-            for filename in files:
-                load_file_to_read_common_check(os.path.join(root, filename))
+        if os.path.isdir(self.model_path):
+            load_file_to_read_common_check_with_walk(self.model_path)
+        else:
+            load_file_to_read_common_check(self.model_path)
         _ = tf.compat.v1.saved_model.load(sess, tag_set, self.model_path)
         if not self.inputs_data:
             raise ValueError("inputs_data is empty")
