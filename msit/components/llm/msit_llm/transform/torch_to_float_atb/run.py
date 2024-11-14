@@ -27,7 +27,7 @@ class RouterParam:
     is_flash_causal_lm: bool = True
     load_tokenizer: bool = True
     revision: Optional[str] = None
-    trust_remote_code: bool = True
+    trust_remote_code: bool = False
 
     
 def get_model(param):
@@ -90,7 +90,7 @@ class TransModelRunner(ModelRunner):
             is_flash_causal_lm,
             load_tokenizer=load_tokenizer,
             revision=None, 
-            trust_remote_code=True, 
+            trust_remote_code=False,
             )
         router_ins = get_model(param)
 
