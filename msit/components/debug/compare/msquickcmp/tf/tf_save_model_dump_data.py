@@ -27,6 +27,8 @@ import numpy as np
 import tensorflow as tf
 from msquickcmp.common import utils, tf_common
 from msquickcmp.common.dump_data import DumpData
+from components.llm.msit_llm.common.utils import load_file_to_read_common_check
+from components.debug.compare.msquickcmp.common.tf_common import load_file_to_read_common_check_with_walk
 
 
 def parse_ops_name_from_om_json(tf_json_path):
@@ -72,6 +74,7 @@ class TfSaveModelDumpData(DumpData):
     @staticmethod
     def parse_json_file(output_json_path):
         try:
+            output_json_path = load_file_to_read_common_check(output_json_path)
             with open(output_json_path, 'r', encoding='utf-8') as file:
                 return json.load(file)
         except FileNotFoundError as e:
@@ -163,6 +166,10 @@ class TfSaveModelDumpData(DumpData):
         op_names = parse_ops_name_from_om_json(tf_json_path)
         sess = tf.compat.v1.keras.backend.get_session()
         tag_set = {tf.compat.v1.saved_model.tag_constants.SERVING} if self.tag_set == "" else self.tag_set
+        if os.path.isdir(self.model_path):
+            load_file_to_read_common_check_with_walk(self.model_path)
+        else:
+            load_file_to_read_common_check(self.model_path)
         _ = tf.compat.v1.saved_model.load(sess, tag_set, self.model_path)
         if not self.inputs_data:
             raise ValueError("inputs_data is empty")

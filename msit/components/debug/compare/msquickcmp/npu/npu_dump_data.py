@@ -34,6 +34,7 @@ from msquickcmp.common.dynamic_argument_bean import DynamicArgumentEnum
 from msquickcmp.npu.om_parser import OmParser
 
 from components.utils.check.rule import Rule
+from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 
 BENCHMARK_DIR = "benchmark"
@@ -392,6 +393,7 @@ class NpuDumpData(DumpData):
 
         options = aclruntime.session_options()
         Rule.input_file().check(self.offline_model_path, will_raise=True)
+        self.offline_model_path = load_file_to_read_common_check(self.offline_model_path)
         aa = aclruntime.InferenceSession(self.offline_model_path, int(self.device), options)
         shape_list = [ii.shape for ii in aa.get_inputs()]
         dtype_list = [ii.datatype.name for ii in aa.get_inputs()]
