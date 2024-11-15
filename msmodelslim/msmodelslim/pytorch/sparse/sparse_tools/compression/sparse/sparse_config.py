@@ -1,6 +1,5 @@
 # Copyright Huawei Technologies Co., Ltd. 2023-2023. All rights reserved.
 from dataclasses import dataclass
-
 from msmodelslim.pytorch.sparse.sparse_tools.common.config import Config
 
 
@@ -14,6 +13,10 @@ class SparseConfig(Config):
     uniform: bool = True
     
     def __post_init__(self):
+        mode_list = ['sparse']
+        if self.mode not in mode_list:
+            raise ValueError("mode should be 'sparse'")
+        
         method_list = ['magnitude', 'hessian', 'par', 'par_v2']
         if self.method not in method_list:
             raise ValueError(f"optimizer should be in {method_list}")
