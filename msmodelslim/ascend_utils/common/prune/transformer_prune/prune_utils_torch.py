@@ -6,6 +6,7 @@ import logging
 import torch
 
 from ascend_utils.common.prune.transformer_prune.prune_utils_base import PruneUtilsBase
+from ascend_utils.common.security.pytorch import safe_torch_load
 
 QKV_NUMS = 3  # transform model has 3 vector named q, k, v
 
@@ -41,7 +42,8 @@ class PruneUtilsTorch(PruneUtilsBase):
 
     @staticmethod
     def get_state_dict(weight_path):
-        ckpt = torch.load(weight_path, map_location=torch.device('cpu'))  # avoid load different npu id model to npu
+        # avoid load different npu id model to npu
+        ckpt = safe_torch_load(weight_path, map_location=torch.device('cpu'))
         if 'state_dict' in ckpt:
             ckpt = ckpt['state_dict']
         elif 'model' in ckpt:

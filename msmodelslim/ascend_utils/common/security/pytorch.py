@@ -1,4 +1,7 @@
 # Copyright Huawei Technologies Co., Ltd. 2022-2022. All rights reserved.
+import re
+import pickle
+
 import torch
 import torch.nn as nn
 from msmodelslim import logger
@@ -47,3 +50,35 @@ def validate_device(dev_type, dev_id, device_candidates):
         device = dev_type
 
     return device, dev_id
+
+
+def confirmation_interaction(prompt):
+    confirm_pattern = re.compile(r'y(?:es)?', re.IGNORECASE)
+
+    try:
+        user_action = input(prompt)
+    except Exception:
+        return False
+
+    return bool(confirm_pattern.match(user_action))
+
+
+def safe_torch_load(path, **kwargs):
+    kwargs['weights_only'] = True
+    tensor = None
+
+    while True:
+        try:
+            tensor = torch.load(path, **kwargs)
+        except pickle.UnpicklingError:
+            confirmation_prompt = "Weights only load failed. Re-running `torch.load` with `weights_only` " \
+                                  "set to `False` will likely succeed, but it can result in arbitrary code " \
+                                  "execution. Do it only if you get the file from a trusted source.\n" \
+                                  "Please confirm your awareness of the risks associated with this action ([y]/n): "
+            if not confirmation_interaction(confirmation_prompt):
+                raise
+            kwargs['weights_only'] = False
+        else:
+            break
+
+    return tensor

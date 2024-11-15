@@ -1,8 +1,20 @@
 /**
- * Copyright (c) Huawei Technologies Co., Ltd. 2023-2023. All rights reserved.
+ * Copyright (c) Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
  * Description: graph_utils.h for weight compression
  * Author: Huawei
  * Create: 2023-09-21
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "graph_utils.h"
@@ -36,8 +48,8 @@ bool GetDataFromBin(string input_path, vector<int64_t> shapes, uint8_t** data, i
 
   int64_t size = 1;
   GetDataSizeFromShape(shapes, size);
-  uint32_t dataLen = size * data_type_size;
-  if (dataLen != fileSize) {
+  uint64_t dataLen = size * data_type_size;
+  if (dataLen != static_cast<uint64_t>(fileSize)) {
     std::cout << "Invalid Param.len:" << dataLen << " is not equal with binary size." << fileSize << ")\n";
     inFile.close();
     return false;
@@ -52,8 +64,14 @@ bool GetDataFromBin(string input_path, vector<int64_t> shapes, uint8_t** data, i
   *data = reinterpret_cast<uint8_t*>(pdata);
   if (inFile.fail()) {
     std::cout << "Read file failed.\n";
+    return false;
   }
-  if (pdata == nullptr){
+
+  // destroy pdata
+  pdata = nullptr;
+
+  if (*data == nullptr) {
+    std::cout << "Invalid data ptr.\n";
     return false;
   }
   return true;
