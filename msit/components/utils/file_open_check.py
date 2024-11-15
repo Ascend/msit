@@ -20,6 +20,8 @@ import logging
 from enum import Enum
 from components.utils.log import logger
 from components.utils.check import Rule
+from components.utils.constants import CONFIG_FILE_MAX_SIZE
+
 
 
 MAX_SIZE_UNLIMITE = -1  # 不限制，必须显式表示不限制，读取必须传入
@@ -295,7 +297,7 @@ class FileStat:
         return False
 
 
-def ms_open(file, mode="r", max_size=None, softlink=False, write_permission=PERMISSION_NORMAL, **kwargs):
+def ms_open(file, mode="r", max_size=CONFIG_FILE_MAX_SIZE, softlink=False, write_permission=PERMISSION_NORMAL, **kwargs):
     file_stat = FileStat(file)
 
     if file_stat.is_exists and file_stat.is_dir:
