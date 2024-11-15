@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright Huawei Technologies Co., Ltd. 2022-2022. All rights reserved.
-from ascend_utils.common.security import check_type, check_int, check_element_type
+from ascend_utils.common.security import check_type, check_int, check_element_type, check_dict_character
 
 # quant_mode
 # 0 : data-free
@@ -79,15 +79,28 @@ class QuantConfig:
         if not isinstance(self.a_bit, int) or self.a_bit != 8:
             raise TypeError("a_bit must be 8, please check it.")
 
+        check_dict_character(dict_value=self.keep_acc, param_name="keep_acc")
         if 'admm' not in self.keep_acc:
             raise ValueError("admm should be in keep_accuracy")
+        else:
+            check_type(self.keep_acc['admm'], list, param_name="the value of key 'admm'")
+            check_type(self.keep_acc['admm'][0], bool, param_name="first element in the value of keyword 'admm'")
+            check_type(self.keep_acc['admm'][1], int, param_name="second element in the value of keyword 'admm'")
         if 'easy_quant' not in self.keep_acc:
             raise ValueError("easy_quant should be in keep_accuracy")
+        else:
+            check_type(self.keep_acc['easy_quant'], list, param_name="the value of key 'easy_quant'")
+            check_type(self.keep_acc['easy_quant'][0], bool, param_name="first element in the value of keyword 'easy_quant'")
+            check_type(self.keep_acc['easy_quant'][1], int, param_name="second element in the value of keyword 'easy_quant'")
         if 'round_opt' not in self.keep_acc:
             raise ValueError("round_opt should be in keep_accuracy")
+        else:
+            check_type(self.keep_acc['round_opt'], bool, param_name="the value of key 'round_opt'")
 
         check_int(self.amp_num, min_value=0, param_name='amp_num')
         check_int(self.sigma, min_value=0, max_value=100, param_name='sigma')
+
+        check_element_type(self.disable_names, element_type=str, value_type=list, param_name="disable_names")
 
         if not isinstance(self.disable_names, list):
             raise TypeError("disable_names must be list, please check it.")
