@@ -16,6 +16,7 @@ import os
 import torch.nn as nn
 
 from msit_llm.transform.utils import write_file
+from components.utils.security_check import ms_makedirs
 
 
 def init_save_name(save_name):
@@ -31,7 +32,7 @@ def init_save_dir(save_dir, sub_dir):
     save_dir = os.path.join(save_dir, sub_dir)
     
     if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+        ms_makedirs(save_dir)
     return save_dir
 
 

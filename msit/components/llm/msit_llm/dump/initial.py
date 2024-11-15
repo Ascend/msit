@@ -28,6 +28,7 @@ from msit_llm.common.constant import ATB_HOME_PATH, ATB_SAVE_TENSOR_TIME, ATB_SA
     ASCEND_TOOLKIT_HOME, ATB_PROB_LIB_WITH_ABI, ATB_PROB_LIB_WITHOUT_ABI, ATB_SAVE_CPU_PROFILING, \
     ATB_CUR_PID, ATB_DUMP_SUB_PROC_INFO_SAVE_PATH, ATB_DEVICE_ID, ATB_AIT_LOG_LEVEL, ATB_DUMP_TYPE, get_ait_dump_path, \
     ATB_TIMESTAMP, GLOBAL_HISTORY_AIT_DUMP_PATH_LIST, ATB_SAVE_TENSOR_IN_BEFORE_OUT_AFTER
+from components.utils.security_check import ms_makedirs
 
 
 def is_use_cxx11():
@@ -93,7 +94,7 @@ def init_dump_task(args):
     if "onnx" in args.type and ("model" in args.type or "layer" in args.type):
         os.environ[ATB_DUMP_SUB_PROC_INFO_SAVE_PATH] = os.path.join(str(args.output), str(os.getpid()))
         subprocess_info_path = os.path.join(args.output, str(os.getpid()))
-        os.makedirs(subprocess_info_path, exist_ok=True)
+        ms_makedirs(subprocess_info_path, exist_ok=True)
     else:
         os.environ.pop(ATB_DUMP_SUB_PROC_INFO_SAVE_PATH, None)  # Ensure none is set
 

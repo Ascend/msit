@@ -19,6 +19,7 @@ from components.utils.file_open_check import ms_open
 from msit_llm.common.log import logger
 from msit_llm.common.utils import check_output_path_legality, load_file_to_read_common_check
 from msit_llm.common.constant import get_ait_dump_path
+from components.utils.security_check import ms_makedirs
 
 
 def dump_data(token_id=-1, data_id=-1, golden_data=None, my_path='', output_path='./'):
@@ -46,7 +47,7 @@ def dump_data(token_id=-1, data_id=-1, golden_data=None, my_path='', output_path
         golden_data_dir = os.path.join(output_path_prefix, "golden_tensor", str(token_id))
 
         if not os.path.exists(golden_data_dir):
-            os.makedirs(golden_data_dir)
+            ms_makedirs(golden_data_dir)
 
         golden_data_path = os.path.join(golden_data_dir, f'{data_id}_tensor.pth')
         torch.save(golden_data, golden_data_path)

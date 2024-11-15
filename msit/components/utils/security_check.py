@@ -195,3 +195,21 @@ def check_dict_character(dict_value, key_max_len=512, param_name="dict"):
 def is_enough_disk_space_left(dump_path, required_space=MIN_DUMP_DISK_SPACE):
     empty_disk_space = shutil.disk_usage(dump_path).free
     return empty_disk_space >= required_space
+
+
+def ms_makedirs(dir_path, **kwargs):
+    from components.utils.check import PathChecker
+
+    def get_parent_dir_path(dir_path):
+        if dir_path.exists():
+            return dir_path
+        return dir_path.parent
+    
+    from pathlib import Path            
+    dir_path = Path(dir_path)
+    parent_dir_path = get_parent_dir_path(dir_path.parent)
+
+    if not PathChecker().is_safe_parent_dir().check(str(parent_dir_path)):
+        raise OSError(f"Output parent directory path {parent_dir_path} is not safe.")
+    
+    os.makedirs(dir_path, **kwargs)

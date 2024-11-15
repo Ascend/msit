@@ -22,7 +22,7 @@ from numpy.linalg import norm
 import onnxruntime as rt
 
 from components.debug.common import logger
-
+from components.utils.security_check import ms_makedirs
 
 def typeassert(*ty_args, **ty_kwargs):
     def decorate(func):
@@ -86,7 +86,7 @@ def dump_op_outputs(graph, input_data, dump_path, outputs=None):
     arrs = _run(new_model_byte, input_data)
     idx = 0
     if not os.path.exists(dump_path):
-        os.makedirs(dump_path, mode=0o700)
+        ms_makedirs(dump_path, mode=0o700)
     for node in ori_model.graph.node:
         for i, _ in enumerate(node.output):
             fname = f'{node.name}_{i}.npy'

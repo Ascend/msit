@@ -21,6 +21,7 @@ import pandas as pd
 
 from msit_llm.common.log import logger
 from msit_llm.common.validate import validate_parameters_by_type, validate_parameters_by_func
+from components.utils.security_check import ms_makedirs
 
 
 class PermissionWarning(UserWarning):
@@ -53,7 +54,7 @@ def check_dir(output_dir):
 
     else:
         logger.warning("Specified directory does not exist. Trying to create...")
-        os.makedirs(output_dir, 0o750, exist_ok=True)
+        ms_makedirs(output_dir, 0o750, exist_ok=True)
 
 
 class CaseFilter(object):

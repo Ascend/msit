@@ -46,7 +46,7 @@ from msquickcmp.npu.npu_dump_data import NpuDumpData, DynamicInput
 from msquickcmp.npu.om_parser import OmParser
 from msquickcmp.single_op import single_op as sp
 
-from components.utils.security_check import check_write_directory
+from components.utils.security_check import check_write_directory, ms_makedirs
 from components.utils.file_open_check import ms_open, sanitize_csv_value
 from components.utils.check.rule import Rule
 
@@ -483,8 +483,7 @@ def single_op_compare(args, input_shape):
 
         # set single op output data
         tmp_out_path = os.path.join(single_op_dir, f"single_op_{idx}")
-        if not os.path.exists(tmp_out_path):
-            os.makedirs(tmp_out_path)
+        ms_makedirs(tmp_out_path, exists=True)
         time_dir = time.strftime("%Y%m%d%H%M%S", time.localtime())
         original_out_path = os.path.realpath(os.path.join(args.out_path, time_dir))
 
@@ -590,7 +589,7 @@ def subgraph_check(og, node_interval, args, onnx_data_path, input_shape):
     utils.logger.info("Loading data Finished!")
     tmp_out_path = os.path.join(args.out_path, 'tmpres')
     if not os.path.exists(tmp_out_path):
-        os.makedirs(tmp_out_path)
+        ms_makedirs(tmp_out_path)
     time_dir = time.strftime("%Y%m%d%H%M%S", time.localtime())
     original_out_path = os.path.realpath(os.path.join(args.out_path, time_dir))
     cmg_args = CmpArgsAdapter(subgraph_onnx_file, os.path.join(args.out_path, "tmp_for_accuracy_locat.om"),

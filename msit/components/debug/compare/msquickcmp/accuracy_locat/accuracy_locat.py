@@ -100,7 +100,7 @@ def create_bin_file(out_path, matched_files):
     bin_file_path = os.path.join(out_path, bin_file_path)
     bin_file_path = os.path.realpath(bin_file_path)
     if not os.path.exists(bin_file_path):
-        os.makedirs(bin_file_path)
+        ms_makedirs(bin_file_path)
     for i, npy_file in enumerate(matched_files):
         data = np.load(npy_file)
         bin_file_name = f'{i}.bin'

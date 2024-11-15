@@ -18,6 +18,7 @@ from functools import wraps
 from msit_llm.common import utils
 from msit_llm.common.log import logger
 from msit_llm.common.constant import get_ait_dump_path
+from components.utils.security_check import ms_makedirs
 
 
 def singleton(cls):
@@ -111,7 +112,7 @@ class DumpConfig:
         cur_dump_path = "{}_{}".format(device, os.getpid())
         self.dump_dir = os.path.join(self.dump_path, get_ait_dump_path(), "torch_tensors", cur_dump_path)
         if not os.path.exists(self.dump_dir):
-            os.makedirs(self.dump_dir, mode=0o750)
+            ms_makedirs(self.dump_dir, mode=0o750)
 
     def update_module_ids(self, module_name):
         self.cur_module_id += 1
