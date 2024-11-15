@@ -64,7 +64,31 @@ def is_belong_to_user_or_group(file_stat):
     return file_stat.st_uid == os.getuid() or file_stat.st_gid in os.getgroups()
 
 
+def check_others_not_writable(path):
+    dir_stat = os.stat(path)
+    is_writable = (
+        bool(dir_stat.st_mode & stat.S_IWGRP) or  # 组可写
+        bool(dir_stat.st_mode & stat.S_IWOTH)     # 其他用户可写
+    )
+    if is_writable:
+        logger.warning("The file path %s may be insecure because it can be written by others.", path)
+
+
+def check_path_owner_consistent(path):
+    file_owner = os.stat(path).st_uid
+    if file_owner != os.getuid() and os.getuid() != 0:
+        logger.warning("The file path %s may be insecure because is does not belong to you.", path)
+
+
+def check_dirpath_before_read(path):
+    path = os.path.realpath(path)
+    dirpath = os.path.dirname(path)
+    check_others_not_writable(dirpath)
+    check_path_owner_consistent(dirpath)
+
+
 def get_valid_read_path(path, extensions=None, size_max=MAX_READ_FILE_SIZE_4G, check_user_stat=True, is_dir=False):
+    check_dirpath_before_read(path)
     real_path = get_valid_path(path, extensions)
     if not is_dir and not os.path.isfile(real_path):
         raise ValueError("The path {} doesn't exists or not a file.".format(path))

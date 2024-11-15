@@ -20,6 +20,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
 endif()
 
 set(ASCEND_PATH $ENV{ASCEND_HOME_PATH})
+set(TOOLS_PATH ../../../tools/)
 include_directories(
         ${ASCEND_PATH}/opp/built-in/op_proto/inc
         ${ASCEND_PATH}/include/graph
@@ -30,11 +31,16 @@ include_directories(
 	    ${ASCEND_PATH}/${ARCH}-linux/include/ge/
 	    ${ASCEND_PATH}/${ARCH}-linux/include/parser/
         ./src/
+        ${TOOLS_PATH}/security/src/
 )
 
 # add host lib path
 link_directories(${ASCEND_PATH}/lib64/)
 
-add_executable(compress_excutor src/main.cpp src/graph_utils.cpp)
+add_executable(compress_excutor
+        src/main.cpp
+        src/graph_utils.cpp
+        ${TOOLS_PATH}/security/src/File.cpp
+        ${TOOLS_PATH}/security/src/Log.cpp)
 
 target_link_libraries(compress_excutor PRIVATE ascendcl graph ge_runner graph_base ge_compiler  c_sec pthread)
