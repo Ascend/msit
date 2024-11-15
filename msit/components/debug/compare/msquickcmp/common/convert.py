@@ -18,7 +18,6 @@ import numpy as np
 
 from msquickcmp.common import utils
 from components.utils.security_check import ms_makedirs
-
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 

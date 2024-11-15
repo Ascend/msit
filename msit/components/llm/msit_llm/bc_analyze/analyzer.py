@@ -23,6 +23,7 @@ from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
 from components.utils.security_check import ms_makedirs
 
+
 class Analyzer(object):
     """This class is used for analyzing the bad case between `golden` and `test` results. `golden` or `test` result
     can be a csv path or a command. If it is a command, `Analyzer` will internally call `Synthesizer.from_cmd` to 

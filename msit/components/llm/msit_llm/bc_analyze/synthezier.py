@@ -23,6 +23,7 @@ from msit_llm.common.log import logger
 from msit_llm.common.constant import MSIT_BAD_CASE_FOLDER_NAME
 from components.utils.security_check import ms_makedirs
 
+
 class Synthesizer(object):
     """This class is used for collecting llm evluation results under several datasets"""
     HEADER = ['queries', 'input_token_ids', 'output_token_ids', 'passed']
