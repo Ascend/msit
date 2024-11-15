@@ -129,7 +129,7 @@ def transform_report(source_path, save_name=None, save_dir=None, is_repeat=True)
 
         data.append((ori_op_name, ori_op_type, op_name, op_type, soc_type, engine, is_supported))
 
-    with open(csv_file_path, mode='w', newline='', encoding='utf-8') as file:
+    with ms_open(csv_file_path, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow(headers)
         for row in data:

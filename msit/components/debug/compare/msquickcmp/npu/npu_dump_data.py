@@ -35,6 +35,7 @@ from msquickcmp.npu.om_parser import OmParser
 
 from components.utils.check.rule import Rule
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
+from components.utils.file_open_check import ms_open
 
 
 BENCHMARK_DIR = "benchmark"
@@ -234,7 +235,7 @@ class NpuDumpData(DumpData):
             else:
                 raise AccuracyCompareException(utils.ACCURACY_COMPARISON_PARSER_JSON_FILE_ERROR)
             try:
-                with os.fdopen(os.open(acl_json_path, OPEN_FLAGS, OPEN_MODES), "w") as write_json:
+                with ms_open(acl_json_path, "w") as write_json:
                     try:
                         json.dump(load_dict, write_json)
                     except ValueError as exc:

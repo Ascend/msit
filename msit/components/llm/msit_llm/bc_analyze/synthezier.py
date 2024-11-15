@@ -21,6 +21,7 @@ import pandas as pd
 from msit_llm.bc_analyze.utils import get_timestamp
 from msit_llm.common.log import logger
 from msit_llm.common.constant import MSIT_BAD_CASE_FOLDER_NAME
+from components.utils.file_open_check import ms_open
 
 
 class Synthesizer(object):
@@ -184,7 +185,7 @@ class Synthesizer(object):
 
         flags = os.O_WRONLY | os.O_CREAT
         modes = os.st.S_IRUSR | os.st.S_IWUSR | os.st.S_IRGRP
-        with os.fdopen(os.open(path, flags, modes), 'w') as file:
+        with ms_open(path, 'w') as file:
             df_to_save.to_csv(file, encoding='utf-8', index=False)
         
         logger.info("'Sythesizer' has successfully finished the synthesis, the result is stored at '%s'", path)

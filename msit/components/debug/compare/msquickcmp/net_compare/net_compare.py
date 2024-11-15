@@ -31,8 +31,11 @@ import numpy as np
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
 from components.utils.file_open_check import sanitize_csv_value
+from components.utils.file_open_check import ms_open
+from components.utils.check.rule import Rule
 
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
+from components.utils.constants import TENSOR_MAX_SIZE
 
 MSACCUCMP_DIR_PATH = "toolkit/tools/operator_cmp/compare"
 MSACCUCMP_FILE_NAME = ["msaccucmp.py", "msaccucmp.pyc"]
@@ -221,13 +224,13 @@ class NetCompare(object):
                     header = []
                 CsvInfo = namedtuple('CsvInfo', 'npu_file_name, golden_file_name, result, header')
                 csv_info = CsvInfo(npu_file_name, golden_file_name, result, header)
-                with os.fdopen(os.open(result_file_path, READ_WRITE_FLAGS, WRITE_MODES), "a+") as fp_writer:
+                with ms_open(result_file_path, "a+") as fp_writer:
                     self._process_result_to_csv(fp_writer, csv_info)
             else:
                 # read result file and write it to backup file,update the result of compare Node_output
-                with open(result_file_path, "r") as fp_read:
-                    with os.fdopen(os.open(result_file_backup_path, WRITE_FLAGS, WRITE_MODES), 'w',
-                                   newline="") as fp_write:
+                Rule.input_file().check(result_file_path, will_raise=True)
+                with ms_open(result_file_path, "r", max_size=TENSOR_MAX_SIZE) as fp_read:
+                    with ms_open(result_file_backup_path, 'w', newline="") as fp_write:
                         self._process_result_one_line(fp_write, fp_read, npu_file_name, golden_file_name, result)
                 os.remove(result_file_path)
                 os.rename(result_file_backup_path, result_file_path)

@@ -23,6 +23,7 @@ from model_evaluation.common import utils
 from components.utils.log import logger
 from model_evaluation.common import Const
 from model_evaluation.common.enum import Engine
+from components.utils.file_open_check import ms_open
 
 OP_FILTER_LIST = ['Constant', 'Const', 'Input', 'Placeholder']
 
@@ -129,7 +130,7 @@ class Result:
         try:
             flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
             modes = os.st.S_IRUSR | os.st.S_IWUSR | os.st.S_IRGRP
-            f = os.fdopen(os.open(out_csv, flags, modes), 'w', newline='')
+            f = ms_open(out_csv, 'w', newline='')
         except Exception as e:
             logger.error(f'open result.csv failed, err:{e}')
         fields = ['ori_op_name', 'ori_op_type', 'op_name', 'op_type', 'soc_type', 'engine', 'is_supported', 'details']

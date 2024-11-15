@@ -29,6 +29,7 @@ import tensorflow as tf
 from msquickcmp.common import utils, tf_common
 from msquickcmp.common.dump_data import DumpData
 from msquickcmp.common.utils import AccuracyCompareException
+from components.utils.file_open_check import ms_open
 
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
@@ -166,7 +167,7 @@ class TfDumpData(DumpData):
     def _make_pt_command(self, tensor_name_path):
         pt_command_list = []
         tensor_count = {}
-        with open(tensor_name_path) as tensor_name_file:
+        with ms_open(tensor_name_path) as tensor_name_file:
             # skip 3 line
             next(tensor_name_file)
             next(tensor_name_file)

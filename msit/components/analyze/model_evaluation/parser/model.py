@@ -24,6 +24,7 @@ from components.utils.log import logger
 from model_evaluation.parser.atc import AtcErrParser
 from model_evaluation.bean import OpInfo, ConvertConfig
 from components.utils.check.rule import Rule
+from components.utils.file_open_check import ms_open
 
 
 class ModelParser:
@@ -53,7 +54,7 @@ class ModelParser:
 
         try:
             Rule.input_file().check(self._json_path, will_raise=True)
-            with open(self._json_path) as f:
+            with ms_open(self._json_path) as f:
                 data = json.load(f)
         except Exception as e:
             logger.error(f'load ops json failed err:{e}')

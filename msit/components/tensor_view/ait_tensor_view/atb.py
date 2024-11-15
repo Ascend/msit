@@ -37,7 +37,7 @@ def read_atb_data(path: str) -> torch.Tensor:
     dtype = 0
     dims = []
 
-    with ms_open(path, "rb", MAX_SIZE_LIMITE_NORMAL_FILE) as fd:
+    with ms_open(path, "rb", max_size=MAX_SIZE_LIMITE_NORMAL_FILE) as fd:
         file_data = fd.read()
 
     offset = 0

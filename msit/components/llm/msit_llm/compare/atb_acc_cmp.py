@@ -25,6 +25,8 @@ from msit_llm.compare.cmp_op_match import MatchLocation
 from msit_llm.compare.op_mapping import ATB_TORCH_BUILT_IN_OP_OUTPUT_MAPPING, ATB_TORCH_CUSTOM_OP_OUTPUT_MAPPING, \
     ATB_QUANT_FLOAT_NODE_MAPPING
 from msit_llm.dump.torch_dump.topo import ModelTree, TreeNode
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 def acc_compare(golden_path, my_path, output_path=".", mapping_file_path=".", cmp_level="layer"):
@@ -88,7 +90,7 @@ def compare_metadata(golden_path, output_path="."):
     golden_meta_path = os.path.join(golden_path, "metadata.json")
 
     golden_meta_path = load_file_to_read_common_check(golden_meta_path)
-    with open(golden_meta_path, "r") as file:
+    with ms_open(golden_meta_path, "r", max_size=TENSOR_MAX_SIZE) as file:
         golden_meta = json.load(file)
 
     gathered_row_data = fill_in_data(golden_meta)
@@ -385,7 +387,7 @@ def load_mapping(mapping_file_path):
     
     if os.path.exists(mapping_file):
         mapping_file = load_file_to_read_common_check(mapping_file)
-        with open(mapping_file, "r") as file:
+        with ms_open(mapping_file, "r", max_size=TENSOR_MAX_SIZE) as file:
             file_content = json.load(file)
 
         if validate_json(file_content):

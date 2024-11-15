@@ -20,6 +20,8 @@ import re
 import pandas as pd
 
 from components.utils.file_open_check import FileStat
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 from msit_llm.common.log import logger
 from msit_llm.common.utils import safe_string, load_file_to_read_common_check
 from msit_llm.common.constant import ATB_HOME_PATH, ATB_SAVE_TENSOR_TIME, ATB_SAVE_TENSOR_IDS, \
@@ -145,7 +147,7 @@ def json_to_onnx(args):
         return
 
     subprocess_info_file = load_file_to_read_common_check(subprocess_info_file)
-    with open(subprocess_info_file) as f:
+    with ms_open(subprocess_info_file) as f:
         from msit_llm.common.json_fitter import atb_json_to_onnx
         cache_csv_file = {}
         for line in f.readlines():
@@ -210,7 +212,7 @@ def merge_cpu_profiling_data(path):
             csv_buffer_data = list()
             
             file_path = load_file_to_read_common_check(os.path.join(root, file))
-            with open(file_path, 'r') as f:
+            with ms_open(file_path, 'r', max_size=TENSOR_MAX_SIZE) as f:
                 lines = f.readlines()
                 read_cpu_profiling_data(lines, data)
                 for opname in data.keys():

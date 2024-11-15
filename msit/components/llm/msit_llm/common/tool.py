@@ -22,6 +22,8 @@ from msit_llm.common.constant import ATTR_END, ATTR_OBJECT_LENGTH, LCCL_DETERMIN
     ATB_MATMUL_SHUFFLE_K_ENABLE, ATB_LLM_LCOC_ENABLE, PYTHON_HASH_SEED
 from msit_llm.common.log import logger
 from msit_llm.common.utils import check_input_path_legality, check_data_file_size, load_file_to_read_common_check
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 class TensorBinFile:
@@ -53,7 +55,7 @@ class TensorBinFile:
 
     def _parse_bin_file(self):
         self.file_path = load_file_to_read_common_check(self.file_path)
-        with open(self.file_path, "rb") as fd:
+        with ms_open(self.file_path, "rb", max_size=TENSOR_MAX_SIZE) as fd:
             file_data = fd.read()
 
         begin_offset = 0

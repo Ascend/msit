@@ -20,6 +20,8 @@ from collections import namedtuple
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 INVALID_ROW_VALUES = {
     "OpType": ["TransData"],
@@ -109,7 +111,7 @@ class Analyser:
             raise ValueError(f"strategy Should be one of {list(STRATEGIES)}")
         try:
             self.csv_path = load_file_to_read_common_check(self.csv_path)
-            with open(self.csv_path, "r") as csv_file:
+            with ms_open(self.csv_path, "r", max_size=TENSOR_MAX_SIZE) as csv_file:
                 csv_rows = [row for row in csv.DictReader(csv_file) if self._is_valid_row(row)]
         except IOError as csv_file_except:
             utils.logger.error('Failed to open"' + self.csv_path + '", ' + str(csv_file_except))

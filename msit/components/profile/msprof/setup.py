@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from setuptools import setup, find_packages  # type: ignore
+from components.utils.file_open_check import ms_open
 
 
-with open('requirements.txt', encoding='utf-8') as f:
+with ms_open('requirements.txt', encoding='utf-8') as f:
     required = f.read().splitlines()
 
-with open('README.md', encoding='utf-8') as f:
+with ms_open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
 ait_sub_tasks = [
