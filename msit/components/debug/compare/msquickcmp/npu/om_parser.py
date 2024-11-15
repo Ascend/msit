@@ -27,6 +27,9 @@ from msquickcmp.common.dynamic_argument_bean import DynamicArgumentEnum
 from msquickcmp.common.utils import AccuracyCompareException
 
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
+
 
 GRAPH_OBJECT = "graph"
 OP_OBJECT = "op"
@@ -99,7 +102,7 @@ class OmParser(object):
         """
         try:
             json_file_path = load_file_to_read_common_check(json_file_path)
-            with open(json_file_path, "r") as input_file:
+            with ms_open(json_file_path, "r", max_size=TENSOR_MAX_SIZE) as input_file:
                 try:
                     return json.load(input_file)
                 except Exception as exc:

@@ -19,6 +19,7 @@ from components.utils.file_open_check import ms_open
 from msit_llm.common.log import logger
 from msit_llm.common.utils import check_output_path_legality, load_file_to_read_common_check
 from msit_llm.common.constant import get_ait_dump_path
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 def dump_data(token_id=-1, data_id=-1, golden_data=None, my_path='', output_path='./'):
@@ -62,7 +63,7 @@ def write_json_file(data_id, data_path, json_path, token_id, my_path):
     else:
         json_path = load_file_to_read_common_check(json_path)
 
-        with open(json_path, 'r') as json_file:
+        with ms_open(json_path, 'r', max_size=TENSOR_MAX_SIZE) as json_file:
             json_data = json.load(json_file)
 
     json_data[data_id] = {token_id: [data_path, my_path]}

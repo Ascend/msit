@@ -33,6 +33,7 @@ from msquickcmp.common.convert import convert_bin_file_to_npy
 from msquickcmp.onnx_model.custom_op import CustomOp
 from components.utils.file_open_check import ms_open
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 NODE_TYPE_TO_DTYPE_MAP = {
@@ -150,7 +151,7 @@ class OnnxDumpData(DumpData):
         # model_path str -> read as bytes -> deserialize to onnx_model
         #                                 -> onnxruntime load as session
         model_path = load_file_to_read_common_check(model_path)
-        with open(model_path, "rb") as ff:
+        with ms_open(model_path, "rb", max_size=TENSOR_MAX_SIZE) as ff:
             model_contents = ff.read()
         onnx_model = onnx.load_model(model_path)
         unique_index = 999

@@ -21,6 +21,7 @@ import torch
 from safetensors.torch import safe_open
 
 from components.utils.util import safe_torch_load
+from components.utils.file_open_check import ms_open
 from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.common.constant import MAX_WEIGHT_DATA_SIZE
@@ -50,7 +51,7 @@ def get_transform_scenario(source_path, to_python=False):
 def write_file(save_path, string):
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
     modes = stat.S_IWUSR | stat.S_IRUSR
-    with os.fdopen(os.open(save_path, flags, modes), 'w') as ff:
+    with ms_open(save_path, 'w') as ff:
         ff.write(string)
 
 

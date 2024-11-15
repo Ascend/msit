@@ -291,7 +291,7 @@ def update_weight_prefix(parsed_model, source_path):
 
         fp = load_file_to_read_common_check(str(fp))
         try:
-            with open(fp) as ff:
+            with ms_open(fp) as ff:
                 dd = json.load(ff)            
             weight_name_list = list(dd['weight_map'].keys())
         except Exception:

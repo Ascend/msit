@@ -13,8 +13,9 @@
 # limitations under the License.
 
 from setuptools import setup, find_packages  # type: ignore
+from components.utils.file_open_check import ms_open
 
-with open('requirements.txt', encoding='utf-8') as f:
+with ms_open('requirements.txt', encoding='utf-8') as f:
     required = f.read().splitlines()
 
 ait_sub_tasks = [

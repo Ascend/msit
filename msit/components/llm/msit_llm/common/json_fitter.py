@@ -21,6 +21,8 @@ import onnx
 from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
 from components.utils.check import Rule, validate_params
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 def atb_node_to_plain_node(atb_node_dict, level, target_level):
@@ -214,7 +216,7 @@ def atb_json_to_onnx(atb_json_path, target_level=-1, cache_csv_file: typing.Unio
     from google.protobuf.json_format import Parse
 
     atb_json_path = load_file_to_read_common_check(atb_json_path)
-    with open(atb_json_path, "r") as file:
+    with ms_open(atb_json_path, "r", max_size=TENSOR_MAX_SIZE) as file:
         json_content = json.loads(file.read(), parse_constant=lambda x: None)
 
     csv_content = None
