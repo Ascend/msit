@@ -27,6 +27,7 @@ from components.debug.compare.msquickcmp.common.args_check import (
 from msquickcmp.common.utils import logger
 from components.debug.compare.msquickcmp.dump.dump_process import dump_process
 from msquickcmp.dump.args_adapter import DumpArgsAdapter
+from components.utils.check import Rule, ArgsChecker
 
 CANN_PATH = os.environ.get('ASCEND_TOOLKIT_HOME', "/usr/local/Ascend/ascend-toolkit/latest")
 
@@ -337,11 +338,13 @@ class DumpCommand(BaseCommand):
             '--device-pattern',
             required=False,
             dest="device_pattern",
+            choices=["cpu", "npu"],
             help="Enter inference in npu or cpu device. For example: -dp cpu")
         parser.add_argument(
             '--tf-json',
             required=False,
             dest="tf_json_path",
+            type=ArgsChecker(Rule.input_file().check_extensions("json")),
             help="When dump saved_model, you need provide tf-ops-json file path.")
         parser.add_argument(
             "--exec",
