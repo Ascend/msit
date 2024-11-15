@@ -32,7 +32,7 @@ from msquickcmp.common.dynamic_argument_bean import DynamicArgumentEnum
 
 from components.utils.security_check import get_valid_write_path
 from components.debug.common import logger
-
+from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 ACCURACY_COMPARISON_INVALID_PARAM_ERROR = 1
 ACCURACY_COMPARISON_INVALID_DATA_ERROR = 2
@@ -70,6 +70,7 @@ BATCH_SCENARIO_OP_NAME = "{0}_ascend_mbatch_batch_{1}"
 INVALID_CHARS = ['|', ';', '&', '&&', '||', '>', '>>', '<', '`', '\\', '!', '\n']
 MAX_READ_FILE_SIZE_4G = 4294967296  # 4G, 4 * 1024 * 1024 * 1024
 DYM_SHAPE_END_MAX = 1000000
+MAX_TENSOR_SHAPE_CONUT = 200
 
 
 class AccuracyCompareException(Exception):
@@ -478,10 +479,29 @@ def parse_input_shape_to_list(input_shape):
         return input_shape_list
     _check_colon_exist(input_shape)
     tensor_list = input_shape.split(';')
+    if len(tensor_list) > MAX_TENSOR_SHAPE_CONUT:
+        raise ValueError("The input of --input-shape parameter is unreasonable, " \
+                                     "because the number of tensor shape is much than 200.")
     for tensor in tensor_list:
         tensor_shape_list = tensor.rsplit(':', maxsplit=1)
         if len(tensor_shape_list) == 2:
-            shape_list_int = [int(i) for i in tensor_shape_list[1].split(',')]
+            shape_list_int = []
+            for dim in tensor_shape_list[1].split(','):
+                if dim.isdigit(): 
+                    shape_list_int.append(int(dim))
+                else:
+                    raise ValueError("The input of --input-shape parameter is unreasonable, " \
+                                     "because the tensor shape is not digit.")
+            for dim_int in shape_list_int:
+                if dim_int < 0:
+                    raise ValueError("The input of --input-shape parameter is unreasonable, " \
+                                     "possibly because the upper bound is smaller than 0.")
+                prompt = "The --input-shape %r is larger than expected. " \
+                            "Attempting to input such a shape could potentially impact system performance.\n" \
+                            "Please confirm your awareness of the risks associated with this action ([y]/n): " % tensor
+                if dim_int > DYM_SHAPE_END_MAX and not dym_shape_range_interaction(prompt):
+                     raise ValueError("The dim of --input-shape %r is too large." % (str(dim_int)))
+                
             input_shape_list.append(shape_list_int)
         else:
             logger.error(get_shape_not_match_message(InputShapeError.FORMAT_NOT_MATCH, input_shape))
@@ -658,6 +678,7 @@ def str2bool(v):
 def merge_csv(csv_list, output_dir, output_csv_name):
     df_list = []
     for csv_file in csv_list:
+        csv_file = load_file_to_read_common_check(csv_file)
         df = pd.read_csv(csv_file)
         df_list.append(df)
     merged_df = pd.concat(df_list)
@@ -684,6 +705,7 @@ def safe_delete_path_if_exists(path, is_log=False):
 
 def parse_json_file(json_path):
     try:
+        json_path = load_file_to_read_common_check(json_path)
         with open(json_path, 'r', encoding='utf-8') as file:
             return json.load(file)
     except FileNotFoundError as e:

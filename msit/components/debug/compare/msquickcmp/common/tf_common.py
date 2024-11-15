@@ -24,6 +24,7 @@ import tensorflow as tf
 
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
+from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 
 DTYPE_MAP = {
@@ -42,6 +43,8 @@ DTYPE_MAP = {
 TF_DEBUG_TIMEOUT = 3600
 VERSION_TF2X = "2."
 VERSION_TF1X = "1."
+MAX_DEPTH = 5
+FILE_MAX_CNT = 100
 
 
 def check_tf_version(version):
@@ -177,6 +180,10 @@ def get_model_inputs_dtype(model_path, serving, tag_set):
     inputs_dtype = {}
     with tf.compat.v1.Session() as sess:
         tag_set = {tf.compat.v1.saved_model.tag_constants.SERVING} if tag_set == "" else tag_set
+        if os.path.isdir(model_path):
+            load_file_to_read_common_check_with_walk(model_path)
+        else:
+            load_file_to_read_common_check(model_path)
         model = tf.compat.v1.saved_model.load(sess, tag_set, model_path)
         inputs = model.signature_def[serving].inputs
         for key, input_tensor in inputs.items():
@@ -190,3 +197,21 @@ def split_tag_set(saved_model_tag_set):
     if len(tag_sets) > 1:
         return tag_sets
     return {tag_sets[0]}
+
+
+def load_file_to_read_common_check_with_walk(model_path):
+    file_cnt = 0
+    model_path = os.path.realpath(model_path)
+    for root, _, files in os.walk(model_path):
+        model_path_len = len(model_path.split('/'))
+        root_len = len(root.split('/'))
+        if root_len - model_path_len >= MAX_DEPTH:
+            utils.logger.error("Parse of TF module depth exceeds the max recursion limit 5.")
+            raise RecursionError("Maximum recursion depth exceeded in comparison.")
+        for filename in files:
+            load_file_to_read_common_check(os.path.join(root, filename))
+            file_cnt += 1
+            if file_cnt > FILE_MAX_CNT:
+                utils.logger.error("The number of tf module files shall not exceed 100.")
+                raise ValueError("Files are too much.")
+        

@@ -32,6 +32,7 @@ from msquickcmp.adapter_cli.args_adapter import CmpArgsAdapter
 from msquickcmp.common.convert import convert_bin_file_to_npy
 from msquickcmp.onnx_model.custom_op import CustomOp
 from components.utils.file_open_check import ms_open
+from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 
 NODE_TYPE_TO_DTYPE_MAP = {
@@ -138,6 +139,7 @@ class OnnxDumpData(DumpData):
         if not self.onnx_fusion_switch:
             options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
         try:
+            model_path = load_file_to_read_common_check(model_path)
             infersession = onnxruntime.InferenceSession(model_path, options)
         except Exception as e:
             utils.logger.error(f"Please check onnx model can run in local env. Error: {e}")
@@ -147,6 +149,7 @@ class OnnxDumpData(DumpData):
     def _load_onnx(self, model_path):
         # model_path str -> read as bytes -> deserialize to onnx_model
         #                                 -> onnxruntime load as session
+        model_path = load_file_to_read_common_check(model_path)
         with open(model_path, "rb") as ff:
             model_contents = ff.read()
         onnx_model = onnx.load_model(model_path)
@@ -290,6 +293,7 @@ class OnnxDumpData(DumpData):
         for i, tensor_info in enumerate(inputs_tensor_info):
             convert_bin_file_to_npy(aipp_input[i], os.path.join(self.out_path, "input"), self.cann_path)
             aipp_output_path = os.path.join(self.out_path, "input", aipp_input[i].rsplit("/", 1)[1]) + ".output.0.npy"
+            aipp_output_path = load_file_to_read_common_check(aipp_output_path)
             aipp_output = np.load(aipp_output_path)
             nchw_prod = np.prod(tensor_info["shape"])
             nchwc_prod_without_c1 = np.prod(aipp_output.shape[:-1])
