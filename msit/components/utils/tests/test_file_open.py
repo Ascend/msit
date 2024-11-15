@@ -13,51 +13,64 @@
 # limitations under the License.
 import os
 import stat
+import tempfile
+from pathlib import Path
+
 import pytest
+
 from components.utils.file_open_check import ms_open, FileStat, OpenException
 from components.utils.file_open_check import PERMISSION_NORMAL, PERMISSION_KEY, RAW_INPUT_PATH
 
 
+
+
 @pytest.fixture(scope="function")
 def not_exists_file_name():
-    file_name = ".test_open_file_not_exists"
-    if os.path.exists(file_name):
-        os.remove(file_name)
-    yield file_name
-    if os.path.exists(file_name):
-        os.remove(file_name)
+    with tempfile.TemporaryDirectory() as dp:
+        os.chmod(dp, 0o750)
+        file_name = os.path.join(dp, ".test_open_file_not_exists")
+        if os.path.exists(file_name):
+            os.remove(file_name)
+        yield file_name
+        if os.path.exists(file_name):
+            os.remove(file_name)
 
 
 @pytest.fixture(scope="function")
 def file_name_which_content_is_abcd():
-    file_name = ".test_open_file_abcd"
-    with ms_open(file_name, "w") as aa:
-        aa.write("abcd")
-    yield file_name
-    if os.path.exists(file_name):
-        os.remove(file_name)
+    with tempfile.TemporaryDirectory() as dp:
+        os.chmod(dp, 0o750)
+        file_name = os.path.join(dp, ".test_open_file_abcd")
+        with ms_open(file_name, "w") as aa:
+            aa.write("abcd")
+        yield file_name
+        if os.path.exists(file_name):
+            os.remove(file_name)
 
 
 @pytest.fixture(scope="function")
 def file_name_which_permission_777():
-    file_name = ".test_open_file_permission_777"
-    with ms_open(file_name, "w") as aa:
-        aa.write("abcd")
-
-    os.chmod(file_name, 0o777)
-    yield file_name
-    if os.path.exists(file_name):
-        os.remove(file_name)
+    with tempfile.TemporaryDirectory() as dp:
+        os.chmod(dp, 0o750)
+        file_name = os.path.join(dp, ".test_open_file_permission_777")
+        with ms_open(file_name, "w") as aa:
+            aa.write("abcd")
+        os.chmod(file_name, 0o777)
+        yield file_name
+        if os.path.exists(file_name):
+            os.remove(file_name)
 
 
 @pytest.fixture(scope="function")
 def file_name_which_is_softlink():
-    file_name = ".test_open_file_softlink"
-    os.symlink(f"{file_name}_src", file_name)
-
-    yield file_name
-    if os.path.exists(file_name):
-        os.remove(file_name)
+    with tempfile.TemporaryDirectory() as dp:
+        os.chmod(dp, 0o750)
+        file_name = os.path.join(dp, ".test_open_file_softlink")
+        Path(f"{file_name}_src").touch()
+        os.symlink(f"{file_name}_src", file_name)
+        yield file_name
+        if os.path.exists(file_name):
+            os.remove(file_name)
 
 
 def test_msopen_given_mode_w_plus_when_write_4_lettle_then_file_writed_and_read_case(not_exists_file_name):
@@ -226,3 +239,15 @@ def test_msopen_given_mode_r_when_file_softlink_target_wrong_then_file_read_fail
     os.environ[RAW_INPUT_PATH] = "1234"
 
     assert not FileStat(file_name_which_is_softlink).check_basic_permission()
+
+
+def test_msopen_given_other_w_parent_dir_then_file_read_failed_case():
+    try:
+        with tempfile.TemporaryDirectory() as dp:
+            os.chmod(dp, 0o702)
+            fp = os.path.join(dp, "test_file")
+
+            with ms_open(fp, mode="w") as aa:
+                aa.write("no way")
+    except OpenException as ignore:
+        assert True

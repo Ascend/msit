@@ -212,6 +212,10 @@ def load_file_to_read_common_check(path: str, exts=None):
         logger.error("Vulnerable path: %r should not be other writeable", path)
         raise PermissionError
 
+    safe_parent_msg = Rule.path().is_safe_parent_dir().check(path)
+    if not safe_parent_msg:
+        raise PermissionError(f"parent dir of {path} is not safe. {str(safe_parent_msg)}")
+    
     # uid
     cur_euid = os.geteuid()
     if file_status.st_uid != cur_euid:
