@@ -143,25 +143,25 @@ class TestPathChecker(unittest.TestCase):
     @unittest.skipIf(os.getuid() == 0, "root can be skipped")
     def test_is_safe_parent_dir_when_not_owner_then_failed(self):
         fp = os.path.join("/", "test_file")
-        self.assertEqual(bool(path_checker.PathChecker().is_safe_parent_dir().check(fp)), False)
+        self.assertFalse(bool(path_checker.PathChecker().is_safe_parent_dir().check(fp)))
 
     def test_is_safe_parent_dir_when_other_has_w_then_failed(self):
         with tempfile.TemporaryDirectory() as dp:
             os.chmod(dp, 0o702)
             fp = os.path.join(dp, "test_file")
-            self.assertEqual(bool(path_checker.PathChecker().is_safe_parent_dir().check(fp)), False)
+            self.assertFalse(bool(path_checker.PathChecker().is_safe_parent_dir().check(fp)))
 
     def test_is_safe_parent_dir_when_group_has_w_then_failed(self):
         with tempfile.TemporaryDirectory() as dp:
             os.chmod(dp, 0o720)
             fp = os.path.join(dp, "test_file")
-            self.assertEqual(bool(path_checker.PathChecker().is_safe_parent_dir().check(fp)), False)
+            self.assertFalse(bool(path_checker.PathChecker().is_safe_parent_dir().check(fp)))
 
     def test_is_safe_parent_dir_when_all_good_then_pass(self):
         with tempfile.TemporaryDirectory() as dp:
             os.chmod(dp, 0o750)
             fp = os.path.join(dp, "test_file")
-            self.assertEqual(bool(path_checker.PathChecker().is_safe_parent_dir().check(fp)), True)
+            self.assertTrue(bool(path_checker.PathChecker().is_safe_parent_dir().check(fp)))
 
     @unittest.skipIf(os.getuid() == 0, "root can be skipped")
     def test_no_perm(self):
