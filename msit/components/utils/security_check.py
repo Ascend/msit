@@ -205,8 +205,8 @@ def _check_parent_dir_safe(dir_path):
         if dir_path.parent.exists():
             return dir_path
         return get_root(dir_path.parent)
-    
-    from pathlib import Path            
+
+    from pathlib import Path
     dir_path = Path(dir_path)
     root_path = get_root(dir_path)
 
