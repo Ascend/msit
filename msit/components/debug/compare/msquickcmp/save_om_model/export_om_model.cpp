@@ -14,16 +14,17 @@ constexpr const char PATH_SEPARATOR = '/';
 constexpr mode_t MAX_PERMISSION = 0777;
 constexpr mode_t WRITE_FILE_NOT_PERMITTED = S_IWGRP | S_IWOTH | S_IROTH | S_IXOTH;
 
+std::string GetAbsPath(const std::string &originPath);
 
 bool IsSameOwner(const std::string& path) {
     std::string absPath = GetAbsPath(path);
     struct stat buf;
     if (stat(absPath.c_str(), &buf)) {
-        ERROR_LOG("get file stat failed");
+        std::cerr << "get file stat failed";
         return false;
     }
     if (buf.st_uid != getuid()) {
-        ERROR_LOG("file owner is not process usr");
+        std::cerr << "file owner is not process usr";
         return false;
     }
     return true;
@@ -32,7 +33,7 @@ bool IsSameOwner(const std::string& path) {
 bool OthersWritable(const std::string& path) {
     struct stat path_stat;
     if (stat(path.c_str(), &path_stat) != 0) {
-        ERROR_LOG("file not exists");
+        std::cerr << "file not exists";
         return MAX_PERMISSION;
     }
     mode_t permissions = path_stat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
@@ -55,25 +56,9 @@ std::string GetFullPath(const std::string &originPath)
         return originPath;
     }
 
-    std::string cwd = nullptr;
-    std::string cwdBuf = nullptr;
-    try {
-        cwdBuf = new char[PATH_MAX];
-    } catch (const std::bad_alloc& e) {
-        ERROR_LOG("create buffer failed: %s", e.what());
-        throw std::runtime_error("No memory.");
-    }
-    cwd = getcwd(cwdBuf, PATH_MAX);
-    if (cwd == nullptr) {
-        delete[] cwdBuf;
-        return "";
-    }
+    std::string cwd = getcwd(NULL, 0);
 
-    std::string fullPath = std::move(std::string(cwd) + PATH_SEPARATOR + originPath);
-    delete[] cwdBuf;
-    cwdBuf = nullptr;
-
-    return fullPath;
+    return std::move(cwd + PATH_SEPARATOR + originPath);
 }
 
 static std::vector<std::string> SplitPath(const std::string &path)
@@ -139,7 +124,7 @@ std::string GetParentDir(const std::string& path) {
 std::string GetRoot(const std::string& path) {
     std::string parentDir = GetParentDir(path);
     // 如果父目录存在且已经创建了，就返回
-    if (stat(parentDir.c_str(), nullptr) == 0) {
+    if (access(parentDir.c_str(), F_OK) == 0) {
         return GetParentDir(path);  // 返回需要创建的目录路径
     }
     return GetRoot(parentDir);  // 递归向上查找
