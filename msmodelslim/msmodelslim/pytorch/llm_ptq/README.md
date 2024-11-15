@@ -99,10 +99,9 @@ import torch_npu   # 若需要cpu上进行量化，可忽略此步骤
 from transformers import AutoTokenizer, AutoModel
 
 # for local path
-tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path='./chatglm2', trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path='./chatglm2')
 model = AutoModel.from_pretrained(
-    pretrained_model_name_or_path='./chatglm2',
-    trust_remote_code=True,
+    pretrained_model_name_or_path='./chatglm2'
   ).npu()    # 若在npu上进行多卡量化时，需要先参考前提条件进行配置，并配置device_map='auto',创建model时需去掉.npu()；若在cpu上进行量化时，需要配置torch_dtype=torch.float32，创建model时需去掉.npu()
 # 准备校准数据，请根据实际情况修改
 calib_list = ["中国的首都在哪里？",
@@ -149,10 +148,9 @@ import torch_npu   # 若需要cpu上进行量化，可忽略此步骤
 from transformers import AutoTokenizer, AutoModel
 
 # for local path
-tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path='./chatglm2', trust_remote_code=True) 
+tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path='./chatglm2') 
 model = AutoModel.from_pretrained(
-    pretrained_model_name_or_path='./chatglm2',
-    trust_remote_code=True,
+    pretrained_model_name_or_path='./chatglm2'
     ).npu()    # 若在npu上进行多卡量化时，需要先参考前提条件进行配置，并配置device_map='auto'，创建model时需去掉.npu()；若在cpu上进行量化时，需要配置torch_dtype=torch.float32，创建model时需去掉.npu()
 # 准备校准数据，请根据实际情况修改，W8A16 Label-Free模式下请忽略此步骤
 calib_list = ["中国的首都在哪里？",

@@ -73,8 +73,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 config = RACompressConfig(theta=0.00001, alpha=100)   # 压缩类的配置，需根据实际情况进行修改
 input_model_path = "/data1/models/baichuan/baichuan2-13b/float_path/"    # 模型权重文件的保存路径，需根据实际情况进行修改
 save_path = "./win.pt"   # 生成压缩窗口的路径，需根据实际情况进行修改
-tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=input_model_path, trust_remote_code=True) 
-model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=input_model_path, trust_remote_code=True).float().cpu()   # 不支持使用npu方式进行加载
+tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=input_model_path) 
+model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=input_model_path).float().cpu()   # 不支持使用npu方式进行加载
 ra = RACompressor(model, config) 
 ra.get_alibi_windows(save_path)
 ```
@@ -163,7 +163,6 @@ model_path = "./Qwen2-72B-Instruct/"
 model = AutoModelForCausalLM.from_pretrained(
         pretrained_model_name_or_path=model_path,
         torch_dtype=torch.bfloat16, 
-        trust_remote_code=True,
         device_map="auto",
     ).eval()
  
@@ -172,7 +171,6 @@ tokenizer = AutoTokenizer.from_pretrained(
         pad_token='<|extra_0|>',
         eos_token='<|endoftext|>',
         padding_side='left',
-        trust_remote_code=True
     ) 
 ra = RARopeCompressor(model, tokenizer, config) 
 ra.get_compress_heads(save_path)

@@ -18,7 +18,7 @@ calibrator.run(int_infer=False)
 ```python
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 quant_config = QuantConfig(dev_type='cpu', pr=0.5, mm_tensor=Flase)
-model = AutoModel.from_pretrained('THUDM/chatglm2-6b', torch_dtype=torch.float32, trust_remote_code=True).cpu()   #根据模型实际路径配置
+model = AutoModel.from_pretrained('THUDM/chatglm2-6b', torch_dtype=torch.float32).cpu()   #根据模型实际路径配置
 calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
 calibrator.run(int_infer=False) 
 calibrator.save(quant_weight_save_path)

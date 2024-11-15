@@ -27,9 +27,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import FakeQuantizeCalibrator
 if __name__ == '__main__':
     fp16_path = './chatglm2_6b/'  # 文件路径
-    model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=fp16_path, torch_dtype=torch.float32,
-                                                 trust_remote_code=True).cpu()
-    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=fp16_path, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=fp16_path, torch_dtype=torch.float32).cpu()
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=fp16_path)
     safetensor_dic = load_file('./quant_model_weight_w8a16.safetensors')  # 使用load_file()函数读取safetensor格式文件并将其解析为字典
     with open('./quant_model_description_w8a16.json', 'r', encoding='utf-8') as file:
         description_dic = json.load(file)  # 使用json.load()函数读取文件并将其解析为字典
