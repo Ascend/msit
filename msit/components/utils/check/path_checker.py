@@ -224,7 +224,7 @@ class PathChecker(Checker):
 
     @rule("Wrong file suffix")
     def check_extensions(self, extensions) -> Union["PathChecker", CheckResult]:
-        return os.path.splitext(self.f_status.extension)[-1] == extensions
+        return self.f_status.extension == extensions or self.f_status.extension == '.' + extensions
 
     @rule()
     def is_safe_parent_dir(self) -> Union["PathChecker", CheckResult]:
