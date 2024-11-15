@@ -23,6 +23,8 @@ from msit_llm.common.utils import load_file_to_read_common_check
 from msit_llm.compare.cmp_op_match import MatchLocation
 from msit_llm.dump.torch_dump.topo import ModelTree, TreeNode
 from msit_llm.common.constant import GLOBAL_HISTORY_AIT_DUMP_PATH_LIST
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 class CompareDataParse(ABC):
@@ -272,7 +274,7 @@ class CompareDataATB(CompareDataParse):
             json_start_order = 0
             
             topo_file = load_file_to_read_common_check(topo_file)
-            with open(topo_file, "r") as file:
+            with ms_open(topo_file, "r", max_size=TENSOR_MAX_SIZE) as file:
                 node_dict = json.loads(file.read(), parse_constant=lambda x: None)
                 nodes = node_dict.get("nodes", [])
                 if len(nodes) != 0:

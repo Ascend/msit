@@ -18,6 +18,8 @@ from atb_llm.utils.log import logger, print_log
 from examples.server.cache import ModelConfig
 from atb_llm.runner.model_runner import ModelRunner
 from examples.run_pa import parse_arguments, PARunner
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 @dataclass
@@ -216,7 +218,7 @@ def main():
         infer_inputs = []
         args.input_file = load_file_to_read_common_check(args.input_file)
 
-        with open(args.input_file, 'r', encoding='utf-8') as file:
+        with ms_open(args.input_file, 'r', max_size=TENSOR_MAX_SIZE, encoding='utf-8') as file:
             for line in file:
                 data_line = json.loads(line)
                 infer_inputs.append(data_line)

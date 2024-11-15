@@ -20,6 +20,9 @@ import torch
 
 from components.debug.compare.utils.base_dump_reader import DumpFileReader
 from components.utils.util import safe_torch_load
+from components.utils.file_open_check import ms_open
+from components.utils.check.rule import Rule
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 class TorchDumpFileReader(DumpFileReader):
@@ -61,7 +64,8 @@ class TorchDumpFileReader(DumpFileReader):
         key_to_id = {}
         json_path = os.path.join(self.json_path, 'op_map_updated.json')
 
-        with open(json_path, 'r') as f:
+        Rule.input_file().check(json_path, will_raise=True)
+        with ms_open(json_path, 'r', max_size=TENSOR_MAX_SIZE) as f:
             data = json.load(f)
             for fusion_op, details in data.items():
                 id_ = details.get('id', float('inf'))
