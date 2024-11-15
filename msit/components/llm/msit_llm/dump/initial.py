@@ -22,6 +22,7 @@ import pandas as pd
 from components.utils.file_open_check import FileStat
 from components.utils.file_open_check import ms_open
 from components.utils.constants import TENSOR_MAX_SIZE
+from components.utils.security_check import ms_makedirs
 from msit_llm.common.log import logger
 from msit_llm.common.utils import safe_string, load_file_to_read_common_check
 from msit_llm.common.constant import ATB_HOME_PATH, ATB_SAVE_TENSOR_TIME, ATB_SAVE_TENSOR_IDS, \
@@ -95,7 +96,7 @@ def init_dump_task(args):
     if "onnx" in args.type and ("model" in args.type or "layer" in args.type):
         os.environ[ATB_DUMP_SUB_PROC_INFO_SAVE_PATH] = os.path.join(str(args.output), str(os.getpid()))
         subprocess_info_path = os.path.join(args.output, str(os.getpid()))
-        os.makedirs(subprocess_info_path, exist_ok=True)
+        ms_makedirs(subprocess_info_path, exist_ok=True)
     else:
         os.environ.pop(ATB_DUMP_SUB_PROC_INFO_SAVE_PATH, None)  # Ensure none is set
 

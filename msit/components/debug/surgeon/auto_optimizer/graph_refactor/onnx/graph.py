@@ -459,6 +459,7 @@ class OnnxGraph(BaseGraph):
                 if not Rule.input_file().max_size(ONNX_MODEL_MAX_SIZE).check(infer_model_path):
                     logger.error("Load inferred model failed")
                     raise OSError from e
+                Rule.input_file().check(infer_model_path, will_raise=True)
                 inferred_model = onnx.load(infer_model_path)
 
         # update value_infos

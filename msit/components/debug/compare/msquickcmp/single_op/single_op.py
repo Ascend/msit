@@ -22,7 +22,7 @@ from auto_optimizer.graph_refactor.onnx import OnnxPlaceHolder, OnnxInitializer
 from auto_optimizer.graph_refactor.interface import PlaceHolder
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
-
+from components.utils.security_check import ms_makedirs
 NPU_ID_INFO_LENGTH = 3
 
 
@@ -87,7 +87,7 @@ def generate_single_op_dir(out_path):
     single_op_dir = os.path.join(out_path, 'single_op')
     if os.path.exists(single_op_dir):
         os.rmdir(single_op_dir)
-    os.makedirs(single_op_dir)
+    ms_makedirs(single_op_dir)
     return single_op_dir
 
 

@@ -30,6 +30,8 @@ from msit_llm.common.constant import (TOKEN_ID, DATA_ID, GOLDEN_DATA_PATH, MY_DA
                                       CSV_GOLDEN_HEADER, GLOBAL_HISTORY_AIT_DUMP_PATH_LIST)
 from msit_llm.common.log import logger
 from components.utils.cmp_algorithm import CMP_ALG_MAP, CUSTOM_ALG_MAP
+from components.utils.security_check import ms_makedirs
+
 
 MIN_LAYER_NUMBER = 10
 
@@ -136,7 +138,7 @@ def set_tensor_basic_info_in_row_data(golden_data, my_data):
 
 def save_compare_reault_to_csv(gathered_row_data, output_path=".", columns=CSV_GOLDEN_HEADER):
     try:
-        os.makedirs(output_path, exist_ok=True)
+        ms_makedirs(output_path, exist_ok=True)
     except OSError:
         logger.error("cannot create file directory under output path, please check it!")
 

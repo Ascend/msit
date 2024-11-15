@@ -19,6 +19,7 @@ import os
 
 import numpy as np
 
+from components.utils.security_check import ms_makedirs
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 def calculate_flow(graph, startnode, endnode):
@@ -101,7 +102,7 @@ def create_bin_file(out_path, matched_files):
     bin_file_path = os.path.join(out_path, bin_file_path)
     bin_file_path = os.path.realpath(bin_file_path)
     if not os.path.exists(bin_file_path):
-        os.makedirs(bin_file_path)
+        ms_makedirs(bin_file_path)
     for i, npy_file in enumerate(matched_files):
         npy_file = load_file_to_read_common_check(npy_file)
         data = np.load(npy_file)

@@ -17,7 +17,7 @@ import sys
 import numpy as np
 
 from msquickcmp.common import utils
-
+from components.utils.security_check import ms_makedirs
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 
 
@@ -37,7 +37,7 @@ def convert_bin_dump_data_to_npy(npu_dump_data_path, npu_net_output_data_path, c
     convert_dir_path = npu_dump_data_path.replace(time_stamp_file_path, time_stamp_file_path + '_bin2npy')
     convert_dir_path = os.path.normpath(convert_dir_path)
     if not os.path.exists(convert_dir_path):
-        os.makedirs(convert_dir_path)
+        ms_makedirs(convert_dir_path)
     msaccucmp_command_file_path = os.path.join(cann_path, MSACCUCMP_FILE_PATH)
     python_version = sys.executable.split('/')[-1]
     bin2npy_cmd = [

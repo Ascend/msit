@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 from msquickcmp.common.dynamic_argument_bean import DynamicArgumentEnum
 
-from components.utils.security_check import get_valid_write_path
+from components.utils.security_check import get_valid_write_path, ms_makedirs
 from components.debug.common import logger
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 from components.utils.file_open_check import ms_open
@@ -637,7 +637,7 @@ def create_directory(dir_path):
     """
     if not os.path.exists(dir_path):
         try:
-            os.makedirs(dir_path, mode=0o700)
+            ms_makedirs(dir_path, mode=0o700)
         except OSError as ex:
             logger.error(
                 'Failed to create {}.Please check the path permission or disk space .{}'.format(dir_path, str(ex))
@@ -650,7 +650,7 @@ def save_numpy_data(file_path, data):
     save_numpy_data
     """
     if not os.path.exists(os.path.dirname(file_path)):
-        os.makedirs(os.path.dirname(file_path))
+        ms_makedirs(os.path.dirname(file_path))
     np.save(file_path, data)
 
 

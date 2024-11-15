@@ -22,6 +22,7 @@ from msit_llm.common.constant import MSIT_BAD_CASE_FOLDER_NAME
 from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
 from components.utils.file_open_check import ms_open
+from components.utils.security_check import ms_makedirs
 
 
 class Analyzer(object):
@@ -90,7 +91,7 @@ class Analyzer(object):
                 "Hence no result is saved")
             return
         
-        os.makedirs(Analyzer.ANALYZER_FOLDER_NAME, mode=0o700, exist_ok=True)
+        ms_makedirs(Analyzer.ANALYZER_FOLDER_NAME, mode=0o700, exist_ok=True)
         path = os.path.join(Analyzer.ANALYZER_FOLDER_NAME, f"{get_timestamp()}.csv")
 
         flags = os.O_WRONLY | os.O_CREAT

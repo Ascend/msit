@@ -30,8 +30,7 @@ import numpy as np
 
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
-from components.utils.file_open_check import sanitize_csv_value
-from components.utils.file_open_check import ms_open
+from components.utils.file_open_check import ms_open, sanitize_csv_value, MAX_SIZE_LIMITE_NORMAL_FILE
 from components.utils.check.rule import Rule
 
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
@@ -261,7 +260,8 @@ class NetCompare(object):
         return process.returncode, result, header
 
     def _process_result_one_line(self, fp_write, fp_read, npu_file_name, golden_file_name, result):
-        writer = csv.writer(fp_write)
+        with ms_open(fp_write, 'w') as f:
+            writer = csv.writer(f)
         # write header to file
         table_header_info = next(fp_read)
         header_list = table_header_info.strip().split(',')
@@ -269,7 +269,8 @@ class NetCompare(object):
         npu_dump_index = header_list.index(NPU_DUMP_TAG)
         ground_truth_index = header_list.index(GROUND_TRUTH_TAG)
 
-        result_reader = csv.reader(fp_read)
+        with ms_open(fp_read, 'r', max_size=MAX_SIZE_LIMITE_NORMAL_FILE) as f:
+            result_reader = csv.reader(f)
         # update result data
         new_content = []
         for line in result_reader:
@@ -314,7 +315,8 @@ class NetCompare(object):
 
 
     def _process_result_to_csv(self, fp_write, csv_info):
-        writer = csv.writer(fp_write)
+        with ms_open(fp_write, 'w') as f:
+            writer = csv.writer(f)
         if csv_info.header:
             header_base_info = [
                 'Index', 'OpType', 'NPUDump', 'DataType', 'Address',

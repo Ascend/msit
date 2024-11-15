@@ -22,6 +22,7 @@ from msit_llm.bc_analyze.utils import get_timestamp
 from msit_llm.common.log import logger
 from msit_llm.common.constant import MSIT_BAD_CASE_FOLDER_NAME
 from components.utils.file_open_check import ms_open
+from components.utils.security_check import ms_makedirs
 
 
 class Synthesizer(object):
@@ -180,7 +181,7 @@ class Synthesizer(object):
             logger.warning("'Synthesizer' detected that there is no data to save. Hence no result is saved")
             return
         
-        os.makedirs(self.SYNTHESIZER_FOLDER_NAME, mode=0o700, exist_ok=True)
+        ms_makedirs(self.SYNTHESIZER_FOLDER_NAME, mode=0o700, exist_ok=True)
         path = os.path.join(self.SYNTHESIZER_FOLDER_NAME, f"{get_timestamp()}.csv")
 
         flags = os.O_WRONLY | os.O_CREAT
