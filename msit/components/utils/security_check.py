@@ -197,19 +197,23 @@ def is_enough_disk_space_left(dump_path, required_space=MIN_DUMP_DISK_SPACE):
     return empty_disk_space >= required_space
 
 
-def ms_makedirs(dir_path, **kwargs):
+def _check_parent_dir_safe(dir_path):
     from components.utils.check import PathChecker
 
-    def get_parent_dir_path(dir_path):
-        if dir_path.exists():
+    def get_root(dir_path):
+        # 递归获取需要创建的最高级目录
+        if dir_path.parent.exists():
             return dir_path
-        return dir_path.parent
+        return get_root(dir_path.parent)
     
     from pathlib import Path            
     dir_path = Path(dir_path)
-    parent_dir_path = get_parent_dir_path(dir_path.parent)
+    root_path = get_root(dir_path)
 
-    if not PathChecker().is_safe_parent_dir().check(str(parent_dir_path)):
-        raise OSError(f"Output parent directory path {parent_dir_path} is not safe.")
-    
+    if not PathChecker().is_safe_parent_dir().check(str(root_path)):
+        raise OSError(f"Output parent directory path {root_path} is not safe.")
+
+
+def ms_makedirs(dir_path, **kwargs):
+    _check_parent_dir_safe(dir_path)
     os.makedirs(dir_path, **kwargs)
