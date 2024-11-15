@@ -73,6 +73,7 @@ class Rule:
             .is_file()
             .is_readable()
             .is_not_writable_to_others()
+            .is_safe_parent_dir()
             .max_size(10 * 1000 * 1000)
             .as_default()
         )
@@ -87,6 +88,7 @@ class Rule:
             .is_readable()
             .is_owner()
             .is_not_writable_to_others()
+            .is_safe_parent_dir()
             .max_size(2 * 1000 * 1000 * 1000)
             .as_default()
         )
@@ -99,7 +101,7 @@ class Rule:
     def output_dir() -> PathChecker:
         return (
             Rule.path()
-            .any(Rule.anti(PathChecker().exists()), PathChecker().is_dir().is_writable().is_not_writable_to_others())
+            .any(Rule.anti(PathChecker().exists()), PathChecker().is_dir().is_writeable().is_not_writable_to_others())
             .as_default()
         )
 
