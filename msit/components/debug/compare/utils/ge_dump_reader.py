@@ -36,12 +36,12 @@ class GEDumpFileReader(DumpFileReader):
         self.key_to_folder = self._map_keys_to_folders()
 
     def process_json_files(self):
-        with ms_open(os.path.join(self.json_path, 'mindie_torch_op_mapping.json')) as f:
+        with ms_open(os.path.join(self.json_path, 'mindie_torch_op_mapping.json'), max_size=TENSOR_MAX_SIZE) as f:
             torch_op_map = json.load(f)
 
         rt_jit_map = {item["rt_layer"]: item["jit_node"] for item in torch_op_map}
 
-        with ms_open(os.path.join(self.json_path, 'mindie_rt_op_mapping.json')) as f:
+        with ms_open(os.path.join(self.json_path, 'mindie_rt_op_mapping.json'), max_size=TENSOR_MAX_SIZE) as f:
             op_map = json.load(f)
 
         op_map = sorted(op_map, key=lambda x: x["id"])

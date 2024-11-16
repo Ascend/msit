@@ -30,7 +30,8 @@ import numpy as np
 
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
-from components.utils.file_open_check import ms_open, sanitize_csv_value, MAX_SIZE_LIMITE_NORMAL_FILE
+from components.utils.file_open_check import sanitize_csv_value
+from components.utils.file_open_check import ms_open
 from components.utils.check.rule import Rule
 
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check

@@ -20,6 +20,7 @@ import yaml
 from model_evaluation.common import utils
 from model_evaluation.common.enum import Framework
 from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 class OpMap:
@@ -43,7 +44,7 @@ class OpMap:
             raise RuntimeError(f'check file security error, file:{yaml_path}')
 
         try:
-            with ms_open(yaml_path) as f:
+            with ms_open(yaml_path, max_size=TENSOR_MAX_SIZE) as f:
                 op_map = yaml.safe_load(f)
         except Exception as e:
             raise RuntimeError(f'{e}') from e

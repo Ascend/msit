@@ -148,7 +148,7 @@ def json_to_onnx(args):
         return
 
     subprocess_info_file = load_file_to_read_common_check(subprocess_info_file)
-    with ms_open(subprocess_info_file) as f:
+    with ms_open(subprocess_info_file, max_size=TENSOR_MAX_SIZE) as f:
         from msit_llm.common.json_fitter import atb_json_to_onnx
         cache_csv_file = {}
         for line in f.readlines():

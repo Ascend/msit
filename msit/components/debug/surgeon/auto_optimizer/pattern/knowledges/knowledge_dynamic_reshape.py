@@ -115,7 +115,7 @@ class KnowledgeDynamicReshape(KnowledgeBase):
         cfg_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "model.cfg")
         if not os.path.exists(cfg_path):
             return res
-        with ms_open(cfg_path) as f:
+        with ms_open(cfg_path, max_size=TENSOR_MAX_SIZE) as f:
             contents = f.readlines()
         for line in contents:
             if line.startswith('input_shape_range'):

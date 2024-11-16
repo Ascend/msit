@@ -26,6 +26,7 @@ from msit_llm.transform.float_atb_to_quant_atb.utils import (
 from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
 from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 USING_SCALE_BIAS_ITEMS = ["IN_QKV", "IN_QMIX", "IN_KMIX", "IN_VMIX", "IN_SELFOUTLINEAR", "IN_MLP"]
 USING_SPARSE_INDEX_ITEMS = ["IN_QKV", "IN_QMIX", "IN_KMIX", "IN_VMIX"]
@@ -98,7 +99,7 @@ class TransformQuant:
 
         file_path = load_file_to_read_common_check(file_path)
 
-        contents = ms_open(file_path).read()
+        contents = ms_open(file_path, max_size=TENSOR_MAX_SIZE).read()
         contents = filter_chinese_char(contents)
         args, options = get_args_and_options()
         parser = cindex.Index.create(excludeDecls=True)
