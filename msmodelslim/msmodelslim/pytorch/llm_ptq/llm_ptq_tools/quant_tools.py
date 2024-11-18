@@ -64,7 +64,7 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant import (
 from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import TorchDAGAdapter
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.simulate_tp import ParallelLinearCol
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save_utils import save_file_partial
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.kmeans import TileKMeasLinearQuantizer
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.kmeans import TileKMeasLinearQuantizer, LayerSelector
 
 HF_HOOK = "_hf_hook"
 
@@ -79,7 +79,7 @@ class Calibrator(object):
                  all_tensors=None):
         check_type(model, nn.Module, param_name="model")
         check_type(cfg, QuantConfig, param_name="cfg")
-        check_type(disable_level, str, param_name='disable_level')
+        check_disable_level(disable_level)
         if all_tensors:
             check_element_type(all_tensors, torch.Tensor, dict, param_name="all_tensors")
 
@@ -124,8 +124,7 @@ class Calibrator(object):
         self.quant_model_json_description = QuantModelJsonDescription(self.cfg.model_quant_type, 
                                                                       self.cfg.use_kvcache_quant,
                                                                       self.cfg.use_fa_quant)
-        if not re.match(r'^L((?!0)\d+|0)$', disable_level):
-            raise ValueError('Please check the `disable_level` configuration.')
+        
         self.disable_level = disable_level
 
         model = self.init_model_device(model)
@@ -364,10 +363,15 @@ class Calibrator(object):
             except Exception as e:
                 raise Exception("Please check the model and calibration data, "
                                 "ensure that your model can run with `model(*(calib_data[0]))`.", e) from e
-
-            label_threshold_dict = self.get_label_threshold_dict()
-            self.logger.info(f"The model contains a total of {len(label_threshold_dict)} nn.Linear layers.")
-            auto_disable_names = self.get_auto_disable_names(label_threshold_dict)
+            if isinstance(self.disable_level, dict):
+                layer_selector = LayerSelector(model, self.calib_data, self.rollback_names)
+                layer_selector.run_sample()
+                auto_disable_names = layer_selector.get_disable_names(self.disable_level)
+            else:
+                label_threshold_dict = self.get_label_threshold_dict()
+                self.logger.info(f"The model contains a total of {len(label_threshold_dict)} nn.Linear layers.")
+                auto_disable_names = self.get_auto_disable_names(label_threshold_dict)
+                
             self.rollback_names = list(set(self.rollback_names + auto_disable_names))
 
             if self.disable_level != 'L0':
@@ -1004,6 +1008,21 @@ class Calibrator(object):
             int_infer = False
         if int_infer:
             enable_int_infer(self.model, self.logger)
+
+
+def check_disable_level(disable_level):
+    check_type(disable_level, (str, dict), param_name='disable_level')
+    if isinstance(disable_level, str) and not re.match(r'^L((?!0)\d+|0)$', disable_level):
+        raise ValueError('Please check the `disable_level` configuration.')
+    else:
+        if "disable_number" in disable_level and "threshold" in disable_level:
+            raise ValueError("Do not use `disable_number` and `disable_threshold` together.")
+        elif "disable_number" in disable_level:
+            check_number(disable_level["disable_number"], int, 0, param_name="disable_number")
+        elif "threshold" in disable_level:
+            check_number(disable_level["threshold"], min_value=0, param_name="threshold")
+        else:
+            raise ValueError("Please set `disable_number` or `threshold`!")
 
 
 def load_backup_model(backup_model: nn.Module, device=None, model_with_accelerate: bool = False):
