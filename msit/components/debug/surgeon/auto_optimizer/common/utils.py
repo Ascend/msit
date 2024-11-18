@@ -23,6 +23,7 @@ import onnxruntime as rt
 
 from components.debug.common import logger
 from components.utils.security_check import ms_makedirs
+from components.utils.check.rule import Rule
 
 def typeassert(*ty_args, **ty_kwargs):
     def decorate(func):
@@ -70,7 +71,8 @@ def dump_op_outputs(graph, input_data, dump_path, outputs=None):
     outputs = outputs or []
 
     def _run(model, input_data):
-        sess = rt.InferenceSession(model)
+        if Rule.input_file().check(model, will_raise=True):
+            sess = rt.InferenceSession(model)
         inputs = [ipt.name for ipt in sess.get_inputs()]
         outputs = [out.name for out in sess.get_outputs()]
         ret = sess.run(outputs, {name: data for name, data in zip(inputs, input_data)})
