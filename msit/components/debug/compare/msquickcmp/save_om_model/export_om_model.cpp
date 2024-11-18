@@ -121,13 +121,17 @@ std::string GetParentDir(const std::string& path) {
     return ".";
 }
 
-std::string GetRoot(const std::string& path) {
+std::string GetRoot(const std::string& path, int max_depth = 200)
+{
+    if (max_depth <= 0) {
+        throw std::runtime_error("Max recursion depth exceeded while searching for root directory.")
+    }
     std::string parentDir = GetParentDir(path);
     // 如果父目录存在且已经创建了，就返回
     if (access(parentDir.c_str(), F_OK) == 0) {
         return GetParentDir(path);  // 返回需要创建的目录路径
     }
-    return GetRoot(parentDir);  // 递归向上查找
+    return GetRoot(parentDir, max_depth - 1);  // 递归向上查找
 }
 
 void ParentCheck(const std::string& file_path) {
