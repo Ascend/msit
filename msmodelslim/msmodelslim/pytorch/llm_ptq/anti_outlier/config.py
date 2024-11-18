@@ -15,6 +15,7 @@ class AntiMethods(str, Enum):
     M3 = "m3"
     M4 = "m4"
     M5 = "m5"
+    M6 = "m6"
 
 
 class AntiOutlierConfig:

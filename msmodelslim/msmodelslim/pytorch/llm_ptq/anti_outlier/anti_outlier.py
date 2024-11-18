@@ -37,6 +37,7 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils import (
     os_ln_fcs,
     weight_aware,
 )
+from msmodelslim.pytorch.llm_ptq.flex_smooth import flex_smooth
 
 STAT_KEY_MAX = "max"
 STAT_KEY_MIN = "min"
@@ -263,7 +264,7 @@ class AntiOutlier(object):
                                hook_nodes=norm_class, anti_method=self.cfg.anti_method)
 
         self.norm_linear_subgraph = self.dag.get_norm_linear_subgraph()
-        if self.cfg.anti_method == 'm4':
+        if self.cfg.anti_method in ['m4', 'm6']:
             self.linear_linear_subgraph = self.dag.get_linear_linear_subgraph()
             self.norm_linear_subgraph.update(self.linear_linear_subgraph)
 
@@ -350,7 +351,7 @@ class AntiOutlier(object):
             stat_dict[STAT_KEY_SMOOTH_SCALE_MASK] = scale_mask
 
         # if anti_method is m4, set tensor_shift to False
-        tensor_shift = self.cfg.ch_align and not self.cfg.anti_method == 'm4'
+        tensor_shift = self.cfg.ch_align and not self.cfg.anti_method in ['m4', 'm6']
         if tensor_shift:
             channel_max = torch.max((tensor - stat_dict[STAT_KEY_SHIFT]).abs().detach(), dim=0)[0]
         else:
@@ -435,7 +436,7 @@ class AntiOutlier(object):
 
     def _process(self):
         act_stats = self.os_stats()
-        if self.cfg.anti_method == 'm4':
+        if self.cfg.anti_method in ['m4', 'm6']:
             num_attention_heads = self.get_num_attention_heads()
 
         for norm_name in tqdm(self.norm_linear_subgraph.keys()):
@@ -464,5 +465,5 @@ class AntiOutlier(object):
                 os_ln_fcs(self.cfg, norm_module, linear_modules, stats, os_k=self.cfg.os_k)
             elif self.cfg.anti_method == 'm3':
                 weight_aware(self.cfg, norm_module, linear_modules, stats)
-            elif self.cfg.anti_method == 'm4':
+            elif self.cfg.anti_method in ['m4', 'm6']:
                 iter_smooth(self.cfg, norm_module, linear_modules, stats, num_attention_heads)
