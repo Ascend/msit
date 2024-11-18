@@ -31,6 +31,7 @@ from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 from components.debug.compare.msquickcmp.common.tf_common import load_file_to_read_common_check_with_walk
 from components.utils.file_open_check import ms_open
 from components.utils.constants import TENSOR_MAX_SIZE
+from components.utils.check.rule import Rule
 
 
 def parse_ops_name_from_om_json(tf_json_path):
@@ -116,7 +117,8 @@ class TfSaveModelDumpData(DumpData):
                 input_name = self.input_shape_list[i][0]
                 input_shape = self.input_shape_list[i][1]
                 data_type = self.inputs_dtype.get(input_name)
-                input_data = np.fromfile(input_file, dtype=data_type).reshape(input_shape)
+                if Rule.input_file().check(input_file, will_raise=True):
+                    input_data = np.fromfile(input_file, dtype=data_type).reshape(input_shape)
                 self.inputs_data[input_name] = input_data
         else:
             # generate random input data

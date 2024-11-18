@@ -504,7 +504,8 @@ class NpuDumpData(DumpData):
                 data_type = npu_net_output_data_info.get(index)[0]
                 shape = npu_net_output_data_info.get(index)[1]
                 data_len = utils.get_data_len_by_shape(shape)
-                original_net_output_data = np.fromfile(os.path.join(dir_path, each_file), data_type, data_len)
+                if Rule.input_file().check(os.path.join(dir_path, each_file), will_raise=True):
+                    original_net_output_data = np.fromfile(os.path.join(dir_path, each_file), data_type, data_len)
                 try:
                     net_output_data = original_net_output_data.reshape(shape)
                 except ValueError:

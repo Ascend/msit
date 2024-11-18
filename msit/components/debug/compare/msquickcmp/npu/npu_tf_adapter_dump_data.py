@@ -33,6 +33,8 @@ from tensorflow.core.protobuf.rewriter_config_pb2 import RewriterConfig
 
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
 from components.debug.compare.msquickcmp.common.tf_common import load_file_to_read_common_check_with_walk
+from components.utils.check.rule import Rule
+
 
 class NpuTfAdapterDumpData(object):
     """
@@ -90,7 +92,8 @@ class NpuTfAdapterDumpData(object):
                 # convert .bin to numpy
                 data_type = file_name.rsplit("_", 1)[-1].split(".")[0]
                 input_name = file_name.rsplit("_", 1)[0]
-                input_data = np.fromfile(input_file, dtype=data_type).reshape(self.input_shape.get(input_name))
+                if Rule.input_file().check(input_file, will_raise=True):
+                    input_data = np.fromfile(input_file, dtype=data_type).reshape(self.input_shape.get(input_name))
                 self.inputs_data[input_name] = input_data
         else:
             for input_name, shape_str in self.input_shape.items():
