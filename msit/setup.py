@@ -23,7 +23,7 @@ config = ConfigParser()
 config.read('./components/config/config.ini')
 
 abs_path = os.path.dirname(os.path.realpath(__file__))
-with open(os.path.join(abs_path, "requirements.txt")) as f:
+with ms_open(os.path.join(abs_path, "requirements.txt")) as f:
     required = f.read().splitlines()
 
 ait_sub_tasks = [
