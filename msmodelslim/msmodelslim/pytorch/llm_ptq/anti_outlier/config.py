@@ -5,7 +5,7 @@ from ascend_utils.common.security.pytorch import validate_device
 from ascend_utils.common.security import check_type
 from msmodelslim import logger as msmodelslim_logger
 
-_ANTI_METHODS = ['m1', 'm2', 'm3', 'm4', 'm5']
+_ANTI_METHODS = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6']
 _SUPPORTED_DEVICES = ["cpu", "npu", 'gpu']
 
 

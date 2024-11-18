@@ -465,5 +465,7 @@ class AntiOutlier(object):
                 os_ln_fcs(self.cfg, norm_module, linear_modules, stats, os_k=self.cfg.os_k)
             elif self.cfg.anti_method == 'm3':
                 weight_aware(self.cfg, norm_module, linear_modules, stats)
-            elif self.cfg.anti_method in ['m4', 'm6']:
+            elif self.cfg.anti_method == 'm4':
                 iter_smooth(self.cfg, norm_module, linear_modules, stats, num_attention_heads)
+            elif self.cfg.anti_method == 'm6':
+                flex_smooth(self.cfg, norm_module, linear_modules, stats, num_attention_heads) 
