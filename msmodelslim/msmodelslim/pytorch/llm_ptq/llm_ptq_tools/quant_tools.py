@@ -64,6 +64,7 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant import (
 from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import TorchDAGAdapter
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.simulate_tp import ParallelLinearCol
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save_utils import save_file_partial
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.kmeans import TileKMeasLinearQuantizer
 
 HF_HOOK = "_hf_hook"
 
@@ -624,7 +625,7 @@ class Calibrator(object):
                 self.quant_param_dict.update(quant_param_offset)
                 self.fa_module_param_dict.update(attach_map)
 
-            if isinstance(module, ParallelLinearCol):
+            if isinstance(module, (ParallelLinearCol, TileKMeasLinearQuantizer)):
                 quant_param, attach_map = module.get_quant_param()
                 self.quant_param_dict.update(quant_param)
                 self.quantized_module_param_dict.update(attach_map)
@@ -863,7 +864,9 @@ class Calibrator(object):
             if name in self.rollback_names:
                 continue
             if isinstance(mod, nn.Linear) or isinstance(mod, nn.modules.linear.NonDynamicallyQuantizableLinear):
-                if self.cfg.is_lowbit:
+                if self.cfg.kmeans:
+                    quant_mod = TileKMeasLinearQuantizer(cfg=self.cfg, logger=self.logger, name=name)
+                elif self.cfg.is_lowbit:
                     quant_mod = LowBitLinearQuantizer(cfg=self.cfg, logger=self.logger, name=name)
                 elif self.cfg.model_quant_type is not QuantType.W8A8S:
                     quant_mod = LinearQuantizer(cfg=self.cfg, logger=self.logger)
@@ -1045,6 +1048,8 @@ def enable_quantization(model, act_states, logger=None, use_fa_quant=False):
                 module.init_act_and_observer(module.cfg)
         if isinstance(module, QuantXDecoderLayer):
             module.calibration = True
+        if isinstance(module, TileKMeasLinearQuantizer):
+            module.enable_calib()
 
 
 def disable_calibration(model, logger=None, custom_class=None, use_fa_quant=False):
@@ -1056,7 +1061,7 @@ def disable_calibration(model, logger=None, custom_class=None, use_fa_quant=Fals
             module.disable_calib()
         if custom_class and isinstance(module, custom_class):
             module.disable_calib()
-        if isinstance(module, ParallelLinearCol):
+        if isinstance(module, (ParallelLinearCol, TileKMeasLinearQuantizer)):
             module.disable_calib()
 
 
