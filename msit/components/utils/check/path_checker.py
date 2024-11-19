@@ -230,6 +230,8 @@ class PathChecker(Checker):
     def is_safe_parent_dir(self) -> Union["PathChecker", CheckResult]:
         path = os.path.realpath(self.instance)
         dirpath = os.path.dirname(path)
+        if os.getuid() == 0:
+            return True
 
         dir_checker = PathChecker().any(
             PathChecker().anti(PathChecker().exists()),
