@@ -42,8 +42,8 @@ class Analyzer(object):
             raise ValueError
         
         csv_path = load_file_to_read_common_check(csv_path)
-        if Rule.input_file().check(csv_path, will_raise=True):
-            return pd.read_csv(csv_path, encoding='utf-8')
+        Rule.input_file().check(csv_path, will_raise=True)
+        return pd.read_csv(csv_path, encoding='utf-8')
 
     @staticmethod
     def _validate_df(df: pd.DataFrame) -> None:
