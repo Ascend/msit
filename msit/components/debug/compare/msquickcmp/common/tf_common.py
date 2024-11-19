@@ -25,7 +25,7 @@ import tensorflow as tf
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
-
+from components.utils.check.rule import Rule
 
 DTYPE_MAP = {
     tf.float16: np.float16,
@@ -164,7 +164,8 @@ def get_inputs_data(inputs_tensor, input_paths):
     input_path = input_paths.split(",")
     for index, tensor in enumerate(inputs_tensor):
         try:
-            input_data = np.fromfile(input_path[index], convert_to_numpy_type(tensor.dtype))
+            if Rule.input_file().check(input_path[index], will_raise=True):
+                input_data = np.fromfile(input_path[index], convert_to_numpy_type(tensor.dtype))
         except Exception as err:
             utils.logger.error("Failed to load data %s. %s" % (input_path[index], err))
             raise AccuracyCompareException(utils.ACCURACY_COMPARISON_BIN_FILE_ERROR) from err

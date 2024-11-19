@@ -24,6 +24,7 @@ import numpy as np
 from msquickcmp.common import utils
 from msquickcmp.common.utils import logger
 from msquickcmp.common.utils import AccuracyCompareException
+from components.utils.check.rule import Rule
 
 
 class DumpData(object):
@@ -97,9 +98,11 @@ class DumpData(object):
         inputs_map = {}
         for input_path, name, shape, dtype in zip(input_pathes, names, shapes, dtypes):
             if dtype == np.float32 and os.path.getsize(input_path) == np.prod(shape) * 2:
-                input_data = np.fromfile(input_path, dtype=np.float16).astype(np.float32)
+                if Rule.input_file().check(input_path, will_raise=True):
+                    input_data = np.fromfile(input_path, dtype=np.float16).astype(np.float32)
             else:
-                input_data = np.fromfile(input_path, dtype=dtype)
+                if Rule.input_file().check(input_path, will_raise=True):
+                    input_data = np.fromfile(input_path, dtype=dtype)
             if np.prod(input_data.shape) != np.prod(shape):
                 cur = input_data.shape
                 logger.error(f"input data shape not match, input_path: {input_path}, shape: {cur}, target: {shape}")

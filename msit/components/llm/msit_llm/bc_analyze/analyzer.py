@@ -23,6 +23,7 @@ from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
 from components.utils.file_open_check import ms_open
 from components.utils.security_check import ms_makedirs
+from components.utils.check.rule import Rule
 
 
 class Analyzer(object):
@@ -41,8 +42,8 @@ class Analyzer(object):
             raise ValueError
         
         csv_path = load_file_to_read_common_check(csv_path)
-
-        return pd.read_csv(csv_path, encoding='utf-8')
+        if Rule.input_file().check(csv_path, will_raise=True):
+            return pd.read_csv(csv_path, encoding='utf-8')
 
     @staticmethod
     def _validate_df(df: pd.DataFrame) -> None:
