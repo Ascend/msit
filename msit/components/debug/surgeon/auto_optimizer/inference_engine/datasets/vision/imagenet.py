@@ -20,6 +20,9 @@ from auto_optimizer.inference_engine.datasets.dataset_base import DatasetBase
 from auto_optimizer.inference_engine.data_process_factory import DatasetFactory
 from components.debug.common import logger
 from components.utils.file_open_check import is_legal_args_path_string
+from components.utils.file_open_check import ms_open
+from components.utils.check.rule import Rule
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 @DatasetFactory.register("imagenet")
@@ -34,7 +37,8 @@ class ImageNetDataset(DatasetBase, ABC):
         data = []
         labels = []
         try:
-            with open(label_path, 'r') as f:
+            Rule.input_file().check(label_path, will_raise=True)
+            with ms_open(label_path, 'r', max_size=TENSOR_MAX_SIZE) as f:
                 for label_file in f:
                     image_name, label = re.split(r"\s+", label_file.strip())
                     file_path = os.path.join(dataset_path, image_name)

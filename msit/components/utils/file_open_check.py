@@ -19,6 +19,9 @@ import re
 import logging
 from enum import Enum
 from components.utils.log import logger
+from components.utils.check import Rule
+from components.utils.constants import CONFIG_FILE_MAX_SIZE
+
 
 
 MAX_SIZE_UNLIMITE = -1  # 不限制，必须显式表示不限制，读取必须传入
@@ -294,7 +297,7 @@ class FileStat:
         return False
 
 
-def ms_open(file, mode="r", max_size=None, softlink=False, write_permission=PERMISSION_NORMAL, **kwargs):
+def ms_open(file, mode="r", max_size=CONFIG_FILE_MAX_SIZE, softlink=False, write_permission=PERMISSION_NORMAL, **kwargs):
     file_stat = FileStat(file)
 
     if file_stat.is_exists and file_stat.is_dir:
@@ -325,6 +328,10 @@ def ms_open(file, mode="r", max_size=None, softlink=False, write_permission=PERM
             )
         if file_stat.permission != (file_stat.permission & write_permission):
             os.chmod(file, file_stat.permission & write_permission)
+    
+    safe_parent_msg = Rule.path().is_safe_parent_dir().check(file)
+    if not safe_parent_msg:
+        raise OpenException(f"parent dir of {os.path.realpath(file)} is not safe. {str(safe_parent_msg)}")
 
     if "+" in mode:
         flags = os.O_RDONLY | os.O_RDWR

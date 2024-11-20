@@ -26,6 +26,8 @@ from auto_optimizer.common.utils import dump_op_outputs
 from components.debug.common import logger
 from components.utils.check.rule import Rule
 from components.utils.constants import TENSOR_MAX_SIZE
+from components.utils.file_open_check import ms_open
+from components.utils.security_check import ms_makedirs
 
 
 class DynamicReshapeMatch(MatchBase):
@@ -113,7 +115,7 @@ class KnowledgeDynamicReshape(KnowledgeBase):
         cfg_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "model.cfg")
         if not os.path.exists(cfg_path):
             return res
-        with open(cfg_path) as f:
+        with ms_open(cfg_path, max_size=TENSOR_MAX_SIZE) as f:
             contents = f.readlines()
         for line in contents:
             if line.startswith('input_shape_range'):
@@ -162,7 +164,7 @@ class KnowledgeDynamicReshape(KnowledgeBase):
         for j in range(self._dump_num):
             real_dump_path = f'{self._dump_path}{j}'
             if not os.path.exists(real_dump_path):
-                os.makedirs(real_dump_path, 0o700)
+                ms_makedirs(real_dump_path, 0o700)
             dynamic_input = {}
             # generate dynamic input shape
             for axis in dynamic_axes:

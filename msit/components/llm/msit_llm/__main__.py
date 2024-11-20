@@ -18,6 +18,8 @@ import subprocess
 
 from components.utils.parser import BaseCommand
 from components.utils.security_check import is_enough_disk_space_left
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 from msit_llm.dump.initial import init_dump_task, clear_dump_task
 from msit_llm.opcheck.opchecker import OpChecker, NAMEDTUPLE_PRECISION_METRIC, NAMEDTUPLE_PRECISION_MODE
 from msit_llm.errcheck.process import process_error_check
@@ -503,7 +505,7 @@ class Transform(BaseCommand):
             quant_disable_names = ["lm_head"]
             if args.quant_disable_names is not None and os.path.isfile(args.quant_disable_names):
                 args.quant_disable_names = load_file_to_read_common_check(args.quant_disable_names)
-                with open(args.quant_disable_names) as ff:
+                with ms_open(args.quant_disable_names, max_size=TENSOR_MAX_SIZE) as ff:
                     quant_disable_names = [ii.strip() for ii in ff.readlines()]
             elif args.quant_disable_names is not None:
                 quant_disable_names = args.quant_disable_names.split(',')

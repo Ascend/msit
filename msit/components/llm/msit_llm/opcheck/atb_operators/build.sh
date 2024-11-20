@@ -117,10 +117,12 @@ download_nlohmann_json
 ATB_VERSION=`python3 -c '
 import os
 from msit_llm.common.utils import check_data_file_size
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 version = "8.0.RC3.B020" # Default value
 atb_version_file = os.path.abspath(os.path.join(os.getenv("ATB_HOME_PATH", ""), "..", "..", "version.info"))
 if os.path.exists(atb_version_file) and os.path.isfile(atb_version_file) and check_data_file_size(atb_version_file):
-    with open(atb_version_file) as ff:
+    with ms_open(atb_version_file, max_size=TENSOR_MAX_SIZE) as ff:
         for ii in ff.readlines():
             if "version" in ii.lower():
                 version = ii.split(":")[-1]

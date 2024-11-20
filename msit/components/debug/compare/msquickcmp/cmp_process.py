@@ -46,10 +46,11 @@ from msquickcmp.npu.npu_dump_data import NpuDumpData, DynamicInput
 from msquickcmp.npu.om_parser import OmParser
 from msquickcmp.single_op import single_op as sp
 
-from components.utils.security_check import check_write_directory
+from components.utils.security_check import check_write_directory, ms_makedirs
 from components.utils.file_open_check import ms_open, sanitize_csv_value
 from components.utils.check.rule import Rule
 from components.llm.msit_llm.common.utils import load_file_to_read_common_check
+from components.utils.constants import TENSOR_MAX_SIZE
 
 WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR
 READ_WRITE_FLAGS = os.O_RDWR | os.O_CREAT
@@ -118,7 +119,7 @@ def _get_single_csv_in_folder(csv_path):
 def _append_is_npu_ops_to_csv(csv_path):
     csv_path = _get_single_csv_in_folder(csv_path)
     if Rule.input_file().check(csv_path):
-        with open(csv_path, 'r') as f:
+        with ms_open(csv_path, 'r', max_size=TENSOR_MAX_SIZE) as f:
             reader = csv.reader(f)
             rows = [row for row in reader]
         header = rows[0]
@@ -226,7 +227,7 @@ def compare_run(args: CmpArgsAdapter):
         endnode_name = endnode_names_list[0]
         error_node_list = find_accuracy_interval(args, endnode_name, input_shape="")
         error_interval_info_file = os.path.join(args.out_path, ERROR_INTERVAL_INFO_FILE)
-        with os.fdopen(os.open(error_interval_info_file, READ_WRITE_FLAGS, WRITE_MODES), "a+") as fp_writer:
+        with ms_open(error_interval_info_file, "a+") as fp_writer:
             output_error_interval_info(fp_writer, error_node_list)
 
 
@@ -356,7 +357,7 @@ def print_advisor_info(out_path):
     if Rule.input_file().check(advisor_info_txt_path):
         utils.logger.info(f"The advisor summary (.txt) is saved in :\"{advisor_info_txt_path}\"")
         advisor_info_txt_path = load_file_to_read_common_check(advisor_info_txt_path)
-        with open(advisor_info_txt_path, 'r') as advisor_file:
+        with ms_open(advisor_info_txt_path, 'r', max_size=TENSOR_MAX_SIZE) as advisor_file:
             lines = advisor_file.readlines()
             for line in lines:
                 utils.logger.info(line.strip())
@@ -419,7 +420,7 @@ def check_and_run(args: CmpArgsAdapter, use_cli: bool):
             endnode_name = endnode_names_list[0]
             error_node_list = find_accuracy_interval(args, endnode_name, input_shape)
             error_interval_info_file = os.path.join(args.out_path, ERROR_INTERVAL_INFO_FILE)
-            with os.fdopen(os.open(error_interval_info_file, READ_WRITE_FLAGS, WRITE_MODES), "a+") as fp_writer:
+            with ms_open(error_interval_info_file, "a+") as fp_writer:
                 output_error_interval_info(fp_writer, error_node_list)
     if args.dym_shape_range:
         csv_sum(original_out_path)
@@ -483,8 +484,7 @@ def single_op_compare(args, input_shape):
 
         # set single op output data
         tmp_out_path = os.path.join(single_op_dir, f"single_op_{idx}")
-        if not os.path.exists(tmp_out_path):
-            os.makedirs(tmp_out_path)
+        ms_makedirs(tmp_out_path, exist_ok=True)
         time_dir = time.strftime("%Y%m%d%H%M%S", time.localtime())
         original_out_path = os.path.realpath(os.path.join(args.out_path, time_dir))
 
@@ -590,7 +590,7 @@ def subgraph_check(og, node_interval, args, onnx_data_path, input_shape):
     utils.logger.info("Loading data Finished!")
     tmp_out_path = os.path.join(args.out_path, 'tmpres')
     if not os.path.exists(tmp_out_path):
-        os.makedirs(tmp_out_path)
+        ms_makedirs(tmp_out_path)
     time_dir = time.strftime("%Y%m%d%H%M%S", time.localtime())
     original_out_path = os.path.realpath(os.path.join(args.out_path, time_dir))
     cmg_args = CmpArgsAdapter(subgraph_onnx_file, os.path.join(args.out_path, "tmp_for_accuracy_locat.om"),
@@ -660,7 +660,7 @@ def csv_sum(original_out_path):
         utils.logger.error("Error, file already exists!")
         os.remove(xlsx_file_summary)
 
-    with os.fdopen(os.open(xlsx_file_summary, WRITE_FLAGS, WRITE_MODES), 'wb') as fp_write:
+    with ms_open(xlsx_file_summary, 'wb') as fp_write:
         with pd.ExcelWriter(fp_write) as writer:
             for i, csv_file in enumerate(csv_file_list):
                 if Rule.input_file().check(csv_file):

@@ -20,6 +20,7 @@ import numpy as np
 from auto_optimizer.inference_engine.inference.inference_base import InferenceBase
 from auto_optimizer.inference_engine.data_process_factory import InferenceFactory
 from components.debug.common import logger
+from components.utils.check.rule import Rule
 
 
 @InferenceFactory.register("onnx")
@@ -51,7 +52,8 @@ class ONNXInference(InferenceBase, ABC):
         logger.debug("inference end")
 
     def _session_init(self, model):
-        session = rt.InferenceSession(model)
+        if Rule.input_file().check(model, will_raise=True):
+            session = rt.InferenceSession(model)
         input_name = []
         for n in session.get_inputs():
             input_name.append(n.name)

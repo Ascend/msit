@@ -20,6 +20,7 @@ import torch
 from msit_llm.dump.torch_dump.dump_config import DumpConfig
 from msit_llm.dump.torch_dump import hook_ops
 from msit_llm.common.log import logger
+from components.utils.security_check import ms_makedirs
 
 
 class DumpHookModule:
@@ -99,7 +100,7 @@ class DumpHookModule:
 
         dump_path = os.path.join(dump_config.dump_dir, "weights")
         if not os.path.exists(dump_path):
-            os.makedirs(dump_path)
+            ms_makedirs(dump_path)
 
         prefix = "root"
         for name, paramter in self.model.named_parameters():
@@ -126,7 +127,7 @@ def wrap_torch_func(func):
 
         api_dump_path = os.path.join(dump_config.dump_dir, str(dump_config.token_id), dump_name)
         if not os.path.exists(api_dump_path):
-            os.makedirs(api_dump_path)
+            ms_makedirs(api_dump_path)
         dump_data(args, output, api_dump_path, dump_config.tensor_part)
         return output
 
@@ -174,7 +175,7 @@ def dump_module_data():
             from msit_llm.dump.torch_dump.topo import ModelTree
 
             if not os.path.exists(dump_config.dump_dir):
-                os.makedirs(dump_config.dump_dir, mode=0o750)
+                ms_makedirs(dump_config.dump_dir, mode=0o750)
             model_tree_path = os.path.join(dump_config.dump_dir, "model_tree.json")
             obj = ModelTree()
             obj.create_tree(module, dump_config.module_ids, model_tree_path)
@@ -192,7 +193,7 @@ def dump_module_data():
 
         dump_path = os.path.join(dump_config.dump_dir, str(dump_config.token_id), module_name)
         if not os.path.exists(dump_path):
-            os.makedirs(dump_path, mode=0o750)
+            ms_makedirs(dump_path, mode=0o750)
         dump_data(inputs, outputs, dump_path, dump_config.tensor_part)
 
     return hook_func
@@ -247,7 +248,7 @@ def dump_logits():
             dump_path = os.path.join(config.dump_dir, str(config.token_id), module_name)
 
             if not os.path.exists(dump_path):
-                os.makedirs(dump_path, mode=0o750)
+                ms_makedirs(dump_path, mode=0o750)
             dump_tensor(outputs, os.path.join(dump_path, "output"))
 
     return hook_func

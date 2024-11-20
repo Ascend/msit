@@ -12,11 +12,13 @@
 # limitations under the License.
 from configparser import ConfigParser
 from setuptools import setup, find_packages  # type: ignore
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 config = ConfigParser()
 config.read('../../config/config.ini')
 
-with open('requirements.txt', encoding='utf-8') as f:
+with ms_open('requirements.txt', max_size=TENSOR_MAX_SIZE, encoding='utf-8') as f:
     required = f.read().splitlines()
 
 

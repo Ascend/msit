@@ -7,6 +7,8 @@ from collections import Counter
 
 from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 FILE_PERMISSION = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP
@@ -132,7 +134,7 @@ class ModelTree:
     @staticmethod
     def json_to_tree(json_path: str, tensor_path="") -> TreeNode:
         json_path = load_file_to_read_common_check(json_path)
-        with open(json_path, "r") as file:
+        with ms_open(json_path, "r", max_size=TENSOR_MAX_SIZE) as file:
             node_dict = json.loads(file.read(), parse_constant=lambda x: None)
 
         def _dict_to_tree(node_dict, level, order, tensor_path):
@@ -156,7 +158,7 @@ class ModelTree:
     @staticmethod
     def atb_json_to_tree(json_path: str, tensor_path="", start_order=0) -> TreeNode:
         json_path = load_file_to_read_common_check(json_path)
-        with open(json_path, "r") as file:
+        with ms_open(json_path, "r", max_size=TENSOR_MAX_SIZE) as file:
             node_dict = json.loads(file.read(), parse_constant=lambda x: None)
 
         def _atb_dict_to_tree(node_dict, level, order, tensor_path):
@@ -218,5 +220,5 @@ def _tree_to_dict(node):
 
 
 def _tree_to_json(node, json_path):
-    with os.fdopen(os.open(json_path, os.O_CREAT | os.O_WRONLY, FILE_PERMISSION), 'w') as file:
+    with ms_open(json_path, 'w') as file:
         json.dump(_tree_to_dict(node), file)

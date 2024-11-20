@@ -21,6 +21,7 @@ import numpy as np
 
 from components.utils.log import logger
 from components.utils.check.string_checker import StringChecker
+from components.utils.file_open_check import ms_open, MAX_SIZE_LIMITE_NORMAL_FILE
 
 
 IS_MSACCUCMP_PATH_SET = False
@@ -65,7 +66,8 @@ def set_msaccucmp_path_from_cann():
 
 def parse_torchair_dump_data(dump_file):
     if dump_file.endswith(".npz"):  # Custom converted data info
-        loaded = np.load(dump_file)
+        with ms_open(dump_file, "rb", max_size=MAX_SIZE_LIMITE_NORMAL_FILE) as f:
+            loaded = np.load(f)
         return loaded.get("inputs", []), loaded.get("outputs", [])
 
     if not IS_MSACCUCMP_PATH_SET:

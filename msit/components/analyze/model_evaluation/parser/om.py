@@ -24,6 +24,8 @@ from model_evaluation.common.enum import Engine, AtcErr
 from model_evaluation.parser.atc import AtcErrParser
 from model_evaluation.bean import OpInnerInfo
 from components.utils.check.rule import Rule
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 class OmParser:
@@ -78,7 +80,7 @@ class OmParser:
 
         try:
             Rule.input_file().check(self._om_json, will_raise=True)
-            with open(self._om_json) as f:
+            with ms_open(self._om_json, max_size=TENSOR_MAX_SIZE) as f:
                 om_data = json.load(f)
         except Exception as e:
             logger.error(f'load ops json failed, err:{e}')

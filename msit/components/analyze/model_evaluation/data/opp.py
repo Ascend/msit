@@ -23,6 +23,8 @@ from components.utils.log import logger
 from model_evaluation.common.enum import SocType, Engine
 from model_evaluation.bean import OpInnerInfo
 from components.utils.check.rule import Rule
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 class Opp:
@@ -69,7 +71,7 @@ class Opp:
     def parse_opp_json(cls, opp_json: str, soc_type: str) -> Dict[str, Dict]:
         try:
             Rule.input_file().check(opp_json, will_raise=True)
-            with open(opp_json) as f:
+            with ms_open(opp_json, max_size=TENSOR_MAX_SIZE) as f:
                 data = json.load(f)
         except Exception as e:
             logger.error(f'load opp json failed, err:{e}')

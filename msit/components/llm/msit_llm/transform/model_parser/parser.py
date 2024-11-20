@@ -21,6 +21,7 @@ import torch.nn as nn
 from msit_llm.transform.model_parser.kind import mlp, attention, convert, mname
 from components.utils.file_open_check import ms_open
 from msit_llm.common.utils import load_file_to_read_common_check
+from components.utils.constants import TENSOR_MAX_SIZE
 
 
 def has_child(module: nn.Module) -> bool:
@@ -291,7 +292,7 @@ def update_weight_prefix(parsed_model, source_path):
 
         fp = load_file_to_read_common_check(str(fp))
         try:
-            with open(fp) as ff:
+            with ms_open(fp, max_size=TENSOR_MAX_SIZE) as ff:
                 dd = json.load(ff)            
             weight_name_list = list(dd['weight_map'].keys())
         except Exception:

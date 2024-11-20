@@ -20,6 +20,9 @@ import re
 import pandas as pd
 
 from components.utils.file_open_check import FileStat
+from components.utils.file_open_check import ms_open
+from components.utils.constants import TENSOR_MAX_SIZE
+from components.utils.security_check import ms_makedirs
 from msit_llm.common.log import logger
 from msit_llm.common.utils import safe_string, load_file_to_read_common_check
 from msit_llm.common.constant import ATB_HOME_PATH, ATB_SAVE_TENSOR_TIME, ATB_SAVE_TENSOR_IDS, \
@@ -93,7 +96,7 @@ def init_dump_task(args):
     if "onnx" in args.type and ("model" in args.type or "layer" in args.type):
         os.environ[ATB_DUMP_SUB_PROC_INFO_SAVE_PATH] = os.path.join(str(args.output), str(os.getpid()))
         subprocess_info_path = os.path.join(args.output, str(os.getpid()))
-        os.makedirs(subprocess_info_path, exist_ok=True)
+        ms_makedirs(subprocess_info_path, exist_ok=True)
     else:
         os.environ.pop(ATB_DUMP_SUB_PROC_INFO_SAVE_PATH, None)  # Ensure none is set
 
@@ -145,7 +148,7 @@ def json_to_onnx(args):
         return
 
     subprocess_info_file = load_file_to_read_common_check(subprocess_info_file)
-    with open(subprocess_info_file) as f:
+    with ms_open(subprocess_info_file, max_size=TENSOR_MAX_SIZE) as f:
         from msit_llm.common.json_fitter import atb_json_to_onnx
         cache_csv_file = {}
         for line in f.readlines():
@@ -210,7 +213,7 @@ def merge_cpu_profiling_data(path):
             csv_buffer_data = list()
             
             file_path = load_file_to_read_common_check(os.path.join(root, file))
-            with open(file_path, 'r') as f:
+            with ms_open(file_path, 'r', max_size=TENSOR_MAX_SIZE) as f:
                 lines = f.readlines()
                 read_cpu_profiling_data(lines, data)
                 for opname in data.keys():

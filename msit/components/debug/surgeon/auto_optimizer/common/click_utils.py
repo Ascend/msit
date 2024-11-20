@@ -32,6 +32,7 @@ from auto_optimizer.graph_optimizer.optimizer import (
 from auto_optimizer.graph_refactor.interface.base_graph import BaseGraph
 from auto_optimizer.graph_refactor.onnx.graph import OnnxGraph
 from components.debug.common import logger
+from components.utils.security_check import ms_makedirs
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -172,7 +173,7 @@ def optimize_onnx(
 
     if applied_knowledges:
         if not output_model.parent.exists():
-            output_model.parent.mkdir(parents=True)
+            ms_makedirs(output_model.parent)
         graph_opt.save(output_model.as_posix())
     return applied_knowledges
 

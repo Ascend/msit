@@ -72,7 +72,7 @@ class FileStatus(object):
             os.st.S_IFREG: FileType.FILE,
             os.st.S_IFIFO: FileType.FIFO,
             os.st.S_IFLNK: FileType.SYMLINK,
-            os.st.S_IFSOCK: FileType.SOCKET
+            os.st.S_IFSOCK: FileType.SOCKET,
         }
 
         file_mode = os.st.S_IFMT(self.status_mode)
@@ -89,7 +89,7 @@ class PathChecker(Checker):
 
     def path_converter(self, ori_path):
         try:
-            self.f_status = FileStatus(ori_path)     
+            self.f_status = FileStatus(ori_path)
         except OSError as e:
             self.status_err_msg = e.strerror + ': ' + e.filename
         except TypeError:
@@ -99,7 +99,7 @@ class PathChecker(Checker):
         else:
             self.f_state = True
 
-        return ori_path, self.f_state, self.status_err_msg
+        return ori_path, True, self.status_err_msg
 
     @rule()
     def exists(self) -> Union["PathChecker", CheckResult]:
@@ -126,7 +126,7 @@ class PathChecker(Checker):
             return False, self.status_err_msg
         else:
             return self.f_status.ftype is FileType.SYMLINK, f"Not a soft link: {self.instance}"
-    
+
     @rule()
     def forbidden_softlink(self, flag=True) -> Union["PathChecker", CheckResult]:
         if not self.f_state:
@@ -163,7 +163,7 @@ class PathChecker(Checker):
         else:
             return (
                 self.f_status.gid in gids,
-                f"User ID not matched: {self.instance}[{self.f_status.gid} ∉ {str(gids)}]. ",
+                f"Group ID not matched: {self.instance}[{self.f_status.gid} ∉ {str(gids)}]. ",
             )
 
     @rule()
@@ -180,24 +180,19 @@ class PathChecker(Checker):
 
     @rule()
     def is_not_readable_to_others(self) -> Union["PathChecker", CheckResult]:
-        return CheckResult(
-            not bool(self.f_status.status_mode & os.st.S_IROTH), 
-            "File is readable to others"
-        )
+        return CheckResult(not bool(self.f_status.status_mode & os.st.S_IROTH), "File is readable to others")
+
+    @rule()
+    def is_not_writable_to_group(self) -> Union["PathChecker", CheckResult]:
+        return CheckResult(not bool(self.f_status.status_mode & os.st.S_IWGRP), "File is writable to groups")
 
     @rule()
     def is_not_writable_to_others(self) -> Union["PathChecker", CheckResult]:
-        return CheckResult(
-            not bool(self.f_status.status_mode & os.st.S_IWOTH), 
-            "File is writable to others"
-        )
+        return CheckResult(not bool(self.f_status.status_mode & os.st.S_IWOTH), "File is writable to others")
 
     @rule()
     def is_not_executable_to_others(self) -> Union["PathChecker", CheckResult]:
-        return CheckResult(
-            not bool(self.f_status.status_mode & os.st.S_IXOTH), 
-            "File is executable to others"
-        )
+        return CheckResult(not bool(self.f_status.status_mode & os.st.S_IXOTH), "File is executable to others")
 
     @rule()
     def max_perm(self, perm_bits: int) -> Union["PathChecker", CheckResult]:
@@ -212,10 +207,12 @@ class PathChecker(Checker):
             mask = 1 << count
 
             if (self.f_status.perm_bits & mask) and not (perm_bits & mask):
-                err_msg = f"{part_mapping[count // 3]} " \
-                          f"should not have {perm_mapping[count % 3]} " \
-                          f"permissions: {self.instance}"
-                
+                err_msg = (
+                    f"{part_mapping[count // 3]} "
+                    f"should not have {perm_mapping[count % 3]} "
+                    f"permissions: {self.instance}"
+                )
+
                 return CheckResult(False, err_msg)
 
         return CheckResult(True)
@@ -228,3 +225,16 @@ class PathChecker(Checker):
     @rule("Wrong file suffix")
     def check_extensions(self, extensions) -> Union["PathChecker", CheckResult]:
         return self.f_status.extension == extensions or self.f_status.extension == '.' + extensions
+
+    @rule()
+    def is_safe_parent_dir(self) -> Union["PathChecker", CheckResult]:
+        path = os.path.realpath(self.instance)
+        dirpath = os.path.dirname(path)
+        if os.getuid() == 0:
+            return True
+
+        dir_checker = PathChecker().any(
+            PathChecker().anti(PathChecker().exists()),
+            PathChecker().is_dir().is_owner(os.getuid()).is_not_writable_to_others().is_not_writable_to_group(),
+        )
+        return dir_checker.check(dirpath)
