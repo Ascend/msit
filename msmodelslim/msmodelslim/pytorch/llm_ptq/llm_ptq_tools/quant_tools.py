@@ -1012,8 +1012,9 @@ class Calibrator(object):
 
 def check_disable_level(disable_level):
     check_type(disable_level, (str, dict), param_name='disable_level')
-    if isinstance(disable_level, str) and not re.match(r'^L((?!0)\d+|0)$', disable_level):
-        raise ValueError('Please check the `disable_level` configuration.')
+    if isinstance(disable_level, str):
+        if not re.match(r'^L((?!0)\d+|0)$', disable_level):
+            raise ValueError('Please check the `disable_level` configuration.')
     else:
         if "disable_number" in disable_level and "threshold" in disable_level:
             raise ValueError("Do not use `disable_number` and `disable_threshold` together.")
