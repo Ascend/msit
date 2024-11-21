@@ -471,4 +471,4 @@ class AntiOutlier(object):
             elif self.cfg.anti_method == 'm4':
                 iter_smooth(self.cfg, norm_module, linear_modules, stats, num_attention_heads)
             elif self.cfg.anti_method == 'm6':
-                flex_smooth(self.cfg, norm_module, linear_modules, stats, num_attention_heads) 
+                flex_smooth(self.cfg, norm_module, linear_modules, stats) 
