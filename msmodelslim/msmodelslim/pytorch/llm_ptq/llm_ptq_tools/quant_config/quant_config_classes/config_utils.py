@@ -24,6 +24,7 @@ def set_quant_param(config):
     config.int_bias = False
     config.calib_mode = 0
     config.model_quant_type = QuantType.UNKNOWN
+    config.lut_len = 16
 
 
 def set_lowbit_param(config):
