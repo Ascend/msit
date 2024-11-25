@@ -26,11 +26,12 @@ class QuantType(str, Enum):
     FAQuant = "FAQuant" # flashattention量化为8bit
     W8A8_DYNAMIC = "W8A8_DYNAMIC"  # W8A8静态量化与per-token动态量化混合量化
     W8A8_PDMIX = "W8A8_PDMIX"  # prefile阶段激活8bit pertoken动态量化；decode阶段激活8bit pertensor量化。权重8bit量化
+    W8A8_PER_TILING = "W8A8_PER_TILING" # W8A8 权重kmeans 8bit量化，激活值per tiling 8bit动态量化
 
     @staticmethod
-    def get_quant_type(w_bit, a_bit, is_sparse, is_dynamic, is_lowbit):
+    def get_quant_type(w_bit, a_bit, is_sparse, is_dynamic, is_lowbit, w_method):
         if is_dynamic:
-            return QuantType.get_dynamic_quant_type(w_bit, a_bit)
+            return QuantType.get_dynamic_quant_type(w_bit, a_bit, w_method)
         if is_sparse:
             return QuantType.W8A8S
         if w_bit == 8 and a_bit == 8:
@@ -47,7 +48,7 @@ class QuantType(str, Enum):
 
     @staticmethod
     def is_value_in_enum(quant_type_value):
-        return quant_type_value in ["UNKNOWN", "W8A16", "W4A16", "W8A8", "W8A8S", "W8A8SC", "FLOAT", "W8A8_DYNAMIC"]
+        return quant_type_value in ["UNKNOWN", "W8A16", "W4A16", "W8A8", "W8A8S", "W8A8SC", "FLOAT", "W8A8_DYNAMIC", "W8A8_PDMIX", "W8A8_PER_TILING"]
 
     @staticmethod
     def check_instance_of_enum(instance):
@@ -60,9 +61,12 @@ class QuantType(str, Enum):
             raise ValueError(f"QuantType.{quant_type_value} does not support Data-Free, please check your QuantConfig.")
 
     @staticmethod
-    def get_dynamic_quant_type(w_bit, a_bit):
+    def get_dynamic_quant_type(w_bit, a_bit, w_method):
         if w_bit == 8 and a_bit == 8:
-            return QuantType.W8A8_DYNAMIC
+            if w_method == WeightQuantMethod.KMeans:
+                return QuantType.W8A8_PER_TILING
+            else:
+                return QuantType.W8A8_DYNAMIC
         return QuantType.UNKNOWN
 
 
