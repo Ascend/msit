@@ -87,7 +87,6 @@ class Calibrator(object):
         is_cfg_not_dynamic = not cfg.is_dynamic
         if is_model_anti_method_m6 and is_cfg_w_method_minmax and is_cfg_not_dynamic:
             cfg.model_quant_type = QuantType.W8A8_PDMIX
-            cfg.model_quant_type = QuantType.W8A8_PDMIX
 
         self.cfg = cfg
         self.logger = msmodelslim_logger
@@ -891,7 +890,7 @@ class Calibrator(object):
                 mod.disable_calib()
 
     def quantize_model(self, model):
-        if self.cfg.w_method == "KMEANS":
+        if self.cfg.model_quant_type == QuantType.W8A8_PER_TILING:
             return model
 
         if self.cfg.do_smooth:
@@ -1038,7 +1037,7 @@ class Calibrator(object):
         self.logger.info("Calibration start!")
         self.model.eval()
         if self.calib_data:
-            if self.cfg.w_method == WeightQuantMethod.KMeans:
+            if self.cfg.model_quant_type == QuantType.W8A8_PER_TILING:
                 self.run_kmeans_calib()
             elif self.cfg.calib_mode == 0:
                 with torch.no_grad():
@@ -1200,3 +1199,4 @@ def set_module(ori_mod, submodule_key, module):
     for s in sub_tokens:
         cur_mod = getattr(cur_mod, s)
     setattr(cur_mod, tokens[-1], module)
+    
