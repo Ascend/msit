@@ -191,6 +191,19 @@ class AntiOutlier(object):
         if not isinstance(calib_data, list):
             raise TypeError("calib_data must be list, please check it.")
         check_type(cfg, AntiOutlierConfig, param_name="config")
+
+        # 校验用户指定的不做异常值抑制的层是否存在
+        quant_name_list = []
+        conv_name_list = []
+        for name, mod in model.named_modules():
+            if isinstance(mod, nn.Linear):
+                quant_name_list.append(name)
+            if isinstance(mod, nn.Conv2d):
+                conv_name_list.append(name)
+        for name in cfg.disable_anti_names:
+            if name not in quant_name_list and name not in conv_name_list:
+                raise ValueError(f"cfg param `disable_anti_names` has invalid name {name}, please check your anti_outlier config.")
+            
         self.with_accelerate = judge_model_with_accelerate(model)
 
         self.cfg = cfg
@@ -247,6 +260,8 @@ class AntiOutlier(object):
         # 保存anti_outlier处理前的原始权重，作为属性存入model中
         if self.cfg.anti_method != "m6":
             setattr(self.model, 'ori_state_dict', states_dic)
+        else:
+            setattr(self.model, 'anti_method', 'm6')
 
     def init_dag(self):
         dummy_input = input_to_cpu(self.calib_data[0][0])
@@ -471,4 +486,11 @@ class AntiOutlier(object):
             elif self.cfg.anti_method == 'm4':
                 iter_smooth(self.cfg, norm_module, linear_modules, stats, num_attention_heads)
             elif self.cfg.anti_method == 'm6':
-                flex_smooth(self.cfg, norm_module, linear_modules, stats) 
+                anti_flag = True
+                for linear_name in linear_names:
+                    if linear_name in self.cfg.disable_anti_names:
+                        anti_flag = False
+                        break
+                if anti_flag:
+                    flex_smooth(self.cfg, norm_module, linear_modules, stats)
+
