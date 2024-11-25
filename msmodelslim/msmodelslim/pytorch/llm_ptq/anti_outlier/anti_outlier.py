@@ -354,7 +354,7 @@ class AntiOutlier(object):
             stat_dict[STAT_KEY_SMOOTH_SCALE_MASK] = scale_mask
 
         # if anti_method is m4, set tensor_shift to False
-        tensor_shift = self.cfg.ch_align and not self.cfg.anti_method in ['m4', 'm6']
+        tensor_shift = self.cfg.ch_align and self.cfg.anti_method not in ['m4', 'm6']
         if tensor_shift:
             channel_max = torch.max((tensor - stat_dict[STAT_KEY_SHIFT]).abs().detach(), dim=0)[0]
         else:
