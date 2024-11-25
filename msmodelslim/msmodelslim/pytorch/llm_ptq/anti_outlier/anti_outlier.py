@@ -38,7 +38,7 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils import (
     weight_aware,
 )
 try:
-    from msmodelslim.pytorch.llm_ptq.flex_smooth import flex_smooth
+    from msmodelslim.pytorch.llm_ptq.kmeans.flex_smooth import flex_smooth
     _FLEX_SMOOTH_IMPORTED = True
 except ImportError:
     _FLEX_SMOOTH_IMPORTED = False

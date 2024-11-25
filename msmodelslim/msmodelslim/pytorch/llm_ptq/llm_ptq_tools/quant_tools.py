@@ -65,7 +65,8 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.simulate_tp import ParallelLinearCol
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save_utils import save_file_partial
 try:
-    from msmodelslim.pytorch.llm_ptq.anti_outlier import TileKMeasLinearQuantizer, LayerSelector, LINEAR_PATTERN
+    from msmodelslim.pytorch.llm_ptq.kmeans.quant_module import TileKMeasLinearQuantizer, LINEAR_PATTERN
+    from msmodelslim.pytorch.llm_ptq.kmeans.layer_select import LayerSelector
     _PER_TILING_IMPORTED = True
 except ImportError:
     _PER_TILING_IMPORTED = False
