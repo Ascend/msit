@@ -26,7 +26,8 @@ class AntiOutlierConfig:
             anti_method="m2",
             dev_type='cpu',
             dev_id=None,
-            w_sym=True
+            w_sym=True,
+            disable_anti_names=[]
     ):
         # Basic setting
         self.w_bit = w_bit
@@ -35,6 +36,7 @@ class AntiOutlierConfig:
         self.dev_type = dev_type
         self.dev_id = dev_id
         self.w_sym = w_sym
+        self.disable_anti_names = disable_anti_names
         self.w_signed = True
         self.a_signed = True
         self.a_sym = False
@@ -48,6 +50,7 @@ class AntiOutlierConfig:
         check_type(self.a_bit, int, param_name='a_bit')
         check_type(self.anti_method, str, param_name='anti_method')
         check_type(self.w_sym, bool, param_name='w_sym')
+        check_type(self.disable_anti_names, list, param_name='disable_anti_names')
 
         if self.anti_method not in _ANTI_METHODS:
             raise ValueError("Configuration param `anti_method` must be in choices {}"
