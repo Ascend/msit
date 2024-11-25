@@ -24,7 +24,6 @@ def set_quant_param(config):
     config.int_bias = False
     config.calib_mode = 0
     config.model_quant_type = QuantType.UNKNOWN
-    config.lut_len = 16
 
 
 def set_lowbit_param(config):
@@ -144,6 +143,7 @@ def check_and_generate_config_param(config):
     check_type(config.use_kvcache_quant, bool, param_name="use_kvcache_quant")
     check_type(config.group_size, int, param_name="group_size")
     check_number(config.percdamp, float, 0, 1, param_name="percdamp")
+    check_number(config.lut_len, int, 1, 256, param_name="lut_len")
 
     if config.use_kvcache_quant and config.use_fa_quant:
         raise ValueError("KV-cache and FA cannot be quantized at the same time!")
@@ -156,6 +156,7 @@ def check_and_generate_config_param(config):
     config.model_quant_type = QuantType.get_quant_type(w_bit=config.w_bit, a_bit=config.a_bit,
                                                        is_sparse=config.co_sparse,
                                                        is_dynamic=config.is_dynamic,
-                                                       is_lowbit=config.is_lowbit)
+                                                       is_lowbit=config.is_lowbit,
+                                                       w_method=config.w_method)
     WeightQuantMethod.check_quant_type(config.model_quant_type, w_method=config.w_method)
     config.w_hessian, config.hqq = WeightQuantMethod.get_wmethod_config(config.w_method)
