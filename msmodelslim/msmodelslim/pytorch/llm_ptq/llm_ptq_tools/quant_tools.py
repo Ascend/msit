@@ -82,7 +82,11 @@ class Calibrator(object):
         check_disable_level(disable_level)
         if all_tensors:
             check_element_type(all_tensors, torch.Tensor, dict, param_name="all_tensors")
-        if hasattr(model, "anti_method") and model.anti_method == "m6" and cfg.w_method == WeightQuantMethod.MinMax and not cfg.is_dynamic:
+        is_model_anti_method_m6 = hasattr(model, "anti_method") and model.anti_method == "m6"
+        is_cfg_w_method_minmax = cfg.w_method == WeightQuantMethod.MinMax
+        is_cfg_not_dynamic = not cfg.is_dynamic
+        if is_model_anti_method_m6 and is_cfg_w_method_minmax and is_cfg_not_dynamic:
+            cfg.model_quant_type = QuantType.W8A8_PDMIX
             cfg.model_quant_type = QuantType.W8A8_PDMIX
 
         self.cfg = cfg
