@@ -64,7 +64,11 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant import (
 from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import TorchDAGAdapter
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.simulate_tp import ParallelLinearCol
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save_utils import save_file_partial
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.kmeans import TileKMeasLinearQuantizer, LayerSelector, LINEAR_PATTERN
+try:
+    from msmodelslim.pytorch.llm_ptq.anti_outlier import TileKMeasLinearQuantizer, LayerSelector, LINEAR_PATTERN
+    _PER_TILING_IMPORTED = True
+except ImportError:
+    _PER_TILING_IMPORTED = False
 
 HF_HOOK = "_hf_hook"
 
@@ -87,6 +91,8 @@ class Calibrator(object):
         is_cfg_not_dynamic = not cfg.is_dynamic
         if is_model_anti_method_m6 and is_cfg_w_method_minmax and is_cfg_not_dynamic:
             cfg.model_quant_type = QuantType.W8A8_PDMIX
+        if not _PER_TILING_IMPORTED and cfg.model_quant_type == QuantType.W8A8_PER_TILING:
+            raise ImportError("CANN Toolkit version not match msmodelslim version, per tiling quantization not usable.")
 
         self.cfg = cfg
         self.logger = msmodelslim_logger
@@ -1199,4 +1205,3 @@ def set_module(ori_mod, submodule_key, module):
     for s in sub_tokens:
         cur_mod = getattr(cur_mod, s)
     setattr(cur_mod, tokens[-1], module)
-    

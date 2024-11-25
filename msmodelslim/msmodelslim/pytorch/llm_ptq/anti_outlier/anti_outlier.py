@@ -37,7 +37,11 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils import (
     os_ln_fcs,
     weight_aware,
 )
-from msmodelslim.pytorch.llm_ptq.flex_smooth import flex_smooth
+try:
+    from msmodelslim.pytorch.llm_ptq.flex_smooth import flex_smooth
+    _FLEX_SMOOTH_IMPORTED = True
+except ImportError:
+    _FLEX_SMOOTH_IMPORTED = False
 
 STAT_KEY_MAX = "max"
 STAT_KEY_MIN = "min"
@@ -208,6 +212,9 @@ class AntiOutlier(object):
 
         self.cfg = cfg
         self.device = self.cfg.device
+
+        if self.cfg.anti_method == "m6" and not _FLEX_SMOOTH_IMPORTED:
+            raise ImportError("CANN Toolkit version not match msmodelslim version, `m6` flex smooth not usable.")
 
         if self.cfg.device == "cpu":
             same_device = self.cfg.device == model.device.type
