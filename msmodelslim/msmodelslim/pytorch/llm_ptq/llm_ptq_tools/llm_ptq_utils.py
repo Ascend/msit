@@ -25,6 +25,7 @@ class QuantType(str, Enum):
     KV8 = "C8"  # kvcache量化，kvcache为8bit
     FAQuant = "FAQuant" # flashattention量化为8bit
     W8A8_DYNAMIC = "W8A8_DYNAMIC"  # W8A8静态量化与per-token动态量化混合量化
+    W8A8_PDMIX = "W8A8_PDMIX"  # prefile阶段激活8bit pertoken动态量化；decode阶段激活8bit pertensor量化。权重8bit量化
 
     @staticmethod
     def get_quant_type(w_bit, a_bit, is_sparse, is_dynamic, is_lowbit):
@@ -187,12 +188,13 @@ class WeightQuantMethod(str, Enum):
     MinMax = 'MinMax'
     GPTQ = 'GPTQ'
     HQQ = 'HQQ'
+    KMeans = 'KMeans'
 
     @staticmethod
     def get_wmethod_config(w_method):
         w_hessian = False
         hqq = False
-        if w_method == WeightQuantMethod.MinMax:
+        if w_method in [WeightQuantMethod.MinMax, WeightQuantMethod.KMeans]:
             pass
         elif w_method == WeightQuantMethod.GPTQ:
             w_hessian = True
@@ -204,7 +206,7 @@ class WeightQuantMethod(str, Enum):
 
     @staticmethod
     def check_quant_type(quant_type, w_method):
-        if quant_type in [QuantType.W8A8, QuantType.W8A8S] and w_method != WeightQuantMethod.MinMax:
+        if quant_type in [QuantType.W8A8, QuantType.W8A8S] and w_method not in [WeightQuantMethod.MinMax, WeightQuantMethod.KMeans]:
             raise ValueError(f"w_method {w_method} does not support quant_type {quant_type}, please check it.")
 
     @staticmethod

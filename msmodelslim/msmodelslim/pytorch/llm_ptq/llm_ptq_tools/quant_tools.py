@@ -64,7 +64,7 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant import (
 from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import TorchDAGAdapter
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.simulate_tp import ParallelLinearCol
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save_utils import save_file_partial
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.kmeans import TileKMeasLinearQuantizer, LayerSelector
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.kmeans import TileKMeasLinearQuantizer, LayerSelector, LINEAR_PATTERN
 
 HF_HOOK = "_hf_hook"
 
@@ -82,6 +82,8 @@ class Calibrator(object):
         check_disable_level(disable_level)
         if all_tensors:
             check_element_type(all_tensors, torch.Tensor, dict, param_name="all_tensors")
+        if hasattr(model, "anti_method") and model.anti_method == "m6" and cfg.w_method == WeightQuantMethod.MinMax and not cfg.is_dynamic:
+            cfg.model_quant_type = QuantType.W8A8_PDMIX
 
         self.cfg = cfg
         self.logger = msmodelslim_logger
@@ -655,14 +657,14 @@ class Calibrator(object):
                 quant_weight = quant_weight.cpu()
                 self.quant_param_dict[name + '.weight'] = quant_weight.to(torch.int8)
 
-                # W4A16/W8A16 需要提供 weight_scale、weight_offset
-                if self.cfg.model_quant_type in [QuantType.W8A16, QuantType.W4A16, QuantType.W8A8_DYNAMIC]:
+                # W4A16/W8A16/W8A8_DYNAMIC/W8A8_PDMIX 需要提供 weight_scale、weight_offset
+                if self.cfg.model_quant_type in [QuantType.W8A16, QuantType.W4A16, QuantType.W8A8_DYNAMIC, QuantType.W8A8_PDMIX]:
                     self.quant_param_dict[name + '.weight_scale'] = weight_scale
                     self.quant_param_dict[name + '.weight_offset'] = weight_offset
                     self.quantized_module_param_dict[name + '.weight'].append(name + '.weight_scale')
                     self.quantized_module_param_dict[name + '.weight'].append(name + '.weight_offset')
-                # W8A8/W8A8S 需要提供 deq_scale、quant_bias、input_scale、input_offset
-                if self.cfg.model_quant_type in [QuantType.W8A8, QuantType.W8A8S]:
+                # W8A8/W8A8S/W8A8_PDMIX 需要提供 deq_scale、quant_bias、input_scale、input_offset
+                if self.cfg.model_quant_type in [QuantType.W8A8, QuantType.W8A8S, QuantType.W8A8_PDMIX]:
                     input_scale = module.quant_input.input_scale.cpu()
                     input_offset = module.quant_input.input_offset.cpu()
                     self.quant_param_dict[name + '.input_scale'] = input_scale
@@ -765,7 +767,6 @@ class Calibrator(object):
                     self.logger.info(f"run MIN-MAX quantization on linear layer: {name}")
                 module.quant_weight(module.weight)
 
-
     def run_amp(self):
         max_input_dict = {}
 
@@ -831,14 +832,63 @@ class Calibrator(object):
 
                 module.weight_quant_flag = True
 
+    def run_kmeans_calib(self):
+        # 获取模型中的decoder list
+        modellist = None
+        modellist_name = None
+        for name, mod in self.model.named_modules():
+            if isinstance(mod, torch.nn.ModuleList):
+                modellist = mod
+                modellist_name = name
+        if modellist is None or modellist_name is None:
+            raise ValueError("No torch.nn.ModuleList found in the input model.")
+        
+        # 逐层量化，每层对每个block逐一量化
+        for layer_idx in range(len(modellist)):
+            self.logger.info(f"Calibrating {modellist_name}[{layer_idx}] ...")
+            for linears in LINEAR_PATTERN:
+                self.logger.info(f"Calibrating {linears} ...")
+                self.run_kmeans_calib_per_layer(modellist, modellist_name, layer_idx, linears)
+            
+        # 使能per tile动态量化
+        for _, mod in self.model.named_modules():
+            if isinstance(mod, TileKMeasLinearQuantizer):
+                mod.enable_per_tile_act_quant()
+
+    def run_kmeans_calib_per_layer(self, mod_list, list_name, idx, linears):
+        def _linear_in_pattern(linear, pattern):
+            for linear_pattern in pattern:
+                if linear_pattern in linear:
+                    return True
+            return False
+        
+        # 将输入mod_list中第idx个decoder layer中，在linears中的linear进行量化
+        for name, mod in mod_list[idx].named_modules():
+            full_name = '.'.join([list_name, str(idx), name])
+            if name in self.rollback_names:
+                continue
+            if isinstance(mod, torch.nn.Linear) and _linear_in_pattern(name, linears):
+                quant_mod = TileKMeasLinearQuantizer(self.cfg, self.logger, full_name)
+                quant_mod.set_param(mod)
+                if hasattr(mod, HF_HOOK):
+                    add_hook_to_module(quant_mod, mod._hf_hook)
+                    remove_hook_from_module(mod)
+                
+                set_module(self.model, full_name, quant_mod)
+                del mod
+
+        # 执行量化校准
+        with torch.no_grad():
+            for data in tqdm(self.calib_data):
+                self.model(*data)
+    
+        for _, mod in self.model.named_modules():
+            if isinstance(mod, TileKMeasLinearQuantizer):
+                mod.disable_calib()
+
     def quantize_model(self, model):
-        def _set_module(ori_mod, submodule_key, module):
-            tokens = submodule_key.split('.')
-            sub_tokens = tokens[:-1]
-            cur_mod = ori_mod
-            for s in sub_tokens:
-                cur_mod = getattr(cur_mod, s)
-            setattr(cur_mod, tokens[-1], module)
+        if self.cfg.w_method == "KMEANS":
+            return model
 
         if self.cfg.do_smooth:
             list_infos = self.dag.get_llm_network_pattern_auto()
@@ -862,7 +912,7 @@ class Calibrator(object):
                 if hasattr(cur_decoder, HF_HOOK):
                     add_hook_to_module(quant_mod, cur_decoder._hf_hook)
                     remove_hook_from_module(cur_decoder)
-                _set_module(model, cur_decoder_name, quant_mod)
+                set_module(model, cur_decoder_name, quant_mod)
 
         for name, mod in model.named_modules():
             if name in self.rollback_names:
@@ -883,7 +933,7 @@ class Calibrator(object):
                     add_hook_to_module(quant_mod, mod._hf_hook)
                     remove_hook_from_module(mod)
 
-                _set_module(model, name, quant_mod)
+                set_module(model, name, quant_mod)
                 del mod
 
         if hasattr(self.cfg, 'tp_size'):
@@ -906,7 +956,7 @@ class Calibrator(object):
                     add_hook_to_module(tp_mod, mod._hf_hook)
                     remove_hook_from_module(mod)
 
-                _set_module(model, name, tp_mod)
+                set_module(model, name, tp_mod)
                 del mod
 
         gc.collect()
@@ -984,7 +1034,9 @@ class Calibrator(object):
         self.logger.info("Calibration start!")
         self.model.eval()
         if self.calib_data:
-            if self.cfg.calib_mode == 0:
+            if self.cfg.w_method == WeightQuantMethod.KMeans:
+                self.run_kmeans_calib()
+            elif self.cfg.calib_mode == 0:
                 with torch.no_grad():
                     self.run_calib_mode()
             elif self.cfg.calib_mode == 1:
@@ -1135,3 +1187,12 @@ def deqscale2int64_by_dtype(scale, is_bf16):
         return scale
     else:
         return deqscale2int64(scale)
+
+
+def set_module(ori_mod, submodule_key, module):
+    tokens = submodule_key.split('.')
+    sub_tokens = tokens[:-1]
+    cur_mod = ori_mod
+    for s in sub_tokens:
+        cur_mod = getattr(cur_mod, s)
+    setattr(cur_mod, tokens[-1], module)
