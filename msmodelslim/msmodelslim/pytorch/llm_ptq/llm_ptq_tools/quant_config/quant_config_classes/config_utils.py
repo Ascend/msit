@@ -153,10 +153,6 @@ def check_and_generate_config_param(config):
     check_dynamic_config(config)
     set_per_group_param(config)
 
-    config.model_quant_type = QuantType.get_quant_type(w_bit=config.w_bit, a_bit=config.a_bit,
-                                                       is_sparse=config.co_sparse,
-                                                       is_dynamic=config.is_dynamic,
-                                                       is_lowbit=config.is_lowbit,
-                                                       w_method=config.w_method)
+    config.model_quant_type = QuantType.get_quant_type(config)
     WeightQuantMethod.check_quant_type(config.model_quant_type, w_method=config.w_method)
     config.w_hessian, config.hqq = WeightQuantMethod.get_wmethod_config(config.w_method)

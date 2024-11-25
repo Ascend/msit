@@ -30,20 +30,20 @@ class QuantType(str, Enum):
     W8A8_PER_TILING_C = "W8A8_PER_TILING_C" # W8A8 权重kmeans 8bit量化并压缩，激活值per tiling 8bit动态量化
 
     @staticmethod
-    def get_quant_type(w_bit, a_bit, is_sparse, is_dynamic, is_lowbit, w_method):
-        if is_dynamic:
-            return QuantType.get_dynamic_quant_type(w_bit, a_bit, w_method)
-        if is_sparse:
+    def get_quant_type(config):
+        if config.is_dynamic:
+            return QuantType.get_dynamic_quant_type(config.w_bit, config.a_bit, config.w_method)
+        if config.is_sparse:
             return QuantType.W8A8S
-        if w_bit == 8 and a_bit == 8:
+        if config.w_bit == 8 and config.a_bit == 8:
             return QuantType.W8A8
-        if w_bit == 8 and a_bit == 16:
+        if config.w_bit == 8 and config.a_bit == 16:
             return QuantType.W8A16
-        if w_bit == 4 and a_bit == 16:
+        if config.w_bit == 4 and config.a_bit == 16:
             return QuantType.W4A16
-        if w_bit == 16 and a_bit == 16:
+        if config.w_bit == 16 and config.a_bit == 16:
             return QuantType.FLOAT
-        if is_lowbit and w_bit == 4 and a_bit == 8:
+        if config.is_lowbit and config.w_bit == 4 and config.a_bit == 8:
             return QuantType.W8A8S
         return QuantType.UNKNOWN
 
