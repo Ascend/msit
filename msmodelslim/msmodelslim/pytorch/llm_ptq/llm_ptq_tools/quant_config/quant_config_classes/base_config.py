@@ -36,6 +36,7 @@ class BaseConfig:
                  is_dynamic: bool = False,
                  group_size: int = 64,
                  percdamp: float = 0.01,
+                 lut_len: int = 16
                  ):
         """
         Args:
@@ -89,6 +90,7 @@ class BaseConfig:
         self.open_outlier = open_outlier
         self.group_size = group_size
         self.percdamp = percdamp
+        self.lut_len = lut_len
         # 所有校验都置于该函数，基于入参新生成的参数也置于该函数
         check_and_generate_config_param(self)
 

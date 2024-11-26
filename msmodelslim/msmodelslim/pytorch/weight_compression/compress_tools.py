@@ -56,7 +56,10 @@ class Compressor:
         if not self.quant_model_description:
             raise ValueError()
         compress_weight = {}
-        compress_model_description = QuantModelJsonDescription(QuantType.W8A8SC)
+        if self.quant_model_description.model_quant_type == QuantType.W8A8S:
+            compress_model_description = QuantModelJsonDescription(QuantType.W8A8SC)
+        elif self.quant_model_description.model_quant_type == QuantType.W8A8_PER_TILING:
+            compress_model_description = QuantModelJsonDescription(QuantType.W8A8_PER_TILING_C)
 
         if not isinstance(safetensors_name, str) or not safetensors_name.endswith('.safetensors'):
             self.logger.warning("Invalid `safetensors_name` provided. Reverting `safetensors_name` to default.")
@@ -69,7 +72,7 @@ class Compressor:
         for key, value in self.quant_model_description.items():
             if key == QuantModelJsonDescription.model_quant_type_name:
                 continue
-            if value == 'W8A8S' and key.endswith('.weight'):
+            if value in [QuantType.W8A8S, QuantType.W8A8_PER_TILING] and key.endswith('.weight'):
                 key_short = '.'.join(key.split('.')[:-1])
                 key_index = key_short + '.index'
                 key_info = key_short + '.info'

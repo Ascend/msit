@@ -25,28 +25,31 @@ class QuantType(str, Enum):
     KV8 = "C8"  # kvcache量化，kvcache为8bit
     FAQuant = "FAQuant" # flashattention量化为8bit
     W8A8_DYNAMIC = "W8A8_DYNAMIC"  # W8A8静态量化与per-token动态量化混合量化
+    W8A8_PDMIX = "W8A8_PDMIX"  # prefile阶段激活8bit pertoken动态量化；decode阶段激活8bit pertensor量化。权重8bit量化
+    W8A8_PER_TILING = "W8A8_PER_TILING" # W8A8 权重kmeans 8bit量化，激活值per tiling 8bit动态量化
+    W8A8_PER_TILING_C = "W8A8_PER_TILING_C" # W8A8 权重kmeans 8bit量化并压缩，激活值per tiling 8bit动态量化
 
     @staticmethod
-    def get_quant_type(w_bit, a_bit, is_sparse, is_dynamic, is_lowbit):
-        if is_dynamic:
-            return QuantType.get_dynamic_quant_type(w_bit, a_bit)
-        if is_sparse:
+    def get_quant_type(config):
+        if config.is_dynamic:
+            return QuantType.get_dynamic_quant_type(config.w_bit, config.a_bit, config.w_method)
+        if config.is_sparse:
             return QuantType.W8A8S
-        if w_bit == 8 and a_bit == 8:
+        if config.w_bit == 8 and config.a_bit == 8:
             return QuantType.W8A8
-        if w_bit == 8 and a_bit == 16:
+        if config.w_bit == 8 and config.a_bit == 16:
             return QuantType.W8A16
-        if w_bit == 4 and a_bit == 16:
+        if config.w_bit == 4 and config.a_bit == 16:
             return QuantType.W4A16
-        if w_bit == 16 and a_bit == 16:
+        if config.w_bit == 16 and config.a_bit == 16:
             return QuantType.FLOAT
-        if is_lowbit and w_bit == 4 and a_bit == 8:
+        if config.is_lowbit and config.w_bit == 4 and config.a_bit == 8:
             return QuantType.W8A8S
         return QuantType.UNKNOWN
 
     @staticmethod
     def is_value_in_enum(quant_type_value):
-        return quant_type_value in ["UNKNOWN", "W8A16", "W4A16", "W8A8", "W8A8S", "W8A8SC", "FLOAT", "W8A8_DYNAMIC"]
+        return quant_type_value in ["UNKNOWN", "W8A16", "W4A16", "W8A8", "W8A8S", "W8A8SC", "FLOAT", "W8A8_DYNAMIC", "W8A8_PDMIX", "W8A8_PER_TILING", "W8A8_PER_TILING_C"]
 
     @staticmethod
     def check_instance_of_enum(instance):
@@ -59,9 +62,12 @@ class QuantType(str, Enum):
             raise ValueError(f"QuantType.{quant_type_value} does not support Data-Free, please check your QuantConfig.")
 
     @staticmethod
-    def get_dynamic_quant_type(w_bit, a_bit):
+    def get_dynamic_quant_type(w_bit, a_bit, w_method):
         if w_bit == 8 and a_bit == 8:
-            return QuantType.W8A8_DYNAMIC
+            if w_method == WeightQuantMethod.KMeans:
+                return QuantType.W8A8_PER_TILING
+            else:
+                return QuantType.W8A8_DYNAMIC
         return QuantType.UNKNOWN
 
 
@@ -187,12 +193,13 @@ class WeightQuantMethod(str, Enum):
     MinMax = 'MinMax'
     GPTQ = 'GPTQ'
     HQQ = 'HQQ'
+    KMeans = 'KMeans'
 
     @staticmethod
     def get_wmethod_config(w_method):
         w_hessian = False
         hqq = False
-        if w_method == WeightQuantMethod.MinMax:
+        if w_method in [WeightQuantMethod.MinMax, WeightQuantMethod.KMeans]:
             pass
         elif w_method == WeightQuantMethod.GPTQ:
             w_hessian = True
@@ -204,7 +211,7 @@ class WeightQuantMethod(str, Enum):
 
     @staticmethod
     def check_quant_type(quant_type, w_method):
-        if quant_type in [QuantType.W8A8, QuantType.W8A8S] and w_method != WeightQuantMethod.MinMax:
+        if quant_type in [QuantType.W8A8, QuantType.W8A8S] and w_method not in [WeightQuantMethod.MinMax, WeightQuantMethod.KMeans]:
             raise ValueError(f"w_method {w_method} does not support quant_type {quant_type}, please check it.")
 
     @staticmethod

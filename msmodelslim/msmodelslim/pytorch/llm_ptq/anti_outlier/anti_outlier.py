@@ -37,6 +37,11 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils import (
     os_ln_fcs,
     weight_aware,
 )
+try:
+    from msmodelslim.pytorch.llm_ptq.kmeans.flex_smooth import flex_smooth
+    _FLEX_SMOOTH_IMPORTED = True
+except ImportError:
+    _FLEX_SMOOTH_IMPORTED = False
 
 STAT_KEY_MAX = "max"
 STAT_KEY_MIN = "min"
@@ -190,10 +195,26 @@ class AntiOutlier(object):
         if not isinstance(calib_data, list):
             raise TypeError("calib_data must be list, please check it.")
         check_type(cfg, AntiOutlierConfig, param_name="config")
+
+        # 校验用户指定的不做异常值抑制的层是否存在
+        quant_name_list = []
+        conv_name_list = []
+        for name, mod in model.named_modules():
+            if isinstance(mod, nn.Linear):
+                quant_name_list.append(name)
+            if isinstance(mod, nn.Conv2d):
+                conv_name_list.append(name)
+        for name in cfg.disable_anti_names:
+            if name not in quant_name_list and name not in conv_name_list:
+                raise ValueError(f"cfg param `disable_anti_names` has invalid name {name}, please check your anti_outlier config.")
+            
         self.with_accelerate = judge_model_with_accelerate(model)
 
         self.cfg = cfg
         self.device = self.cfg.device
+
+        if self.cfg.anti_method == "m6" and not _FLEX_SMOOTH_IMPORTED:
+            raise ImportError("CANN Toolkit version not match msmodelslim version, `m6` flex smooth not usable.")
 
         if self.cfg.device == "cpu":
             same_device = self.cfg.device == model.device.type
@@ -213,9 +234,10 @@ class AntiOutlier(object):
         self.org_model = model
 
         # 保存anti_outlier处理前的原始权重，为避免显存的额外占用，原始权重放在内存上
-        states_dic = {}
-        for key, value in self.org_model.state_dict().items():
-            states_dic[key] = copy.deepcopy(value).to('cpu')
+        if self.cfg.anti_method != "m6":
+            states_dic = {}
+            for key, value in self.org_model.state_dict().items():
+                states_dic[key] = copy.deepcopy(value).to('cpu')
 
         try:
             self.model_with_accelerate = judge_model_with_accelerate(model)
@@ -243,7 +265,10 @@ class AntiOutlier(object):
             raise Exception("Please check your config, model and input!", e) from e
 
         # 保存anti_outlier处理前的原始权重，作为属性存入model中
-        setattr(self.model, 'ori_state_dict', states_dic)
+        if self.cfg.anti_method != "m6":
+            setattr(self.model, 'ori_state_dict', states_dic)
+        else:
+            setattr(self.model, 'anti_method', 'm6')
 
     def init_dag(self):
         dummy_input = input_to_cpu(self.calib_data[0][0])
@@ -263,13 +288,14 @@ class AntiOutlier(object):
                                hook_nodes=norm_class, anti_method=self.cfg.anti_method)
 
         self.norm_linear_subgraph = self.dag.get_norm_linear_subgraph()
-        if self.cfg.anti_method == 'm4':
+        if self.cfg.anti_method in ['m4', 'm6']:
             self.linear_linear_subgraph = self.dag.get_linear_linear_subgraph()
             self.norm_linear_subgraph.update(self.linear_linear_subgraph)
 
         del self.model
         self.model = self.org_model
-        replace_rms_norm(self.model, self.norm_class_name)
+        if self.cfg.anti_method != "m6":
+            replace_rms_norm(self.model, self.norm_class_name)
         gc.collect()
         return
 
@@ -350,7 +376,7 @@ class AntiOutlier(object):
             stat_dict[STAT_KEY_SMOOTH_SCALE_MASK] = scale_mask
 
         # if anti_method is m4, set tensor_shift to False
-        tensor_shift = self.cfg.ch_align and not self.cfg.anti_method == 'm4'
+        tensor_shift = self.cfg.ch_align and self.cfg.anti_method not in ['m4', 'm6']
         if tensor_shift:
             channel_max = torch.max((tensor - stat_dict[STAT_KEY_SHIFT]).abs().detach(), dim=0)[0]
         else:
@@ -435,7 +461,7 @@ class AntiOutlier(object):
 
     def _process(self):
         act_stats = self.os_stats()
-        if self.cfg.anti_method == 'm4':
+        if self.cfg.anti_method in ['m4', 'm6']:
             num_attention_heads = self.get_num_attention_heads()
 
         for norm_name in tqdm(self.norm_linear_subgraph.keys()):
@@ -466,3 +492,8 @@ class AntiOutlier(object):
                 weight_aware(self.cfg, norm_module, linear_modules, stats)
             elif self.cfg.anti_method == 'm4':
                 iter_smooth(self.cfg, norm_module, linear_modules, stats, num_attention_heads)
+            elif self.cfg.anti_method == 'm6':
+                disable_anti_set = set(self.cfg.disable_anti_names)
+                if all(linear_name not in disable_anti_set for linear_name in linear_names):
+                    flex_smooth(self.cfg, norm_module, linear_modules, stats)
+

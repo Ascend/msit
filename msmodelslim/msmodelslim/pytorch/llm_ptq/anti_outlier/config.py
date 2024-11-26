@@ -5,7 +5,7 @@ from ascend_utils.common.security.pytorch import validate_device
 from ascend_utils.common.security import check_type
 from msmodelslim import logger as msmodelslim_logger
 
-_ANTI_METHODS = ['m1', 'm2', 'm3', 'm4', 'm5']
+_ANTI_METHODS = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6']
 _SUPPORTED_DEVICES = ["cpu", "npu", 'gpu']
 
 
@@ -15,6 +15,7 @@ class AntiMethods(str, Enum):
     M3 = "m3"
     M4 = "m4"
     M5 = "m5"
+    M6 = "m6"
 
 
 class AntiOutlierConfig:
@@ -22,18 +23,20 @@ class AntiOutlierConfig:
             self,
             w_bit=8,
             a_bit=8,
-            anti_method="m2",
+            anti_method=None,
             dev_type='cpu',
             dev_id=None,
-            w_sym=True
+            w_sym=True,
+            disable_anti_names=[]
     ):
         # Basic setting
         self.w_bit = w_bit
         self.a_bit = a_bit
-        self.anti_method = anti_method
+        self.anti_method = "m2" if anti_method is None else anti_method
         self.dev_type = dev_type
         self.dev_id = dev_id
         self.w_sym = w_sym
+        self.disable_anti_names = disable_anti_names
         self.w_signed = True
         self.a_signed = True
         self.a_sym = False
@@ -47,6 +50,7 @@ class AntiOutlierConfig:
         check_type(self.a_bit, int, param_name='a_bit')
         check_type(self.anti_method, str, param_name='anti_method')
         check_type(self.w_sym, bool, param_name='w_sym')
+        check_type(self.disable_anti_names, list, param_name='disable_anti_names')
 
         if self.anti_method not in _ANTI_METHODS:
             raise ValueError("Configuration param `anti_method` must be in choices {}"
