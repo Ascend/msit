@@ -23,7 +23,7 @@ class AntiOutlierConfig:
             self,
             w_bit=8,
             a_bit=8,
-            anti_method="m2",
+            anti_method=None,
             dev_type='cpu',
             dev_id=None,
             w_sym=True,
@@ -32,7 +32,7 @@ class AntiOutlierConfig:
         # Basic setting
         self.w_bit = w_bit
         self.a_bit = a_bit
-        self.anti_method = anti_method
+        self.anti_method = "m2" if anti_method is None else anti_method
         self.dev_type = dev_type
         self.dev_id = dev_id
         self.w_sym = w_sym
