@@ -928,9 +928,7 @@ class Calibrator(object):
             if name in self.rollback_names:
                 continue
             if isinstance(mod, nn.Linear) or isinstance(mod, nn.modules.linear.NonDynamicallyQuantizableLinear):
-                if self.cfg.kmeans:
-                    quant_mod = TileKMeasLinearQuantizer(cfg=self.cfg, logger=self.logger, name=name)
-                elif self.cfg.is_lowbit:
+                if self.cfg.is_lowbit:
                     quant_mod = LowBitLinearQuantizer(cfg=self.cfg, logger=self.logger, name=name)
                 elif self.cfg.model_quant_type is not QuantType.W8A8S:
                     quant_mod = LinearQuantizer(cfg=self.cfg, logger=self.logger)
