@@ -65,7 +65,7 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.simulate_tp import ParallelLinearCol
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save_utils import save_file_partial
 try:
-    from msmodelslim.pytorch.llm_ptq.kmeans.quant_modules import TileKMeasLinearQuantizer, LINEAR_PATTERN
+    from msmodelslim.pytorch.llm_ptq.kmeans.quant_modules import TileKMeansLinearQuantizer, LINEAR_PATTERN
     from msmodelslim.pytorch.llm_ptq.kmeans.layer_select import LayerSelector
     _PER_TILING_IMPORTED = True
 except ImportError:
@@ -641,7 +641,7 @@ class Calibrator(object):
                 self.quant_param_dict.update(quant_param_offset)
                 self.fa_module_param_dict.update(attach_map)
 
-            if isinstance(module, (ParallelLinearCol, TileKMeasLinearQuantizer)):
+            if isinstance(module, (ParallelLinearCol, TileKMeansLinearQuantizer)):
                 quant_param, attach_map = module.get_quant_param()
                 self.quant_param_dict.update(quant_param)
                 self.quantized_module_param_dict.update(attach_map)
@@ -862,7 +862,7 @@ class Calibrator(object):
             
         # 使能per tile动态量化
         for _, mod in self.model.named_modules():
-            if isinstance(mod, TileKMeasLinearQuantizer):
+            if isinstance(mod, TileKMeansLinearQuantizer):
                 mod.enable_per_tile_act_quant()
 
     def run_kmeans_calib_per_layer(self, mod_list, list_name, idx, linears):
@@ -878,7 +878,7 @@ class Calibrator(object):
             if name in self.rollback_names:
                 continue
             if isinstance(mod, torch.nn.Linear) and _linear_in_pattern(name, linears):
-                quant_mod = TileKMeasLinearQuantizer(self.cfg, self.logger, full_name)
+                quant_mod = TileKMeansLinearQuantizer(self.cfg, self.logger, full_name)
                 quant_mod.set_param(mod)
                 if hasattr(mod, HF_HOOK):
                     add_hook_to_module(quant_mod, mod._hf_hook)
@@ -893,7 +893,7 @@ class Calibrator(object):
                 self.model(*data)
     
         for _, mod in self.model.named_modules():
-            if isinstance(mod, TileKMeasLinearQuantizer):
+            if isinstance(mod, TileKMeansLinearQuantizer):
                 mod.disable_calib()
 
     def quantize_model(self, model):
@@ -1128,7 +1128,7 @@ def enable_quantization(model, act_states, logger=None, use_fa_quant=False):
                 module.init_act_and_observer(module.cfg)
         if isinstance(module, QuantXDecoderLayer):
             module.calibration = True
-        if isinstance(module, TileKMeasLinearQuantizer):
+        if isinstance(module, TileKMeansLinearQuantizer):
             module.enable_calib()
 
 
@@ -1141,7 +1141,7 @@ def disable_calibration(model, logger=None, custom_class=None, use_fa_quant=Fals
             module.disable_calib()
         if custom_class and isinstance(module, custom_class):
             module.disable_calib()
-        if isinstance(module, (ParallelLinearCol, TileKMeasLinearQuantizer)):
+        if isinstance(module, (ParallelLinearCol, TileKMeansLinearQuantizer)):
             module.disable_calib()
 
 
