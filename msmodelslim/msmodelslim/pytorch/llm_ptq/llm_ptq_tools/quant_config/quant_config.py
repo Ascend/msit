@@ -55,6 +55,7 @@ class QuantConfig:
                  is_dynamic: bool = False,
                  group_size: int = 64,
                  percdamp: float = 0.01,
+                 lut_len: int = 16
                  ):
         """
         Args:
@@ -80,6 +81,7 @@ class QuantConfig:
             open_outlier: 是否开启权重异常值划分
             is_dynamic: 是否使用动态量化，即w8a8中的activation动态生成
             percdamp: GPTQ所使用的矩阵正定偏置系数,当GPTQ运行出现非正定矩阵导致的报错时可以增大该参数
+            lut_len: KMEANS权重量化使用的聚类个数
         """
         self._cur_config = QuantConfigFactory. \
             get_quant_config('base', w_bit=w_bit, a_bit=a_bit, act_method=act_method, w_method=w_method,
@@ -88,7 +90,7 @@ class QuantConfig:
                              is_lowbit=is_lowbit, do_smooth=do_smooth, use_sigma=use_sigma,
                              sigma_factor=sigma_factor, disable_last_linear=disable_last_linear,
                              use_kvcache_quant=use_kvcache_quant, open_outlier=open_outlier, is_dynamic=is_dynamic,
-                             group_size=group_size, percdamp=percdamp)
+                             group_size=group_size, percdamp=percdamp, lut_len=lut_len)
         self._modify_quant_param()
 
     def weight_quant(self,
