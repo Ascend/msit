@@ -642,9 +642,10 @@ class Calibrator(object):
                 self.fa_module_param_dict.update(attach_map)
 
             if isinstance(module, (ParallelLinearCol, TileKMeansLinearQuantizer)):
-                quant_param, attach_map = module.get_quant_param()
-                self.quant_param_dict.update(quant_param)
-                self.quantized_module_param_dict.update(attach_map)
+                with torch.no_grad():
+                    quant_param, attach_map = module.get_quant_param()
+                    self.quant_param_dict.update(quant_param)
+                    self.quantized_module_param_dict.update(attach_map)
             # 处理 Norm 对应的 weight、bias
             if isinstance(module, (NormBias, LlamaRMSNormBias)):
                 anti_norm_weight = module.module.weight.cpu() if isinstance(module, NormBias) else module.weight.cpu()
@@ -880,6 +881,7 @@ class Calibrator(object):
             if isinstance(mod, torch.nn.Linear) and _linear_in_pattern(name, linears):
                 quant_mod = TileKMeansLinearQuantizer(self.cfg, self.logger, full_name)
                 quant_mod.set_param(mod)
+                quant_mod.enable_calib()
                 if hasattr(mod, HF_HOOK):
                     add_hook_to_module(quant_mod, mod._hf_hook)
                     remove_hook_from_module(mod)

@@ -56,9 +56,9 @@ class Compressor:
         if not self.quant_model_description:
             raise ValueError()
         compress_weight = {}
-        if self.quant_model_description.model_quant_type == QuantType.W8A8S:
+        if self.quant_model_description.get('model_quant_type') == QuantType.W8A8S:
             compress_model_description = QuantModelJsonDescription(QuantType.W8A8SC)
-        elif self.quant_model_description.model_quant_type == QuantType.W8A8_PER_TILING:
+        elif self.quant_model_description.get('model_quant_type') == QuantType.W8A8_PER_TILING:
             compress_model_description = QuantModelJsonDescription(QuantType.W8A8_PER_TILING_C)
 
         if not isinstance(safetensors_name, str) or not safetensors_name.endswith('.safetensors'):
