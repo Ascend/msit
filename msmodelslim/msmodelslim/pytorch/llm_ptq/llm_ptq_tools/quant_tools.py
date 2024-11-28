@@ -641,7 +641,11 @@ class Calibrator(object):
                 self.quant_param_dict.update(quant_param_offset)
                 self.fa_module_param_dict.update(attach_map)
 
-            if isinstance(module, (ParallelLinearCol, TileKMeansLinearQuantizer)):
+            if isinstance(module, ParallelLinearCol):
+                quant_param, attach_map = module.get_quant_param()
+                self.quant_param_dict.update(quant_param)
+                self.quantized_module_param_dict.update(attach_map)
+            if isinstance(module, TileKMeansLinearQuantizer):
                 with torch.no_grad():
                     quant_param, attach_map = module.get_quant_param()
                     self.quant_param_dict.update(quant_param)
@@ -876,7 +880,7 @@ class Calibrator(object):
         # 将输入mod_list中第idx个decoder layer中，在linears中的linear进行量化
         for name, mod in mod_list[idx].named_modules():
             full_name = '.'.join([list_name, str(idx), name])
-            if name in self.rollback_names:
+            if full_name in self.rollback_names:
                 continue
             if isinstance(mod, torch.nn.Linear) and _linear_in_pattern(name, linears):
                 quant_mod = TileKMeansLinearQuantizer(self.cfg, self.logger, full_name)
