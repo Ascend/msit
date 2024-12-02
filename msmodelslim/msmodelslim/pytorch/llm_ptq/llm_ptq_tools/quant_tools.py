@@ -647,9 +647,38 @@ class Calibrator(object):
                 self.quantized_module_param_dict.update(attach_map)
             if isinstance(module, TileKMeansLinearQuantizer):
                 with torch.no_grad():
-                    quant_param, attach_map = module.get_quant_param()
-                    self.quant_param_dict.update(quant_param)
-                    self.quantized_module_param_dict.update(attach_map)
+                    quant_weight, weight_scale, weight_offset = module.quant_weight.get_quant_param()
+                fp_weight = module.quant_weight.weight
+                weight_scale = weight_scale.cpu()
+                weight_offset = weight_offset.cpu()
+                quant_weight = quant_weight.cpu()
+                self.quant_param_dict[name + '.weight'] = quant_weight.to(torch.int8)
+
+                if self.cfg.model_quant_type in [QuantType.W8A16, QuantType.W4A16, QuantType.W8A8_DYNAMIC, QuantType.W8A8_PDMIX, QuantType.W8A8_PER_TILING]:
+                    self.quant_param_dict[name + '.weight_scale'] = weight_scale
+                    self.quant_param_dict[name + '.weight_offset'] = weight_offset
+                    self.quantized_module_param_dict[name + '.weight'].append(name + '.weight_scale')
+                    self.quantized_module_param_dict[name + '.weight'].append(name + '.weight_offset')
+                
+                # W8A8/W8A8S/W8A8_PDMIX 需要提供 deq_scale、quant_bias、input_scale、input_offset
+                if self.cfg.model_quant_type in [QuantType.W8A8, QuantType.W8A8S, QuantType.W8A8_PDMIX]:
+                    input_scale = module.quant_input.input_scale.cpu()
+                    input_offset = module.quant_input.input_offset.cpu()
+                    self.quant_param_dict[name + '.input_scale'] = input_scale
+                    self.quant_param_dict[name + '.input_offset'] = input_offset
+                    self.quantized_module_param_dict[name + '.weight'].append(name + '.input_scale')
+                    self.quantized_module_param_dict[name + '.weight'].append(name + '.input_offset')
+                    deq_scale = self.deqscale_process(input_scale, weight_scale).to(torch.float32)
+                    correction = (quant_weight.to(torch.float32).sum(dim=1) * input_offset.to(torch.float32)).cpu()
+                    fp_bias = self.change_bias(fp_weight, module)
+                    quant_bias = torch.round(fp_bias / deq_scale - correction)
+                    deq_scale = deqscale2int64_by_dtype(deq_scale, self.model.config.torch_dtype == torch.bfloat16)
+
+                    self.quant_param_dict[name + '.quant_bias'] = quant_bias.cpu().to(torch.int32)
+                    self.quant_param_dict[name + '.deq_scale'] = deq_scale.cpu()
+                    self.quantized_module_param_dict[name + '.weight'].append(name + '.quant_bias')
+                    self.quantized_module_param_dict[name + '.weight'].append(name + '.deq_scale')
+
             # 处理 Norm 对应的 weight、bias
             if isinstance(module, (NormBias, LlamaRMSNormBias)):
                 anti_norm_weight = module.module.weight.cpu() if isinstance(module, NormBias) else module.weight.cpu()
@@ -903,7 +932,7 @@ class Calibrator(object):
                 mod.disable_calib()
 
     def quantize_model(self, model):
-        if self.cfg.model_quant_type == QuantType.W8A8_PER_TILING:
+        if self.cfg.model_quant_type == QuantType.W8A8_PER_TILING or self.cfg.w_method ==WeightQuantMethod.KMeans:
             return model
 
         if self.cfg.do_smooth:
@@ -1048,7 +1077,7 @@ class Calibrator(object):
         self.logger.info("Calibration start!")
         self.model.eval()
         if self.calib_data:
-            if self.cfg.model_quant_type == QuantType.W8A8_PER_TILING:
+            if self.cfg.model_quant_type == QuantType.W8A8_PER_TILING or self.cfg.w_method ==WeightQuantMethod.KMeans:
                 self.run_kmeans_calib()
             elif self.cfg.calib_mode == 0:
                 with torch.no_grad():

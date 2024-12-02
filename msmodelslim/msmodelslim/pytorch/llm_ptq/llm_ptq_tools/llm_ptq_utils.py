@@ -33,7 +33,7 @@ class QuantType(str, Enum):
     def get_quant_type(config):
         if config.is_dynamic:
             return QuantType.get_dynamic_quant_type(config.w_bit, config.a_bit, config.w_method)
-        if config.co_sparse:
+        if config.co_sparse or config.w_method == WeightQuantMethod.KMeans:
             return QuantType.W8A8S
         if config.w_bit == 8 and config.a_bit == 8:
             return QuantType.W8A8
