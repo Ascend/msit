@@ -894,11 +894,6 @@ class Calibrator(object):
                 self.logger.info(f"Calibrating {linears} ...")
                 self.run_kmeans_calib_per_layer(modellist, modellist_name, layer_idx, linears)
             
-        # 使能per tile动态量化
-        for _, mod in self.model.named_modules():
-            if isinstance(mod, TileKMeansLinearQuantizer):
-                mod.enable_per_tile_act_quant()
-
     def run_kmeans_calib_per_layer(self, mod_list, list_name, idx, linears):
         def _linear_in_pattern(linear, pattern):
             for linear_pattern in pattern:
