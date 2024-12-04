@@ -234,7 +234,7 @@ class AntiOutlier(object):
         self.org_model = model
 
         # 保存anti_outlier处理前的原始权重，为避免显存的额外占用，原始权重放在内存上
-        if self.cfg.anti_method != "m6":
+        if self.cfg.anti_method not in ['m4', 'm5', 'm6']:
             states_dic = {}
             for key, value in self.org_model.state_dict().items():
                 states_dic[key] = copy.deepcopy(value).to('cpu')
@@ -265,10 +265,10 @@ class AntiOutlier(object):
             raise Exception("Please check your config, model and input!", e) from e
 
         # 保存anti_outlier处理前的原始权重，作为属性存入model中
-        if self.cfg.anti_method != "m6":
+        if self.cfg.anti_method not in ['m4', 'm5', 'm6']:
             setattr(self.model, 'ori_state_dict', states_dic)
         else:
-            setattr(self.model, 'anti_method', 'm6')
+            setattr(self.model, 'anti_method', self.cfg.anti_method)
 
     def init_dag(self):
         dummy_input = input_to_cpu(self.calib_data[0][0])
