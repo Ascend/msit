@@ -57,6 +57,15 @@ class GroupInfo:
         self.group_map_list = self.get_group_map()
         self.rank_map_list = self.get_rank_map()
         self.args_list = self.get_args()
+    
+    @staticmethod
+    def get_args():
+        args = vars(get_args())
+
+        res_list = []
+        for key in DUMP_ARGS:
+            res_list.append(str({key:args.get(key, "None")}))
+        return res_list
 
     def get_group_map(self):
         res_list = []
@@ -87,11 +96,3 @@ class GroupInfo:
             res_list.append(f"{DUMP_ARGS_KEY}: {item}")
         return res_list
     
-    @staticmethod
-    def get_args():
-        args = vars(get_args())
-
-        res_list = []
-        for key in DUMP_ARGS:
-            res_list.append(str({key:args.get(key, "None")}))
-        return res_list
