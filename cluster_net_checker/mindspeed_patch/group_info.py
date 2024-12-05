@@ -43,7 +43,10 @@ class GroupInfo:
 
         tp_rank = get_golbal_rank(self.tp_group)
         pp_rank = get_golbal_rank(self.pp_group)
-        assert pp_rank == tp_rank
+        ep_rank = get_golbal_rank(self.ep_group)
+        dp_rank = get_golbal_rank(self.dp_group)
+        if not (tp_rank == pp_rank and pp_rank == ep_rank and ep_rank == dp_rank):
+            raise ValueError("global rank not equal, please check the torch distribute config")
         self.global_rank = tp_rank
         self.group_dict = {
             "pp": self.pp_group,
@@ -74,7 +77,8 @@ class GroupInfo:
             )
         return res_list
     
-    def get_args(self):
+    @staticmethod
+    def get_args():
         args = vars(get_args())
 
         res_list = []
