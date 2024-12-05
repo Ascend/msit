@@ -506,7 +506,16 @@ class Calibrator(object):
         if self.cfg.use_fa_quant:
             for attention_module_name in self.fa_module_param_dict:
                 self.set_fa_quant_safetensor(attention_module_name, safetensor_weight)
+        
+        if hasattr(self.model, "anti_method") and self.model.anti_method in ['m4', 'm5']:
+            keys_to_delete = [key for key in safetensor_weight.keys() if 'module.weight' in key]
+            for key in keys_to_delete:
+                del safetensor_weight[key]
             
+            keys_to_delete = [key for key in self.quant_model_json_description.quant_model_description.keys() if 'module.weight' in key]
+            for key in keys_to_delete:
+                del self.quant_model_json_description.quant_model_description[key]
+
         for key, item in safetensor_weight.items():
             safetensor_weight[key] = item.cpu().contiguous()
 
@@ -685,9 +694,13 @@ class Calibrator(object):
                 anti_norm_bias = module.bias.cpu()
                 anti_norm_name_weight = name + '.module.weight'
                 anti_norm_name_bias = name + '.module.bias'
-                self.quant_param_dict[anti_norm_name_weight] = anti_norm_weight.clone().detach()
-                self.quant_param_dict[anti_norm_name_bias] = anti_norm_bias.clone().detach()
-                self.quantized_module_param_dict[name + '.weight'] = [anti_norm_name_weight, anti_norm_name_bias]
+                if hasattr(self.model, "anti_method") and self.model.anti_method in ['m4', 'm5']:
+                    self.quant_param_dict[name + '.weight'] = anti_norm_weight.clone().detach()
+                    self.quantized_module_param_dict[anti_norm_name_weight] = [name + '.weight']
+                else:
+                    self.quant_param_dict[anti_norm_name_weight] = anti_norm_weight.clone().detach()
+                    self.quant_param_dict[anti_norm_name_bias] = anti_norm_bias.clone().detach()
+                    self.quantized_module_param_dict[name + '.weight'] = [anti_norm_name_weight, anti_norm_name_bias]
 
             # 处理Linear、以及附属scale、offset等params
             if isinstance(module, (LinearQuantizer, LinearSparseQuantizer, LowBitLinearQuantizer)):
