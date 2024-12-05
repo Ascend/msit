@@ -76,15 +76,6 @@ class GroupInfo:
                 str({group_name: str({local_rank: self.global_rank})})
             )
         return res_list
-    
-    @staticmethod
-    def get_args():
-        args = vars(get_args())
-
-        res_list = []
-        for key in DUMP_ARGS:
-            res_list.append(str({key:args.get(key, "None")}))
-        return res_list
 
     def get_group_info(self):
         res_list = []
@@ -94,4 +85,13 @@ class GroupInfo:
             res_list.append(f"{GROUP_RANK_KEY}: {item}")
         for item in self.args_list:
             res_list.append(f"{DUMP_ARGS_KEY}: {item}")
+        return res_list
+    
+    @staticmethod
+    def get_args():
+        args = vars(get_args())
+
+        res_list = []
+        for key in DUMP_ARGS:
+            res_list.append(str({key:args.get(key, "None")}))
         return res_list
