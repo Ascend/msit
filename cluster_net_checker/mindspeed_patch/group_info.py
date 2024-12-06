@@ -1,0 +1,108 @@
+import torch
+import torch_npu
+from torch.distributed.distributed_c10d import _get_default_group
+
+import megatron.core.parallel_state as ps
+from megatron.training import get_args
+
+
+LOCAL_RANK_MAP = {
+    "pp": ps.get_pipeline_model_parallel_rank,
+    "tp": ps.get_tensor_model_parallel_rank,
+    "ep": ps.get_expert_model_parallel_rank,
+    "dp": ps.get_data_parallel_rank
+}
+
+DUMP_ARGS = [
+    "tensor_model_parallel_size",
+    "pipeline_model_parallel_size",
+    "data_parallel_size",
+    "expert_model_parallel_size",
+    "sequence_parallel",
+    "rank",
+    "world_size"
+]
+
+GROUP_NAME_KEY = "communication_group_name_map"
+GROUP_RANK_KEY = "communication_group_rank_map"
+DUMP_ARGS_KEY = "distributed_args"
+
+
+def get_golbal_rank(group):
+    # 输入通信域，返回本进程所在卡的全局rank id
+    return torch.distributed.get_global_rank(group, torch.distributed.get_rank(group))
+
+
+class GroupInfo:
+    def __init__(self) -> None:
+        self.tp_group = ps.get_tensor_model_parallel_group()
+        self.pp_group = ps.get_pipeline_model_parallel_group()
+        self.ep_group = ps.get_expert_model_parallel_group()
+        self.dp_group = ps.get_data_parallel_group()
+
+        tp_rank = get_golbal_rank(self.tp_group)
+        pp_rank = get_golbal_rank(self.pp_group)
+        ep_rank = get_golbal_rank(self.ep_group)
+        dp_rank = get_golbal_rank(self.dp_group)
+        if not (tp_rank == pp_rank and pp_rank == ep_rank and ep_rank == dp_rank):
+            raise Warning("global rank not equal, please check the torch distribute config")
+        self.global_rank = tp_rank
+        self.group_dict = {
+            "pp": self.pp_group,
+            "tp": self.tp_group,
+            "ep": self.ep_group,
+            "dp": self.dp_group
+        }
+        # hccl获取通信域名称的方法需要各个任务之间同步运行，因此在如果需要指定落盘某几张卡的数据，要先在全局内获取数据
+        self.group_map_list = self.get_group_map()
+        self.rank_map_list = self.get_rank_map()
+        self.args_list = self.get_args()
+    
+    @staticmethod
+    def get_args():
+        # 落盘DUMP ARGS中的目标参数
+        args = vars(get_args())
+
+        res_list = []
+        for key in DUMP_ARGS:
+            res_list.append(str({key:args.get(key, "None")}))
+        return res_list
+
+    def get_group_map(self):
+        # 获取通信域和通信域类型
+        res_list = []
+        for key, value in self.group_dict.items():
+            group_name = str(value._get_backend(torch.device("npu")).get_hccl_comm_name(self.global_rank))
+            res_list.append(
+                str({group_name: key})
+            )
+        return res_list
+
+    def get_rank_map(self):
+        # 获取通信域和当前进程在该通信域中的rank id和全局rank id
+        res_list = []
+        for key, value in self.group_dict.items():
+            local_rank = LOCAL_RANK_MAP[key]()
+            group_name = str(value._get_backend(torch.device("npu")).get_hccl_comm_name(self.global_rank))
+            res_list.append(
+                str({group_name: str({local_rank: self.global_rank})})
+            )
+        return res_list
+
+    def get_group_info(self):
+        """
+        返回三个信息：
+        通信域名称对应通信类型，pp tp等
+        通信域名称对应rank，local rank: global rank
+        分布式运行的参数
+        因为mstx.mark存在长度上限，各个信息逐条传
+        """
+        res_list = []
+        for item in self.group_map_list:
+            res_list.append(f"{GROUP_NAME_KEY}: {item}")
+        for item in self.rank_map_list:
+            res_list.append(f"{GROUP_RANK_KEY}: {item}")
+        for item in self.args_list:
+            res_list.append(f"{DUMP_ARGS_KEY}: {item}")
+        return res_list
+    
