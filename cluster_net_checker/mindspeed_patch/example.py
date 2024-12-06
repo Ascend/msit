@@ -38,41 +38,9 @@ def train_decorator(train):
 
         if hasattr(args_, 'profile_npu') and args_.profile_npu \
                 and (torch.distributed.get_rank() in args_.profile_ranks):
-            active = args_.profile_step_end - args_.profile_step_start
-            skip_first = args_.profile_step_start
-
-            if args_.profile_with_cpu:
-                activities = [torch_npu.profiler.ProfilerActivity.NPU, torch_npu.profiler.ProfilerActivity.CPU]
-            else:
-                activities = [torch_npu.profiler.ProfilerActivity.NPU]
-
-            if args_.profile_level == 'level0':
-                profiler_level = torch_npu.profiler.ProfilerLevel.Level0
-            elif args_.profile_level == 'level1':
-                profiler_level = torch_npu.profiler.ProfilerLevel.Level1
-            elif args_.profile_level == 'level2':
-                profiler_level = torch_npu.profiler.ProfilerLevel.Level2
-            else:
-                raise ValueError(f"profiler_level only support level0, level1, level2, but gets {args_.profile_level}")
-
-            experimental_config = torch_npu.profiler._ExperimentalConfig(
-                aic_metrics=torch_npu.profiler.AiCMetrics.PipeUtilization,
-                profiler_level=profiler_level,
-                l2_cache=False
-            )
-
-            with torch_npu.profiler.profile(
-                    activities=activities,
-                    record_shapes=args_.profile_record_shapes,
-                    profile_memory=args_.profile_with_memory,
-                    with_stack=args_.profile_with_stack,
-                    experimental_config=experimental_config,
-                    schedule=torch_npu.profiler.schedule(wait=0, warmup=0, active=active, repeat=1,
-                                                         skip_first=skip_first),
-                    on_trace_ready=torch_npu.profiler.tensorboard_trace_handler(args_.profile_save_path)
-            ) as prof:
-                args_.prof = prof
-                return train(*args, **kwargs)
+            """
+            ...
+            """
         else:
             return train(*args, **kwargs)
 
@@ -107,22 +75,8 @@ def train_step_decorator(train_step):
         if args_.op_cal_tflops:
             flop_count = get_flops_counter()
             flop_count.start()
-        if args_.profile_operator:
-            op_profile = OperateProfile(args_)
-            ret = train_step(*args, **kwargs)
-            op_profile.step()
-        elif args_.prof_file:
-            profiling = Profiling(args_)
-            train_step = profiling.hook_train_step(train_step)
-            ret = train_step(*args, **kwargs)
-        else:
-            ret = train_step(*args, **kwargs)
-            if args_.profile_npu and (torch.distributed.get_rank() in args_.profile_ranks):
-                args_.prof.step()
-        if args_.op_cal_tflops:
-            counts = flop_count.get_flops()
-            set_count(counts)
-            flop_count.stop()
-        return ret
+        """
+        ...
+        """
 
     return wrapper
