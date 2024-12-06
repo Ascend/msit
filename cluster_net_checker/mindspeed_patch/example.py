@@ -75,8 +75,22 @@ def train_step_decorator(train_step):
         if args_.op_cal_tflops:
             flop_count = get_flops_counter()
             flop_count.start()
-        """
-        ...
-        """
+        if args_.profile_operator:
+            op_profile = OperateProfile(args_)
+            ret = train_step(*args, **kwargs)
+            op_profile.step()
+        elif args_.prof_file:
+            profiling = Profiling(args_)
+            train_step = profiling.hook_train_step(train_step)
+            ret = train_step(*args, **kwargs)
+        else:
+            ret = train_step(*args, **kwargs)
+            if args_.profile_npu and (torch.distributed.get_rank() in args_.profile_ranks):
+                args_.prof.step()
+        if args_.op_cal_tflops:
+            counts = flop_count.get_flops()
+            set_count(counts)
+            flop_count.stop()
+        return ret
 
     return wrapper
