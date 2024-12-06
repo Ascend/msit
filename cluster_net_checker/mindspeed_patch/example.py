@@ -17,34 +17,31 @@
 1.导入文件：
     将group_info.py文件放入mindspeed代码仓，路径任意，例如 MindSpeed/mindspeed/core
 2.打开动态profiling代码（若已有动态profiling，则无需打开）：
-    在MindSpeed/mindspeed/core/training.py中的train_decorator函数，加入动态profiling开关，参考下面36-37行
+    在MindSpeed/mindspeed/core/training.py中的train_decorator函数，加入动态profiling开关，参考下面37-38行
 3.设置动态profiling config：
     msprof_tx 需设置为 true （通信域落盘基于mstx）
 """
 
 
 def train_decorator(train):
-    @wraps(train)
-    def wrapper(*args, **kwargs):
-        args_ = get_args()
-        if args_.profile:
-            args_.profile_npu = True
-            args_.profile = False
-        else:
-            args_.profile_npu = False
+    """
+    ...
+    """
+    args_ = get_args()
+    if args_.profile:
+        args_.profile_npu = True
+        args_.profile = False
+    else:
+        args_.profile_npu = False
 
-        from torch_npu.profiler import dynamic_profile as dp
-        dp.init('./profiler_config')
+    from torch_npu.profiler import dynamic_profile as dp
+    dp.init('./profiler_config')
 
-        if hasattr(args_, 'profile_npu') and args_.profile_npu \
-                and (torch.distributed.get_rank() in args_.profile_ranks):
-            """
-            ...
-            """
-        else:
-            return train(*args, **kwargs)
-
-    return wrapper
+    if hasattr(args_, 'profile_npu') and args_.profile_npu \
+            and (torch.distributed.get_rank() in args_.profile_ranks):
+        """
+        ...
+        """
 
 
 """
