@@ -1,8 +1,8 @@
 import sys
-import torch
-from typing import Any, Callable, Tuple
-from torch import autograd, nn
 from pathlib import Path
+from typing import Any, Callable, Tuple
+import torch
+from torch import autograd, nn
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[2]  # ACI root directory

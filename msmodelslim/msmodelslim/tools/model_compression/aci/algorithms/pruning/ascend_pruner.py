@@ -1,10 +1,12 @@
+import math
+import typing
+import warnings
+
 import torch
 import numpy as np
-import math
-import typing, warnings
+from torch_pruning import ops, function
 
 from .metapruner import MetaPruner as BasePruner
-from torch_pruning import ops, function
 
 
 def min_cost_knapsack(weights, prices, C):
@@ -17,7 +19,7 @@ def min_cost_knapsack(weights, prices, C):
     P = np.cumsum(prices)
 
     i_c = n - 1
-    for i in range(len(W)):
+    for i, _ in enumerate(W):
         if W[i] > C:
             i_c = i
             break
@@ -81,14 +83,14 @@ class AscendPruner(BasePruner):
                  local_power_of_two_pruning=True,
                  unwrapped_parameters=None,
                  ignored_layers=None,
-                 channel_groups={},
+                 channel_groups=None,
                  output_transform=None,
-                 num_heads={},
+                 num_heads=None,
                  prune_head_dims=True,
                  prune_num_heads=False,
                  head_pruning_ratio=0.5,  # disabled when prune_num_heads=False
-                 customized_pruners: typing.Dict[typing.Any, function.BasePruningFunc] = None,
-                 root_module_types: typing.List = [ops.TORCH_CONV, ops.TORCH_LINEAR, ops.TORCH_LSTM]
+                 customized_pruners=None,
+                 root_module_types=None
                  # root module for each group
                  ):
 
@@ -100,14 +102,14 @@ class AscendPruner(BasePruner):
                                            iterative_steps=pruning_steps,
                                            unwrapped_parameters=unwrapped_parameters,
                                            ignored_layers=ignored_layers,
-                                           channel_groups=channel_groups,
+                                           channel_groups=channel_groups or {},
                                            output_transform=output_transform,
-                                           num_heads=num_heads,
+                                           num_heads=num_heads or {},
                                            prune_head_dims=prune_head_dims,
                                            prune_num_heads=prune_num_heads,
                                            head_pruning_ratio=head_pruning_ratio,
                                            customized_pruners=customized_pruners,
-                                           root_module_types=root_module_types
+                                           root_module_types=root_module_types or []
                                            )
 
         self.local_power_of_two_pruning = local_power_of_two_pruning
@@ -126,19 +128,7 @@ class AscendPruner(BasePruner):
         else:
             for group in pruning_method():
                 group.prune()
-
-    def _round_to_power_of_2(self, n_pruned, current_channels, round_to=None):
-        rounded_channels = current_channels - n_pruned
-        possible_power_floor = math.floor(math.log(rounded_channels, 2))
-        possible_power_ceil = math.ceil(math.log(rounded_channels, 2))
-
-        if current_channels <= (2 ** possible_power_ceil):
-            power = possible_power_floor
-        else:
-            power = possible_power_ceil  # power = min([possible_power_floor, possible_power_floor], key= lambda z: abs(rounded_channels - 2**z))
-
-        n_pruned = current_channels - (2 ** power)
-        return n_pruned
+        return
 
     def solve_knapsack(self, groups, capacity, costs, weights):
         capacity = int(capacity)
@@ -153,7 +143,7 @@ class AscendPruner(BasePruner):
         _, C_star, result = min_cost_knapsack(weights, costs, capacity)
 
         if C_star <= 0:
-            return
+            return None
 
         pruning_groups = [groups[i] for i in result]
         return pruning_groups
@@ -220,8 +210,24 @@ class AscendPruner(BasePruner):
                 module, pruning_fn, pruning_indices.tolist())
             _is_attn, _ = self._is_attn_group(group)
 
-            if self.DG.check_pruning_group(group) and _is_attn and self.prune_num_heads and n_heads_removed > 0:
+            con1 = self.DG.check_pruning_group(group) and _is_attn
+            con2 = self.prune_num_heads and n_heads_removed > 0
+
+            if con1 and con2:
                 self.recalculate_num_heads(group, n_heads_removed)
 
             if self.DG.check_pruning_group(group):
-                yield group 
+                yield group
+
+    def _round_to_power_of_2(self, n_pruned, current_channels, round_to=None):
+        rounded_channels = current_channels - n_pruned
+        possible_power_floor = math.floor(math.log(rounded_channels, 2))
+        possible_power_ceil = math.ceil(math.log(rounded_channels, 2))
+
+        if current_channels <= (2 ** possible_power_ceil):
+            power = possible_power_floor
+        else:
+            power = possible_power_ceil  # power = min([possible_power_floor, possible_power_floor], key= lambda z: abs(rounded_channels - 2**z))
+
+        n_pruned = current_channels - (2 ** power)
+        return n_pruned

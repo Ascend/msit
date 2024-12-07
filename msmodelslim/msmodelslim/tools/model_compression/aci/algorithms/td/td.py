@@ -1,16 +1,16 @@
 import sys
+import math
+from pathlib import Path
+import re
 import torch
 import torch.nn as nn
-import math
 import numpy as np
-import re
 
 from scipy.sparse.linalg import svds
 from tensorly.decomposition import partial_tucker
 from skopt.space import Integer
 from skopt import Optimizer
 from transformers import Conv1D
-from pathlib import Path
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[2]  # ACI root directory
@@ -275,7 +275,8 @@ def iter_optimizer(iters, optimizer, model, linear_layer):
         optimizer.tell(x, y)
 
 
-def apply_td(model, device, par_sum_baseline, compr_ratio, min_power_of_2=6, iters=20):
+def apply_td(model, device, par_sum_baseline, compr_ratio, iters=20):
+    min_power_of_2 = 6
     imp_dict = get_importance(model)
     for k in list(imp_dict.keys()):
         logger.debug('started k is: ' + str(k))
@@ -284,9 +285,10 @@ def apply_td(model, device, par_sum_baseline, compr_ratio, min_power_of_2=6, ite
         logger.debug('k is: ' + str(k))
         linear_layer = eval(k)
         logger.info('linear_layer: ' + str(linear_layer))
-        if (isinstance(linear_layer, nn.Conv2d) or isinstance(linear_layer, nn.Linear) or isinstance(linear_layer,
-                                                                                                     Conv1D)) and (
-                'classifier' not in k) and ('score' not in k):
+        con1 = isinstance(linear_layer, nn.Conv2d) or isinstance(linear_layer, nn.Linear) or isinstance(linear_layer,
+                                                                                                     Conv1D)
+        con2 = ('classifier' not in k) and ('score' not in k)
+        if con1 and con2:
             if hasattr(linear_layer, 'groups') and linear_layer.groups > 1:
                 continue
             max_power_of_2 = 2

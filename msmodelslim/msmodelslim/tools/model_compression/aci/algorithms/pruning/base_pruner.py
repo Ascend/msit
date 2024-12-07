@@ -1,8 +1,8 @@
+from abc import ABC, abstractmethod
+import typing
 import torch
 import torch.nn as nn
-import typing
 
-from abc import ABC, abstractmethod
 from torch_pruning import ops
 from .masker import MaskingType, add_mask, set_mask, has_mask, remove_mask
 
