@@ -1,7 +1,7 @@
+from abc import ABC, abstractmethod
 import numpy as np
 
 from torch import nn
-from abc import ABC, abstractmethod
 
 
 class Coster(ABC):

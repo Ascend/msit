@@ -1,6 +1,6 @@
+from typing import Sequence
 import torch.nn as nn
 
-from typing import Sequence
 from transformers.models.swin.modeling_swin import SwinSelfAttention
 from timm.models.swin_transformer import WindowAttention
 from torch_pruning import function

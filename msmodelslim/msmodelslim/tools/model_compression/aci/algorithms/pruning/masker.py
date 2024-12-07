@@ -1,7 +1,6 @@
-import torch
-from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, Tuple
+import torch
 from torch import autograd, nn
 
 

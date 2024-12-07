@@ -46,12 +46,10 @@ class MetaPruner:
 
     def __init__(
             self,
-            # Basic
             model: nn.Module,  # a simple pytorch model
             example_inputs: torch.Tensor,  # a dummy input for graph tracing. Should be on the same
             importance: typing.Callable,  # tp.importance.Importance for group importance estimation
             global_pruning: bool = False,
-            # https://pytorch.org/tutorials/intermediate/pruning_tutorial.html#global-pruning.
             pruning_ratio: float = 0.5,  # channel/dim pruning ratio, also known as pruning ratio
             pruning_ratio_dict: typing.Dict[nn.Module, float] = None,
             # layer-specific pruning ratio, will cover pruning_ratio if specified
@@ -62,9 +60,9 @@ class MetaPruner:
             round_to: int = None,  # round channels to the nearest multiple of round_to
 
             # Advanced
-            in_channel_groups: typing.Dict[nn.Module, int] = dict(),  # The number of channel groups for layer input
-            out_channel_groups: typing.Dict[nn.Module, int] = dict(),  # The number of channel groups for layer output
-            num_heads: typing.Dict[nn.Module, int] = dict(),  # The number of heads for multi-head attention
+            in_channel_groups=None,  # The number of channel groups for layer input
+            out_channel_groups=None,  # The number of channel groups for layer output
+            num_heads=None,  # The number of heads for multi-head attention
             prune_num_heads: bool = False,  # remove entire heads in multi-head attention
             prune_head_dims: bool = True,  # remove head dimensions in multi-head attention
             head_pruning_ratio: float = 0.0,  # head pruning ratio
@@ -73,15 +71,17 @@ class MetaPruner:
             # pruners for customized layers. E.g., {nn.Linear: my_linear_pruner}
             unwrapped_parameters: typing.Dict[nn.Parameter, int] = None,
             # unwrapped nn.Parameters & pruning_dims. For example, {ViT.pos_emb: 0}
-            root_module_types: typing.List = [ops.TORCH_CONV, ops.TORCH_LINEAR, ops.TORCH_LSTM],
+            root_module_types=None,
             # root module for each group
             forward_fn: typing.Callable = None,  # a function to execute model.forward
             output_transform: typing.Callable = None,  # a function to transform network outputs
 
             # deprecated
-            channel_groups: typing.Dict[nn.Module, int] = dict(),  # channel grouping
+            channel_groups = None,  # channel grouping
             ch_sparsity: float = None,
             ch_sparsity_dict: typing.Dict[nn.Module, float] = None,
+            initial_total_channels=0,
+            initial_total_heads = 0
     ):
         self.model = model
         self.importance = importance
@@ -98,25 +98,33 @@ class MetaPruner:
         self.max_pruning_ratio = max_pruning_ratio
         self.global_pruning = global_pruning
 
-        if len(channel_groups) > 0:
+        self.channel_groups = channel_groups or {}
+        self.out_channel_groups = out_channel_groups or {}
+        if len(self.channel_groups) > 0:
             warnings.warn("channel_groups is deprecated. Please use in_channel_groups and out_channel_groups instead.")
-            out_channel_groups.update(channel_groups)
+            self.out_channel_groups.update(self.channel_groups)
 
-        if len(num_heads) > 0:
-            out_channel_groups.update(num_heads)
+        self.num_heads = num_heads or {}
+        if len(self.num_heads) > 0:
+            self.out_channel_groups.update(self.num_heads)
 
-        self.in_channel_groups = in_channel_groups
-        self.out_channel_groups = out_channel_groups
-        self.root_module_types = root_module_types
+        self.in_channel_groups = in_channel_groups or {}
+        self.root_module_types = root_module_types or []
         self.round_to = round_to
 
         # MHA
-        self.num_heads = num_heads
         self.prune_num_heads = prune_num_heads
         self.prune_head_dims = prune_head_dims
         self.head_pruning_ratio = head_pruning_ratio
 
         self.find_ignored_layers(ignored_layers)
+        self.layer_init_out_ch = {}
+        self.layer_init_in_ch = {}
+        self.init_num_heads = {}
+        self.initial_total_channels = initial_total_channels
+        self.initial_total_heads = initial_total_heads
+
+
 
         ###############################################
         # Build dependency graph
@@ -184,9 +192,6 @@ class MetaPruner:
                 self.out_channel_groups[m] = out_ch_group
 
     def initial_channels(self):
-        self.layer_init_out_ch = {}
-        self.layer_init_in_ch = {}
-        self.init_num_heads = {}
         for m in self.DG.module2node.keys():
             if (ops.module2type(m) in self.DG.REGISTERED_PRUNERS) or (
             isinstance(m, tuple(self.DG.CUSTOMIZED_PRUNERS.keys()))):
@@ -196,19 +201,16 @@ class MetaPruner:
                     self.init_num_heads[m] = self.num_heads[m]
 
     def count_total_initial_channels(self):
-        initial_total_channels = 0
-        initial_total_heads = 0
         for group in self.DG.get_all_groups(ignored_layers=self.ignored_layers,
                                             root_module_types=self.root_module_types):
             group = self._downstream_node_as_root_if_attention(group)
-            initial_total_channels += (
+            self.initial_total_channels += (
                         (self.DG.get_out_channels(group[0][0].target.module)) // self._get_channel_groups(group))
             for dep, _ in group:
                 if dep.target.module in self.num_heads and self.DG.is_out_channel_pruning_fn(dep.handler):
-                    initial_total_heads += self.num_heads[dep.target.module]
+                    self.initial_total_heads += self.num_heads[dep.target.module]
                     break  # only count heads once
-        self.initial_total_channels = initial_total_channels
-        self.initial_total_heads = initial_total_heads
+
 
     def setup_iterative_pruning(self,
                                 iterative_steps,
@@ -239,6 +241,8 @@ class MetaPruner:
 
         if self.global_pruning:
             self.count_total_initial_channels()
+
+        return
 
     def step(self, interactive=False) -> typing.Union[typing.Generator, None]:
         self.current_step += 1
@@ -458,7 +462,10 @@ class MetaPruner:
                 group = self.DG.get_pruning_group(
                     module, pruning_fn, pruning_idxs)
 
-                if self.DG.check_pruning_group(group) and _is_attn and self.prune_num_heads and n_heads_removed > 0:
+                con1 = self.DG.check_pruning_group(group) and _is_attn
+                con2 = self.prune_num_heads and n_heads_removed
+
+                if con1 and con2 > 0:
                     self.recalculate_num_heads(group, n_heads_removed)
                 if self.DG.check_pruning_group(group):
                     yield group
@@ -472,7 +479,7 @@ class MetaPruner:
                 if self.round_to:
                     n_pruned_per_group = self._round_to(n_pruned_per_group, group_size, self.round_to)
                 _is_attn, _ = self._is_attn_group(group)
-                if not _is_attn or self.prune_head_dims == True:
+                if not _is_attn or self.prune_head_dims:
                     raw_imp = self.estimate_importance(group, ch_groups=ch_groups)  # re-compute importance
                     self.compute_indices_ch_groups(pruning_indices, raw_imp,
                                                    ch_groups, n_pruned_per_group, group_size)
