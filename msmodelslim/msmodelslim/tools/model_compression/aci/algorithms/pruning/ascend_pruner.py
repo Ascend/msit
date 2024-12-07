@@ -128,7 +128,7 @@ class AscendPruner(BasePruner):
         else:
             for group in pruning_method():
                 group.prune()
-        return
+            return None
 
     def solve_knapsack(self, groups, capacity, costs, weights):
         capacity = int(capacity)

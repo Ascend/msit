@@ -106,8 +106,9 @@ def _group_knapsack_mim_recursive(
         value, cost = groups[0]
         try:
             cidx = value.argmax()
-        except:
-            raise Exception("Optimal combination was not found! Try to decrease chunk size or compression ratio.")
+        except ValueError as e:
+            raise Exception("Optimal combination was not found! Try to decrease chunk size or compression ratio.") \
+                from e
         keep_idxs[0] = cidx
 
         return value[cidx].item(), cost[cidx].item()
@@ -203,7 +204,7 @@ def group_knapsack(groups: List[KnapsackGroup], capacity: float, require_item: b
     # Condense the tradeoffs (by rejecting obviously suboptimal choices)
     cgroups = []
     condense_idxs = []
-    for i, group in enumerate(groups):
+    for _, group in enumerate(groups):
         cgroup, cidxs = _condense_tradeoff(group, capacity)
         if constraint:
             cgroup, cidxs = apply_constraint(cgroup, cidxs, len(group[0]))
