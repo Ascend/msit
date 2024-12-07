@@ -1,6 +1,5 @@
-from .pruning.importance import *
+from .pruning.importance import MagnitudeImportance, TaylorImportance
 from .pruning.ascend_pruner import AscendPruner
-from .pruning.cost import *
 
 from .pruning.smcp_pruner import SMCPPruner
 from .pruning.base_pruner import BasePruner
