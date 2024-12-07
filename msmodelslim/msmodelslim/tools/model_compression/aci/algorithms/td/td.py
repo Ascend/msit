@@ -326,4 +326,4 @@ def apply_td(model, device, par_sum_baseline, compr_ratio, min_power_of_2=6, ite
             par_sum_td_pruned = calculate_parameters_number(model)
             logger.info('COMPRESSION IS: ' + str(par_sum_baseline / par_sum_td_pruned))
             if (par_sum_baseline / par_sum_td_pruned) > compr_ratio:
-                break
+                brea
