@@ -254,6 +254,8 @@ class MetaPruner:
             for group in pruning_method():
                 group.prune()
 
+        return
+
     def estimate_importance(self, group, ch_groups=1) -> torch.Tensor:
         return self.importance(group, ch_groups=ch_groups)
 
@@ -340,6 +342,7 @@ class MetaPruner:
             group = self.DG.get_pruning_group(downstream_dep.target.module, downstream_dep.handler, _idxs)
         return group
 
+    @staticmethod
     def _round_to(self, n_pruned, current_channels, round_to):
         rounded_channels = current_channels - n_pruned
         rounded_channels = rounded_channels - rounded_channels % round_to
@@ -369,6 +372,7 @@ class MetaPruner:
                 self.num_heads[dep.target.module] -= n_heads_removed
                 self.out_channel_groups[dep.target.module] = self.num_heads[dep.target.module]
 
+    @staticmethod
     def compute_indices_ch_groups(self, pruning_indices,
                                   imp, ch_groups, n_pruned_per_group, group_size):
         for chg in range(ch_groups):
