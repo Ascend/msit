@@ -543,10 +543,11 @@ class Calibrator(object):
             ori_model_state_dict_name,
             self.quant_model_json_description.model_quant_type)
         # 将该量化linear的附属参数，scale、offset 等加入safetensor_weight
-        for quant_param_name in self.quantized_module_param_dict.get(ori_model_state_dict_name):
-            safetensor_weight[quant_param_name] = self.quant_param_dict.get(quant_param_name)
-            self.quant_model_json_description.change_weight_type(
-                quant_param_name, self.quant_model_json_description.model_quant_type)
+        if ori_model_state_dict_name in self.quantized_module_param_dict:
+            for quant_param_name in self.quantized_module_param_dict.get(ori_model_state_dict_name):
+                safetensor_weight[quant_param_name] = self.quant_param_dict.get(quant_param_name)
+                self.quant_model_json_description.change_weight_type(
+                    quant_param_name, self.quant_model_json_description.model_quant_type)
 
     def set_fa_quant_safetensor(self, attention_module_name, safetensor_weight):
         for quant_param_name in self.fa_module_param_dict.get(attention_module_name):
