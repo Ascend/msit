@@ -495,5 +495,5 @@ class AntiOutlier(object):
             elif self.cfg.anti_method == 'm6':
                 disable_anti_set = set(self.cfg.disable_anti_names)
                 if all(linear_name not in disable_anti_set for linear_name in linear_names):
-                    flex_smooth(self.cfg, norm_module, linear_modules, stats)
+                    flex_smooth(self.cfg, norm_module, linear_modules, stats, num_attention_heads)
 
