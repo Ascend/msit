@@ -1,0 +1,22 @@
+{
+    "task": "statistics", 
+    "dump_path": "./", 
+    "rank": [], 
+    "step": [], 
+    "level": ["operator"], 
+    "dump_mode": "all", 
+    "dump_list": {
+        "model": [], 
+        "module": [], 
+        "layer": [], 
+        "operator": [], 
+        "kernel": []
+    }, 
+    "dump_extra": [], 
+    "dump_time": 3, 
+    "dump_last_logits": "false", 
+    "dump_weight": "false", 
+    "fusion_switch_json": "", 
+    "log_level": "info",
+    "seed": ""
+}
