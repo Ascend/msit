@@ -486,8 +486,7 @@ class Calibrator(object):
 
             # 如果浮点权重名称在量化权重名称中，说明是浮点转换为量化的权重，需要把量化权重加入safetensor_weight
             else:
-                self.set_quant_safetensor(ori_model_state_dict_name, safetensor
-                _weight)
+                self.set_quant_safetensor(ori_model_state_dict_name, safetensor_weight)
         
         # for name, module in self.model.named_modules():
         #     if instance(module, nn.Module) and ('DuQuant' in module.__class__.__name__):
