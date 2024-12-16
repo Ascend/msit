@@ -26,7 +26,8 @@ class AntiOutlierConfig:
             anti_method="m2",
             dev_type='cpu',
             dev_id=None,
-            w_sym=True
+            w_sym=True,
+            duquant_config=None
     ):
         # Basic setting
         self.w_bit = w_bit
@@ -54,7 +55,7 @@ class AntiOutlierConfig:
                              .format(_ANTI_METHODS))
         if self.anti_method == "m7":
             self.duquant_config = duquant_config 
-            
+
         if self.anti_method == "m5":
             self.ch_align = False
 

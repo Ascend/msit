@@ -37,6 +37,8 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils import (
     os_ln_fcs,
     weight_aware,
 )
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.duquant.duquant_alg import DuQuantConfig
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.duquant.duquant_utils import apply_duquant
 
 STAT_KEY_MAX = "max"
 STAT_KEY_MIN = "min"
@@ -433,7 +435,7 @@ class AntiOutlier(object):
             num_attention_heads = self.get_num_attention_heads()
 
         if self.cfg.anti_method == 'm7':
-            self.logger.into('Applying m7 method for exception value suppression.')
+            self.logger.info('Applying m7 method for exception value suppression.')
             self.enable_duquant(self.model, self.cfg.duquant_config, self.calib_data)
             return 
 
