@@ -24,7 +24,7 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.graph_utils import (
     NormBias, extract_dag, input_to_cpu, norm_class_detect, class_detect
 )
 # KIA part
-from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_outlier import deepcopy_model
+# from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_outlier import deepcopy_model
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_modules import (
     Quantizer, LinearQuantizer, LinearNf4Quantizer, layer_wise_calib
 )
