@@ -222,6 +222,34 @@ class AntiOutlier(object):
         with torch.no_grad():
             model(*batch_calib_data[0])
 
+    def init_dag(self):
+        dummy_input = input_to_cpu(self.calib_data[0][0])
+        dummy_input = dummy_input[:1]
+
+        if self.norm_class_name is not None:
+            norm_class = list(OrderedDict.fromkeys([m.__class__ for m in self.model.modules() if
+                                                    self.norm_class_name.lower() == m.__class__.__name__.lower()]))
+        else:
+            norm_class = list(
+                OrderedDict.fromkeys(
+                    [m.__class__ for m in self.model.modules() if "norm" in m.__class__.__name__.lower()]))
+            norm_class = [norm_class[0]]
+            self.norm_class_name = norm_class[0].__name__.lower()
+
+        self.dag = extract_dag(self.model, dummy_input,
+                               hook_nodes=norm_class, anti_method=self.cfg.anti_method)
+
+        self.norm_linear_subgraph = self.dag.get_norm_linear_subgraph()
+        if self.cfg.anti_method == 'm4':
+            self.linear_linear_subgraph = self.dag.get_linear_linear_subgraph()
+            self.norm_linear_subgraph.update(self.linear_linear_subgraph)
+
+        del self.model
+        self.model = self.org_model
+        replace_rms_norm(self.model, self.norm_class_name)
+        gc.collect()
+        return
+        
     def trans_to_dict(self, data):
         data_dict = {}
         data_dict['input_ids'] = data[0]
@@ -398,34 +426,6 @@ class AntiOutlier(object):
             self.logger.warning("Not all elements in calib_data are torch.Tensor, "
                                 "please make sure that the model can run with model(*(calib_data[0]))")
         return calib_data
-    
-    def init_dag(self):
-        dummy_input = input_to_cpu(self.calib_data[0][0])
-        dummy_input = dummy_input[:1]
-
-        if self.norm_class_name is not None:
-            norm_class = list(OrderedDict.fromkeys([m.__class__ for m in self.model.modules() if
-                                                    self.norm_class_name.lower() == m.__class__.__name__.lower()]))
-        else:
-            norm_class = list(
-                OrderedDict.fromkeys(
-                    [m.__class__ for m in self.model.modules() if "norm" in m.__class__.__name__.lower()]))
-            norm_class = [norm_class[0]]
-            self.norm_class_name = norm_class[0].__name__.lower()
-
-        self.dag = extract_dag(self.model, dummy_input,
-                               hook_nodes=norm_class, anti_method=self.cfg.anti_method)
-
-        self.norm_linear_subgraph = self.dag.get_norm_linear_subgraph()
-        if self.cfg.anti_method == 'm4':
-            self.linear_linear_subgraph = self.dag.get_linear_linear_subgraph()
-            self.norm_linear_subgraph.update(self.linear_linear_subgraph)
-
-        del self.model
-        self.model = self.org_model
-        replace_rms_norm(self.model, self.norm_class_name)
-        gc.collect()
-        return
 
     def _process(self):
         act_stats = self.os_stats()
