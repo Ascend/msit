@@ -419,10 +419,23 @@ class AntiOutlier(object):
                                 "please make sure that the model can run with model(*(calib_data[0]))")
         return calib_data
 
+    @staticmethod
+    def enable_duquant(model, duquant_config: DuQuantConfig, batch_calib_data):
+
+        apply_duquant(model, duquant_config)
+
+        with torch.no_grad():
+            model(*batch_calib_data[0])
+
     def _process(self):
         act_stats = self.os_stats()
         if self.cfg.anti_method == 'm4':
             num_attention_heads = self.get_num_attention_heads()
+
+        if self.cfg.anti_method == 'm7':
+            self.logger.into('Applying m7 method for exception value suppression.')
+            self.enable_duquant(self.model, self.cfg.duquant_config, self.calib_data)
+            return 
 
         for norm_name in tqdm(self.norm_linear_subgraph.keys()):
             norm_module = PatternProcess.get_module_by_name(self.model, norm_name)
