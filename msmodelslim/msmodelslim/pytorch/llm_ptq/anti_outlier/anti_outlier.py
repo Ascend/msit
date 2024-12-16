@@ -216,33 +216,11 @@ class AntiOutlier(object):
         # 保存anti_outlier处理前的原始权重，作为属性存入model中
         setattr(self.model, 'ori_state_dict', states_dic)
 
-    def init_dag(self):
-        dummy_input = input_to_cpu(self.calib_data[0][0])
-        dummy_input = dummy_input[:1]
-
-        if self.norm_class_name is not None:
-            norm_class = list(OrderedDict.fromkeys([m.__class__ for m in self.model.modules() if
-                                                    self.norm_class_name.lower() == m.__class__.__name__.lower()]))
-        else:
-            norm_class = list(
-                OrderedDict.fromkeys(
-                    [m.__class__ for m in self.model.modules() if "norm" in m.__class__.__name__.lower()]))
-            norm_class = [norm_class[0]]
-            self.norm_class_name = norm_class[0].__name__.lower()
-
-        self.dag = extract_dag(self.model, dummy_input,
-                               hook_nodes=norm_class, anti_method=self.cfg.anti_method)
-
-        self.norm_linear_subgraph = self.dag.get_norm_linear_subgraph()
-        if self.cfg.anti_method == 'm4':
-            self.linear_linear_subgraph = self.dag.get_linear_linear_subgraph()
-            self.norm_linear_subgraph.update(self.linear_linear_subgraph)
-
-        del self.model
-        self.model = self.org_model
-        replace_rms_norm(self.model, self.norm_class_name)
-        gc.collect()
-        return
+    @staticmethod
+    def enable_duquant(model, duquant_config: DuQuantConfig, batch_calib_data):
+        apply_duquant(model, duquant_config)
+        with torch.no_grad():
+            model(*batch_calib_data[0])
 
     def trans_to_dict(self, data):
         data_dict = {}
@@ -420,14 +398,34 @@ class AntiOutlier(object):
             self.logger.warning("Not all elements in calib_data are torch.Tensor, "
                                 "please make sure that the model can run with model(*(calib_data[0]))")
         return calib_data
+    
+    def init_dag(self):
+        dummy_input = input_to_cpu(self.calib_data[0][0])
+        dummy_input = dummy_input[:1]
 
-    @staticmethod
-    def enable_duquant(model, duquant_config: DuQuantConfig, batch_calib_data):
+        if self.norm_class_name is not None:
+            norm_class = list(OrderedDict.fromkeys([m.__class__ for m in self.model.modules() if
+                                                    self.norm_class_name.lower() == m.__class__.__name__.lower()]))
+        else:
+            norm_class = list(
+                OrderedDict.fromkeys(
+                    [m.__class__ for m in self.model.modules() if "norm" in m.__class__.__name__.lower()]))
+            norm_class = [norm_class[0]]
+            self.norm_class_name = norm_class[0].__name__.lower()
 
-        apply_duquant(model, duquant_config)
+        self.dag = extract_dag(self.model, dummy_input,
+                               hook_nodes=norm_class, anti_method=self.cfg.anti_method)
 
-        with torch.no_grad():
-            model(*batch_calib_data[0])
+        self.norm_linear_subgraph = self.dag.get_norm_linear_subgraph()
+        if self.cfg.anti_method == 'm4':
+            self.linear_linear_subgraph = self.dag.get_linear_linear_subgraph()
+            self.norm_linear_subgraph.update(self.linear_linear_subgraph)
+
+        del self.model
+        self.model = self.org_model
+        replace_rms_norm(self.model, self.norm_class_name)
+        gc.collect()
+        return
 
     def _process(self):
         act_stats = self.os_stats()
