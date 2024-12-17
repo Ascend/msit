@@ -17,6 +17,7 @@ from accelerate.hooks import add_hook_to_module, remove_hook_from_module
 
 from ascend_utils.common.security import get_valid_write_path, check_type
 from msmodelslim import logger as msmodelslim_logger
+from msmodelslim.pytorch.llm_ptq.anti_outlier.kvcache_utils import use_kvcache, catch_key_cache_max, smooth_kv_cache
 
 try:
     import torch_npu
@@ -29,6 +30,7 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.graph_utils import (
     PatternProcess,
     NormBias,
     input_to_cpu,
+    class_detect,
 )
 from msmodelslim.pytorch.llm_ptq.anti_outlier.config import AntiOutlierConfig
 from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils import (
@@ -37,8 +39,10 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils import (
     os_ln_fcs,
     weight_aware,
 )
+
 try:
     from msmodelslim.pytorch.llm_ptq.kmeans.flex_smooth import flex_smooth
+
     _FLEX_SMOOTH_IMPORTED = True
 except ImportError:
     _FLEX_SMOOTH_IMPORTED = False
@@ -206,8 +210,9 @@ class AntiOutlier(object):
                 conv_name_list.append(name)
         for name in cfg.disable_anti_names:
             if name not in quant_name_list and name not in conv_name_list:
-                raise ValueError(f"cfg param `disable_anti_names` has invalid name {name}, please check your anti_outlier config.")
-            
+                raise ValueError(
+                    f"cfg param `disable_anti_names` has invalid name {name}, please check your anti_outlier config.")
+
         self.with_accelerate = judge_model_with_accelerate(model)
 
         self.cfg = cfg
@@ -269,6 +274,9 @@ class AntiOutlier(object):
             setattr(self.model, 'ori_state_dict', states_dic)
         else:
             setattr(self.model, 'anti_method', self.cfg.anti_method)
+
+        if self.cfg.use_kvcache_quant:
+            self.attention_class = class_detect(self.model, 'attention')
 
     def init_dag(self):
         dummy_input = input_to_cpu(self.calib_data[0][0])
@@ -404,6 +412,17 @@ class AntiOutlier(object):
                     m.register_forward_hook(
                         functools.partial(stat_input_hook, name=name))
                 )
+            # kv cache smooth: shift k's outliers to q
+            # first step: catch per-channel max of key_cache
+            if self.cfg.use_kvcache_quant and self.attention_class and isinstance(m, self.attention_class):
+                hooks.append(
+                    m.register_forward_pre_hook(use_kvcache, prepend=True, with_kwargs=True)
+                )
+                hooks.append(
+                    m.register_forward_hook(
+                        functools.partial(catch_key_cache_max, name=name, act_stats=act_stats)
+                    )
+                )
 
         for i in tqdm(range(len(self.calib_data))):
             inputs = self.calib_data[i]
@@ -497,3 +516,7 @@ class AntiOutlier(object):
                 if all(linear_name not in disable_anti_set for linear_name in linear_names):
                     flex_smooth(self.cfg, norm_module, linear_modules, stats)
 
+        # kv cache smooth: shift k's outliers to q
+        # second step: handle k's and q's weights and bias
+        if self.cfg.use_kvcache_quant:
+            smooth_kv_cache(self.cfg, self.model, act_stats, self.attention_class)
