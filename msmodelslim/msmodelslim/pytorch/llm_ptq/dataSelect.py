@@ -26,6 +26,19 @@ class CalibDataSelect(object):
         self.short_prompt_path_gsm8k = short_prompt_path_gsm8k
         self.prompt_path_gsm8k = prompt_path_gsm8k
 
+    def process(self):
+        mixed_dataset = []
+        for dataset in self.datasets:
+            for dset, path in dataset.items():
+                mixed_dataset.extend(self._get_mixed_dataset(dset, path))
+
+        if self.shuffle_seed:
+            random.seed(self.shuffle_seed)
+            random.shuffle(mixed_dataset)
+            mixed_dataset = mixed_dataset[:self.sample_size]
+
+        return mixed_dataset
+
     def _case_no_model(self, questions, labels):
         batch_dataset = []
         for idx, prpt in enumerate(questions):
@@ -46,9 +59,7 @@ class CalibDataSelect(object):
             return outputs
 
         answers = process_answers(questions, answers, split=True)
-        for i in range(len(answers)):
-            answer = answers[i]
-            label = labels[i]
+        for answer, label in zip(answers, labels):
             response_number = re.findall(r'\d+', answer)
             if response_number is not None and len(response_number) > 0:
                 last_number = response_number[-1]
@@ -121,21 +132,7 @@ class CalibDataSelect(object):
                 queries, labels = get_queries_label(dataset, path)
                 return self._case_no_model(queries, labels)
 
-            batch_size = 8 if dataset == "ceval_5_shot" else 32
-            precision_test = PrecisionTest(self.model, self.tokenizer, dataset, batch_size, "npu")
+            precision_test = PrecisionTest(self.model, self.tokenizer, dataset, batch_size if dataset == "ceval_5_shot" else 32, "npu")
             precision_test.mix_calib_dataset()
             precision_test.test()
             return precision_test.calib_dataset
-
-    def process(self):
-        mixed_dataset = []
-        for dataset in self.datasets:
-            for dset, path in dataset.items():
-                mixed_dataset.extend(self._get_mixed_dataset(dset, path))
-
-        if self.shuffle_seed:
-            random.seed(self.shuffle_seed)
-            random.shuffle(mixed_dataset)
-            mixed_dataset = mixed_dataset[:self.sample_size]
-
-        return mixed_dataset

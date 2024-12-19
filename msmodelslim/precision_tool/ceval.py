@@ -7,6 +7,17 @@ from tqdm import tqdm
 from security import json_safe_load, json_safe_dump, get_valid_path, get_valid_write_path, get_valid_read_path
 
 
+def load_csv_by_task_name(task_name, dataset_path):
+    shot = 5
+    dev_file_path = get_valid_path(os.path.join(dataset_path, "dev", task_name + "_dev.csv"))
+    dev_df = pd.read_csv(dev_file_path, header=None)[:shot + 1]
+    val_file_path = get_valid_path(os.path.join(dataset_path, "val", task_name + "_val.csv"))
+    val_df = pd.read_csv(val_file_path, header=None)
+
+    dev_df = dev_df.iloc[1:, 1:]
+    val_df = val_df.iloc[1:, 1:]
+    return dev_df, val_df
+
 class CEvalDataset():
     def __init__(self, dataset_path):
         self.choices = ["A", "B", "C", "D"]
@@ -16,7 +27,7 @@ class CEvalDataset():
         # load raw data
         subject_mapping = self.get_subject_mapping()
         for task_name in tqdm(subject_mapping):
-            dev, val = self.load_csv_by_task_name(task_name, dataset_path)
+            dev, val = load_csv_by_task_name(task_name, dataset_path)
             self.dev_data[task_name] = dev
             self.val_data[task_name] = val
 
@@ -26,17 +37,6 @@ class CEvalDataset():
         with open(subject_mapping_path) as f:
             subject_mapping = json.load(f)
         return subject_mapping
-
-    def load_csv_by_task_name(self, task_name, dataset_path):
-        shot = 5
-        dev_file_path = get_valid_path(os.path.join(dataset_path, "dev", task_name + "_dev.csv"))
-        dev_df = pd.read_csv(dev_file_path, header=None)[:shot + 1]
-        val_file_path = get_valid_path(os.path.join(dataset_path, "val", task_name + "_val.csv"))
-        val_df = pd.read_csv(val_file_path, header=None)
-
-        dev_df = dev_df.iloc[1:, 1:]
-        val_df = val_df.iloc[1:, 1:]
-        return dev_df, val_df
 
     def format_example(self, df, idx, include_answer=True):
         # question,A,B,C,D,answer
@@ -49,15 +49,14 @@ class CEvalDataset():
             prompt += " {}\n\n".format(df.iloc[idx, k + 1])
         return prompt
 
-    def format_subject(self, subject):
-        l = subject.split("_")
-        s = ""
-        for entry in l:
-            s += " " + entry
-        return s
-
     def gen_prompt(self, train_df, subject, k=-1):
-        prompt = "以下是中国关于{}考试的单项选择题，请选出正确答案.\n\n".format(self.format_subject(subject))
+        def format_subject(subject):
+            l = subject.split("_")
+            s = ""
+            for entry in l:
+                s += " " + entry
+            return s
+        prompt = "以下是中国关于{}考试的单项选择题，请选出正确答案.\n\n".format(format_subject(subject))
         if k == -1:
             k = train_df.shape[0]
         for i in range(k):
