@@ -11,15 +11,18 @@ from safetensors.torch import save_file
 
 from msmodelslim import logger
 from ascend_utils.common.security import get_valid_read_path, get_valid_write_path, get_write_directory, \
-                SafeWriteUmask, MAX_READ_FILE_SIZE_512G, safe_delete_path_if_exists, check_type
+    SafeWriteUmask, MAX_READ_FILE_SIZE_512G, safe_delete_path_if_exists, check_type
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantModelJsonDescription, QuantType
 from .compress_config import CompressConfig
 from .compress_utils import compress_weight_fun
 from .compress_utils import pseudo_sparse
 from .compress_utils import transform_nd2nz
 
-
 SUPPORT_DTYPE = [np.int8, np.int64]
+_SC_MAPPING = {
+    QuantType.W8A8S: QuantType.W8A8SC,
+    QuantType.W8A8_PER_TILING: QuantType.W8A8SC_PER_TILING,
+}
 
 
 class Compressor:
@@ -56,10 +59,10 @@ class Compressor:
         if not self.quant_model_description:
             raise ValueError()
         compress_weight = {}
-        if self.quant_model_description.get('model_quant_type') == QuantType.W8A8S:
-            compress_model_description = QuantModelJsonDescription(QuantType.W8A8SC)
-        elif self.quant_model_description.get('model_quant_type') == QuantType.W8A8_PER_TILING:
-            compress_model_description = QuantModelJsonDescription(QuantType.W8A8_PER_TILING_C)
+
+        model_quant_type = self.quant_model_description.get('model_quant_type')
+        if model_quant_type in _SC_MAPPING:
+            compress_model_description = QuantModelJsonDescription(_SC_MAPPING[model_quant_type])
 
         if not isinstance(safetensors_name, str) or not safetensors_name.endswith('.safetensors'):
             self.logger.warning("Invalid `safetensors_name` provided. Reverting `safetensors_name` to default.")
@@ -77,9 +80,9 @@ class Compressor:
                 key_index = key_short + '.index'
                 key_info = key_short + '.info'
 
-                compress_model_description.change_weight_type(key, QuantType.W8A8SC)
-                compress_model_description.change_weight_type(key_index, QuantType.W8A8SC)
-                compress_model_description.change_weight_type(key_info, QuantType.W8A8SC)
+                compress_model_description.change_weight_type(key, _SC_MAPPING[value])
+                compress_model_description.change_weight_type(key_index, _SC_MAPPING[value])
+                compress_model_description.change_weight_type(key_info, _SC_MAPPING[value])
 
                 compress_weight[key] = torch.from_numpy(self.compress_result_weight.get(key))
                 compress_weight[key_index] = torch.from_numpy(self.compress_result_index.get(key).astype(np.int8))
@@ -117,7 +120,7 @@ class Compressor:
             keys_list = []
             for key in self.weights.keys():
                 quant_type = self.quant_model_description.get(key)
-                if key.endswith('.weight') and 'norm' not in key and quant_type == 'W8A8S':
+                if key.endswith('.weight') and 'norm' not in key and quant_type in _SC_MAPPING:
                     keys_list.append(key)
         else:
             keys_list = sorted(self.weights.keys())
