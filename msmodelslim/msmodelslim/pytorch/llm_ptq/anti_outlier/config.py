@@ -27,7 +27,8 @@ class AntiOutlierConfig:
             dev_type='cpu',
             dev_id=None,
             w_sym=True,
-            disable_anti_names=[]
+            disable_anti_names=[],
+            use_kvcache_quant: bool = False,
     ):
         # Basic setting
         self.w_bit = w_bit
@@ -37,6 +38,7 @@ class AntiOutlierConfig:
         self.dev_id = dev_id
         self.w_sym = w_sym
         self.disable_anti_names = disable_anti_names
+        self.use_kvcache_quant = use_kvcache_quant
         self.w_signed = True
         self.a_signed = True
         self.a_sym = False
@@ -51,6 +53,7 @@ class AntiOutlierConfig:
         check_type(self.anti_method, str, param_name='anti_method')
         check_type(self.w_sym, bool, param_name='w_sym')
         check_type(self.disable_anti_names, list, param_name='disable_anti_names')
+        check_type(self.use_kvcache_quant, bool, param_name='use_kvcache_quant')
 
         if self.anti_method not in _ANTI_METHODS:
             raise ValueError("Configuration param `anti_method` must be in choices {}"
