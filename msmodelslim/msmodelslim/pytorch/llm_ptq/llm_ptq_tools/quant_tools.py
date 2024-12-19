@@ -24,7 +24,6 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.graph_utils import (
     NormBias, extract_dag, input_to_cpu, norm_class_detect, class_detect
 )
 # KIA part
-from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_outlier import deepcopy_model
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_modules import (
     Quantizer, LinearQuantizer, LinearNf4Quantizer, layer_wise_calib
 )
@@ -64,6 +63,8 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant import (
 from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import TorchDAGAdapter
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.simulate_tp import ParallelLinearCol
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save_utils import save_file_partial
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.duquant.duquant_alg import DuQuantConfig
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.duquant.duquant_utils import apply_duquant
 
 HF_HOOK = "_hf_hook"
 
@@ -486,6 +487,15 @@ class Calibrator(object):
             else:
                 self.set_quant_safetensor(ori_model_state_dict_name, safetensor_weight)
         
+        attributes_to_clone = ['delta_vector', 'permutations', 'rotations']
+        for name, module in self.model.named_modules():
+            if isinstance(module, nn.Module) and 'DuQuant' in module.__class__.__name__:
+                for attr_name in attributes_to_clone:
+                    if hasattr(module, attr_name):
+                        attr_value = getattr(module, attr_name)
+                        safetensor_weight[f"{name}.{attr_name}"] = attr_value.clone()
+                        self.quant_model_json_description.change_weight_type(f"{name}.{attr_name}", QuantType.FLOAT)
+
         if self.cfg.use_fa_quant:
             for attention_module_name in self.fa_module_param_dict:
                 self.set_fa_quant_safetensor(attention_module_name, safetensor_weight)

@@ -37,6 +37,8 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils import (
     os_ln_fcs,
     weight_aware,
 )
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.duquant.duquant_alg import DuQuantConfig
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.duquant.duquant_utils import apply_duquant
 
 STAT_KEY_MAX = "max"
 STAT_KEY_MIN = "min"
@@ -214,6 +216,12 @@ class AntiOutlier(object):
         # 保存anti_outlier处理前的原始权重，作为属性存入model中
         setattr(self.model, 'ori_state_dict', states_dic)
 
+    @staticmethod
+    def enable_duquant(model, duquant_config: DuQuantConfig, batch_calib_data):
+        apply_duquant(model, duquant_config)
+        with torch.no_grad():
+            model(*batch_calib_data[0])
+
     def init_dag(self):
         dummy_input = input_to_cpu(self.calib_data[0][0])
         dummy_input = dummy_input[:1]
@@ -241,7 +249,7 @@ class AntiOutlier(object):
         replace_rms_norm(self.model, self.norm_class_name)
         gc.collect()
         return
-
+        
     def trans_to_dict(self, data):
         data_dict = {}
         data_dict['input_ids'] = data[0]
@@ -423,6 +431,11 @@ class AntiOutlier(object):
         act_stats = self.os_stats()
         if self.cfg.anti_method == 'm4':
             num_attention_heads = self.get_num_attention_heads()
+
+        if self.cfg.anti_method == 'm7':
+            self.logger.info('Applying m7 method for exception value suppression.')
+            self.enable_duquant(self.model, self.cfg.duquant_config, self.calib_data)
+            return 
 
         for norm_name in tqdm(self.norm_linear_subgraph.keys()):
             norm_module = PatternProcess.get_module_by_name(self.model, norm_name)

@@ -5,7 +5,7 @@ from ascend_utils.common.security.pytorch import validate_device
 from ascend_utils.common.security import check_type
 from msmodelslim import logger as msmodelslim_logger
 
-_ANTI_METHODS = ['m1', 'm2', 'm3', 'm4', 'm5']
+_ANTI_METHODS = ['m1', 'm2', 'm3', 'm4', 'm5', 'm7']
 _SUPPORTED_DEVICES = ["cpu", "npu", 'gpu']
 
 
@@ -15,6 +15,7 @@ class AntiMethods(str, Enum):
     M3 = "m3"
     M4 = "m4"
     M5 = "m5"
+    M7 = "m7"
 
 
 class AntiOutlierConfig:
@@ -25,7 +26,8 @@ class AntiOutlierConfig:
             anti_method="m2",
             dev_type='cpu',
             dev_id=None,
-            w_sym=True
+            w_sym=True,
+            duquant_config=None
     ):
         # Basic setting
         self.w_bit = w_bit
@@ -51,6 +53,9 @@ class AntiOutlierConfig:
         if self.anti_method not in _ANTI_METHODS:
             raise ValueError("Configuration param `anti_method` must be in choices {}"
                              .format(_ANTI_METHODS))
+        if self.anti_method == "m7":
+            self.duquant_config = duquant_config 
+
         if self.anti_method == "m5":
             self.ch_align = False
 
