@@ -226,7 +226,7 @@ class AntiOutlier(object):
         else:
             same_device = self.cfg.device == model.device
 
-        if not same_device:
+        if not same_device and not judge_model_with_accelerate(model):
             self.logger.warning("Model is not on the deivce indicated in `AntiOutlierConfig`, "
                                 "Model is on the device `{}` while `AntiOutlierConfig` "
                                 "indicates `{}`".format(model.device, self.cfg.device))
@@ -253,10 +253,7 @@ class AntiOutlier(object):
         else:
             self.device_org = None
 
-        self.model = deepcopy_model(model,
-                                    self.logger,
-                                    device_org=self.device_org,
-                                    model_with_accelerate=self.model_with_accelerate).float()
+        self.model = self.org_model
         self.norm_linear_subgraph = None
 
         if calib_data is None:
