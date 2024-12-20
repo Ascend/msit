@@ -1,5 +1,3 @@
-# Copyright Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
-
 import os
 import math
 
@@ -16,92 +14,6 @@ HADAMARD_MATRICES = np.load(binary_file_path, allow_pickle=True).item()
 
 
 # Adapted from https://github.com/Cornell-RelaxML/quip-sharp/blob/main/lib/utils/matmul_had.py
-
-"""
-def get_hadk(n, transpose=False, known_dim=None):
-    hadk, k = None, None
-    if known_dim:
-        n = n // known_dim
-    if n % 428 == 0:
-        if not is_pow2(n // 428):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 428
-        hadk = HADAMARD_MATRICES.get('get_had428')
-    elif n % 172 == 0:  # llama-2-7b up
-        if not is_pow2(n // 172):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 172
-        hadk = HADAMARD_MATRICES.get('get_had172')
-    elif n % 160 == 0:
-        if not is_pow2(n // 160):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 160
-        hadk = HADAMARD_MATRICES.get('get_had160')
-    elif n % 156 == 0:  # llama-1-30b 3x hidden
-        if not is_pow2(n // 156):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 156
-        hadk = HADAMARD_MATRICES.get('get_had156')
-    elif n % 140 == 0:  # llama-1-30b intermediate
-        if not is_pow2(n // 140):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 140
-        hadk = HADAMARD_MATRICES.get('get_had140')
-    elif n % 112 == 0:
-        if not is_pow2(n // 112):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 112
-        hadk = HADAMARD_MATRICES.get('get_had112')
-    elif n % 108 == 0:  # llama-1-13b intermediate
-        if not is_pow2(n // 108):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 108
-        hadk = HADAMARD_MATRICES.get('get_had108')
-    elif n % 60 == 0:  # llama-1-13b 3x hidden
-        if not is_pow2(n // 60):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 60
-        hadk = HADAMARD_MATRICES.get('get_had60')
-    elif n % 52 == 0:  # llama-1-13b 1x hidden
-        if not is_pow2(n // 52):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 52
-        hadk = HADAMARD_MATRICES.get('get_had52')
-    elif n % 40 == 0:
-        if not is_pow2(n // 40):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 40
-        hadk = HADAMARD_MATRICES.get('get_had40')
-    elif n % 36 == 0:
-        if not is_pow2(n // 36):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 36
-        hadk = HADAMARD_MATRICES.get('get_had36')
-    elif n % 28 == 0:  # llama-3 up
-        if not is_pow2(n // 28):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 28
-        hadk = HADAMARD_MATRICES.get('get_had28')
-    elif n % 20 == 0:
-        if not is_pow2(n // 20):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 20
-        hadk = HADAMARD_MATRICES.get('get_had20')
-    elif n % 12 == 0:
-        if not is_pow2(n // 12):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 12
-        hadk = HADAMARD_MATRICES.get('get_had12')
-    else:
-        if not is_pow2(n):
-            raise ValueError(f"{n}-order hadamard matrix construct failed")
-        k = 1
-    if hadk is not None and transpose:
-        hadk = hadk.T
-
-    return hadk, k
-"""
-
 def get_hadk(n, transpose=False, known_dim=None):
     had_k, k = None, None
     if known_dim:
@@ -173,10 +85,6 @@ def matmul_had(x, transpose=False, known_dim=None):
     del output
 
     if k > 1:
-        # Do not explicitly repeat - OOM
-        # x = torch.bmm(
-        #     hadk.repeat(len(x), 1, 1).to(x.device).to(x.dtype), x)
-        # Use bcast instead
         x = hadk.view(1, k, k).to(x) @ x
 
     return x.view(shape) / torch.tensor(n).sqrt()
@@ -214,7 +122,7 @@ def random_hadamard_matrix(size, device):
     Q = torch.randint(low=0, high=2, size=(size,)).to(torch.float32)
     Q = Q * 2 - 1
     Q = torch.diag(Q)
-    # Q = torch.eye(size).to(torch.float32)
+    # could be replaced with `Q = torch.eye(size).to(torch.float32)`
     return matmul_had(Q).to(device)
 
 

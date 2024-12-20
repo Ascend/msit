@@ -1,5 +1,3 @@
-# Copyright Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
-
 import math
 import typing
 
@@ -18,7 +16,8 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import
 class OnlineRotationWrapper(torch.nn.Module):
     def __init__(self, module: torch.nn.Linear):
         super(OnlineRotationWrapper, self).__init__()
-        assert isinstance(module, torch.nn.Linear)
+        if not isinstance(module, torch.nn.Linear):
+            raise TypeError(f"{module} is not a torch.nn.Linear module!")
         self.module = module
         self.register_buffer('had_K', torch.tensor(0))
         self._buffers['had_K'] = None

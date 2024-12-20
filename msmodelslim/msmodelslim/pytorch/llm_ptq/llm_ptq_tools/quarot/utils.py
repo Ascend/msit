@@ -1,5 +1,3 @@
-# Copyright Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
-
 import random
 
 import torch
@@ -33,6 +31,8 @@ def cleanup_memory(verbose=True) -> None:
             return sum(torch.cuda.memory_reserved(device=i) for i in range(torch.cuda.device_count()))
         elif torch.npu.is_available():
             return sum(torch.npu.memory_reserved(device=i) for i in range(torch.npu.device_count()))
+        else:
+            return 0
 
     memory_before = total_reserved_mem()
 
