@@ -63,7 +63,10 @@ class TorchDAGAdapter(object):
 
         if not hook_nodes:
             hook_nodes = []
-        self.norm_nodes = [m.__name__.lower() for m in hook_nodes if "norm" in m.__name__.lower()]
+        self.norm_nodes = [
+            m.__name__.lower() for m in hook_nodes
+            if "norm" in m.__name__.lower() and "head" not in m.__name__.lower()
+        ]
 
         self._dag_hook = DagTorchHook(self._model, self._dummy_input, hook_nodes, anti_method=anti_method)
 
@@ -271,6 +274,43 @@ class TorchDAGAdapter(object):
                 qkv_linears = [node.name_in_network for node in self._node_list[start+1:start+4]]
                 norm_linear_subgraph[norm_node].extend(qkv_linears)
         return norm_linear_subgraph
+
+    def get_pre_head_norm_and_head_pair(self) -> Tuple[str, str]:
+        norm_positions = [i for i, x in enumerate(self._node_list) if x.op_type.lower() in self.norm_nodes]
+        norm_node = self._node_list[norm_positions[-1]].name_in_network
+        lm_head = self._node_list[norm_positions[-1] + 1].name_in_network
+        return norm_node, lm_head
+
+    def get_attn_or_mlp_linear_layers(
+            self,
+            require_attn_over_mlp: bool,
+            require_input_over_output: bool
+    ) -> List[List[str]]:
+        norm_positions = [i for i, x in enumerate(self._node_list) if x.op_type.lower() in self.norm_nodes]
+        num_norm = len(norm_positions)
+        if num_norm % 2 == 0:
+            # 2 norm per layer (input layer norm and post attention norm) plus norm ahead of lmhead
+            raise ValueError("Anomaly detected in the number of Norm class, "
+                             "unable to correctly identify the model's Norm layer type")
+        norm_indices = range(num_norm)
+
+        if require_attn_over_mlp:
+            # attn_linear_intervals
+            intervals = list(zip(norm_indices[::2], norm_indices[1::2]))
+        else:
+            # mlp_linear_intervals
+            intervals = list(zip(norm_indices[1::2], norm_indices[2::2]))
+
+        linear_layers = []
+        for i, j in intervals:
+            start, end = norm_positions[i], norm_positions[j]
+            interval_linears = [node.name_in_network for node in self._node_list[start + 1: end]]
+            if require_input_over_output:
+                linear_layers.append(interval_linears[:-1])
+            else:
+                linear_layers.append(interval_linears[-1:])
+
+        return linear_layers
 
     def get_kv_linears(self):
         '''
