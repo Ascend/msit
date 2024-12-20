@@ -2,11 +2,13 @@
 
 from __future__ import absolute_import, division, print_function
 
+import copy
 import re
 import os
 import gc
 import functools
 from collections import defaultdict
+from typing import Dict, List, Any
 
 from tqdm import tqdm
 import torch
@@ -34,6 +36,7 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs import (
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.kv_cache_utils import (
     set_kvcache_vari_func, new_forward
 )
+
 from msmodelslim.pytorch.llm_sparsequant.atomic_power_outlier import quant_one_weight_by_outliers
 from msmodelslim.pytorch.llm_sparsequant.sparsequant_modules import LinearSparseQuantizer
 from msmodelslim.pytorch.lowbit.atomic_power_outlier import \
@@ -64,9 +67,13 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant import (
 from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import TorchDAGAdapter
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.simulate_tp import ParallelLinearCol
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save_utils import save_file_partial
+from msmodelslim.pytorch.llm_ptq.config_selector import select_layer_config
+from msmodelslim.pytorch.llm_ptq.utils.sync_runner import SyncRunner
+
 try:
     from msmodelslim.pytorch.llm_ptq.kmeans.quant_modules import TileKMeansLinearQuantizer, LINEAR_PATTERN
     from msmodelslim.pytorch.llm_ptq.kmeans.layer_select import LayerSelector
+
     _PER_TILING_IMPORTED = True
 except ImportError:
     _PER_TILING_IMPORTED = False
@@ -81,10 +88,12 @@ class Calibrator(object):
                  cfg: QuantConfig,
                  calib_data=None,
                  disable_level='L0',
-                 all_tensors=None):
+                 all_tensors=None,
+                 mix_cfg: Dict[str, Any] = None):
         check_type(model, nn.Module, param_name="model")
         check_type(cfg, QuantConfig, param_name="cfg")
         check_disable_level(disable_level)
+        check_auto_mix_cfg(mix_cfg)
         if all_tensors:
             check_element_type(all_tensors, torch.Tensor, dict, param_name="all_tensors")
         is_model_anti_method_m6 = hasattr(model, "anti_method") and model.anti_method == "m6"
@@ -96,6 +105,8 @@ class Calibrator(object):
             raise ImportError("CANN Toolkit version not match msmodelslim version, per tiling quantization not usable.")
 
         self.cfg = cfg
+        self.layer_cfgs = {name: copy.deepcopy(cfg) for name, module in model.named_modules() if
+                           isinstance(module, nn.Linear)}
         self.logger = msmodelslim_logger
         self.calib_data = self.get_calib_data([]) if calib_data is None else self.get_calib_data(calib_data)
         self.use_kvcache_quant = cfg.use_kvcache_quant
@@ -105,10 +116,12 @@ class Calibrator(object):
             self.logger.warning(f'The model dtype {model.dtype} is not consistent with the model.config.torch_dtype '
                                 f'{model.config.torch_dtype}. The model will be regarded as {model.config.torch_dtype}'
                                 f' type in subsequent process.')
-
+        # 记录每个量化参数
         self.quant_param_dict = {}
+        # 记录每个量化参数的quant_type，用于在保存阶段保存正确的json描述字段
+        self.quant_type_dict: Dict[str, QuantType] = {}
         # 记录被量化module名称，相关的scale、offset等参数名称 key:weight的名称， value:scale、offset等参数的名称
-        self.quantized_module_param_dict = defaultdict(list)
+        self.quantized_module_param_dict: Dict[str, List[str]] = defaultdict(list)
         self.fa_module_param_dict = defaultdict(list)
 
         self.init_model_accelerate(model)
@@ -126,18 +139,19 @@ class Calibrator(object):
 
         if self.cfg.do_smooth:
             replace_RMSNorm(model)
-        
+
         if not hasattr(self.cfg, 'use_fa_quant'):
             self.cfg.use_fa_quant = False
             self.cfg.fa_tp_size = 1
             self.cfg.fa_amp = 0
 
         # 初始化模型权重json描述
-        self.quant_model_json_description = QuantModelJsonDescription(self.cfg.model_quant_type, 
+        self.quant_model_json_description = QuantModelJsonDescription(self.cfg.model_quant_type,
                                                                       self.cfg.use_kvcache_quant,
                                                                       self.cfg.use_fa_quant)
-        
+
         self.disable_level = disable_level
+        self.auto_mix_cfg = mix_cfg
 
         model = self.init_model_device(model)
         self.last_layer_name = None
@@ -259,7 +273,7 @@ class Calibrator(object):
         def update_extremum(kv_cache, name, key, torch_function, value):
             if name not in kv_cache:
                 kv_cache[name] = {}
-                
+
             if key in kv_cache[name]:
                 kv_cache[name][key] = torch_function(kv_cache[name][key], value)
             else:
@@ -291,7 +305,7 @@ class Calibrator(object):
             if isinstance(y, tuple):
                 y = y[0]
             kv_tensor(name, x.shape[-1], y)
-        
+
         hooks = []
         for name, m in model.named_modules():
             if isinstance(m, nn.Linear):
@@ -375,7 +389,23 @@ class Calibrator(object):
             except Exception as e:
                 raise Exception("Please check the model and calibration data, "
                                 "ensure that your model can run with `model(*(calib_data[0]))`.", e) from e
-            if isinstance(self.disable_level, dict):
+            if self.auto_mix_cfg is not None:
+                self.logger.info(f'auto mix config: {self.auto_mix_cfg}')
+                layer_selector = LayerSelector(model, self.calib_data, self.rollback_names)
+                layer_selector.run_sample()
+                layer_params = layer_selector.layer_names
+                layer_configs = self.layer_cfgs
+                self.auto_mix_cfg['layer_configs'] = layer_configs
+                self.auto_mix_cfg['layer_params'] = layer_params
+                select_layer_config(**self.auto_mix_cfg)
+
+                _ = [self.logger.info(f'[layer-select][rollback_names_process][layer_param] {name}: {param} ') for
+                     name, param in layer_params]
+                _ = [self.logger.info(f'[layer-select][rollback_names_process][cfg] {name}: {cfg.model_quant_type} ')
+                     for name, cfg in self.layer_cfgs.items()]
+                auto_disable_names = [name for name, cfg in self.layer_cfgs.items() if
+                                      cfg.model_quant_type is QuantType.FLOAT]
+            elif isinstance(self.disable_level, dict):
                 layer_selector = LayerSelector(model, self.calib_data, self.rollback_names)
                 layer_selector.run_sample()
                 auto_disable_names = layer_selector.get_disable_names(self.disable_level)
@@ -383,7 +413,7 @@ class Calibrator(object):
                 label_threshold_dict = self.get_label_threshold_dict()
                 self.logger.info(f"The model contains a total of {len(label_threshold_dict)} nn.Linear layers.")
                 auto_disable_names = self.get_auto_disable_names(label_threshold_dict)
-                
+
             self.rollback_names = list(set(self.rollback_names + auto_disable_names))
 
             if self.disable_level != 'L0':
@@ -502,17 +532,18 @@ class Calibrator(object):
             # 如果浮点权重名称在量化权重名称中，说明是浮点转换为量化的权重，需要把量化权重加入safetensor_weight
             else:
                 self.set_quant_safetensor(ori_model_state_dict_name, safetensor_weight)
-        
+
         if self.cfg.use_fa_quant:
             for attention_module_name in self.fa_module_param_dict:
                 self.set_fa_quant_safetensor(attention_module_name, safetensor_weight)
-        
+
         if hasattr(self.model, "anti_method") and self.model.anti_method in ['m4', 'm5']:
             keys_to_delete = [key for key in safetensor_weight.keys() if 'module.weight' in key]
             for key in keys_to_delete:
                 del safetensor_weight[key]
-            
-            keys_to_delete = [key for key in self.quant_model_json_description.quant_model_description.keys() if 'module.weight' in key]
+
+            keys_to_delete = [key for key in self.quant_model_json_description.quant_model_description.keys() if
+                              'module.weight' in key]
             for key in keys_to_delete:
                 del self.quant_model_json_description.quant_model_description[key]
 
@@ -531,23 +562,25 @@ class Calibrator(object):
     def set_fp_safetensor(self, ori_model_state_dict_name, safetensor_weight, ori_model_state_dict):
         safetensor_weight[ori_model_state_dict_name] = ori_model_state_dict.clone()
         self.quant_model_json_description.change_weight_type(ori_model_state_dict_name, QuantType.FLOAT)
+        self.logger.debug(f'[save][set_fp_safetensor] layer {ori_model_state_dict_name} quant type: {QuantType.FLOAT}')
         if ori_model_state_dict_name in self.quantized_module_param_dict:
             for quant_param_name in self.quantized_module_param_dict[ori_model_state_dict_name]:
                 safetensor_weight[quant_param_name] = self.quant_param_dict.get(quant_param_name)
+                self.logger.debug(f'[save][set_fp_safetensor] layer {quant_param_name} quant type: {QuantType.FLOAT}')
                 self.quant_model_json_description.change_weight_type(
                     quant_param_name, self.quant_model_json_description.model_quant_type)
 
     def set_quant_safetensor(self, ori_model_state_dict_name, safetensor_weight):
+        layer_quant_type = self.quant_type_dict.get(ori_model_state_dict_name, self.cfg.model_quant_type)
+        self.logger.debug(
+            f'[save][set_quant_safetensor] layer {ori_model_state_dict_name} quant type: {layer_quant_type}')
         safetensor_weight[ori_model_state_dict_name] = self.quant_param_dict.get(ori_model_state_dict_name)
-        self.quant_model_json_description.change_weight_type(
-            ori_model_state_dict_name,
-            self.quant_model_json_description.model_quant_type)
+        self.quant_model_json_description.change_weight_type(ori_model_state_dict_name, layer_quant_type)
         # 将该量化linear的附属参数，scale、offset 等加入safetensor_weight
         if ori_model_state_dict_name in self.quantized_module_param_dict:
             for quant_param_name in self.quantized_module_param_dict.get(ori_model_state_dict_name):
                 safetensor_weight[quant_param_name] = self.quant_param_dict.get(quant_param_name)
-                self.quant_model_json_description.change_weight_type(
-                    quant_param_name, self.quant_model_json_description.model_quant_type)
+                self.quant_model_json_description.change_weight_type(quant_param_name, layer_quant_type)
 
     def set_fa_quant_safetensor(self, attention_module_name, safetensor_weight):
         for quant_param_name in self.fa_module_param_dict.get(attention_module_name):
@@ -557,7 +590,6 @@ class Calibrator(object):
                 self.quant_model_json_description.change_weight_type(quant_param_name, QuantType.FAQuant)
             else:
                 self.quant_model_json_description.change_weight_type(quant_param_name, QuantType.FLOAT)
-
 
     def save_npy(self, output_path):
         quant_weight_dict = {}
@@ -645,7 +677,15 @@ class Calibrator(object):
     def get_quant_params(self):
         self.model.eval()
         for name, module in self.model.named_modules():
-            if self.cfg.use_fa_quant and is_attn_module_and_then_check_quantizer(module, name):
+
+            layer_cfg = self.layer_cfgs[name] if name in self.layer_cfgs else self.cfg
+            quant_type = layer_cfg.model_quant_type
+
+            if name in self.layer_cfgs:
+                self.logger.debug(
+                    f'[save][get_quant_params][layer_cfg] name {name} module {type(module)} quant type {quant_type}')
+
+            if layer_cfg.use_fa_quant and is_attn_module_and_then_check_quantizer(module, name):
                 quant_param_scale, quant_param_offset, attach_map = export_fa_quant_params(module, name)
                 self.quant_param_dict.update(quant_param_scale)
                 self.quant_param_dict.update(quant_param_offset)
@@ -664,14 +704,15 @@ class Calibrator(object):
                 quant_weight = quant_weight.cpu()
                 self.quant_param_dict[name + '.weight'] = quant_weight.to(torch.int8)
 
-                if self.cfg.model_quant_type in [QuantType.W8A16, QuantType.W4A16, QuantType.W8A8_DYNAMIC, QuantType.W8A8_PDMIX, QuantType.W8A8_PER_TILING]:
+                if layer_cfg.model_quant_type in [QuantType.W8A16, QuantType.W4A16, QuantType.W8A8_DYNAMIC,
+                                                  QuantType.W8A8_PDMIX, QuantType.W8A8_PER_TILING]:
                     self.quant_param_dict[name + '.weight_scale'] = weight_scale
                     self.quant_param_dict[name + '.weight_offset'] = weight_offset
                     self.quantized_module_param_dict[name + '.weight'].append(name + '.weight_scale')
                     self.quantized_module_param_dict[name + '.weight'].append(name + '.weight_offset')
-                
+
                 # W8A8/W8A8S/W8A8_PDMIX 需要提供 deq_scale、quant_bias、input_scale、input_offset
-                if self.cfg.model_quant_type in [QuantType.W8A8, QuantType.W8A8S, QuantType.W8A8_PDMIX]:
+                if layer_cfg.model_quant_type in [QuantType.W8A8, QuantType.W8A8S, QuantType.W8A8_PDMIX]:
                     input_scale = module.quant_input.input_scale.cpu()
                     input_offset = module.quant_input.input_offset.cpu()
                     self.quant_param_dict[name + '.input_scale'] = input_scale
@@ -708,7 +749,7 @@ class Calibrator(object):
                 if not module.quant_weight.is_enable:
                     continue
 
-                quant_weight, fp_weight, weight_scale, weight_offset = self.get_param_from_quantizer(module)
+                quant_weight, fp_weight, weight_scale, weight_offset = self.get_param_from_quantizer(module, layer_cfg)
                 if quant_weight is None:
                     continue
                 # 各种量化均需要提供 weight
@@ -716,13 +757,15 @@ class Calibrator(object):
                 self.quant_param_dict[name + '.weight'] = quant_weight.to(torch.int8)
 
                 # W4A16/W8A16/W8A8_DYNAMIC/W8A8_PDMIX 需要提供 weight_scale、weight_offset
-                if self.cfg.model_quant_type in [QuantType.W8A16, QuantType.W4A16, QuantType.W8A8_DYNAMIC, QuantType.W8A8_PDMIX]:
+                if layer_cfg.model_quant_type in [QuantType.W8A16, QuantType.W4A16, QuantType.W8A8_DYNAMIC,
+                                                  QuantType.W8A8_PDMIX]:
                     self.quant_param_dict[name + '.weight_scale'] = weight_scale
                     self.quant_param_dict[name + '.weight_offset'] = weight_offset
                     self.quantized_module_param_dict[name + '.weight'].append(name + '.weight_scale')
                     self.quantized_module_param_dict[name + '.weight'].append(name + '.weight_offset')
                 # W8A8/W8A8S/W8A8_PDMIX 需要提供 deq_scale、quant_bias、input_scale、input_offset
-                if self.cfg.model_quant_type in [QuantType.W8A8, QuantType.W8A8S, QuantType.W8A8_PDMIX]:
+                if layer_cfg.model_quant_type in [QuantType.W4A8, QuantType.W8A8, QuantType.W8A8S,
+                                                  QuantType.W8A8_PDMIX]:
                     input_scale = module.quant_input.input_scale.cpu()
                     input_offset = module.quant_input.input_offset.cpu()
                     self.quant_param_dict[name + '.input_scale'] = input_scale
@@ -740,8 +783,17 @@ class Calibrator(object):
                     self.quantized_module_param_dict[name + '.weight'].append(name + '.quant_bias')
                     self.quantized_module_param_dict[name + '.weight'].append(name + '.deq_scale')
 
+            if name in self.layer_cfgs:
+                weight_name = name + '.weight'
+                self.quant_type_dict[weight_name] = quant_type
+                for quant_param in self.quantized_module_param_dict[weight_name]:
+                    self.quant_type_dict[quant_param] = quant_type
+
         if hasattr(self.cfg, 'tp_size'):
             self.concat_simulate_linear()
+
+        for name, tensor in self.quant_param_dict.items():
+            self.logger.debug(f'{name}: shape {tensor.shape} dtype {tensor.dtype}')
 
     def concat_simulate_linear(self):
         for name, module in self.model.named_modules():
@@ -757,7 +809,7 @@ class Calibrator(object):
                 concat_weight = torch.cat(concat_weight_list, dim=-1)
                 self.quant_param_dict[name + '.weight'] = concat_weight
 
-    def get_param_from_quantizer(self, module):
+    def get_param_from_quantizer(self, module, layer_cfg: QuantConfig):
         quant_weight = None
         fp_weight, device, weight_scale, weight_offset, round_opt = self._get_module_quant_input(module)
         if isinstance(module, LinearQuantizer):
@@ -765,20 +817,20 @@ class Calibrator(object):
                                                  round_opt=round_opt, device=device)
         if isinstance(module, LinearSparseQuantizer):
             _, _, quant_weight, _ = quant_one_weight_by_outliers(
-                fp_weight, powerquant=self.cfg.nonuniform, fraction=self.cfg.fraction, num_bits=self.cfg.w_bit,
-                per_channel=not self.cfg.mm_tensor)
+                fp_weight, powerquant=layer_cfg.nonuniform, fraction=layer_cfg.fraction, num_bits=layer_cfg.w_bit,
+                per_channel=not layer_cfg.mm_tensor)
         if isinstance(module, LowBitLinearQuantizer):
             fp_weight = module.fp_weight
             if module.disable_input:
                 res = None, fp_weight, weight_scale, weight_offset
                 return res
-            if self.cfg.model_quant_type == QuantType.W8A8S:
+            if layer_cfg.model_quant_type == QuantType.W8A8S:
                 bit = 8
             else:
-                bit = self.cfg.w_bit
+                bit = layer_cfg.w_bit
             quant_weight, _ = fake_quantize_save(fp_weight, weight_scale, weight_offset, bit=bit,
                                                  round_opt=round_opt, device=module.weight.device,
-                                                 group_size=self.cfg.group_size)
+                                                 group_size=layer_cfg.group_size)
         res = quant_weight, fp_weight, weight_scale, weight_offset
         return res
 
@@ -840,18 +892,21 @@ class Calibrator(object):
                 module.disable_input = True
                 module.disable_quant_weight()
         self.rollback_names.extend(layers_to_disable)
-        self.logger.info('The following linear layers will continue to use floating-point weights for forward computation:\n\t'
-                         + '\n\t'.join([str(name) for name in sorted(self.rollback_names)]))
+        self.logger.info(
+            'The following linear layers will continue to use floating-point weights for forward computation:\n\t'
+            + '\n\t'.join([str(name) for name in sorted(self.rollback_names)]))
 
     def run_fa_amp(self):
         qkv_states_record = collect_fa_quantizer_record(self.model)
         states_num_per_layer = 3
         model_attention_layer_num = len(qkv_states_record.keys()) // states_num_per_layer
         if model_attention_layer_num < self.cfg.fa_amp:
-            self.logger.warning("`fa_amp` exceeds the total attention layer number. Therefore, only up to the total attention layers will skip quantization")
+            self.logger.warning(
+                "`fa_amp` exceeds the total attention layer number. Therefore, only up to the total attention layers will skip quantization")
         disabled_module_names = fully_analyze_activation(qkv_states_record, self.cfg.fa_amp)
-        self.logger.info('The following attention layers will continue to use floating-point weights for forward computation:\n\t'
-                         + '\n\t'.join([str(name) for name in sorted(disabled_module_names)]))
+        self.logger.info(
+            'The following attention layers will continue to use floating-point weights for forward computation:\n\t'
+            + '\n\t'.join([str(name) for name in sorted(disabled_module_names)]))
         for name, module in self.model.named_modules():
             if is_attn_module_and_then_check_quantizer(module, name) and name in disabled_module_names:
                 module.fa_quantizer.reset()
@@ -890,66 +945,7 @@ class Calibrator(object):
 
                 module.weight_quant_flag = True
 
-    def run_kmeans_calib(self):
-        # 获取模型中的decoder list
-        modellist = None
-        modellist_name = None
-        for name, mod in self.model.named_modules():
-            if isinstance(mod, torch.nn.ModuleList):
-                modellist = mod
-                modellist_name = name
-        if modellist is None or modellist_name is None:
-            raise ValueError("No torch.nn.ModuleList found in the input model.")
-        
-        # 逐层量化，每层对每个block逐一量化
-        for layer_idx in range(len(modellist)):
-            self.logger.info(f"Calibrating {modellist_name}[{layer_idx}] ...")
-            for linears in LINEAR_PATTERN:
-                self.logger.info(f"Calibrating {linears} ...")
-                self.run_kmeans_calib_per_layer(modellist, modellist_name, layer_idx, linears)
-
-        if self.cfg.is_dynamic:
-            # 使能 per tile 动态量化
-            for _, mod in self.model.named_modules():
-                if isinstance(mod, TileKMeansLinearQuantizer):
-                    mod.enable_per_tile_act_quant()
-
-    def run_kmeans_calib_per_layer(self, mod_list, list_name, idx, linears):
-        def _linear_in_pattern(linear, pattern):
-            for linear_pattern in pattern:
-                if linear_pattern in linear:
-                    return True
-            return False
-        
-        # 将输入mod_list中第idx个decoder layer中，在linears中的linear进行量化
-        for name, mod in mod_list[idx].named_modules():
-            full_name = '.'.join([list_name, str(idx), name])
-            if full_name in self.rollback_names:
-                continue
-            if isinstance(mod, torch.nn.Linear) and _linear_in_pattern(name, linears):
-                quant_mod = TileKMeansLinearQuantizer(self.cfg, self.logger, full_name)
-                quant_mod.set_param(mod)
-                quant_mod.enable_calib()
-                if hasattr(mod, HF_HOOK):
-                    add_hook_to_module(quant_mod, mod._hf_hook)
-                    remove_hook_from_module(mod)
-                
-                set_module(self.model, full_name, quant_mod)
-                del mod
-
-        # 执行量化校准
-        with torch.no_grad():
-            for data in tqdm(self.calib_data):
-                self.model(*data)
-    
-        for _, mod in self.model.named_modules():
-            if isinstance(mod, TileKMeansLinearQuantizer):
-                mod.disable_calib()
-
     def quantize_model(self, model):
-        if self.cfg.model_quant_type == QuantType.W8A8_PER_TILING or self.cfg.w_method ==WeightQuantMethod.KMeans:
-            return model
-
         if self.cfg.do_smooth:
             list_infos = self.dag.get_llm_network_pattern_auto()
             attn_list, mhsa_ln_list, ffn_list, ffn_ln_list = list_infos[0], list_infos[2], list_infos[3], list_infos[4]
@@ -978,13 +974,20 @@ class Calibrator(object):
             if name in self.rollback_names:
                 continue
             if isinstance(mod, nn.Linear) or isinstance(mod, nn.modules.linear.NonDynamicallyQuantizableLinear):
-                if self.cfg.is_lowbit:
-                    quant_mod = LowBitLinearQuantizer(cfg=self.cfg, logger=self.logger, name=name)
-                elif self.cfg.model_quant_type is not QuantType.W8A8S:
-                    quant_mod = LinearQuantizer(cfg=self.cfg, logger=self.logger)
+
+                layer_cfg = self.layer_cfgs[name]
+
+                if layer_cfg.model_quant_type == QuantType.W8A8_PER_TILING or layer_cfg.w_method == WeightQuantMethod.KMeans:
+                    quant_mod = TileKMeansLinearQuantizer(cfg=layer_cfg, logger=self.logger, name=name)
+                elif layer_cfg.is_lowbit:
+                    quant_mod = LowBitLinearQuantizer(cfg=layer_cfg, logger=self.logger, name=name)
+                elif layer_cfg.model_quant_type is not QuantType.W8A8S:
+                    quant_mod = LinearQuantizer(cfg=layer_cfg, logger=self.logger)
                 else:
-                    quant_mod = LinearSparseQuantizer(cfg=self.cfg, logger=self.logger)
+                    quant_mod = LinearSparseQuantizer(cfg=layer_cfg, logger=self.logger)
                 quant_mod.set_param(mod)
+
+                self.logger.info(f'replace {name} with {type(quant_mod)}')
 
                 # 拷贝accelerate定义的hook
                 if hasattr(mod, HF_HOOK):
@@ -1004,12 +1007,13 @@ class Calibrator(object):
 
         for name, mod in model.named_modules():
             if name in simulate_linear:
+                layer_cfg = self.layer_cfgs[name]
                 tp_mod = ParallelLinearCol()
-                tp_mod.set_param(mod, name, cfg=self.cfg)
+                tp_mod.set_param(mod, name, cfg=layer_cfg)
                 if name in self.rollback_names:
                     tp_mod.quant_type = QuantType.FLOAT
                 else:
-                    tp_mod.quant_type = self.cfg.model_quant_type
+                    tp_mod.quant_type = layer_cfg.model_quant_type
                 if hasattr(mod, HF_HOOK):
                     add_hook_to_module(tp_mod, mod._hf_hook)
                     remove_hook_from_module(mod)
@@ -1074,6 +1078,36 @@ class Calibrator(object):
                 setattr(mod, 'original_forward', mod.forward)
                 setattr(mod, 'forward', new_forward.__get__(mod, mod.__class__))
 
+    def run_sync_mode(self):
+        quantizer_types = (TileKMeansLinearQuantizer, ParallelLinearCol, Quantizer)
+
+        class CalibFirstThenFakeQuantSyncHook(SyncRunner):
+            def pre_sync(self, module, args, kwargs, output, name):
+                pass
+
+            def post_sync(self, module, args, kwargs, output, name):
+                with self.no_sync_hook():
+                    msmodelslim_logger.debug(f'{name} calibration end')
+                    if isinstance(module, quantizer_types):
+                        module.disable_calib()
+                    msmodelslim_logger.debug(f'{name} do fake quant and forward')
+                    output = module(*args, **kwargs)
+                    return output
+
+        sync_runner = CalibFirstThenFakeQuantSyncHook(model=self.model,
+                                                      sync_count=len(self.calib_data),
+                                                      target_module=quantizer_types
+                                                      )
+        sync_runner.setup()
+        sync_runner.run(self.calib_data)
+        sync_runner.clear()
+
+        if self.cfg.is_dynamic:
+            # 使能 per tile 动态量化
+            for _, mod in self.model.named_modules():
+                if isinstance(mod, TileKMeansLinearQuantizer):
+                    mod.enable_per_tile_act_quant()
+
     def _get_module_quant_input(self, module):
         fp_weight = module.weight.cpu()
         weight_scale, weight_offset = module.quant_weight.weight_scale, module.quant_weight.weight_offset
@@ -1092,8 +1126,8 @@ class Calibrator(object):
         self.logger.info("Calibration start!")
         self.model.eval()
         if self.calib_data:
-            if self.cfg.model_quant_type == QuantType.W8A8_PER_TILING or self.cfg.w_method ==WeightQuantMethod.KMeans:
-                self.run_kmeans_calib()
+            if self.auto_mix_cfg is not None or self.cfg.model_quant_type == QuantType.W8A8_PER_TILING or self.cfg.w_method == WeightQuantMethod.KMeans:
+                self.run_sync_mode()
             elif self.cfg.calib_mode == 0:
                 with torch.no_grad():
                     self.run_calib_mode()
@@ -1118,6 +1152,10 @@ class Calibrator(object):
             int_infer = False
         if int_infer:
             enable_int_infer(self.model, self.logger)
+
+
+def check_auto_mix_cfg(auto_mix_cfg: Dict[str, Any]):
+    return
 
 
 def check_disable_level(disable_level):

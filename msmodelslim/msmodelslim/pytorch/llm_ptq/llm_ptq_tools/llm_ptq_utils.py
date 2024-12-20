@@ -18,6 +18,7 @@ class QuantType(str, Enum):
     UNKNOWN = "UNKNOWN"  # 未被识别的类型
     W8A16 = "W8A16"  # W8A16量化，Matmul的weight为8bit，activation为16bit
     W4A16 = "W4A16"  # W4A16量化，Matmul的weight为4bit，activation为16bit
+    W4A8 = "W4A8"  # W4A8量化，Matmul的weight为4bit，activation为8bit
     W8A8 = "W8A8"  # W8A8量化，Matmul的weight、activation均为8bit
     W8A8S = "W8A8S"  # 稀疏量化，Matmul的weight、activation均为8bit，且weight经过稀疏(权重数值分布范围可能小于8bit)
     W8A8SC = "W8A8SC"  # 稀疏量化压缩后的权重
@@ -41,6 +42,8 @@ class QuantType(str, Enum):
             return QuantType.W8A16
         if config.w_bit == 4 and config.a_bit == 16:
             return QuantType.W4A16
+        if config.w_bit == 4 and config.a_bit == 8:
+            return QuantType.W4A8
         if config.w_bit == 16 and config.a_bit == 16:
             return QuantType.FLOAT
         if config.is_lowbit and config.w_bit == 4 and config.a_bit == 8:
