@@ -21,7 +21,6 @@ from precision_tool import logger
 from precision_tool import truthfulqa_eval
 from ascend_utils.common.security.type import check_type
 
-
 supported_dataset = ["boolq", "ceval_0_shot", "ceval_5_shot", "humaneval", "truthfulqa", "mmlu"]
 
 supported_hardware = ["npu"]
@@ -29,8 +28,8 @@ supported_hardware = ["npu"]
 TENSOR_TYPE_PYTORCH = "pt"
 DATASET_HUMAN_EVAL = "humaneval"
 
-CalcParam = collections.namedtuple('CalcParam', ['tag', 'frame', 'idx', 'scores_true', 
-                                   'scores_false', 'ref_true', 'ref_best'])
+CalcParam = collections.namedtuple('CalcParam', ['tag', 'frame', 'idx', 'scores_true',
+                                                 'scores_false', 'ref_true', 'ref_best'])
 
 
 def is_running_on_npu(device_name):
@@ -84,7 +83,9 @@ class PrecisionTest:
         self.dataset_path = get_valid_path(self.dataset_path)
         self.result_file = ""
         self.logger.info("Precision test was inited.")
-        
+        self.mix_calib = False
+        self.calib_dataset = []
+
     @staticmethod
     def __postprocess(text: str, options: str, cushion=True) -> str:
         patterns = [
@@ -146,6 +147,10 @@ class PrecisionTest:
                     if i in outputs:
                         return i
         return ''
+
+    def mix_calib_dataset(self):
+        self.mix_calib = True
+        self.calib_dataset = []
 
     def test(self):
         self.logger.info("Begin to run precision test.")
@@ -369,8 +374,11 @@ class PrecisionTest:
 
                 answer_results = [answer.lstrip()[0] if answer.lstrip() else "-1" for answer in answers]
                 is_correct = []
-                for answer_result, label in zip(answer_results, labels):
+                for answer_result, label, prmpt in zip(answer_results, labels, prompts):
                     is_correct.append("Correct" if answer_result == label else "Wrong")
+                    if answer_result == label:
+                        if self.mix_calib:
+                            self.calib_dataset.append([{"prompt": prmpt}, {"gt": label}])
                 correct += is_correct.count("Correct")
             correct_total += correct
             sum_total += task_len
@@ -490,7 +498,13 @@ class PrecisionTest:
                     logits_softmax = logits_softmax[:, choice_tokens]
                     for idx, ans in enumerate(batch['answer']):
                         choice = (logits_softmax[idx, 0] > logits_softmax[idx, 1]).cpu()
-                        correct += 1 if choice == ans else 0
+                        if choice == ans:
+                            correct += 1
+                            if self.mix_calib:
+                                self.calib_dataset.append(
+                                    [{"prompt": build_prompt(titles[idx], texts[idx], passages[idx])},
+                                     {"gt": ans.item()}])
+
                 correct_total += correct
                 sum_total += dataset_num
             return correct_total, sum_total
