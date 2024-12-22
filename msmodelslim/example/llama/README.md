@@ -35,3 +35,10 @@
   ```shell
   python3 convert_llama3.1_70b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --no_disable
   ```
+  
+### W8A8 PERTILLING
+
+- LLaMa3.1 8B推荐使用以下配置进行PERTILLING+KMEANS量化
+  ```shell
+  python3 convert_llama3.1_8b_pertilling.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  ```
