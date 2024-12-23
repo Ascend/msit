@@ -8,10 +8,12 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 from safetensors.torch import load_file
 from safetensors.torch import save_file
+
+from tools.copy_config_files import copy_config_files
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 
 
 def parse_args():
@@ -96,7 +98,7 @@ if __name__ == "__main__":
                      'model.layers.24.mlp.down_proj', 'model.layers.11.mlp.down_proj',
                      'model.layers.22.mlp.down_proj', 'model.layers.21.mlp.down_proj',
                      'model.layers.10.mlp.down_proj', 'model.layers.7.mlp.down_proj',
-    ]
+                     ]
 
     with open("calib_prompt_qwen7b.json", "r") as file:
         calib_prompt = json.load(file)
@@ -151,3 +153,5 @@ if __name__ == "__main__":
             weight_1[key] = torch.stack((item, zeros), dim=1).reshape(-1, 1)
 
     save_file(weight_1, safetensor_path)
+
+    copy_config_files(input_path=IN_MODEL_PATH, output_path=OUT_MODEL_PATH, quant_config=quant_config)
