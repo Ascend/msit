@@ -27,7 +27,8 @@ class AntiOutlierConfig:
             dev_type='cpu',
             dev_id=None,
             w_sym=True,
-            disable_anti_names=[]
+            disable_anti_names=[],
+            flex_config: dict = None,
     ):
         # Basic setting
         self.w_bit = w_bit
@@ -44,6 +45,7 @@ class AntiOutlierConfig:
         self.os_k = 100
         self.ch_align = True
         self.w_adjust = True
+        self.flex_config = self.setup_flex_config(flex_config)
 
         self.device, self.dev_id = validate_device(dev_type, dev_id, _SUPPORTED_DEVICES)
         check_type(self.w_bit, int, param_name='w_bit')
@@ -51,6 +53,7 @@ class AntiOutlierConfig:
         check_type(self.anti_method, str, param_name='anti_method')
         check_type(self.w_sym, bool, param_name='w_sym')
         check_type(self.disable_anti_names, list, param_name='disable_anti_names')
+        check_type(self.flex_config, dict, param_name='flex_config')
 
         if self.anti_method not in _ANTI_METHODS:
             raise ValueError("Configuration param `anti_method` must be in choices {}"
@@ -79,3 +82,23 @@ class AntiOutlierConfig:
             pass
         else:
             raise ValueError("w_sym can only be True when running anti_method='m3', please check it.")
+
+    @staticmethod
+    def setup_flex_config(flex_config):
+
+        flex_config_map = {'alpha': {'type': float, 'default': 0.8},
+                           'beta': {'type': float, 'default': 0.1},
+                           'use_flex': {'type': bool, 'default': False}}
+
+        flex_config = {} if flex_config is None else flex_config
+
+        for key, val in flex_config_map.items():
+            if key not in flex_config:
+                flex_config[key] = val['default']
+
+        for key, val in flex_config.items():
+            if key not in flex_config_map:
+                raise ValueError(f"{key} in flex config is not supported")
+            check_type(val, flex_config_map[key]['type'], param_name=key)
+
+        return flex_config

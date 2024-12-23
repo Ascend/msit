@@ -1,6 +1,7 @@
 #  Copyright (c) Huawei Technologies Co., Ltd. 2024-2024. All rights reserved.
 from __future__ import absolute_import, division, print_function
 
+import inspect
 import os
 import gc
 import stat
@@ -37,8 +38,10 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils import (
     os_ln_fcs,
     weight_aware,
 )
+
 try:
     from msmodelslim.pytorch.llm_ptq.kmeans.flex_smooth import flex_smooth
+
     _FLEX_SMOOTH_IMPORTED = True
 except ImportError:
     _FLEX_SMOOTH_IMPORTED = False
@@ -206,8 +209,9 @@ class AntiOutlier(object):
                 conv_name_list.append(name)
         for name in cfg.disable_anti_names:
             if name not in quant_name_list and name not in conv_name_list:
-                raise ValueError(f"cfg param `disable_anti_names` has invalid name {name}, please check your anti_outlier config.")
-            
+                raise ValueError(
+                    f"cfg param `disable_anti_names` has invalid name {name}, please check your anti_outlier config.")
+
         self.with_accelerate = judge_model_with_accelerate(model)
 
         self.cfg = cfg
@@ -495,5 +499,7 @@ class AntiOutlier(object):
             elif self.cfg.anti_method == 'm6':
                 disable_anti_set = set(self.cfg.disable_anti_names)
                 if all(linear_name not in disable_anti_set for linear_name in linear_names):
-                    flex_smooth(self.cfg, norm_module, linear_modules, stats)
-
+                    flex_kwargs = {key: value for key, value in self.cfg.flex_config.items() if
+                                   key in inspect.signature(flex_smooth).parameters}
+                    self.logger.debug("flex smooth kwargs: %s", flex_kwargs)
+                    flex_smooth(self.cfg, norm_module, linear_modules, stats, **flex_kwargs)
