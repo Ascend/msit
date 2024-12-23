@@ -36,7 +36,12 @@
   
 ### W8A8 PERTILLING
 
-- Qwen2.5 72B推荐使用以下配置进行PDMIX量化
+- Qwen2 7B推荐使用以下配置进行PERTILLING+KMEANS量化
   ```shell
   python3 convert_qwen2_7b_pertilling.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  ```
+  
+- Qwen2 7B推荐使用以下配置进行PERTILLING+KMEANS+C8量化
+  ```shell
+  python3 convert_qwen2_7b_pertilling_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
