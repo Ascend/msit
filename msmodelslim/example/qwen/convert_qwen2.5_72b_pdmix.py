@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
+from tools.copy_config_files import copy_config_files
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 
@@ -139,3 +140,5 @@ quant_config = QuantConfig(
 calibrator = Calibrator(model, quant_config, calib_data=calib_dataset, disable_level='L0')
 calibrator.run()
 calibrator.save(OUT_MODEL_PATH, save_type=["safe_tensor"])
+
+copy_config_files(input_path=IN_MODEL_PATH, output_path=OUT_MODEL_PATH, quant_config=quant_config)

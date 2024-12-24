@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     model.eval()
 
-    with open("anti_prompt_qwen7b.json", "r") as file:
+    with open("anti_prompt_qwen7b_c8.json", "r") as file:
         anti_prompt = json.load(file)
 
     anti_data = []
@@ -84,7 +84,8 @@ if __name__ == "__main__":
     # msmodelslim量化
     # 启动flex smooth功能
     disable_names = []
-    anti_config = AntiOutlierConfig(anti_method="m6", dev_type='npu', disable_anti_names=disable_names)
+    anti_config = AntiOutlierConfig(anti_method="m6", dev_type='npu', use_kvcache_quant=True,
+                                    disable_anti_names=disable_names)
     anti_outlier = AntiOutlier(model, calib_data=anti_dataset, cfg=anti_config)
     anti_outlier.process()
 
@@ -100,7 +101,7 @@ if __name__ == "__main__":
                      'model.layers.10.mlp.down_proj', 'model.layers.7.mlp.down_proj',
                      ]
 
-    with open("calib_prompt_qwen7b.json", "r") as file:
+    with open("calib_prompt_qwen7b_c8.json", "r") as file:
         calib_prompt = json.load(file)
     dataset_calib = []
     for calib_prompt_item in calib_prompt:
@@ -119,7 +120,8 @@ if __name__ == "__main__":
         is_dynamic=True,
         w_method="KMeans",
         # 聚类类数
-        lut_len=32
+        lut_len=32,
+        use_kvcache_quant=True,
     )
     # 当disable_level是dict类型时，启动层间混精，支持使用threshold设置阈值，或者使用disable_number直接设置按照从大到小选层数量
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
