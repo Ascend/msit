@@ -1,11 +1,17 @@
 # Copyright Huawei Technologies Co., Ltd. 2024-2024. All rights reserved.
 from datasets import load_dataset
 
-class Gsm8kDataset():
+from msmodelslim import logger as msmodelslim_logger
+
+
+class Gsm8kDataset:
+    logger = msmodelslim_logger
+
     def __init__(self, path, split, short_prompt_path, prompt_path, use_prompt='direct'):
         evaluate_data = load_dataset(path, data_files={"test": split})
         self.raw_data = evaluate_data['test']
 
+        self.logger.info(f"Start loading dataset: GSM8K")
         if use_prompt == 'direct':
             self.cot_prompt = ''
         elif use_prompt == 'short':
@@ -24,7 +30,7 @@ class Gsm8kDataset():
 
         return {"prompt": question, "label": answer}
 
-    def process_data(self):
+    def process_data(self, sample_size):
         data_with_label = []
 
         for item in self.raw_data:
