@@ -15,9 +15,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Create quant weights.")
     parser.add_argument("--model_path", type=str, help="The path of float model")
     parser.add_argument("--save_path", type=str, help="The path of quant model to save")
-    parser.add_argument("--anti_prompt", type=str, default="./anti_prompt_revert_down_only.json",
+    parser.add_argument("--anti_prompt", type=str, default="./calib_data/anti_prompt_revert_down_only.json",
                         help="The prompts for anti outlier")
-    parser.add_argument("--calib_prompt", type=str, default="./calib_prompt_revert_down_only.json",
+    parser.add_argument("--calib_prompt", type=str, default="./calib_data/calib_prompt_revert_down_only.json",
                         help="The prompts for anti outlier")
     parser.add_argument("--best_alpha", type=float, default=0.75, help="The best alpha of flex smooth")
     parser.add_argument("--best_beta", type=float, default=0.1, help="The best beta of flex smooth")
