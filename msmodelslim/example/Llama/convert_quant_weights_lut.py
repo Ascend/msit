@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     model.eval()
 
-    with open("examples/models/llama3/anti_prompt_llama8b.json", "r") as file:
+    with open("example/Llama/calib_data/anti_prompt_llama8b.json", "r") as file:
         anti_prompt = json.load(file)
 
     anti_data = []
@@ -108,7 +108,7 @@ if __name__ == "__main__":
                      'model.layers.16.mlp.down_proj', 'model.layers.4.mlp.down_proj', 
                      'model.layers.23.self_attn.o_proj']
 
-    with open("examples/models/llama3/calib_prompt_llama8b.json", "r") as file:
+    with open("example/Llama/calib_data/calib_prompt_llama8b.json", "r") as file:
         calib_prompt = json.load(file)
     dataset_calib = []
     for calib_prompt_item in calib_prompt:
