@@ -12,7 +12,7 @@ def copy_json(src_path: str, dst_path: str, quant_config: QuantConfig):
 
 def modify_config_json(src_path: str, dst_path: str, quant_config: QuantConfig):
     model_config = json_safe_load(src_path)
-    model_config['quantize'] = str(quant_config.model_quant_type).lower()
+    model_config['quantize'] = str(quant_config.model_quant_type.value).lower()
     model_config['quantization_config'] = {}
     if quant_config.use_kvcache_quant:
         model_config['quantization_config']['kv_quant_type'] = 'C8'
