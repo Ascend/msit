@@ -1,15 +1,14 @@
 # Copyright Huawei Technologies Co., Ltd. 2024-2024. All rights reserved.
 import json
-import os
 import re
 import random
 import torch
-import torch_npu
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from precision_tool.precision_tool import PrecisionTest
-from precision_tool.gsm8k import Gsm8kDataset
-from precision_tool.ceval import CEvalDataset
 from tqdm import tqdm
+
+from precision_tool.precision_tool import PrecisionTest
+from msmodelslim.pytorch.llm_ptq.data_select.dataset.mmlu import MMLUDataset
+from msmodelslim.pytorch.llm_ptq.data_select.dataset.gsm8k import Gsm8kDataset
+from msmodelslim.pytorch.llm_ptq.data_select.dataset.ceval import CEvalDataset
 
 batch_size = 8
 
@@ -30,7 +29,7 @@ class CalibDataSelect(object):
         mixed_dataset = []
         for dataset in self.datasets:
             for dset, path in dataset.items():
-                mixed_dataset.extend(self._get_mixed_dataset(dset, path))
+                mixed_dataset.extend(self._get_mixed_dataset(dset, path, self.sample_size))
 
         if self.shuffle_seed:
             random.seed(self.shuffle_seed)
@@ -90,7 +89,7 @@ class CalibDataSelect(object):
 
         return calib_dataset
 
-    def _get_mixed_dataset(self, dataset, path):
+    def _get_mixed_dataset(self, dataset, path, sample_size):
         def build_prompt(title, text, passage):
             prompt = f"{title} -- {passage}\nQuestion:{text}?\nAnswer:"
             return prompt
@@ -114,7 +113,15 @@ class CalibDataSelect(object):
                     labels.append(label)
             elif dataset == 'ceval_5_shot':
                 ceval_processor = CEvalDataset(path)
-                qs, ls = ceval_processor.process_data()
+                qs, ls = ceval_processor.process_data(sample_size)
+                queries.extend(qs)
+                labels.extend(ls)
+            elif dataset == 'mmlu':
+                def _get_token_len(prompt):
+                    inputs = self.tokenizer(prompt)
+                    return len(inputs.input_ids)
+                mmlu_processor = MMLUDataset(path, _get_token_len)
+                qs, ls = mmlu_processor.process_data(sample_size)
                 queries.extend(qs)
                 labels.extend(ls)
 
@@ -122,7 +129,7 @@ class CalibDataSelect(object):
 
         if dataset == "gsm8k":
             gsm8k_processor = Gsm8kDataset(path, self.split_gsm8k, self.short_prompt_path_gsm8k, self.prompt_path_gsm8k)
-            evaluate_data = gsm8k_processor.process_data()
+            evaluate_data = gsm8k_processor.process_data(sample_size)
 
             evaluate_data = self._run_model_gsm8k(evaluate_data)
             return evaluate_data

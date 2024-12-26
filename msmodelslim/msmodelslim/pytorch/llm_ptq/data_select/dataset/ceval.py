@@ -1,10 +1,11 @@
 # Copyright Huawei Technologies Co., Ltd. 2024-2024. All rights reserved.
-
 import os
 import json
 import pandas as pd
 from tqdm import tqdm
 from security import json_safe_load, json_safe_dump, get_valid_path, get_valid_write_path, get_valid_read_path
+
+from msmodelslim import logger as msmodelslim_logger
 
 
 def load_csv_by_task_name(task_name, dataset_path):
@@ -18,13 +19,19 @@ def load_csv_by_task_name(task_name, dataset_path):
     val_df = val_df.iloc[1:, 1:]
     return dev_df, val_df
 
-class CEvalDataset():
+
+class CEvalDataset:
+    logger = msmodelslim_logger
+
     def __init__(self, dataset_path):
         self.choices = ["A", "B", "C", "D"]
         self.dataset_path = dataset_path
         self.dev_data = {}
         self.val_data = {}
+
         # load raw data
+        self.logger.info(f"Start loading dataset: CEVAL 5-shot")
+
         subject_mapping = self.get_subject_mapping()
         for task_name in tqdm(subject_mapping):
             dev, val = load_csv_by_task_name(task_name, dataset_path)
@@ -56,6 +63,7 @@ class CEvalDataset():
             for entry in l:
                 s += " " + entry
             return s
+
         prompt = "以下是中国关于{}考试的单项选择题，请选出正确答案.\n\n".format(format_subject(subject))
         if k == -1:
             k = train_df.shape[0]
@@ -63,7 +71,7 @@ class CEvalDataset():
             prompt += self.format_example(train_df, i)
         return prompt
 
-    def process_data(self):
+    def process_data(self, sample_size):
         queries = []
         labels = []
 
