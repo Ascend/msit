@@ -85,38 +85,33 @@ if __name__ == "__main__":
         tmp = get_calib_dataset(tokenizer, prompt)
         calib_dataset += (tmp)
 
+    keys = ['.o_proj']
     disable_names = []
+    for name, mod in model.named_modules():
+        if isinstance(mod, torch.nn.Linear):
+            for key in keys:
+                if key in name:
+                    disable_names.append(name)
     anti_config = AntiOutlierConfig(anti_method='m6', dev_type='npu', dev_id=model.device.index,
                                     disable_anti_names=disable_names, flex_config={'use_flex': True})
     anti_outlier = AntiOutlier(model, calib_data=anti_dataset, cfg=anti_config)
     anti_outlier.process()
 
     disable_names = [
-        'model.layers.0.self_attn.q_proj',
-        'model.layers.0.self_attn.k_proj',
-        'model.layers.0.self_attn.v_proj',
-        'model.layers.0.mlp.down_proj',
-        'model.layers.1.self_attn.q_proj',
-        'model.layers.1.self_attn.k_proj',
-        'model.layers.1.self_attn.v_proj',
-        'model.layers.1.mlp.down_proj',
-        'model.layers.2.self_attn.q_proj',
-        'model.layers.2.self_attn.k_proj',
-        'model.layers.2.self_attn.v_proj',
-        'model.layers.2.mlp.down_proj',
         'model.layers.3.mlp.down_proj',
-        'model.layers.4.mlp.down_proj',
+        'model.layers.0.mlp.down_proj',
         'model.layers.6.mlp.down_proj',
-        'model.layers.47.self_attn.o_proj',
-        'model.layers.53.self_attn.o_proj',
-        'model.layers.54.self_attn.o_proj',
-        'model.layers.56.mlp.down_proj',
-        'model.layers.61.self_attn.o_proj',
-        'model.layers.68.mlp.down_proj',
-        'model.layers.69.mlp.down_proj',
-        'model.layers.71.mlp.down_proj',
-        'model.layers.78.mlp.down_proj',
+        'model.layers.1.mlp.down_proj',
         'model.layers.79.mlp.down_proj',
+        'model.layers.69.mlp.down_proj',
+        'model.layers.78.mlp.down_proj',
+        'model.layers.2.mlp.down_proj',
+        'model.layers.4.mlp.down_proj',
+        'model.layers.56.mlp.down_proj',
+        'model.layers.60.mlp.down_proj',
+        'model.layers.8.mlp.down_proj',
+        'model.layers.77.mlp.down_proj',
+        'model.layers.68.mlp.down_proj',
     ]
 
     if args.no_disable:
