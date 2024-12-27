@@ -45,3 +45,10 @@
   ```shell
   python3 convert_qwen2_7b_pertilling_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
+
+### W8A8 PERTENSOR
+
+- Qwen2.5 7B推荐使用以下配置进行PERTENSOR+KMEANS量化
+  ```shell
+  python convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer --mix_layer_alpha {alpha} --mix_layer_beta {beta}
+  ```
