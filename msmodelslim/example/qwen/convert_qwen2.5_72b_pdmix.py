@@ -19,7 +19,6 @@ def parse_args():
     parser.add_argument("--best_alpha", type=float, default=0.6000000238418579, help="The best alpha of flex smooth")
     parser.add_argument("--best_beta", type=float, default=0.30000001192092896, help="The best beta of flex smooth")
     parser.add_argument("--use_flex", type=bool, default=False, help="The best beta of flex smooth")
-    parser.add_argument("--kv_quant", action='store_true')
     parser.add_argument("--no_disable", action='store_true', help="If true, no layer will be disabled")
     parser.add_argument("--test_mode", action='store_true', help="If true, only 1 layer will be used")
     return parser.parse_args()
@@ -96,7 +95,7 @@ if __name__ == "__main__":
     anti_config = AntiOutlierConfig(anti_method='m6',
                                     dev_type='npu',
                                     dev_id=model.device.index,
-                                    use_kvcache_quant=args.kv_quant,
+                                    use_kvcache_quant=True,
                                     disable_anti_names=disable_names,
                                     flex_config={'alpha': args.best_alpha, 'beta': args.best_beta, 'use_flex' : args.use_flex})
     anti_outlier = AntiOutlier(model,
@@ -138,7 +137,7 @@ if __name__ == "__main__":
         w_sym=True,
         mm_tensor=False,
         is_dynamic=False,
-        use_kvcache_quant=args.kv_quant,
+        use_kvcache_quant=True,
         lut_len=22
     )
 
