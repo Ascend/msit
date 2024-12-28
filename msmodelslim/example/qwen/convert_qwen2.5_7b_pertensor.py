@@ -19,11 +19,8 @@ from safetensors.torch import save_file
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Creating quant weights ")
-    parser.add_argument("--model_path", type=str, default="/dl/model_weight/Qwen2.5-7B-Instruct",
-                        help="The path to model float weights")
-    parser.add_argument("--save_path", type=str,
-                        default="/dl/l00845740/1220msit/save_quant_down/Qwen2.5-7b-pertensor/quant_from_theory",
-                        help="The path to save quant weights")
+    parser.add_argument("--model_path", type=str, help="The path to model float weights")
+    parser.add_argument("--save_path", type=str, help="The path to save quant weights")
     parser.add_argument("--anti_dataset", type=str, default="./anti_dataset.json", help="The prompts for anti outlier")
     parser.add_argument("--calib_dataset", type=str, default="./calib_dataset.json")
     parser.add_argument("--best_alpha", type=float, default=0.6000000238418579, help="The best alpha of flex smooth")
