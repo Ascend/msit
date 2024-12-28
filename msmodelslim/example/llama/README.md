@@ -31,14 +31,26 @@
   ```shell
   python3 convert_llama3.1_70b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
-- LLaMa3.1 70B 无回退权重生成，对话正常，建议仅用于基准性能测试
+- LLaMa3.1 70B无回退权重生成，对话正常，建议仅用于基准性能测试
   ```shell
   python3 convert_llama3.1_70b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --no_disable
   ```
-  
-### W8A8 PERTILLING
+- LLaMa3.1 70B可用以下配置进行PDMIX量化，不只回退down层
+  ```shell
+  python3 convert_llama3.1_70b_pdmix_kqv.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  ```
 
-- LLaMa3.1 8B推荐使用以下配置进行PERTILLING+KMEANS量化
+### W8A8 KMEANS
+
+- LLaMa3.1 8B推荐使用以下配置进行KMEANS量化
+  ```shell
+  python3 convert_llama3.1_8b_kmeans.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  ```
+- LLaMa3.1 8B可用以下配置进行KMEANS+C8量化
+  ```shell
+  python3 convert_llama3.1_8b_kmeans_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  ```
+- LLaMa3.1 8B可用以下配置进行KMEANS+PERTILLING量化
   ```shell
   python3 convert_llama3.1_8b_pertilling.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
