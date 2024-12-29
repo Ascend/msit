@@ -69,7 +69,7 @@ if __name__ == "__main__":
                                                  config=config,
                                                  trust_remote_code=True,
                                                  torch_dtype='auto',
-                                                 device_map='auto').bfloat16()
+                                                 device_map='auto')
 
     tokenizer.pad_token = tokenizer.eos_token
 
