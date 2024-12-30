@@ -33,7 +33,11 @@
   ```shell
   python3 convert_qwen2.5_72b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --no_disable
   ```
-  
+- Qwen2.5 72B可用以下配置进行PDMIX量化，不只回退down层
+  ```shell
+  python3 convert_qwen2.5_72b_pdmix_kqv.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  ```
+
 ### W8A8 PERTILLING
 
 - Qwen2 7B推荐使用以下配置进行PERTILLING+KMEANS量化
