@@ -33,6 +33,15 @@
   ```shell
   python3 convert_qwen2.5_72b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --no_disable
   ```
+- Qwen2.5 14B推荐使用以下配置进行PDMIX量化
+  ```shell
+  python3 convert_qwen2.5_14b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  ```
+- Qwen2.5 14B 无回退权重生成，对话正常，建议仅用于基准性能测试
+  ```shell
+  python3 convert_qwen2.5_14b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --no_disable
+  ```
+  
 - Qwen2.5 72B可用以下配置进行PDMIX量化，不只回退down层
   ```shell
   python3 convert_qwen2.5_72b_pdmix_kqv.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
