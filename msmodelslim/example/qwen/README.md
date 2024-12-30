@@ -69,3 +69,7 @@
   ```shell
   python convert_qwen2.5_7b_kmeans_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer
   ```
+- Qwen2.5 72B可用以下配置进行PERTENSOR+C8量化
+  ```shell
+  python convert_qwen2.5_72b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  ```
