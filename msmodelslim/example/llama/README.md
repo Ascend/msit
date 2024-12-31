@@ -24,9 +24,16 @@
   ```
 
 ## 量化权重生成
+### 路径变量解释
+| 变量名  | 含义                                             |
+|--------|--------------------------------------------------|
+| working_dir | msit下载后放置的目录                  |
+| modelslim_path | `${working_dir}/msmodelslim` |                         |
 
 ### W8A8 PDMIX
-
+  ```shell
+  cd ${modelslim_path}/example/llama
+  ```
 - LLaMa3.1 70B推荐使用以下配置进行PDMIX量化
   ```shell
   python3 convert_llama3.1_70b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
@@ -41,7 +48,9 @@
   ```
 
 ### W8A8 KMEANS
-
+  ```shell
+  cd ${modelslim_path}/example/llama
+  ```
 - LLaMa3.1 8B推荐使用以下配置进行KMEANS混合量化
   ```shell
   python3 convert_llama3.1_8b_kmeans_mix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
@@ -58,15 +67,8 @@
   ```shell
   python3 convert_llama3.1_8b_pertilling.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
-# 使用说明
 
-## 路径变量解释
-| 变量名  | 含义                                             |
-|--------|--------------------------------------------------|
-| working_dir | msit下载后放置的目录                  |
-| modelslim_path | `${working_dir}/msmodelslim` |                         |
-
-#### Llama3.1-70B w8a8c8 部分down层回退 BF16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2 64G机器上生成)
+#### Llama3.1-70B w8a8c8 per-tensor 部分down层回退 BF16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2 64G机器上生成)
 
   - 执行量化脚本
     ```
@@ -96,7 +98,7 @@
     }
     ```
 
-#### Llama3.1-70B w8a8c8 无回退 FP16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2 64G机器上生成)
+#### Llama3.1-70B w8a8c8 per-tensor 无回退 FP16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2 64G机器上生成)
 
   - 执行量化脚本
     ```
@@ -126,7 +128,7 @@
     }
     ```
 
-#### Llama3.1-70B w8a8 pertoken-pertensor 无回退 BF16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2 64G机器上生成)
+#### Llama3.1-70B w8a8c16 pertoken-pertensor 无回退 BF16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2 64G机器上生成)
 
   - 执行量化脚本
     ```
@@ -153,7 +155,7 @@
     "quantize": "w8a8_pdmix"
     ```
 
-#### Llama3.1-70B w8a8 pertoken-pertensor 仅回退down层 BF16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2 64G机器上生成)
+#### Llama3.1-70B w8a8c16 pertoken-pertensor 仅回退down层 BF16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2 64G机器上生成)
 
   - 执行量化脚本
     ```

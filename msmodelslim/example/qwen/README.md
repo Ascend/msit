@@ -23,8 +23,17 @@
 
 ## 量化权重生成
 
-### W8A8 PDMIX
+## 路径变量解释
+| 变量名  | 含义                                             |
+|--------|--------------------------------------------------|
+| working_dir | msit下载后放置的目录                  |
+| modelslim_path | `${working_dir}/msmodelslim` |                         |
 
+
+### W8A8 PDMIX
+  ```shell
+  cd ${modelslim_path}/example/qwen
+  ```
 - Qwen2.5 7B推荐使用以下配置进行PerTensor量化
   ```shell
   python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer --mix_layer_alpha 0.5 --mix_layer_beta 1
@@ -52,7 +61,9 @@
   ```
 
 ### W8A8 PERTILLING
-
+  ```shell
+  cd ${modelslim_path}/example/qwen
+  ```
 - Qwen2 7B推荐使用以下配置进行PERTILLING+KMEANS量化
   ```shell
   python3 convert_qwen2_7b_pertilling.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
@@ -64,7 +75,9 @@
   ```
 
 ### W8A8 PERTENSOR
-
+  ```shell
+  cd ${modelslim_path}/example/qwen
+  ```
 - Qwen2.5 7B推荐使用以下配置进行PERTENSOR+KMEANS量化
   ```shell
   python convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer --mix_layer_alpha {alpha} --mix_layer_beta {beta}
@@ -77,14 +90,6 @@
   ```shell
   python convert_qwen2.5_72b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
-
-## 路径变量解释
-| 变量名  | 含义                                             |
-|--------|--------------------------------------------------|
-| working_dir | msit下载后放置的目录                  |
-| modelslim_path | `${working_dir}/msmodelslim` |                         |
-
-
 
 #### Qwen2-7B W8A8 parcomp 任意回退 BF16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2机器上生成)
 
