@@ -126,49 +126,49 @@ if __name__ == "__main__":
 
     with open("example/Llama/calib_data/calib_prompt_llama8b.json", "r") as file:
         calib_prompt = json.load(file)
-dataset_calib = []
-for calib_prompt_item in calib_prompt:
-    tmp = get_calib_dataset(tokenizer, calib_prompt_item)
-    dataset_calib += (tmp)
-quant_config = QuantConfig(
-                w_bit=8, 
-                a_bit=8, 
-                disable_names=disable_names, 
-                dev_type='npu', 
-                dev_id=model.device.index, 
-                act_method=1, 
-                pr=1.0, 
-                w_sym=True, 
-                mm_tensor=False, 
-                is_dynamic=False
-            )
-# 当disable_level是dict类型时，启动层间混精，支持使用threshold设置阈值，或者使用disable_number直接设置按照从大到小选层数量
-calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
-calibrator.run()
-calibrator.save(OUT_MODEL_PATH, save_type=["safe_tensor"])
+    dataset_calib = []
+    for calib_prompt_item in calib_prompt:
+        tmp = get_calib_dataset(tokenizer, calib_prompt_item)
+        dataset_calib += (tmp)
+    quant_config = QuantConfig(
+                    w_bit=8,
+                    a_bit=8,
+                    disable_names=disable_names,
+                    dev_type='npu',
+                    dev_id=model.device.index,
+                    act_method=1,
+                    pr=1.0,
+                    w_sym=True,
+                    mm_tensor=False,
+                    is_dynamic=False
+                )
+    # 当disable_level是dict类型时，启动层间混精，支持使用threshold设置阈值，或者使用disable_number直接设置按照从大到小选层数量
+    calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
+    calibrator.run()
+    calibrator.save(OUT_MODEL_PATH, save_type=["safe_tensor"])
 
-# 伪量化对话
-SEQ_LEN_OUT = 100
-logging.info("testing quant weights...")
-TEST_PROMPT = "What is deep learning?\n"
-test_input = tokenizer(TEST_PROMPT, return_tensors="pt").to(model.device)
-logging.info("model is inferring...")
-model.eval()
-generate_ids = model.generate(test_input.input_ids, 
-                              attention_mask=test_input.attention_mask, 
-                              max_new_tokens=SEQ_LEN_OUT)
-res = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-logging.info(res)
-for result in res:
-    logging.info(result)
+    # 伪量化对话
+    SEQ_LEN_OUT = 100
+    logging.info("testing quant weights...")
+    TEST_PROMPT = "What is deep learning?\n"
+    test_input = tokenizer(TEST_PROMPT, return_tensors="pt").to(model.device)
+    logging.info("model is inferring...")
+    model.eval()
+    generate_ids = model.generate(test_input.input_ids,
+                                  attention_mask=test_input.attention_mask,
+                                  max_new_tokens=SEQ_LEN_OUT)
+    res = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+    logging.info(res)
+    for result in res:
+        logging.info(result)
 
-safetensor_path = os.path.join(OUT_MODEL_PATH, 'quant_model_weight_w8a8.safetensors')
-weight_1 = load_file(safetensor_path)
+    safetensor_path = os.path.join(OUT_MODEL_PATH, 'quant_model_weight_w8a8.safetensors')
+    weight_1 = load_file(safetensor_path)
 
-for key in weight_1.keys():
-    if 'deq_scale' in key and weight_1[key].dtype != torch.int64:
-        weight_1[key] = deqscale2int64(weight_1[key])
+    for key in weight_1.keys():
+        if 'deq_scale' in key and weight_1[key].dtype != torch.int64:
+            weight_1[key] = deqscale2int64(weight_1[key])
 
-        
-save_file(weight_1, safetensor_path)
-copy_config_files(input_path=IN_MODEL_PATH, output_path=OUT_MODEL_PATH, quant_config=quant_config)
+
+    save_file(weight_1, safetensor_path)
+    copy_config_files(input_path=IN_MODEL_PATH, output_path=OUT_MODEL_PATH, quant_config=quant_config)
