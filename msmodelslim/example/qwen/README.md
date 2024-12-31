@@ -25,6 +25,10 @@
 
 ### W8A8 PDMIX
 
+- Qwen2.5 7B推荐使用以下配置进行PerTensor量化
+  ```shell
+  python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer --mix_layer_alpha 0.5 --mix_layer_beta 1
+  ```
 - Qwen2.5 72B推荐使用以下配置进行PDMIX量化
   ```shell
   python3 convert_qwen2.5_72b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
