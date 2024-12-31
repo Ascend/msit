@@ -73,7 +73,7 @@
     # 指定当前机器上可用的逻辑NPU核心
     export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
     cd ${modelslim_path}
-    python example/Llama/convert_quant_weights_w8a8c8.py \
+    python example/llama/convert_quant_weights_w8a8c8.py \
     --model_path {浮点权重路径} \
     --save_path {W8A8C8量化权重路径}
     ```
@@ -103,7 +103,7 @@
     # 指定当前机器上可用的逻辑NPU核心
     export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
     cd ${modelslim_path}
-    python example/Llama/convert_quant_weights_norollback.py \
+    python example/llama/convert_quant_weights_norollback.py \
     --model_path {浮点权重路径} \
     --save_path {W8A8C8量化权重路径}
     ```
@@ -133,7 +133,7 @@
     # 指定当前机器上可用的逻辑NPU核心
     export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
     cd ${modelslim_path}
-    python example/Llama/convert_quant_weights_pdmix.py \
+    python example/llama/convert_quant_weights_pdmix.py \
     --model_path {浮点权重路径} \
     --save_path {W8A8_PDMIX量化权重路径}
     ```
@@ -160,7 +160,7 @@
     # 指定当前机器上可用的逻辑NPU核心
     export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
     cd ${modelslim_path}
-    python example/Llama/convert_llama3.1_70b_pdmix_revert_down_only.py \
+    python example/llama/convert_llama3.1_70b_pdmix_revert_down_only.py \
     --model_path {浮点权重路径} \
     --save_path {W8A8_PDMIX量化权重路径}
     ```
@@ -187,7 +187,7 @@
     # 指定当前机器上可用的逻辑NPU核心
     export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
     cd ${modelslim_path}
-    python example/Llama/convert_quant_weights_parcomp.py \
+    python example/llama/convert_quant_weights_parcomp.py \
     --model_path {浮点权重路径} \
     --save_path {W8A8量化权重路径}
     ```
@@ -218,7 +218,7 @@
     # 指定当前机器上可用的逻辑NPU核心
     export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
     cd ${modelslim_path}
-    python example/Llama/convert_quant_weights_lut.py \
+    python example/llama/convert_quant_weights_lut.py \
     --model_path {浮点权重路径} \
     --save_path {W8A8S量化权重路径}
     ```
