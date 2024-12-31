@@ -34,9 +34,9 @@ tokenizer.pad_token = tokenizer.eos_token
 
 model.eval()
 
-with open("example/Llama/calib_data/anti_prompt.json", "r") as file:
+with open("example/llama/calib_data/anti_prompt.json", "r") as file:
     anti_prompt = json.load(file)
-with open("example/Llama/calib_data/calib_prompt.json", "r") as file:
+with open("example/llama/calib_data/calib_prompt.json", "r") as file:
     calib_prompt = json.load(file)
 
 

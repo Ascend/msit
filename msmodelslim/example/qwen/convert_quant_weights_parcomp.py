@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
 
 
-    with open("example/Qwen/calib_data/anti_prompt_qwen7b.json", "r") as file:
+    with open("example/qwen/calib_data/anti_prompt_qwen7b.json", "r") as file:
         anti_prompt = json.load(file)
 
     anti_data = []
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     'model.layers.2.mlp.gate_proj', 
     'model.layers.19.mlp.down_proj']
 
-    with open("example/Qwen/calib_data/calib_prompt_qwen7b.json", "r") as file:
+    with open("example/qwen/calib_data/calib_prompt_qwen7b.json", "r") as file:
         calib_prompt = json.load(file)
     dataset_calib = []
     for calib_prompt_item in calib_prompt:

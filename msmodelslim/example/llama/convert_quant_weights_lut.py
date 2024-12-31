@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     model.eval()
 
-    with open("example/Llama/calib_data/anti_prompt_llama8b.json", "r") as file:
+    with open("example/llama/calib_data/anti_prompt_llama8b.json", "r") as file:
         anti_prompt = json.load(file)
 
     anti_data = []
