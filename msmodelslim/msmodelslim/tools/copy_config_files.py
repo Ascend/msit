@@ -1,3 +1,4 @@
+# Copyright Huawei Technologies Co., Ltd. 2024. All rights reserved.
 import argparse
 import os
 from unittest.mock import MagicMock

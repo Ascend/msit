@@ -1,6 +1,5 @@
 # Copyright Huawei Technologies Co., Ltd. 2024. All rights reserved.
 import functools
-import operator
 
 import os
 import json
@@ -13,7 +12,7 @@ import torch.nn.functional as F
 from safetensors.torch import load_file, save_file
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
-from tools.copy_config_files import copy_config_files, modify_config_json
+from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 
