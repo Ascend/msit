@@ -42,7 +42,11 @@
 
 ### W8A8 KMEANS
 
-- LLaMa3.1 8B推荐使用以下配置进行KMEANS量化
+- LLaMa3.1 8B推荐使用以下配置进行KMEANS混合量化
+  ```shell
+  python3 convert_llama3.1_8b_kmeans_mix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  ```
+- LLaMa3.1 8B可用以下配置进行KMEANS量化
   ```shell
   python3 convert_llama3.1_8b_kmeans.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
