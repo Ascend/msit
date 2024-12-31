@@ -56,7 +56,7 @@ class AntiOutlierConfig:
         check_type(self.w_sym, bool, param_name='w_sym')
         check_type(self.disable_anti_names, list, param_name='disable_anti_names')
         check_type(self.use_kvcache_quant, bool, param_name='use_kvcache_quant')
-        check_type(self.flex_config, dict, param_name='disable_anti_names')
+        check_type(self.flex_config, dict, param_name='flex_config')
 
         if self.anti_method not in _ANTI_METHODS:
             raise ValueError("Configuration param `anti_method` must be in choices {}"

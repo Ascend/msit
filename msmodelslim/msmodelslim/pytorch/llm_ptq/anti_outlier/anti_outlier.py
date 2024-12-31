@@ -1,6 +1,7 @@
 #  Copyright (c) Huawei Technologies Co., Ltd. 2024-2024. All rights reserved.
 from __future__ import absolute_import, division, print_function
 
+import inspect
 import os
 import gc
 import stat
@@ -94,7 +95,7 @@ def model_to_org_device_with_buffer(model, device_org='cpu'):
         if not hasattr(mod, '_buffers'):
             continue
         if name in device_map:
-            device = device_map[name]
+            device = f"npu:{device_map[name]}" if "npu" in model.device.type else device_map[name]
         elif hasattr(mod, 'device'):
             device = mod.device
         else:
@@ -102,29 +103,6 @@ def model_to_org_device_with_buffer(model, device_org='cpu'):
         for buffer_name, buffer in mod._buffers.items():
             if buffer is not None:
                 mod.register_buffer(buffer_name, buffer.to(device))
-
-
-def deepcopymodel(model: nn.Module):
-    device_org = next(model.parameters()).device
-    model_to_cpu(model)
-
-    new_model = copy.deepcopy(model)
-
-    remove_hook_from_module(new_model, True)
-
-    model_to_org_device_with_buffer(model, device_org)
-
-    return new_model
-
-
-def model_to_org_device(model, device_org='cpu'):
-    # 将原模型的权重恢复到NPU、CUDA（或meta）上
-    if judge_model_with_accelerate(model):
-        for mod in model.modules():
-            if hasattr(mod, "_hf_hook"):
-                mod._hf_hook.init_hook(mod)
-    else:
-        model.to(device_org)
 
 
 def deepcopy_model(model,
@@ -148,14 +126,12 @@ def deepcopy_model(model,
     # 删除accelerate封装的forward函数，将备份的forward函数恢复
     new_model = remove_hook_from_module(new_model, True)
 
-    model_to_org_device(model, device_org)
+    model_to_org_device_with_buffer(model, device_org)
 
     return new_model
 
 
 def replace_rms_norm(model: nn.Module, norm_class_name: str):
-    if judge_model_with_accelerate(model):
-        model_to_cpu(model)
 
     for name, module in model.named_modules():
         if module.__class__.__name__.lower() == 'layernorm':
@@ -170,14 +146,6 @@ def replace_rms_norm(model: nn.Module, norm_class_name: str):
                 new_module.to(module.weight.data.device)
 
             GraphOpt.set_module(model, name, new_module)
-
-    # 将原模型的权重恢复到GPU（或meta）上
-    if judge_model_with_accelerate(model):
-        model_to_org_device(model)
-        for _, module in model.named_modules():
-            if isinstance(module, NormBias) and hasattr(module, 'old_hook'):
-                add_hook_to_module(module, module.old_hook)
-                del module.old_hook
 
 
 class AntiOutlier(object):
@@ -269,8 +237,8 @@ class AntiOutlier(object):
         # 保存anti_outlier处理前的原始权重，作为属性存入model中
         if self.cfg.anti_method not in ['m4', 'm5', 'm6']:
             setattr(self.model, 'ori_state_dict', states_dic)
-        else:
-            setattr(self.model, 'anti_method', self.cfg.anti_method)
+
+        setattr(self.model, 'anti_method', self.cfg.anti_method)
 
         if self.cfg.use_kvcache_quant:
             self.attention_class = class_detect(self.model, 'attention')
