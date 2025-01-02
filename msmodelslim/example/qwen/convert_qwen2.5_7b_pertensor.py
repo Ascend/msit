@@ -3,13 +3,15 @@ import os
 import json
 import logging
 import argparse
+
 import numpy as np
 import torch
 import functools
 from torch import nn
 import torch.nn.functional as F
+from safetensors.torch import load_file
+from safetensors.torch import save_file
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
-from safetensors.torch import load_file, save_file
 
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
@@ -21,19 +23,19 @@ def parse_args():
     parser.add_argument("--model_path", type=str, default="",
                         help="The path to model float weights")
     parser.add_argument("--save_path", type=str,
-                        default="",
+                        default="./",
                         help="The path to save quant weights")
     parser.add_argument("--anti_dataset", type=str, default="./anti_prompt.json", help="The prompts for anti outlier")
     parser.add_argument("--calib_dataset", type=str, default="./calib_prompt.json")
     parser.add_argument("--best_alpha", type=float, default=0.6, help="The best alpha of flex smooth")
     parser.add_argument("--best_beta", type=float, default=0.3, help="The best beta of flex smooth")
-    parser.add_argument("--use_flex", type=bool, default=False, help="The best beta of flex smooth")
+    parser.add_argument("--use_flex", type=bool, default=False)
     parser.add_argument("--kv_quant", default=False, action='store_true')
-    parser.add_argument('--mix_select_layer', default=False, action="store_true")  #
+    parser.add_argument('--mix_select_layer', default=False, action="store_true")
     parser.add_argument('--mix_layer_alpha', type=float, default=0.5)
     parser.add_argument('--mix_layer_beta', type=float, default=1.0)
     parser.add_argument("--no_disable", action='store_true', help="If true, no layer will be disabled")
-    parser.add_argument("--test_mode", action='store_true', help="If true, only 1 layer will be used")
+    parser.add_argument("--test_mode", action='store_true', help="If true, only 3 layer will be used")
 
     return parser.parse_args()
 
@@ -129,7 +131,7 @@ if __name__ == "__main__":
 
     anti_config = AntiOutlierConfig(anti_method="m6",
                                     dev_type='npu',
-                                    use_kvcache_quant=args.kv_quant,
+                                    use_kvcache_quant=False,
                                     disable_anti_names=disable_names,
                                     flex_config={'alpha': args.best_alpha, 'beta': args.best_beta,
                                                  'use_flex': args.use_flex})
@@ -156,7 +158,7 @@ if __name__ == "__main__":
         w_method="KMeans",
         # 聚类类数
         lut_len=40,
-        use_kvcache_quant=False,
+        use_kvcache_quant=args.kv_quant,
     )
 
     if args.mix_select_layer:
@@ -172,8 +174,7 @@ if __name__ == "__main__":
             calibrator = Calibrator(model,
                                     quant_config,
                                     calib_data=dataset_calib,
-                                    mix_cfg=mix_cfg
-                                    )
+                                    mix_cfg=mix_cfg)
     else:
         calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
 
@@ -210,3 +211,13 @@ if __name__ == "__main__":
     }
     copy_config_files(input_path=IN_MODEL_PATH, output_path=OUT_MODEL_PATH,
                       quant_config=quant_config, custom_hooks=custom_hooks)
+
+    # FP
+    afetensor_path = os.path.join(OUT_MODEL_PATH, 'quant_model_weight_w8a8s.safetensors')
+    safetensor_weight = load_file(safetensor_path)
+
+    for key in safetensor_weight.keys():
+        if 'deq_scale' in key:
+            safetensor_weight[key] = deqscale2int64(safetensor_weight[key])
+
+    save_file(safetensor_weight, safetensor_path)
