@@ -19,8 +19,8 @@ def parse_args():
     parser.add_argument("--anti_dataset", type=str, default="./anti_prompt_72b_pertensor.json",
                         help="The prompts for anti outlier")
     parser.add_argument("--calib_dataset", type=str, default="./calib_prompt_72b_pertensor.json")
-    parser.add_argument("--best_alpha", type=float, default=0.6, help="The best alpha of flex smooth")
-    parser.add_argument("--best_beta", type=float, default=0.3, help="The best beta of flex smooth")
+    parser.add_argument("--best_alpha", type=float, default=0.75, help="The best alpha of flex smooth")
+    parser.add_argument("--best_beta", type=float, default=0.1, help="The best beta of flex smooth")
     parser.add_argument("--use_flex", type=bool, default=False, help="The best beta of flex smooth")
     parser.add_argument("--no_disable", action='store_true', help="If true, no layer will be disabled")
     parser.add_argument("--test_mode", action='store_true', help="If true, only 1 layer will be used")
@@ -114,69 +114,38 @@ if __name__ == "__main__":
 
     # ========== quant ===================== ##
     # get disable layer_names
-    disable_names = ['model.layers.0.mlp.down_proj',
-                     'model.layers.1.mlp.down_proj',
-                     'model.layers.79.mlp.down_proj',
-                     'model.layers.2.mlp.down_proj',
-                     'model.layers.6.mlp.down_proj',
-                     'model.layers.5.mlp.down_proj',
-                     'model.layers.4.mlp.down_proj',
-                     'model.layers.31.mlp.down_proj',
-                     'model.layers.78.mlp.down_proj',
-                     'model.layers.8.mlp.down_proj',
-                     'model.layers.11.mlp.down_proj',
-                     'model.layers.23.mlp.down_proj',
-                     'model.layers.9.mlp.down_proj',
-                     'model.layers.7.mlp.down_proj',
-                     'model.layers.10.mlp.down_proj',
-                     'model.layers.3.mlp.down_proj',
-                     'model.layers.77.mlp.down_proj',
-                     'model.layers.75.mlp.down_proj',
-                     'model.layers.76.mlp.down_proj',
-                     'model.layers.35.mlp.down_proj',
-                     'model.layers.12.mlp.down_proj',
-                     'model.layers.16.mlp.down_proj',
-                     'model.layers.74.mlp.down_proj',
-                     'model.layers.14.mlp.down_proj',
-                     'model.layers.20.mlp.down_proj',
-                     'model.layers.25.mlp.down_proj',
-                     'model.layers.73.mlp.down_proj',
-                     'model.layers.34.mlp.down_proj',
-                     'model.layers.72.mlp.down_proj',
-                     'model.layers.13.mlp.down_proj',
-                     'model.layers.71.mlp.down_proj',
-                     'model.layers.19.mlp.down_proj',
-                     'model.layers.36.mlp.down_proj',
-                     'model.layers.15.mlp.down_proj',
-                     'model.layers.22.mlp.down_proj',
-                     'model.layers.37.mlp.down_proj',
-                     'model.layers.32.mlp.down_proj',
-                     'model.layers.18.mlp.down_proj',
-                     'model.layers.39.mlp.down_proj',
-                     'model.layers.24.mlp.down_proj',
-                     'model.layers.38.mlp.down_proj',
-                     'model.layers.28.mlp.down_proj',
-                     'model.layers.21.mlp.down_proj',
-                     'model.layers.26.mlp.down_proj',
-                     'model.layers.27.mlp.down_proj',
-                     'model.layers.17.mlp.down_proj',
-                     'model.layers.40.mlp.down_proj',
-                     'model.layers.29.mlp.down_proj',
-                     'model.layers.33.mlp.down_proj',
-                     'model.layers.30.mlp.down_proj',
-                     'model.layers.70.mlp.down_proj',
-                     'model.layers.68.mlp.down_proj',
-                     'model.layers.64.mlp.down_proj',
-                     'model.layers.41.mlp.down_proj',
-                     'model.layers.61.mlp.down_proj',
-                     'model.layers.69.mlp.down_proj',
-                     'model.layers.56.mlp.down_proj',
-                     'model.layers.42.mlp.down_proj',
-                     'model.layers.66.mlp.down_proj',
-                     'model.layers.63.mlp.down_proj',
-                     'model.layers.59.mlp.down_proj',
-                     'model.layers.58.mlp.down_proj'
-                     ]
+    disable_names = [
+                    'model.layers.0.mlp.down_proj',
+                    'model.layers.1.mlp.down_proj',
+                    'model.layers.2.mlp.down_proj',
+                    'model.layers.3.mlp.down_proj',
+                    'model.layers.4.mlp.down_proj',
+                    'model.layers.5.mlp.down_proj',
+                    'model.layers.6.mlp.down_proj',
+                    'model.layers.7.mlp.down_proj',
+                    'model.layers.8.mlp.down_proj',
+                    'model.layers.9.mlp.down_proj',
+                    'model.layers.10.mlp.down_proj',
+                    'model.layers.21.mlp.down_proj',
+                    'model.layers.22.mlp.down_proj',
+                    'model.layers.23.mlp.down_proj',
+                    'model.layers.27.mlp.down_proj',
+                    'model.layers.28.mlp.down_proj',
+                    'model.layers.34.mlp.down_proj',
+                    'model.layers.36.mlp.down_proj',
+                    'model.layers.37.mlp.down_proj',
+                    'model.layers.38.mlp.down_proj',
+                    'model.layers.41.mlp.down_proj',
+                    'model.layers.58.mlp.down_proj',
+                    'model.layers.71.mlp.down_proj',
+                    'model.layers.73.mlp.down_proj',
+                    'model.layers.74.mlp.down_proj',
+                    'model.layers.75.mlp.down_proj',
+                    'model.layers.76.mlp.down_proj',
+                    'model.layers.77.mlp.down_proj',
+                    'model.layers.78.mlp.down_proj',
+                    'model.layers.79.mlp.down_proj'
+                    ]
     if args.no_disable:
         disable_names = []
 
