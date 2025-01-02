@@ -24,6 +24,11 @@
   ```
 
 ## 量化权重生成
+以下量化样例脚本均基于bf16浮点模型
+
+### W8A8 PDMIX
+
+- LLaMa3.1 70B推荐使用以下配置进行PDMIX量化，只回退down层
 ### 路径变量解释
 | 变量名  | 含义                                             |
 |--------|--------------------------------------------------|
@@ -42,24 +47,22 @@
   ```shell
   python3 convert_llama3.1_70b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --no_disable
   ```
-- LLaMa3.1 70B可用以下配置进行PDMIX量化，不只回退down层
+- LLaMa3.1 70B可用以下配置进行PDMIX量化，回退涉及k,q,v,o,down线性层
   ```shell
   python3 convert_llama3.1_70b_pdmix_kqv.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
 
 ### W8A8 KMEANS
-  ```shell
-  cd ${modelslim_path}/example/llama
-  ```
-- LLaMa3.1 8B推荐使用以下配置进行KMEANS混合量化
+
+- LLaMa3.1 8B推荐使用以下配置进行KMEANS+PERTENSOR/W8A8/FLOAT混合量化
   ```shell
   python3 convert_llama3.1_8b_kmeans_mix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
-- LLaMa3.1 8B可用以下配置进行KMEANS量化
+- LLaMa3.1 8B可用以下配置进行KMEANS+PERTENSOR量化
   ```shell
   python3 convert_llama3.1_8b_kmeans.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
-- LLaMa3.1 8B可用以下配置进行KMEANS+C8量化
+- LLaMa3.1 8B可用以下配置进行KMEANS+PERTENSOR+C8量化
   ```shell
   python3 convert_llama3.1_8b_kmeans_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```

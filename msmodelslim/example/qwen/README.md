@@ -22,6 +22,7 @@
   ```
 
 ## 量化权重生成
+以下量化样例脚本均基于bf16浮点模型
 
 ## 路径变量解释
 | 变量名  | 含义                                             |
@@ -38,7 +39,7 @@
   ```shell
   python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer --mix_layer_alpha 0.5 --mix_layer_beta 1
   ```
-- Qwen2.5 72B推荐使用以下配置进行PDMIX量化
+- Qwen2.5 72B推荐使用以下配置进行PDMIX量化，只回退down层
   ```shell
   python3 convert_qwen2.5_72b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
@@ -55,7 +56,7 @@
   python3 convert_qwen2.5_14b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --no_disable
   ```
   
-- Qwen2.5 72B可用以下配置进行PDMIX量化，不只回退down层
+- Qwen2.5 72B可用以下配置进行PDMIX量化，回退涉及k,q,v,down线性层
   ```shell
   python3 convert_qwen2.5_72b_pdmix_kqv.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
@@ -82,7 +83,7 @@
   ```shell
   python convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer --mix_layer_alpha {alpha} --mix_layer_beta {beta}
   ```
-- Qwen2.5 7B可用以下配置进行KMEANS+C8量化
+- Qwen2.5 7B可用以下配置进行PERTENSOR+KMEANS+C8量化
   ```shell
   python convert_qwen2.5_7b_kmeans_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer
   ```

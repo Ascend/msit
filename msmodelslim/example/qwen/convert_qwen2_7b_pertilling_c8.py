@@ -5,13 +5,12 @@ import logging
 import argparse
 import numpy as np
 import torch
-from torch import nn
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 from safetensors.torch import load_file
 from safetensors.torch import save_file
 
-from tools.copy_config_files import copy_config_files
+from msmodelslim.tools.copy_config_files import copy_config_files
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 

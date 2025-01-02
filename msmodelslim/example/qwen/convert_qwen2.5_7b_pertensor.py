@@ -1,6 +1,4 @@
 # Copyright Huawei Technologies Co., Ltd. 2024. All rights reserved.
-import sys
-
 import os
 import json
 import logging
@@ -11,11 +9,11 @@ import functools
 from torch import nn
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+from safetensors.torch import load_file, save_file
+
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
-from safetensors.torch import load_file
-from safetensors.torch import save_file
 
 
 def parse_args():
@@ -38,6 +36,13 @@ def parse_args():
     parser.add_argument("--test_mode", action='store_true', help="If true, only 1 layer will be used")
 
     return parser.parse_args()
+
+
+def deqscale2int64(scale):
+    scale = scale.numpy()
+    scale = np.frombuffer(scale.tobytes(), dtype=np.int32).astype(np.int64)
+    scale = torch.tensor(scale)
+    return scale
 
 
 def get_anti_dataset(tokenizer, calib_list, device="npu"):
@@ -108,8 +113,8 @@ if __name__ == "__main__":
         anti_dataset.append([data])
 
     dataset_calib = []
-    for i in range(len(calib_prompt)):
-        tmp = get_calib_dataset(tokenizer, calib_prompt[i])
+    for calib_prompt_item in calib_prompt:
+        tmp = get_calib_dataset(tokenizer, calib_prompt_item)
         dataset_calib += (tmp)
 
     # msmodelslim量化
@@ -132,8 +137,6 @@ if __name__ == "__main__":
                                calib_data=anti_dataset,
                                cfg=anti_config)
     anti_outlier.process()
-    save_file({key: value for key, value in model.state_dict().items() if 'inv_freq' not in key},
-              os.path.join('.', 'input_model_fp.safetensors'))
 
     # ========== quant ===================== #
     # get disable layer_names
@@ -176,6 +179,31 @@ if __name__ == "__main__":
 
     calibrator.run()
     calibrator.save(OUT_MODEL_PATH, save_type=["safe_tensor"])
+
+    # 伪量化对话
+    SEQ_LEN_OUT = 100
+    logging.info("testing quant weights...")
+    TEST_PROMPT = "What is deep learning?\n"
+    test_input = tokenizer(TEST_PROMPT, return_tensors="pt").to(model.device)
+    logging.info("model is inferring...")
+    model.eval()
+    generate_ids = model.generate(test_input.input_ids,
+                                  attention_mask=test_input.attention_mask,
+                                  max_new_tokens=SEQ_LEN_OUT)
+    res = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+    logging.info(res)
+    for result in res:
+        logging.info(result)
+
+    # 转FP16
+    safetensor_path = os.path.join(OUT_MODEL_PATH, 'quant_model_weight_w8a8s.safetensors')
+    weight_1 = load_file(safetensor_path)
+
+    for key in weight_1.keys():
+        if 'deq_scale' in key:
+            weight_1[key] = deqscale2int64(weight_1[key])
+
+    save_file(weight_1, safetensor_path)
 
     custom_hooks = {
         'config.json': functools.partial(modify_config_json, custom_hook=custom_hook),
