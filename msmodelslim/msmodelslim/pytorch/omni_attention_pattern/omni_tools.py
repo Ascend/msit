@@ -54,8 +54,8 @@ class OmniAttentionGeneticSearcher:
         # 保存传入的配置对象
         self.config = config
 
-        # 初始化搜索阶段为 1
-        self.stage = 1
+        # 初始化搜索稀疏度为90%
+        self.sparsity = 90
 
         # 获取当前脚本的工作目录
         self.work_dir = os.path.dirname(os.path.abspath(__file__))
@@ -127,6 +127,10 @@ class OmniAttentionGeneticSearcher:
         # 获取模型所在的设备（如CPU或GPU）
         self.device = self.model.device
 
+    @property
+    def num_ones(self):
+        return int(self.num_layers * (1 - self.sparsity/100))
+
     def tokenize_inputs(self):
             """
             对输入数据进行分词处理。
@@ -177,7 +181,7 @@ class OmniAttentionGeneticSearcher:
         pool = []
 
         # 计算每层中1的数量
-        num_ones = int(self.num_layers * self.stage / 10)
+        num_ones = self.num_ones
 
         # 生成指定数量的矩阵
         for _ in range(self.config.pool_size):
@@ -292,8 +296,8 @@ class OmniAttentionGeneticSearcher:
 
         # 遍历每个阶段（从1到9）
         for stage in range(1, 10):
-            # 设置当前阶段
-            self.stage = stage
+            # 设置当前稀疏度，从90到10
+            self.sparsity = 100 - stage*10
 
             # 初始化最佳得分和最佳模式
             best_score, best = -100, None
@@ -305,7 +309,7 @@ class OmniAttentionGeneticSearcher:
                 pool = self.evolution(score_array_this_stage, prev_best)
 
             # 对基因池中的每个模式进行评分
-            for pattern in tqdm(pool, position=0, desc=f"Current genetic stage: {self.stage}. Scoring pool...", leave=False):
+            for pattern in tqdm(pool, position=0, desc=f"Current search stage: {stage}", leave=False):
                 # 对当前模式进行评分
                 score = self.score_one(pattern)
 
@@ -325,7 +329,7 @@ class OmniAttentionGeneticSearcher:
             mutations = self.mutation(score_array_this_stage)
 
             # 对变异后的模式进行评分
-            for pattern in tqdm(mutations, position=0, desc=f"Current genetic stage: {self.stage}. Scoring mutation...", leave=False):
+            for pattern in tqdm(mutations, position=0, desc=f"Current search stage: {stage}. In mutation", leave=False):
                 # 对当前模式进行评分
                 score = self.score_one(pattern)
 
@@ -339,16 +343,19 @@ class OmniAttentionGeneticSearcher:
                     best = pattern
 
             # 保存当前阶段的最佳模式到文件
-            out_file = os.path.join(self.out_dir, f'genetic_rowwise_sparsity_{100-self.stage*10:d}_score_{best_score}.tsv')
+            out_file = os.path.join(self.out_dir, f'genetic_rowwise_sparsity_{self.sparsity:d}_score_{best_score}.tsv')
             print(f"Saving best pattern to path {out_file}.")
             np.savetxt(out_file, 1 - best, delimiter='\t', fmt='%d')
             prev_best = best.copy()
 
-    def search_on_this_sparsity(self):
+    def search_on_this_sparsity(self, sparsity):
         """
         执行遗传搜索算法，寻找最佳的注意力模式。
         遗传算法通过进化生成模式池，对每个模式进行评分，并逐轮优化，直到得分不再提升为止。
         """
+        # 固定稀疏度
+        self.sparsity = sparsity
+
         # 初始化每个注意力头的得分矩阵和出现次数矩阵
         # score_per_head: 每层每个注意力头的累计得分
         # occur_per_head: 每层每个注意力头出现的次数，用于计算平均得分
@@ -389,7 +396,7 @@ class OmniAttentionGeneticSearcher:
             )
 
             # 遍历基因池中的每个模式，对其进行评分
-            for pattern in tqdm(pool, position=0, desc=f"Current genetic stage: {self.stage}. Scoring pool...", leave=False):
+            for pattern in tqdm(pool, position=0, desc=f"Current round: {round}", leave=False):
                 # 对当前模式进行评分，评分函数返回该模式的得分
                 score = self.score_one(pattern)
 
@@ -414,7 +421,7 @@ class OmniAttentionGeneticSearcher:
             # 文件名包含稀疏度、轮次和最佳得分，用于记录当前阶段的结果
             out_file = os.path.join(
                 self.out_dir,
-                f'genetic_rowwise_sparsity_{100-self.stage*10:d}_round_{round}_score_{best_score_this_round}.tsv'
+                f'genetic_rowwise_sparsity_{self.sparsity:d}_round_{round}_score_{best_score_this_round}.tsv'
             )
             print(f"Saving best pattern to path {out_file}.")
             # 将最佳模式保存为文件，格式为 TSV，每个值为 0 或 1（1 表示稀疏位置）
@@ -434,7 +441,7 @@ class OmniAttentionGeneticSearcher:
         list[np.ndarray]: 变异后的基因矩阵列表，每个矩阵的形状为 `(num_layers, num_kv_heads)`。
         """
         # 计算每层中1的数量，基于当前阶段（`stage`）
-        num_ones = int(self.num_layers * self.stage / 10)
+        num_ones = self.num_ones
 
         # 对每层的得分求和，得到每层的总得分
         score_per_layer = score_per_head.sum(-1)
@@ -497,7 +504,7 @@ class OmniAttentionGeneticSearcher:
         - 新的模式池,包含生成的模式。
         """
         # 计算每层的总1的数量
-        total1s = int(self.num_layers * self.stage / 10)
+        total1s = self.num_ones
 
         # 定义维度
         dim1 = self.num_layers  # 层的数量

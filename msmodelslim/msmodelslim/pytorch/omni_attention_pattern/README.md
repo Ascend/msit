@@ -61,11 +61,10 @@ config = OmniAttentionConfig(model_path="/path/to/qwen/7b", pool_size=50)
 print(config)
 
 searcher = OmniAttentionGeneticSearcher(config)
-searcher.stage = 5
-searcher.search_on_this_sparsity()
+searcher.search_on_this_sparsity(sparsity=50)
 ```
 
-参数`pool_size`控制遗传算法初始化个体的数量。参数`stage`控制得到的pattern的稀疏度，`stage`越小，则压缩力度越大，pattern中的1的数量越多，也就是说，推理时的性能越快，对精度的影响也可能会更高。
+参数`pool_size`控制遗传算法初始化个体的数量。参数`sparsity`控制得到的pattern的稀疏度，`sparsity`越大，则压缩力度越大，pattern中的压缩头的数量越多，也就是说，推理时的性能越快，对精度的影响也可能会更大。
 
 #### 步骤3：检查输出
 搜索出的最佳pattern会保存在`omni_attention_pattern/output`文件夹下，每种模型有一个自己的子文件夹。例如:
