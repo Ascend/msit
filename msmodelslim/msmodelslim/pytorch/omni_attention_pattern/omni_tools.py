@@ -93,6 +93,10 @@ class OmniAttentionGeneticSearcher:
         # 对输入数据进行分词处理
         self.tokenize_inputs()
 
+    @property
+    def num_ones(self):
+        return int(self.num_layers * (1 - self.sparsity/100))
+
     def load_model_and_tokenizer(self):
         """
         从指定的模型路径加载模型和分词器。
@@ -126,10 +130,6 @@ class OmniAttentionGeneticSearcher:
 
         # 获取模型所在的设备（如CPU或GPU）
         self.device = self.model.device
-
-    @property
-    def num_ones(self):
-        return int(self.num_layers * (1 - self.sparsity/100))
 
     def tokenize_inputs(self):
             """
@@ -484,9 +484,16 @@ class OmniAttentionGeneticSearcher:
             mutations[i] = mutations[i][:, None].repeat(self.num_kv_heads, axis=1)
         return mutations
 
-    def evolution(self, score_per_head: np.ndarray, best_pattern: np.ndarray, pool_size: int = -1,
-                ab_rate: float = 0.8, prob_bias_rate: float = 144, A_with_random: bool = False,
-                historical_patterns_lis: list[np.ndarray] = []) -> list[np.ndarray]:
+    def evolution(
+            self,
+            score_per_head: np.ndarray,
+            best_pattern: np.ndarray,
+            pool_size: int=-1,
+            ab_rate: float=0.8,
+            prob_bias_rate: float=144,
+            A_with_random: bool=False,
+            historical_patterns_lis: list[np.ndarray]=None,
+        ) -> list[np.ndarray]:
         """
         生成新的模式池,支持检查是否与历史模式重复的版本。
         目前仅支持进化模式和同等stage里的继续进化, 以及退化(从更高级的stage退化)
@@ -498,7 +505,7 @@ class OmniAttentionGeneticSearcher:
         - ab_rate: A部分的比例,默认为0.8。A部分更可能包含best_pattern,B部分更随机。当A_with_random为False时,A部分必包含best_pattern；当A_with_random为True时,A部分会赋予更高的稳定性。
         - prob_bias_rate: 概率偏置率,默认为6.0。
         - A_with_random: 是否在A部分添加随机性, 进化生成更多的1的时候默认为False, 其他情况建议设置为True。
-        - historical_patterns_lis: 历史已搜索的模式列表,默认为空。
+        - historical_patterns_lis: 历史已搜索的模式列表,默认为None。
 
         返回:
         - 新的模式池,包含生成的模式。
@@ -510,6 +517,9 @@ class OmniAttentionGeneticSearcher:
         dim1 = self.num_layers  # 层的数量
         dim2 = self.num_kv_heads  # 每个层的kv_heads数量
         dim22 = 1  # 用于reshape的辅助维度
+
+        if historical_patterns_lis is None:
+            historical_patterns_lis = []
 
         # 计算每个头的总得分
         ordermx = score_per_head.sum(-1).reshape(dim1, 1)
