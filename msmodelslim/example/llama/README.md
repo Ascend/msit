@@ -41,37 +41,38 @@
   ```
 - LLaMa3.1 70B推荐使用以下配置进行PDMIX量化
   ```shell
-  python3 convert_llama3.1_70b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_llama3.1_70b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 - LLaMa3.1 70B无回退权重生成，对话正常，建议仅用于基准性能测试
   ```shell
-  python3 convert_llama3.1_70b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --no_disable
+  python3 convert_llama3.1_70b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --no_disable
   ```
 - LLaMa3.1 70B可用以下配置进行PDMIX量化，回退涉及k,q,v,o,down线性层
   ```shell
-  python3 convert_llama3.1_70b_pdmix_kqv.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_llama3.1_70b_pdmix_kqv.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 
 ### W8A8 KMEANS
 
 - LLaMa3.1 8B W8A8推荐使用以下配置进行KMEANS+PERTENSOR/W8A8/FLOAT混合量化
   ```shell
-  python3 convert_llama3.1_8b_kmeans_mix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_llama3.1_8b_kmeans_mix.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 - LLaMa3.1 8B W8A8可用以下配置进行KMEANS+PERTENSOR量化
   ```shell
-  python3 convert_llama3.1_8b_kmeans.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_llama3.1_8b_kmeans.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 - LLaMa3.1 8B W8A8C8推荐使用以下配置进行KMEANS+PERTENSOR/W8A8/FLOAT混合量化
   ```shell
   python3 convert_llama3.1_8b_kmeans_mix_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  ```
 - LLaMa3.1 8B W8A8C8可用以下配置进行KMEANS+PERTENSOR量化，对话正常，建议仅用于基准性能测试
   ```shell
-  python3 convert_llama3.1_8b_kmeans_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_llama3.1_8b_kmeans_c8.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 - LLaMa3.1 8B W8A8可用以下配置进行KMEANS+PERTILLING量化
   ```shell
-  python3 convert_llama3.1_8b_pertilling.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_llama3.1_8b_pertilling.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 
 #### Llama3.1-70B w8a8c8 per-tensor 部分down层回退 BF16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2 64G机器上生成)
@@ -83,11 +84,11 @@
     cd ${modelslim_path}
     python example/llama/convert_quant_weights_w8a8c8.py \
     --model_path {浮点权重路径} \
-    --save_path {W8A8C8量化权重路径}
+    --save_path {W8A8C8量化权重保存路径}
     ```
     - 注意：`model_path`和`save_path`请勿使用同一个文件夹，避免浮点权重和量化权重混淆
 
-- 从浮点权重路径下复制以下文件到量化权重路径
+- 从浮点权重路径下复制以下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
@@ -113,11 +114,11 @@
     cd ${modelslim_path}
     python example/llama/convert_quant_weights_norollback.py \
     --model_path {浮点权重路径} \
-    --save_path {W8A8C8量化权重路径}
+    --save_path {W8A8C8量化权重保存路径}
     ```
     - 注意：`model_path`和`save_path`请勿使用同一个文件夹，避免浮点权重和量化权重混淆
 
-- 从浮点权重路径下复制以下文件到量化权重路径
+- 从浮点权重路径下复制以下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
@@ -143,11 +144,11 @@
     cd ${modelslim_path}
     python example/llama/convert_quant_weights_pdmix.py \
     --model_path {浮点权重路径} \
-    --save_path {W8A8_PDMIX量化权重路径}
+    --save_path {W8A8_PDMIX量化权重保存路径}
     ```
     - 注意：`model_path`和`save_path`请勿使用同一个文件夹，避免浮点权重和量化权重混淆
 
-- 从浮点权重路径下复制以下文件到量化权重路径
+- 从浮点权重路径下复制以下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
@@ -170,11 +171,11 @@
     cd ${modelslim_path}
     python example/llama/convert_llama3.1_70b_pdmix_revert_down_only.py \
     --model_path {浮点权重路径} \
-    --save_path {W8A8_PDMIX量化权重路径}
+    --save_path {W8A8_PDMIX量化权重保存路径}
     ```
     - 注意：`model_path`和`save_path`请勿使用同一个文件夹，避免浮点权重和量化权重混淆
 
-- 从浮点权重路径下复制以下文件到量化权重路径
+- 从浮点权重路径下复制以下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
@@ -197,11 +198,11 @@
     cd ${modelslim_path}
     python example/llama/convert_quant_weights_parcomp.py \
     --model_path {浮点权重路径} \
-    --save_path {W8A8量化权重路径}
+    --save_path {W8A8量化权重保存路径}
     ```
     - 注意：`model_path`和`save_path`请勿使用同一个文件夹，避免浮点权重和量化权重混淆
 
-- 从浮点权重路径下复制以下文件到量化权重路径
+- 从浮点权重路径下复制以下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
@@ -228,11 +229,11 @@
     cd ${modelslim_path}
     python example/llama/convert_quant_weights_lut.py \
     --model_path {浮点权重路径} \
-    --save_path {W8A8S量化权重路径}
+    --save_path {W8A8S量化权重保存路径}
     ```
     - 注意：`model_path`和`save_path`请勿使用同一个文件夹，避免浮点权重和量化权重混淆
 
-- 从浮点权重路径下复制一下文件到量化权重路径
+- 从浮点权重路径下复制一下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
