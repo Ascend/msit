@@ -9,4 +9,4 @@ config = OmniAttentionConfig(debug=False, model_path="/home/ma-user/work/Qwen25-
 logging.info("Config: %s", config)
 
 searcher = OmniAttentionGeneticSearcher(config)
-searcher.search()
+searcher.search_on_this_sparsity(sparsity=50)

@@ -61,10 +61,10 @@ config = OmniAttentionConfig(model_path="/path/to/qwen/7b", pool_size=50)
 print(config)
 
 searcher = OmniAttentionGeneticSearcher(config)
-searcher.search()
+searcher.search_on_this_sparsity(sparsity=50)
 ```
 
-参数`pool_size`控制遗传算法初始化个体的数量。
+参数`pool_size`控制遗传算法初始化个体的数量。参数`sparsity`控制得到的pattern的稀疏度，`sparsity`越大，则压缩力度越大，pattern中的压缩头的数量越多，也就是说，推理时的性能越快，对精度的影响也可能会更大。
 
 #### 步骤3：检查输出
 搜索出的最佳pattern会保存在`omni_attention_pattern/output`文件夹下，每种模型有一个自己的子文件夹。例如:
@@ -73,11 +73,9 @@ searcher.search()
 - omni_attention_pattern/
 -- output/
 --- Qwen2.5-7B-Instruct/
------ genetic_rowwise_stage_1.tsv
------ genetic_rowwise_stage_2.tsv
+----- genetic_rowwise_sparsity_10.tsv
+----- genetic_rowwise_sparsity_20.tsv
 ```
-
-`stage`的值越小，代表attention head的sparsity越高，推理时的性能越快，对精度的影响也可能会更高。
 
 #### 步骤4：使用pattern
 在MindIE中，可以通过使用环境变量来开启OMNI Attention，例如：
