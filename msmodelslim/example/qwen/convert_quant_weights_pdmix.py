@@ -6,7 +6,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F  
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
-from tools.copy_config_files import copy_config_files
+from msmodelslim.tools.copy_config_files import copy_config_files
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 
