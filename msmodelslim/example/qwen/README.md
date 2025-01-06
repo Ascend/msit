@@ -37,24 +37,24 @@
   ```
 - Qwen2.5 72B推荐使用以下配置进行PDMIX量化
   ```shell
-  python3 convert_qwen2.5_72b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_qwen2.5_72b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 - Qwen2.5 72B 无回退权重生成，对话正常，建议仅用于基准性能测试
   ```shell
-  python3 convert_qwen2.5_72b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --no_disable
+  python3 convert_qwen2.5_72b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --no_disable
   ```
 - Qwen2.5 14B推荐使用以下配置进行PDMIX量化
   ```shell
-  python3 convert_qwen2.5_14b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_qwen2.5_14b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 - Qwen2.5 14B 无回退权重生成，对话正常，建议仅用于基准性能测试
   ```shell
-  python3 convert_qwen2.5_14b_pdmix.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --no_disable
+  python3 convert_qwen2.5_14b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --no_disable
   ```
   
 - Qwen2.5 72B可用以下配置进行PDMIX量化，回退涉及k,q,v,down线性层
   ```shell
-  python3 convert_qwen2.5_72b_pdmix_kqv.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_qwen2.5_72b_pdmix_kqv.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 
 ### W8A8 PERTILLING
@@ -63,12 +63,12 @@
   ```
 - Qwen2 7B推荐使用以下配置进行PERTILLING+KMEANS量化
   ```shell
-  python3 convert_qwen2_7b_pertilling.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_qwen2_7b_pertilling.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
   
 - Qwen2 7B推荐使用以下配置进行PERTILLING+KMEANS+C8量化
   ```shell
-  python3 convert_qwen2_7b_pertilling_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python3 convert_qwen2_7b_pertilling_c8.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 
 ### W8A8 PERTENSOR
@@ -77,23 +77,23 @@
   ```
 - Qwen2.5 7B W8A8推荐使用以下配置进行量化
   ```shell
-  python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer --mix_layer_alpha 0.5 --mix_layer_beta 1
+  python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --mix_select_layer --mix_layer_alpha 0.5 --mix_layer_beta 1
   ```
 - Qwen2.5 7B W8A8C8推荐使用以下配置进行量化
   ```shell
-  python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer --mix_layer_alpha 0.1 --mix_layer_beta 1 --kv_quant
+  python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --mix_select_layer --mix_layer_alpha 0.1 --mix_layer_beta 1 --kv_quant
   ```
-- Qwen2.5 7B W8A8C8对话正常，可使用以下配置进行量化
+- Qwen2.5 7B W8A8C8可使用以下配置进行量化，对话正常，建议仅用于基准性能测试
   ```shell
-  python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer --mix_layer_alpha 0.5 --mix_layer_beta 1 --kv_quant
+  python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --mix_select_layer --mix_layer_alpha 0.5 --mix_layer_beta 1 --kv_quant
   ```
 - Qwen2.5 7B可用以下配置进行KMEANS+C8量化
   ```shell
-  python convert_qwen2.5_7b_kmeans_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径} --mix_select_layer
+  python convert_qwen2.5_7b_kmeans_c8.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --mix_select_layer
   ```
 - Qwen2.5 72B可用以下配置进行PERTENSOR+C8量化
   ```shell
-  python convert_qwen2.5_72b_pertensor.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
+  python convert_qwen2.5_72b_pertensor.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
 
 #### Qwen2-72B W8A8 pertoken-pertensor 无回退 BF16模型量化权重请使用以下指令生成 (此量化权重只能在800IA2 64G机器上生成)
@@ -106,7 +106,7 @@
 
   ```
 
-  - 从浮点权重路径下复制以下文件到量化权重路径
+  - 从浮点权重路径下复制以下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
@@ -129,11 +129,11 @@
     cd ${modelslim_path}
     python example/qwen/convert_quant_weights_w8a8c8.py \
     --model_path {浮点权重路径} \
-    --save_path {W8A8C8量化权重路径}
+    --save_path {W8A8C8量化权重保存路径}
     ```
     - 注意：`model_path`和`save_path`请勿使用同一个文件夹，避免浮点权重和量化权重混淆
 
-- 从浮点权重路径下复制以下文件到量化权重路径
+- 从浮点权重路径下复制以下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
@@ -158,11 +158,11 @@
     cd ${modelslim_path}
     python example/qwen/convert_quant_weights_norollback.py \
     --model_path {浮点权重路径} \
-    --save_path {W8A8C8量化权重路径}
+    --save_path {W8A8C8量化权重保存路径}
     ```
     - 注意：`model_path`和`save_path`请勿使用同一个文件夹，避免浮点权重和量化权重混淆
 
-- 从浮点权重路径下复制以下文件到量化权重路径
+- 从浮点权重路径下复制以下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
@@ -188,11 +188,11 @@
     cd ${modelslim_path}
     python example/qwen/convert_quant_weights_parcomp.py \
     --model_path {浮点权重路径} \
-    --save_path {W8A8量化权重路径}
+    --save_path {W8A8量化权重保存路径}
     ```
     - 注意：`model_path`和`save_path`请勿使用同一个文件夹，避免浮点权重和量化权重混淆
 
-- 从浮点权重路径下复制以下文件到量化权重路径
+- 从浮点权重路径下复制以下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
@@ -219,11 +219,11 @@
     cd ${modelslim_path}
     python example/qwen/convert_quant_weights_lut.py \
     --model_path {浮点权重路径} \
-    --save_path {W8A8s量化权重路径}
+    --save_path {W8A8s量化权重保存路径}
     ```
     - 注意：`model_path`和`save_path`请勿使用同一个文件夹，避免浮点权重和量化权重混淆
 
-- 从浮点权重路径下复制以下文件到量化权重路径
+- 从浮点权重路径下复制以下文件到量化权重保存路径
     - config.json
     - gitattributes
     - special_tokens_map.json
