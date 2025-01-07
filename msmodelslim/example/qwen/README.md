@@ -35,7 +35,7 @@
   ```shell
   cd ${modelslim_path}/example/qwen
   ```
-- Qwen2.5 72B推荐使用以下配置进行PDMIX量化
+- Qwen2.5 72B推荐使用以下配置进行PDMIX量化，回退部分down层
   ```shell
   python3 convert_qwen2.5_72b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
@@ -43,7 +43,7 @@
   ```shell
   python3 convert_qwen2.5_72b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --no_disable
   ```
-- Qwen2.5 14B推荐使用以下配置进行PDMIX量化
+- Qwen2.5 14B 推荐使用以下配置进行PDMIX量化，回退部分down层
   ```shell
   python3 convert_qwen2.5_14b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
@@ -51,7 +51,6 @@
   ```shell
   python3 convert_qwen2.5_14b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --no_disable
   ```
-  
 - Qwen2.5 72B可用以下配置进行PDMIX量化，回退涉及k,q,v,down线性层
   ```shell
   python3 convert_qwen2.5_72b_pdmix_kqv.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
@@ -61,12 +60,12 @@
   ```shell
   cd ${modelslim_path}/example/qwen
   ```
-- Qwen2 7B推荐使用以下配置进行PERTILLING+KMEANS量化
+- Qwen2 7B 推荐使用以下配置进行PERTILLING+KMEANS量化，回退涉及k,q,v,down线性层
   ```shell
   python3 convert_qwen2_7b_pertilling.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
   
-- Qwen2 7B推荐使用以下配置进行PERTILLING+KMEANS+C8量化
+- Qwen2 7B 推荐使用以下配置进行PERTILLING+KMEANS+C8量化，回退涉及k,q,v,down线性层
   ```shell
   python3 convert_qwen2_7b_pertilling_c8.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
@@ -75,23 +74,23 @@
   ```shell
   cd ${modelslim_path}/example/qwen
   ```
-- Qwen2.5 7B W8A8推荐使用以下配置进行量化
+- Qwen2.5 7B W8A8推荐使用以下配置进行KMEANS+PERTENSOR/W8A8/FLOAT混合量化
   ```shell
   python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --mix_select_layer --mix_layer_alpha 0.5 --mix_layer_beta 1
   ```
-- Qwen2.5 7B W8A8C8推荐使用以下配置进行量化
+- Qwen2.5 7B W8A8C8推荐使用以下配置进行KMEANS+PERTENSOR/W8A8/FLOAT混合量化
   ```shell
   python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --mix_select_layer --mix_layer_alpha 0.1 --mix_layer_beta 1 --kv_quant
   ```
-- Qwen2.5 7B W8A8C8可使用以下配置进行量化，对话正常，建议仅用于基准性能测试
+- Qwen2.5 7B W8A8C8可使用以下配置进行KMEANS+PERTENSOR/W8A8/FLOAT混合量化，对话正常
   ```shell
   python3 convert_qwen2.5_7b_pertensor.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --mix_select_layer --mix_layer_alpha 0.5 --mix_layer_beta 1 --kv_quant
   ```
-- Qwen2.5 7B可用以下配置进行KMEANS+C8量化
+- Qwen2.5 7B可用以下配置进行KMEANS+PERTENSOR/W8A8/FLOAT混合量化+C8量化
   ```shell
   python convert_qwen2.5_7b_kmeans_c8.py --model_path {浮点权重路径} --save_path {量化权重保存路径} --mix_select_layer
   ```
-- Qwen2.5 72B可用以下配置进行PERTENSOR+C8量化
+- Qwen2.5 72B可用以下配置进行PERTENSOR+C8量化，仅回退down层
   ```shell
   python convert_qwen2.5_72b_pertensor.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
