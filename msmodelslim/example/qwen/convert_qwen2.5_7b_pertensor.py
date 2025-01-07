@@ -62,7 +62,7 @@ def get_anti_dataset(tokenizer, calib_list, device="npu"):
     return torch.cat(new_calib_dataset)
 
 
-def get_calib_dataset(tokenizer, calib_list, device="npu"):  # device="npu:0" 如果需要使用npu进行量化
+def get_calib_dataset(tokenizer, calib_list, device="npu"):
     calib_dataset = []
     for calib_data in calib_list:
         inputs = tokenizer(calib_data, return_tensors='pt').to(device)
@@ -181,31 +181,6 @@ if __name__ == "__main__":
     calibrator.run()
     calibrator.save(OUT_MODEL_PATH, save_type=["safe_tensor"])
 
-    # 伪量化对话
-    SEQ_LEN_OUT = 100
-    logging.info("testing quant weights...")
-    TEST_PROMPT = "What is deep learning?\n"
-    test_input = tokenizer(TEST_PROMPT, return_tensors="pt").to(model.device)
-    logging.info("model is inferring...")
-    model.eval()
-    generate_ids = model.generate(test_input.input_ids,
-                                  attention_mask=test_input.attention_mask,
-                                  max_new_tokens=SEQ_LEN_OUT)
-    res = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-    logging.info(res)
-    for result in res:
-        logging.info(result)
-
-    # 转FP16
-    safetensor_path = os.path.join(OUT_MODEL_PATH, 'quant_model_weight_w8a8s.safetensors')
-    weight_1 = load_file(safetensor_path)
-
-    for key in weight_1.keys():
-        if 'deq_scale' in key:
-            weight_1[key] = deqscale2int64(weight_1[key])
-
-    save_file(weight_1, safetensor_path)
-
     custom_hooks = {
         'config.json': functools.partial(modify_config_json, custom_hook=custom_hook),
     }
@@ -213,7 +188,7 @@ if __name__ == "__main__":
                       quant_config=quant_config, custom_hooks=custom_hooks)
 
     # FP
-    afetensor_path = os.path.join(OUT_MODEL_PATH, 'quant_model_weight_w8a8s.safetensors')
+    safetensor_path = os.path.join(OUT_MODEL_PATH, 'quant_model_weight_w8a8s.safetensors')
     safetensor_weight = load_file(safetensor_path)
 
     for key in safetensor_weight.keys():
