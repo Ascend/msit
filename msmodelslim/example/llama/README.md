@@ -39,7 +39,7 @@
   ```shell
   cd ${modelslim_path}/example/llama
   ```
-- LLaMa3.1 70B推荐使用以下配置进行PDMIX量化
+- LLaMa3.1 70B推荐使用以下配置进行PDMIX量化，只回退down层
   ```shell
   python3 convert_llama3.1_70b_pdmix.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
@@ -58,7 +58,7 @@
   ```shell
   python3 convert_llama3.1_8b_kmeans_mix.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
-- LLaMa3.1 8B W8A8可用以下配置进行KMEANS+PERTENSOR量化
+- LLaMa3.1 8B W8A8可用以下配置进行KMEANS+PERTENSOR量化，任意回退
   ```shell
   python3 convert_llama3.1_8b_kmeans.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
@@ -66,11 +66,11 @@
   ```shell
   python3 convert_llama3.1_8b_kmeans_mix_c8.py --model_path {浮点权重路径} --save_path {W8A8PDMIX权重路径}
   ```
-- LLaMa3.1 8B W8A8C8可用以下配置进行KMEANS+PERTENSOR量化，对话正常，建议仅用于基准性能测试
+- LLaMa3.1 8B W8A8C8可用以下配置进行KMEANS+PERTENSOR量化，对话正常，任意回退，建议仅用于基准性能测试
   ```shell
   python3 convert_llama3.1_8b_kmeans_c8.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
-- LLaMa3.1 8B W8A8可用以下配置进行KMEANS+PERTILLING量化
+- LLaMa3.1 8B W8A8可用以下配置进行KMEANS+PERTILLING量化，任意回退
   ```shell
   python3 convert_llama3.1_8b_pertilling.py --model_path {浮点权重路径} --save_path {量化权重保存路径}
   ```
