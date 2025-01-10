@@ -1,12 +1,17 @@
 import os
-
 import time
-from concurrent import futures
 from pathlib import Path
-import pandas as pd
 import sqlite3
+from concurrent import futures
 from functools import partial
 from collections import defaultdict
+import logging
+
+import pandas as pd
+
+
+logging.basicConfig(level=logging.INFO)
+
 
 QUERY_SQL = """
 SELECT
@@ -44,7 +49,10 @@ class MulitProcessor:
         if self._executor is None:
             raise RuntimeError("executor is None")
         return self
-    
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def close(self):
         if self._executor:
             self._executor.shutdown(wait=True)
@@ -56,9 +64,6 @@ class MulitProcessor:
     def map(self, func, *iterables, **kwargs):
         partial_func = partial(func, **kwargs)
         return list(self._executor.map(partial_func, *iterables))
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
 
 
 class DBLoader:
@@ -98,14 +103,14 @@ class DBLoader:
 
     def run(self):
         t1 = time.time()
-        print("loading data from db...")
+        logging.info("loading data from db...")
 
         with MulitProcessor() as executor:
             mapper_res = self.mapper_func(executor)
         
         self.concat_db(mapper_res)
         t2 = time.time()
-        print(f"loading cost time {t2 - t1}")
+        logging.info(f"loading cost time {t2 - t1}")
 
 
 def load_db(path):
@@ -145,19 +150,19 @@ class FreqProcessor:
             else:
                 error_ranks.append(rank)
 
-        print("=" * 50)
+        logging.info("=" * 50)
         if len(free_ranks) > 0:
-            print(f"find ranks with free time, aic freq in {[COMMON_FREQ, FREE_FREQ]}: {free_ranks}")
+            logging.info(f"find ranks with free time, aic freq in {[COMMON_FREQ, FREE_FREQ]}: {free_ranks}")
         else:
-            print("no rank found with free time")
+            logging.info("no rank found with free time")
 
-        print("=" * 50)
+        logging.info("=" * 50)
         if len(error_ranks) > 0:    
-            print("find ranks with abnormal aic freq:")
+            logging.info("find ranks with abnormal aic freq:")
             for rank in error_ranks:
-                print(f"rank: {rank}, abnormal_freq: {dic[rank]}")
+                logging.info(f"rank: {rank}, abnormal_freq: {dic[rank]}")
         else:
-            print("no rank found with abnormal aic freq")
+            logging.info("no rank found with abnormal aic freq")
 
 
 def freq_process(dfs):
