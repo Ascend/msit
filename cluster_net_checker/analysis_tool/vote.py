@@ -17,6 +17,8 @@ import numpy as np
 logging.basicConfig(level=logging.INFO)
 
 
+DB_PARTTERN = "ascend_pytorch_profiler_*.db"
+
 QUERY_SQL = """
 SELECT
     rdm.rankId,
@@ -107,42 +109,32 @@ class DBLoader:
         self.path = Path(input_path)
         self.all_json_objects = pd.DataFrame([])
 
-        self.path_list = []
-        for db_file in self.path.rglob(DB_PATTERN):
-            if db_file.is_file():
-                self.path_list.append(db_file)
+        self.path_list = [db_file for db_file in self.path.rglob(DB_PATTERN) if db_file.is_file()]
         self.run()
 
     @staticmethod
-    def _mapper_func(path_map):
+    def mapper_func(path_map):
         json_obj = connect_and_process_sql(path_map, QUERY_SQL)
         json_obj = pd.DataFrame(json_obj)
         return json_obj
-    
-    def mapper_func(self, executor):
-        return executor.map(
-            self._mapper_func,
-            self.path_list,
-        )
 
     def concat_db(self, db_list):
-        df_list = []
-        for json_obj in db_list:
-            if json_obj is not None:
-                df_list.append(json_obj)
-        
+        df_list = [json_obj for json_obj in db_list if json_obj is not None]
         self.all_json_objects = pd.concat(df_list, ignore_index=True)
 
     def run(self):
         t1 = time.time()
-        print("loading data from db...")
+        logging.info("loading data from db...")
 
         with MulitProcessor() as executor:
-            mapper_res = self.mapper_func(executor)
+            mapper_res = executor.map(
+                self.mapper_func,
+                self.path_list,
+            )
         
         self.concat_db(mapper_res)
         t2 = time.time()
-        print(f"loading cost time {t2 - t1}")
+        logging.info(f"loading cost time {t2 - t1}s")
 
 
 class DBProcessor:
@@ -171,7 +163,6 @@ class DBProcessor:
             for op_name, ops in ops_same_group.items():
                 communication_time_list = [self.communication_time_arr[op_idx] for op_idx in ops]
                 transmit_time = min(communication_time_list)
-                # max_time = max(communication_time_list)
                 
                 judge_flag, outlier_idx, vote_string = judge_vote(communication_time_list)
 
@@ -207,7 +198,7 @@ class DBProcessor:
         res = pd.DataFrame(columns=["host", "rankId"])
         for key, value in map_dic.items():
             value.sort()
-            res.loc[len(res.index)] = [key, value]
+            res.loc[len(res.index)] = [key, str(value)]
         return res
     
     def parser_group_rank_map(self):
@@ -228,7 +219,7 @@ class DBProcessor:
         conn = sqlite3.connect(save_file)
 
         def df_to_db(sql_obj, df_obj, tabel_name):
-            df_obj.to_sql(tabel_name, sql_obj, if_exist="replace")
+            df_obj.to_sql(tabel_name, sql_obj, if_exists="replace")
         
         vote_res = self.vote_result_to_df()
         df_to_db(conn, vote_res, "vote_result")
