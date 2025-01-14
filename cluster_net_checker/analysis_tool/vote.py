@@ -1,18 +1,18 @@
 # Copyright Huawei Technologies Co., Ltd. 2024-2025. All rights reserved.
 
 import os
+import time
 import copy
-from collections import defaultdict
-import logging
 from pathlib import Path
+import numpy as np
 import sqlite3
-import pandas as pd
-from tqdm import tqdm
 from concurrent import futures
 from functools import partial
-import time
-import numpy as np
+from collections import defaultdict
+import logging
 
+import pandas as pd
+from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO)
 
@@ -83,7 +83,10 @@ class MulitProcessor:
         if self._executor is None:
             raise RuntimeError("executor is None")
         return self
-    
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def close(self):
         if self._executor:
             self._executor.shutdown(wait=True)
@@ -95,9 +98,6 @@ class MulitProcessor:
     def map(self, func, *iterables, **kwargs):
         partial_func = partial(func, **kwargs)
         return list(self._executor.map(partial_func, *iterables))
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
 
 
 class DBLoader:
@@ -131,7 +131,7 @@ class DBLoader:
                 self.mapper_func,
                 self.path_list,
             )
-        
+         
         self.concat_db(mapper_res)
         t2 = time.time()
         logging.info(f"loading cost time {t2 - t1}s")
@@ -159,8 +159,8 @@ class DBProcessor:
                 continue
             process_group[self.group_name_arr[idx]][self.op_name_arr[idx]].append(idx)
         
-        for group_name, ops_same_group in tqdm(process_group.items(), desc="Processing DB data..."):
-            for op_name, ops in ops_same_group.items():
+        for _, ops_same_group in tqdm(process_group.items(), desc="Processing DB data..."):
+            for _, ops in ops_same_group.items():
                 communication_time_list = [self.communication_time_arr[op_idx] for op_idx in ops]
                 transmit_time = min(communication_time_list)
                 
