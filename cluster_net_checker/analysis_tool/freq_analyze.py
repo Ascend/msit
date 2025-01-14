@@ -81,7 +81,7 @@ class DBLoader:
         self.run()
 
     @staticmethod
-    def _mapper_func(path_map):
+    def mapper_func(path_map):
         json_obj = connect_and_process_sql(path_map, QUERY_SQL)
         json_obj = pd.DataFrame(json_obj)
         return json_obj
@@ -95,10 +95,10 @@ class DBLoader:
         logging.info("loading data from db...")
 
         with MulitProcessor() as executor:
-            mapper_res = self.mapper_func(executor.map(
-                self._mapper_func,
+            mapper_res = executor.map(
+                self.mapper_func,
                 self.path_list,
-            ))
+            )
         
         self.concat_db(mapper_res)
         t2 = time.time()
