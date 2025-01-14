@@ -120,18 +120,16 @@ class FreqProcessor:
     def parser_freq(self):
         n = len(self.freq_arr)
         dic = defaultdict(list)
-        freq_count = defaultdict(lambda: 0)
 
         for idx in range(n):
             freq = self.freq_arr[idx]
-            freq_count[freq] += 1
             if freq not in dic[self.rankid_arr[idx]]:
                 dic[self.rankid_arr[idx]].append(freq)
         
-        return dic, freq_count
+        return dic
     
     def run(self):
-        dic, _ = self.parser_freq()
+        dic = self.parser_freq()
         error_ranks = []
         free_ranks = []
         for rank, value in dic.items():
