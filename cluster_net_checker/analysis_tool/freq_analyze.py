@@ -1,3 +1,5 @@
+# Copyright Huawei Technologies Co., Ltd. 2024-2025. All rights reserved.
+
 import os
 import time
 from pathlib import Path
@@ -75,10 +77,7 @@ class DBLoader:
         self.path = Path(input_path)
         self.all_json_objects = pd.DataFrame([])
 
-        self.path_list = []
-        for db_file in self.path.rglob(DB_PATTERN):
-            if db_file.is_file():
-                self.path_list.append(db_file)
+        self.path_list = [db_file for db_file in self.path.rglob(DB_PATTERN) if db_file.is_file()]
         self.run()
 
     @staticmethod
@@ -86,19 +85,9 @@ class DBLoader:
         json_obj = connect_and_process_sql(path_map, QUERY_SQL)
         json_obj = pd.DataFrame(json_obj)
         return json_obj
-    
-    def mapper_func(self, executor):
-        return executor.map(
-            self._mapper_func,
-            self.path_list,
-        )
 
     def concat_db(self, db_list):
-        df_list = []
-        for json_obj in db_list:
-            if json_obj is not None:
-                df_list.append(json_obj)
-        
+        df_list = [json_obj for json_obj in db_list if json_obj is not None]
         self.all_json_objects = pd.concat(df_list, ignore_index=True)
 
     def run(self):
@@ -106,11 +95,14 @@ class DBLoader:
         logging.info("loading data from db...")
 
         with MulitProcessor() as executor:
-            mapper_res = self.mapper_func(executor)
+            mapper_res = self.mapper_func(executor.map(
+                self._mapper_func,
+                self.path_list,
+            ))
         
         self.concat_db(mapper_res)
         t2 = time.time()
-        logging.info(f"loading cost time {t2 - t1}")
+        logging.info(f"loading cost time {t2 - t1}s")
 
 
 def load_db(path):
@@ -165,10 +157,6 @@ class FreqProcessor:
             logging.info("no rank found with abnormal aic freq")
 
 
-def freq_process(dfs):
-    processor = FreqProcessor(dfs)
-
-
 if __name__ == "__main__":
     import argparse
 
@@ -177,5 +165,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     dfs = load_db(args.path)
-    freq_process(dfs)
+    FreqProcessor(dfs)
 
