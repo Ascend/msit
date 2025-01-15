@@ -17,7 +17,7 @@ from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
 
 
-DB_PARTTERN = "ascend_pytorch_profiler_*.db"
+DB_PATTERN = "ascend_pytorch_profiler_*.db"
 
 QUERY_SQL = """
 SELECT
@@ -181,6 +181,8 @@ class DBProcessor:
                     transmit_time_arr[op_idx] = transmit_time
                     related_ranks_arr[op_idx] = related_ranks_num
                     across_nodes_arr[op_idx] = across_nodes_flag
+        
+        self.dfs.insert(self.dfs.shape[1], 'transmit_time', transmit_time_arr)
 
     def vote_result_to_df(self):
         res = pd.DataFrame(columns=["rankId", "perpetrator_times", "count_times"])
@@ -211,7 +213,11 @@ class DBProcessor:
             value.sort()
             res.loc[len(res.index)] = [key, str(value)]
         return res
-    
+
+    def sum_time_per_rank(self):
+        transmit_time_sum = self.dfs.groupby('rankId')['transmit_time'].sum().reset_index()
+        return transmit_time_sum
+
     def save_db(self, path="./"):
         default_name = "vote_result.db"
         logging.info(f"saving file to {path}")
@@ -227,6 +233,8 @@ class DBProcessor:
         df_to_db(conn, group_rank_map, "group_rank_map")
         host_rank_map = self.parser_host_rank_map()
         df_to_db(conn, host_rank_map, "host_rank_map")
+        transmit_time_sum = self.sum_time_per_rank()
+        df_to_db(conn, transmit_time_sum, "transmit_time_sum")
 
         conn.close()
 
