@@ -10,6 +10,7 @@ output path为分析后的文件保存路径
 其中各表字段含义为：
 
 vote_result:
+
 | 名称|含义|
 | --- | --- |
 |index |序号 |
@@ -18,6 +19,7 @@ vote_result:
 |count_times  |参与投票次数 |
 
 group_rank_map:
+
 | 名称|含义|
 | --- | --- |
 |index |序号 |
@@ -25,6 +27,7 @@ group_rank_map:
 |groupName  |通信域名称 |
 
 host_rank_map:
+
 | 名称|含义|
 | --- | --- |
 |index |序号 |
@@ -32,8 +35,29 @@ host_rank_map:
 |host  |host名称 |
 
 transmit_time_sum:
+
 | 名称|含义|
 | --- | --- |
 |index |序号 |
 |rankId  |rank编号 |
 |transmit_time  |通信时长 |
+
+operator_classification_statistics:
+
+| 名称|含义|
+| --- | --- |
+|index |序号 |
+|rankId  |rank编号 |
+|groupName  |通信域名称 |
+|opName  |通信算子名称 |
+|opType  |通信算子类型 |
+|dataSize  |通信量 |
+|across_nodes  |跨节点数量 |
+|related_ranks  |此通信域关联卡数 |
+|dataType  |数据类型 |
+|host_id  |标识host的唯一id |
+|minTransmitTime  |此筛选条件下最小传输时间 |
+|timeDiff  |此筛选条件下传输时间差距 |
+
+该表用法：该表按照opType、across_nodes、dataSize、related_ranks为筛选条件进行了分组，按照传输时间差距进行了排序， 建议优先看排序
+最前面的卡去定位慢链路问题。
