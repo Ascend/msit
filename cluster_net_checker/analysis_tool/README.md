@@ -10,7 +10,6 @@ output path为分析后的文件保存路径
 其中各表字段含义为：
 
 vote_result:
-
 | 名称|含义|
 | --- | --- |
 |index |序号 |
@@ -19,7 +18,6 @@ vote_result:
 |count_times  |参与投票次数 |
 
 group_rank_map:
-
 | 名称|含义|
 | --- | --- |
 |index |序号 |
@@ -27,7 +25,6 @@ group_rank_map:
 |groupName  |通信域名称 |
 
 host_rank_map:
-
 | 名称|含义|
 | --- | --- |
 |index |序号 |
@@ -35,7 +32,6 @@ host_rank_map:
 |host  |host名称 |
 
 transmit_time_sum:
-
 | 名称|含义|
 | --- | --- |
 |index |序号 |
@@ -43,7 +39,6 @@ transmit_time_sum:
 |transmit_time  |通信时长 |
 
 operator_classification_statistics:
-
 | 名称|含义|
 | --- | --- |
 |index |序号 |
