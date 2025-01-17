@@ -218,6 +218,34 @@ class DBProcessor:
         transmit_time_sum = self.dfs.groupby('rankId')['transmit_time'].sum().reset_index()
         return transmit_time_sum
 
+    def parser_operator_classification_statistics(self):
+        df = self.dfs
+
+        # 计算 RankedData
+        df['rn'] = df.groupby(['opType', 'dataSize', 'across_nodes', 'related_ranks'])['transmit_time'].rank(
+            method='dense', ascending=True)
+
+        # 计算 AggregatedData
+        agg_df = df.groupby(['opType', 'dataSize', 'across_nodes', 'related_ranks']).agg(
+            minTransmitTime=('transmit_time', 'min'),
+            timeDiff=('transmit_time', lambda x: x.max() - x.min())
+        ).reset_index()
+
+        # 合并 AggregatedData 和原始数据
+        merged_df = pd.merge(df, agg_df, on=['opType', 'dataSize', 'across_nodes', 'related_ranks'])
+
+        # 过滤 RankedData 中 rn = 1 的行
+        result = merged_df[merged_df['rn'] == 1]
+
+        # 选择需要的列
+        result = result[
+            ['rankId', 'groupName', 'opName', 'opType', 'dataSize', 'across_nodes', 'related_ranks', 'dataType',
+             'host_id', 'minTransmitTime', 'timeDiff']]
+
+        # 按 timeDiff 降序排序
+        result = result.sort_values(by='timeDiff', ascending=False)
+        return result
+
     def save_db(self, path="./"):
         default_name = "vote_result.db"
         logging.info(f"saving file to {path}")
@@ -235,6 +263,8 @@ class DBProcessor:
         df_to_db(conn, host_rank_map, "host_rank_map")
         transmit_time_sum = self.sum_time_per_rank()
         df_to_db(conn, transmit_time_sum, "transmit_time_sum")
+        operator_classification_statistics = self.parser_operator_classification_statistics()
+        df_to_db(conn, operator_classification_statistics, "operator_classification_statistics")
 
         conn.close()
 
