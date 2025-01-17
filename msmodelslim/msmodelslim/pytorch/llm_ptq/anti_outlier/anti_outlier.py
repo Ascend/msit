@@ -284,7 +284,6 @@ class AntiOutlier(object):
         # buffer the latest tensor
         if name not in act_stats:
             act_stats[name] = {}
-            act_stats[name]['tensor'] = tensor
 
         hidden_dim = tensor.shape[-1]
         tensor = tensor.view(-1, hidden_dim).detach()  # [N,C]
@@ -292,6 +291,14 @@ class AntiOutlier(object):
         coming_min = torch.min(tensor, dim=0)[0]  # [C]
 
         stat_dict = act_stats[name]
+
+        if self.cfg.anti_method == 'm6' and self.cfg.flex_config['use_flex']:
+            if 'tensor' not in act_stats[name]:
+                act_stats[name]['tensor'] = [tensor.to("cpu").reshape(-1, tensor.shape[-1])]
+            else:
+                act_stats[name]['tensor'].append(tensor.to("cpu").reshape(-1, tensor.shape[-1]))
+        else:
+            act_stats[name]['tensor'] = tensor
 
         # collect the min-max value
         if STAT_KEY_MAX in stat_dict:
