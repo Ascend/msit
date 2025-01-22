@@ -26,6 +26,7 @@ SELECT
     co.endNs - co.startNs AS communication_time,
     sii.value AS opName,
     host.hostUid as host_id,
+    co.opType,
     CASE
         WHEN et.name = 'INT8' THEN 1 * co.count
         WHEN et.name = 'FP16' THEN 2 * co.count
