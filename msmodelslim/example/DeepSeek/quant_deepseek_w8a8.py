@@ -105,8 +105,7 @@ quant_config = QuantConfig(
     act_method=1,
     pr=1.0,
     w_sym=True,
-    mm_tensor=False,
-    low_memory={}
+    mm_tensor=False
 )
 
 calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level="L0")
