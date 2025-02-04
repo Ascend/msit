@@ -82,6 +82,7 @@ class QuantConfig:
             percdamp: GPTQ所使用的矩阵正定偏置系数,当GPTQ运行出现非正定矩阵导致的报错时可以增大该参数
             low_memory: 低内存低显存配置，配置为字典时开启，如 {'offload_type': 'disk' | 'memory', 'enable_lazy_save': True | False}
         """
+        low_memory = {}
         self._cur_config = QuantConfigFactory. \
             get_quant_config('base', w_bit=w_bit, a_bit=a_bit, act_method=act_method, w_method=w_method,
                              disable_names=disable_names, pr=pr, mm_tensor=mm_tensor, dev_type=dev_type, dev_id=dev_id,

@@ -41,6 +41,8 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs import (
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.kv_cache_utils import (
     set_kvcache_vari_func, new_forward
 )
+
+from msmodelslim.pytorch.llm_ptq.utils.auto_save_dict import AutoSaveDict
 from msmodelslim.pytorch.llm_sparsequant.atomic_power_outlier import quant_one_weight_by_outliers
 from msmodelslim.pytorch.llm_sparsequant.sparsequant_modules import LinearSparseQuantizer
 from msmodelslim.pytorch.lowbit.atomic_power_outlier import \
@@ -113,7 +115,7 @@ class Calibrator(object):
                                 f'{model.config.torch_dtype}. The model will be regarded as {model.config.torch_dtype}'
                                 f' type in subsequent process.')
 
-        self.quant_param_dict = {}
+        self.quant_param_dict = AutoSaveDict(self.cfg, max_gb_size=1)
         # 记录被量化module名称，相关的scale、offset等参数名称 key:weight的名称， value:scale、offset等参数的名称
         self.quantized_module_param_dict = defaultdict(list)
         self.fa_module_param_dict = defaultdict(list)
@@ -132,7 +134,7 @@ class Calibrator(object):
             self.transformer_class = class_detect(model, 'GLMTransformer')
 
         # 记录浮点模型权重
-        self.ori_fp_weight = self.get_ori_model_weight(model, self.cfg)
+        # self.ori_fp_weight = self.get_ori_model_weight(model, self.cfg)
 
         if self.cfg.do_smooth:
             replace_RMSNorm(model)
@@ -172,6 +174,8 @@ class Calibrator(object):
                 self.enable_quant()
         except Exception as e:
             raise Exception("Please check the model and configuration.", e) from e
+
+        self.named_module_count = len(list(self.model.named_modules))
         self.logger.info("Quantizer initialized successful!")
 
     def init_model_device(self, model):
@@ -223,6 +227,10 @@ class Calibrator(object):
                 config = MemoryStateDictConfig()
             else:
                 raise ValueError("state dict type must be disk or memory")
+
+            config.skip_keys = [name + '.weight' for name in self.quant_linear_names]
+            config.skip_keys += [name + '.bias' for name in self.quant_linear_names]
+
             return copy_offloaded_state_dict(model, config)
 
         ori_fp_weight = {}
@@ -357,20 +365,28 @@ class Calibrator(object):
         scale, zero_point = linear_quantization_params(8, kv_cache['min'], kv_cache['max'],
                                                        integral_zero_point=True, q_signed=True, sym=self.kv_sym)
 
+        self.quant_param_dict.model_quant_type = QuantType.KV8
+
         self.quant_param_dict[new_key_scale] = scale.to('cpu')
         self.quant_param_dict[new_key_offset] = zero_point.to('cpu')
-        self.quantized_module_param_dict[key_weight].append(new_key_scale)
-        self.quantized_module_param_dict[key_weight].append(new_key_offset)
+        # self.quantized_module_param_dict[key_weight].append(new_key_scale)
+        # self.quantized_module_param_dict[key_weight].append(new_key_offset)
 
     def rollback_names_process(self, model):
         # 自动回退lm_head层
         quant_name_list = []
         conv_name_list = []
+
+        quant_name_set = set()
+        conv_name_set = set()
+
         for name, module in list(model.named_modules()):
             if isinstance(module, (nn.Linear, nn.modules.linear.NonDynamicallyQuantizableLinear)):
                 quant_name_list.append(name)
+                quant_name_set.add(name)
             elif isinstance(module, nn.Conv2d):
                 conv_name_list.append(name)
+                conv_name_set.add(name)
         if quant_name_list:
             last_layer_name = quant_name_list[-1]
         else:
@@ -490,19 +506,31 @@ class Calibrator(object):
             )
             save_type = [SAVE_TYPE_NUMPY]
         output_path = get_write_directory(output_path, write_mode=0o750)
+
+        # self.get_quant_params()
+        # if SAVE_TYPE_NUMPY in save_type:
+        #     self.save_npy(output_path)
+        # if SAVE_TYPE_SAFE_TENSOR in save_type:
+        if not isinstance(safetensors_name, str):
+            default_safetensors_name = f"quant_model_weight_{self.cfg.model_quant_type.lower()}.safetensors"
+            self.logger.warning(f"invalid `safetensors_name`, defaulting to `{default_safetensors_name}`")
+            safetensors_name = default_safetensors_name
+        if not isinstance(json_name, str):
+            default_json_name = f"quant_model_description_{self.cfg.model_quant_type.lower()}.json"
+            self.logger.warning(f"invalid `json_name`, defaulting to `{default_json_name}`")
+            json_name = default_json_name
+        # self.save_safetensor(output_path, safetensors_name, json_name, part_file_size)
+        quant_model_weight_path = os.path.join(output_path, safetensors_name)
+        self.logger.info("The directory path for the saved safetensors is %s", quant_model_weight_path)
+
+        self.quant_param_dict.prefix = f"quant_model_weight_{self.cfg.model_quant_type.lower()}"
+        self.quant_param_dict.save_path = output_path
+        self.quant_param_dict.json_name = json_name
+        self.quant_param_dict.max_size = part_file_size * AutoSaveDict.GB_SIZE if part_file_size else float("inf")
         self.get_quant_params()
-        if SAVE_TYPE_NUMPY in save_type:
-            self.save_npy(output_path)
-        if SAVE_TYPE_SAFE_TENSOR in save_type:
-            if not isinstance(safetensors_name, str):
-                default_safetensors_name = f"quant_model_weight_{self.cfg.model_quant_type.lower()}.safetensors"
-                self.logger.warning(f"invalid `safetensors_name`, defaulting to `{default_safetensors_name}`")
-                safetensors_name = default_safetensors_name
-            if not isinstance(json_name, str):
-                default_json_name = f"quant_model_description_{self.cfg.model_quant_type.lower()}.json"
-                self.logger.warning(f"invalid `json_name`, defaulting to `{default_json_name}`")
-                json_name = default_json_name
-            self.save_safetensor(output_path, safetensors_name, json_name, part_file_size)
+        self.quant_param_dict.post_process()
+        self.logger.info("Save successfully")
+
 
     def save_safetensor(self, output_path, safetensors_name, json_name, part_file_size):
         """
@@ -689,90 +717,80 @@ class Calibrator(object):
 
     def get_quant_params(self):
         self.model.eval()
-        for name, module in self.model.named_modules():
-            with PrepareWeight(module):
-                if self.cfg.use_fa_quant and is_attn_module_and_then_check_quantizer(module, name):
-                    quant_param_scale, quant_param_offset, attach_map = export_fa_quant_params(module, name)
-                    self.quant_param_dict.update(quant_param_scale)
-                    self.quant_param_dict.update(quant_param_offset)
-                    self.fa_module_param_dict.update(attach_map)
 
-                if isinstance(module, LinearNf4Quantizer):
-                    self.quant_param_dict[name + '.weight'] = module.weight
-                    if module.bias is not None:
-                        self.quant_param_dict[name + '.bias'] = module.bias
-                if isinstance(module, ParallelLinearCol):
-                    quant_param, attach_map = module.get_quant_param()
-                    self.quant_param_dict.update(quant_param)
-                    self.quantized_module_param_dict.update(attach_map)
-                # 处理 Norm 对应的 weight、bias
-                if isinstance(module, (NormBias, LlamaRMSNormBias)):
-                    anti_norm_weight = module.module.weight.cpu() if isinstance(module,
-                                                                                NormBias) else module.weight.cpu()
-                    anti_norm_bias = module.bias.cpu()
-                    anti_norm_name_weight = name + '.module.weight'
-                    anti_norm_name_bias = name + '.module.bias'
-                    if not hasattr(self.model, 'ori_state_dict'):
-                        self.quant_param_dict[name + '.weight'] = anti_norm_weight.clone().detach()
-                        self.quant_param_dict[name + '.bias'] = anti_norm_bias.clone().detach()
-                        self.quantized_module_param_dict[anti_norm_name_weight] = [name + '.weight', name + '.bias']
+        with tqdm(desc="Collect quant param", total=self.named_module_count) as progress:
+            for name, module in self.model.named_modules():
+                model_quant_type = self.cfg.model_quant_type
+                tmp_param_dict = {}
+                progress.update(1)
+
+                with PrepareWeight(module):
+                    if self.cfg.use_fa_quant and is_attn_module_and_then_check_quantizer(module, name):
+                        model_quant_type = QuantType.FAQuant
+                        quant_param_scale, quant_param_offset, attach_map = export_fa_quant_params(module, name)
+                        tmp_param_dict.update(quant_param_scale)
+                        tmp_param_dict.update(quant_param_offset)
+                    elif isinstance(module, LinearNf4Quantizer):
+                        model_quant_type = QuantType.NF4
+                        tmp_param_dict[name + '.weight'] = module.weight
+                        if module.bias is not None:
+                            tmp_param_dict[name + '.bias'] = module.bias
+                    elif isinstance(module, ParallelLinearCol):
+                        quant_param, attach_map = module.get_quant_param()
+                        tmp_param_dict.update(quant_param)
+                    # 处理 Norm 对应的 weight、bias
+                    elif isinstance(module, (NormBias, LlamaRMSNormBias)):
+                        is_norm_bias = isinstance(module, NormBias)
+                        anti_norm_weight = module.module.weight.cpu() if is_norm_bias else module.weight.cpu()
+                        anti_norm_bias = module.bias.cpu()
+                        has_ori_state_dict = hasattr(self.model, 'ori_state_dict')
+                        anti_norm_name_weight = name + '.module.weight' if has_ori_state_dict else name + '.weight'
+                        anti_norm_name_bias = name + '.module.bias' if has_ori_state_dict else name + '.bias'
+                        tmp_param_dict[anti_norm_name_weight] = anti_norm_weight.clone().detach()
+                        tmp_param_dict[anti_norm_name_bias] = anti_norm_bias.clone().detach()
+                    # 处理Linear、以及附属scale、offset等params
+                    elif isinstance(module, (LinearQuantizer, LinearSparseQuantizer, LowBitLinearQuantizer)):
+                        if not module.quant_weight.is_enable:
+                            continue
+
+                        quant_weight, fp_weight, weight_scale, weight_offset = self.get_param_from_quantizer(module)
+                        if quant_weight is None:
+                            continue
+
+                        # 各种量化均需要提供 weight
+                        quant_weight = quant_weight.to(device=fp_weight.device)
+                        save_quant_weight = quant_weight.cpu().to(torch.int8)
+                        tmp_param_dict[name + '.weight'] = save_quant_weight
+                        # 所有专家层都使用动态量化
+                        model_quant_type = self.cfg.model_quant_type
+                        if "mlp" in name and self.is_deepseek_v2 and model_quant_type is QuantType.W8A8:
+                            model_quant_type = QuantType.W8A8_DYNAMIC
+                        # W4A16/W8A16 需要提供 weight_scale、 weight_offset
+                        if model_quant_type in [QuantType.W8A16, QuantType.W4A16, QuantType.W8A8_DYNAMIC]:
+                            tmp_param_dict[name + '.weight_scale'] = weight_scale.cpu()
+                            tmp_param_dict[name + '.weight_offset'] = weight_offset.cpu()
+                        # W8A8/W8A8s 需要提供deq_scale、quant_bias、input_scale、input_offset
+                        if model_quant_type in [QuantType.W8A8, QuantType.W8A8S]:
+                            input_scale = module.quant_input.input_scale.to(device=quant_weight.device)
+                            input_offset = module.quant_input.input_offset.to(device=quant_weight.device)
+                            deq_scale = self.deqscale_process(input_scale, weight_scale).to(torch.float32)
+                            quant_weight = quant_weight.to(torch.float32)
+                            correction = (quant_weight.sum(dim=1) * input_offset.to(device=quant_weight.device)).cpu()
+                            fp_bias = self.change_bias(fp_weight, module)
+                            quant_bias = torch.round(fp_bias / deq_scale - correction)
+                            deq_scale = deqscale2int64_by_dtype(deq_scale, self.model.config.torch_dtype == torch.bfloat16)
+
+                            tmp_param_dict[name + '.input_scale'] = input_scale.cpu()
+                            tmp_param_dict[name + '.input_offset'] = input_offset.cpu()
+                            tmp_param_dict[name + '.quant_bias'] = quant_bias.cpu().to(torch.int32)
+                            tmp_param_dict[name + '.deq_scale'] = deq_scale.cpu()
                     else:
-                        self.quant_param_dict[anti_norm_name_weight] = anti_norm_weight.clone().detach()
-                        self.quant_param_dict[anti_norm_name_bias] = anti_norm_bias.clone().detach()
-                        self.quantized_module_param_dict[name + '.weight'] = [anti_norm_name_weight,
-                                                                              anti_norm_name_bias]
+                        model_quant_type = QuantType.FLOAT
+                        for key, param in module.named_parameters(name, recurse=False):
+                            tmp_param_dict[key] = param
 
-                # 处理Linear、以及附属scale、offset等params
-                if isinstance(module, (LinearQuantizer, LinearSparseQuantizer, LowBitLinearQuantizer)):
-                    if not module.quant_weight.is_enable:
-                        continue
-
-                    quant_weight, fp_weight, weight_scale, weight_offset = self.get_param_from_quantizer(module)
-                    if quant_weight is None:
-                        continue
-
-                    # 各种量化均需要提供 weight
-                    quant_weight = quant_weight.cpu()
-                    save_quant_weight = quant_weight.to(torch.int8)
-                    if enabled_adapter() and self.cfg.enable_lazy_save:
-                        def get_quant_weight(mod: torch.nn.Module) -> torch.Tensor:
-                            with PrepareWeight(mod):
-                                value, _, _, _ = self.get_param_from_quantizer(mod)
-                                return value.cpu().to(torch.int8)
-
-                        save_quant_weight = LazyTensor(get_quant_weight,
-                                                       tensor=save_quant_weight, mod=module)
-                    self.quant_param_dict[name + '.weight'] = save_quant_weight
-
-                    # 所有专家层都使用动态量化
-                    model_quant_type = self.cfg.model_quant_type
-                    if "mlp" in name and self.is_deepseek_v2 and model_quant_type is QuantType.W8A8:
-                        model_quant_type = QuantType.W8A8_DYNAMIC
-
-                    # W4A16/W8A16 需要提供 weight_scale、weight_offset
-                    if model_quant_type in [QuantType.W8A16, QuantType.W4A16, QuantType.W8A8_DYNAMIC]:
-                        self.quant_param_dict[name + '.weight_scale'] = weight_scale
-                        self.quant_param_dict[name + '.weight_offset'] = weight_offset
-                        self.quantized_module_param_dict[name + '.weight'].append(name + '.weight_scale')
-                        self.quantized_module_param_dict[name + '.weight'].append(name + '.weight_offset')
-                    # W8A8/W8A8S 需要提供 deq_scale、quant_bias、input_scale、input_offset
-                    if model_quant_type in [QuantType.W8A8, QuantType.W8A8S]:
-                        input_scale = module.quant_input.input_scale.cpu()
-                        input_offset = module.quant_input.input_offset.cpu()
-                        self.quant_param_dict[name + '.input_scale'] = input_scale
-                        self.quant_param_dict[name + '.input_offset'] = input_offset
-                        self.quantized_module_param_dict[name + '.weight'].append(name + '.input_scale')
-                        self.quantized_module_param_dict[name + '.weight'].append(name + '.input_offset')
-                        deq_scale = self.deqscale_process(input_scale, weight_scale).to(torch.float32)
-                        correction = (quant_weight.to(torch.float32).sum(dim=1) * input_offset.to(torch.float32)).cpu()
-                        fp_bias = self.change_bias(fp_weight, module)
-                        quant_bias = torch.round(fp_bias / deq_scale - correction)
-                        deq_scale = deqscale2int64_by_dtype(deq_scale, self.model.config.torch_dtype == torch.bfloat16)
-
-                        self.quant_param_dict[name + '.quant_bias'] = quant_bias.cpu().to(torch.int32)
-                        self.quant_param_dict[name + '.deq_scale'] = deq_scale.cpu()
-                        self.quantized_module_param_dict[name + '.weight'].append(name + '.quant_bias')
-                        self.quantized_module_param_dict[name + '.weight'].append(name + '.deq_scale')
+                    self.quant_param_dict.model_quant_type = model_quant_type
+                    self.quant_param_dict.update(tmp_param_dict)
 
         if hasattr(self.cfg, 'tp_size'):
             self.concat_simulate_linear()
@@ -789,8 +807,10 @@ class Calibrator(object):
                     concat_name = '.'.join([name, f'tp_list', str(tp_index), 'weight'])
                     concat_weight_list.append(self.quant_param_dict.get(concat_name))
                 concat_weight = torch.cat(concat_weight_list, dim=-1)
+                self.quant_param_dict.model_quant_type = module.cfg.model_quant_type
                 self.quant_param_dict[name + '.weight'] = concat_weight
 
+    @torch.no_grad()
     def get_param_from_quantizer(self, module):
         quant_weight = None
         fp_weight, device, weight_scale, weight_offset, round_opt = self._get_module_quant_input(module)

@@ -56,6 +56,7 @@ class AntiOutlierConfig:
         check_type(self.w_sym, bool, param_name='w_sym')
 
         # check low_memory config, must be {"offload_type": "disk|memory"}
+        low_memory = {}
         self.is_adapter_enabled = low_memory is not None
         self.offload_type = OFFLOAD_MEMORY
         if self.is_adapter_enabled:
