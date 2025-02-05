@@ -740,6 +740,7 @@ class Calibrator(object):
                         tmp_param_dict.update(quant_param)
                     # 处理 Norm 对应的 weight、bias
                     elif isinstance(module, (NormBias, LlamaRMSNormBias)):
+                        model_quant_type = QuantType.W8A8
                         is_norm_bias = isinstance(module, NormBias)
                         anti_norm_weight = module.module.weight.cpu() if is_norm_bias else module.weight.cpu()
                         anti_norm_bias = module.bias.cpu()
@@ -763,8 +764,8 @@ class Calibrator(object):
                         tmp_param_dict[name + '.weight'] = save_quant_weight
                         # 所有专家层都使用动态量化
                         model_quant_type = self.cfg.model_quant_type
-                        if "mlp" in name and self.is_deepseek_v2 and model_quant_type is QuantType.W8A8:
-                            model_quant_type = QuantType.W8A8_DYNAMIC
+                        if "mlp" not in name and self.is_deepseek_v2 and model_quant_type is QuantType.W8A8_DYNAMIC:
+                            model_quant_type = QuantType.W8A8
                         # W4A16/W8A16 需要提供 weight_scale、 weight_offset
                         if model_quant_type in [QuantType.W8A16, QuantType.W4A16, QuantType.W8A8_DYNAMIC]:
                             tmp_param_dict[name + '.weight_scale'] = weight_scale.cpu()
