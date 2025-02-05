@@ -2,6 +2,7 @@
 import argparse
 import sys
 import os
+import functools
 import json
 import torch
 import torch.nn.functional as F
@@ -9,6 +10,7 @@ import sys
 import torch_npu
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 from msmodelslim import logger
@@ -22,6 +24,9 @@ def parse_args():
     parser.add_argument('--anti_dataset', type=str, default="./anti_prompt.json")
     parser.add_argument('--calib_dataset', type=str, default="./calib_prompt.json")
     return parser.parse_args()
+
+def custom_hook(model_config):
+    model_config["mla_quantize"] = "w8a8"
 
 args = parse_args()
 model_path = args.model_path
@@ -105,9 +110,15 @@ quant_config = QuantConfig(
     act_method=1,
     pr=1.0,
     w_sym=True,
-    mm_tensor=False
+    mm_tensor=False,
+    is_dynamic=True
 )
 
 calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level="L0")
 calibrator.run()
 calibrator.save(args.save_path, save_type=["safe_tensor"], part_file_size=4)
+
+custom_hooks = {
+    'config.json': functools.partial(modify_config_json, custom_hook=custom_hook)
+}
+copy_config_files(input_path=args.model_path, output_path=args.save_path, quant_config=quant_config, custom_hooks=custom_hooks)
