@@ -18,9 +18,9 @@
 
 ## 量化权重生成
 
-- 量化权重统一使用[quant_deepseek.py](./quant_deepseek.py)脚本生成，以下提供DeepSeek模型量化权重生成快速启动命令。
+- 量化权重可使用[quant_deepseek.py](./quant_deepseek.py)和[quant_deepseek_w8a8.py](./quant_deepseek_w8a8.py)脚本生成，以下提供DeepSeek模型量化权重生成快速启动命令。
 
-#### 量化参数说明
+#### quant_deepseek.py 量化参数说明
 | 参数名 | 含义 | 默认值 | 使用方法 | 
 | ------ | ---- | --- | -------- | 
 | model_path | 浮点权重路径 | 无默认值 | 必选参数；<br>输入DeepSeek权重目录路径。 |
@@ -41,6 +41,14 @@
 | use_kvcache_quant | 是否使用kvcache量化功能 | False | True: 使用kvcache量化功能；<br>False: 不使用kvcache量化功能。|
 | is_dynamic | 是否使用per-token动态量化功能 | False | True: 使用per-token动态量化；<br>False: 不使用per-token动态量化。 |
 
+#### quant_deepseek_w8a8.py 量化参数说明
+| 参数名        | 含义 | 默认值 | 使用方法                       | 
+|------------| ---- | --- |----------------------------| 
+| model_path | 浮点权重路径 | 无默认值 | 必选参数；<br>输入DeepSeek权重目录路径。 |
+| save_path  | 量化权重路径 | 无默认值 | 必选参数；<br>输出量化结果目录路径。       |
+| layer_count  | 量化权重路径 | 无默认值 | 可选参数；<br>用于调试，实际量化的层数。     |
+| anti_dataset  | 量化权重路径 | 无默认值 | 可选参数；<br>离群值抑制校准集路径。       |
+| calib_dataset  | 量化权重路径 | 无默认值 | 可选参数；<br>量化校准集路径。          |
 
 - 更多参数配置要求，请参考量化过程中配置的参数 [QuantConfig](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/QuantConfig.md)
   以及量化参数配置类 [Calibrator](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/Calibrator.md)
@@ -54,15 +62,21 @@
   export PYTORCH_NPU_ALLOC_CONF=expandable_segments:False
   ```
 
-#### DeepSeek-V2模型量化
-##### DeepSeek-V2 w8a16量化
+#### DeepSeek-V2/V3/R1 模型量化
+##### DeepSeek-V2 w8a16 量化
 - 生成DeepSeek-V2模型w8a16量化权重，使用histogram量化方式，在CPU上进行运算
   ```shell
   python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8A16量化权重路径} --device_type cpu --act_method 2 --w_bit 8 --a_bit 16
   ```
 
-##### DeepSeek-V2 w8a8 dynamic量化
-- 生成DeepSeek-V2模型w8a8 dynamic量化权重，使用histogram量化方式，在CPU上进行运算
+##### DeepSeek-V2 w8a8 Dynamic量化
+-生成DeepSeek-V2模型 w8a8 dynamic量化权重，使用histogram量化方式，在CPU上进行运算
+```shell
+python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --device_type cpu --act_method 2 --w_bit 8 --a_bit 8  --is_dynamic True
+```
+
+##### DeepSeek-V2/V3/R1 w8a8 混合量化(MLA:w8a8量化，MOE:w8a8 dynamic量化)
+- 生成DeepSeek-V2/V3/R1模型 w8a8 混合量化权重，使用histogram量化方式
   ```shell
-  python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --device_type cpu --act_method 2 --w_bit 8 --a_bit 8  --is_dynamic True
+  python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} 
   ```
