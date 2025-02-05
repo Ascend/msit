@@ -40,7 +40,7 @@ class AutoSaveDict(OrderedDict):
         check_type(value, torch.Tensor)
         tensor = value
 
-        if tensor.device.type == 'meta':
+        if tensor.device.type == 'meta' or "module" in key:
             # TODO: this can work because module.weight and module.bias is not needed
             msmodelslim_logger.warning(f"Skip meta tensor {key}")
             return
