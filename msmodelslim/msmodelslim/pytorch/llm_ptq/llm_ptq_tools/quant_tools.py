@@ -175,7 +175,7 @@ class Calibrator(object):
         except Exception as e:
             raise Exception("Please check the model and configuration.", e) from e
 
-        self.named_module_count = len(list(self.model.named_modules))
+        self.named_module_count = len(list(self.model.named_modules()))
         self.logger.info("Quantizer initialized successful!")
 
     def init_model_device(self, model):
