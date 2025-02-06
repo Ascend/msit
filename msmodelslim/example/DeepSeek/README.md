@@ -1,20 +1,17 @@
 # DeepSeek 量化案例
 
-## 模型介绍
-- [DeepSeek-LLM](https://github.com/deepseek-ai/deepseek-LLM)从包含2T token的中英文混合数据集中，训练得到7B Base、7B Chat、67B Base与67B Chat四种模型
-
-- [DeepSeek-V2](https://github.com/deepseek-ai/DeepSeek-V2)推出了MLA (Multi-head Latent Attention)，其利用低秩键值联合压缩来消除推理时键值缓存的瓶颈，从而支持高效推理；在FFN部分采用了DeepSeekMoE架构，能够以更低的成本训练更强的模型。
-
 #### DeepSeek模型当前已验证的量化方法
-- W8A8量化：DeepSeek-V2-Lite-Chat-16B, DeepSeek-V2-Chat-236B
+- W8A8量化：DeepSeek-V2-Lite-Chat-16B, DeepSeek-V2-Chat-236B, DeepSeek-V3, DeepSeek-R1
 - W8A16量化：DeepSeek-V2-Lite-Chat-16B, DeepSeek-V2-Chat-236B
  
 #### 此模型仓已适配的模型版本
 - [Deepseek-V2-Chat](https://huggingface.co/deepseek-ai/DeepSeek-V2-Chat)
+- [Deepseek-V2-Chat](https://huggingface.co/deepseek-ai/DeepSeek-V2-Chat)
+- [Deepseek-V2-Chat](https://huggingface.co/deepseek-ai/DeepSeek-V2-Chat)
 
 ## 环境配置
 
-- 环境配置请参考[使用说明](https://gitee.com/ascend/msit/blob/master/msmodelslim/README.md)
+- 环境配置以及量化工具安装请参考[使用说明](https://gitee.com/ascend/msit/blob/br_noncom_MindStudio_8.0.0_POC_20251231/msmodelslim/README.md)
 
 ## 量化权重生成
 
@@ -70,13 +67,24 @@
   ```
 
 ##### DeepSeek-V2 w8a8 Dynamic量化
--生成DeepSeek-V2模型 w8a8 dynamic量化权重，使用histogram量化方式，在CPU上进行运算
+- 生成DeepSeek-V2模型 w8a8 dynamic量化权重，使用histogram量化方式，在CPU上进行运算
 ```shell
 python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --device_type cpu --act_method 2 --w_bit 8 --a_bit 8  --is_dynamic True
 ```
 
 ##### DeepSeek-V2/V3/R1 w8a8 混合量化(MLA:w8a8量化，MOE:w8a8 dynamic量化)
+注：当前量化只支持输入bfloat16格式模型
 - 生成DeepSeek-V2/V3/R1模型 w8a8 混合量化权重，使用histogram量化方式
   ```shell
   python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} 
   ```
+  
+##### DeepSeek量化QA
+- Q：报错 This modeling file requires the following packages that were not found in your environment： flash_attn. Run 'pip install flash_attn'
+- A: 当前环境中缺少flash_attn库，运行时需要注释掉权重文件夹中modeling_deepseek.py中的部分代码
+![img.png](img.png)
+- Q：modeling_utils.py报错 if metadata.get("format") not in ["pt", "tf", "flax", "mix"]: AttributeError: "NoneType" object has no attribute 'get';
+- A：说明输入的的权重中缺少metadata字段，需要把报错的modeling_utils.py文件的报错行注释掉（该部分内容只涉及检查，不影响功能）
+- Q：报错 Unknown quantization type， got fp8 - supported types are：['awq', 'bitsandbytes_4bit', 'bitsandbytes_8bit', 'gptq', 'aqlm', 'quanto', 'eetq', 'hqq', 'fbgemm_fp8']
+- A: 由于当前昇腾设备不支持FP8格式加载，需要将权重文件夹中config.json中的以下字段删除：
+![img_1.png](img_1.png)
