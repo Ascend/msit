@@ -84,7 +84,7 @@ python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8
 - A: 当前环境中缺少flash_attn库，运行时需要注释掉权重文件夹中modeling_deepseek.py中的部分代码
 ![img.png](img.png)
 - Q：modeling_utils.py报错 if metadata.get("format") not in ["pt", "tf", "flax", "mix"]: AttributeError: "NoneType" object has no attribute 'get';
-- A：说明输入的的权重中缺少metadata字段，需要把报错的modeling_utils.py文件的报错行注释掉（该部分内容只涉及检查，不影响功能）
+- A：说明输入的的权重中缺少metadata字段，需安装更新transformers版本（>=4.48.0）
 - Q：报错 Unknown quantization type， got fp8 - supported types are：['awq', 'bitsandbytes_4bit', 'bitsandbytes_8bit', 'gptq', 'aqlm', 'quanto', 'eetq', 'hqq', 'fbgemm_fp8']
 - A: 由于当前昇腾设备不支持FP8格式加载，需要将权重文件夹中config.json中的以下字段删除：
 ![img_1.png](img_1.png)
