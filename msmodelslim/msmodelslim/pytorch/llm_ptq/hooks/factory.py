@@ -4,7 +4,9 @@ from transformers import PreTrainedModel
 
 _DEEPSEEK_V2_MODEL_TYPES = [
     "deepseek_v2",
-    "deepseekv2"
+    "deepseekv2",
+    "deepseek_v3",
+    "deepseekv3"
 ]
 
 
