@@ -6,8 +6,8 @@
  
 #### 此模型仓已适配的模型版本
 - [Deepseek-V2-Chat](https://huggingface.co/deepseek-ai/DeepSeek-V2-Chat)
-- [Deepseek-V2-Chat](https://huggingface.co/deepseek-ai/DeepSeek-V2-Chat)
-- [Deepseek-V2-Chat](https://huggingface.co/deepseek-ai/DeepSeek-V2-Chat)
+- [Deepseek-V3](https://huggingface.co/deepseek-ai/DeepSeek-V3)
+- [Deepseek-R1](https://huggingface.co/deepseek-ai/DeepSeek-R1)
 
 ## 环境配置
 
