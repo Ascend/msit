@@ -88,3 +88,6 @@ python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8
 - Q：报错 Unknown quantization type， got fp8 - supported types are：['awq', 'bitsandbytes_4bit', 'bitsandbytes_8bit', 'gptq', 'aqlm', 'quanto', 'eetq', 'hqq', 'fbgemm_fp8']
 - A: 由于当前昇腾设备不支持FP8格式加载，需要将权重文件夹中config.json中的以下字段删除：
 ![img_1.png](img_1.png)
+- Q: 遇到OOM显存不够报错
+- A：修改quant_deepseek_w8a8.py脚本，增加卡数，eg: max_memory={0: "50GiB", 1: "50GiB", "cpu": "1500GiB"}, 可以根据自己的卡数以及显存情况设置。
+- ![img_2.png](img_2.png)
