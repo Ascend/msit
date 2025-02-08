@@ -596,11 +596,10 @@ class AntiOutlier(object):
                 elif isinstance(data, dict):
                     self.model(**data)
                 return
-
+        fusion_kwargs = {}
         act_stats = self.os_stats()
         if self.cfg.anti_method == 'm4':
             num_attention_heads = self.get_num_attention_heads()
-            fusion_kwargs = {}
         scale_min = SCALE_MIN_LLM
         
         if self.is_context_embedder_model:
