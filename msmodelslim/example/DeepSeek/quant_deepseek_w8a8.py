@@ -41,7 +41,7 @@ tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=model_pa
 model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=model_path,
                                              config=config,
                                              trust_remote_code=True,
-                                             device_map="sequential",
+                                             device_map="auto",
                                              torch_dtype="auto",
                                              max_memory={
                                                  0: "50GiB",
