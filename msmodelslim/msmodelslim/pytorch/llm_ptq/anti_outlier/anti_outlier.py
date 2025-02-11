@@ -403,6 +403,8 @@ class AntiOutlier(object):
 
         for name in act_stats:
             stat_dict = act_stats[name]
+            if isinstance(stat_dict['tensor'], (list, tuple)):
+                stat_dict['tensor'] = torch.cat(stat_dict['tensor'])
             for feature in stat_dict:
                 stat_dict[feature] = stat_dict[feature].to("cpu")
 
