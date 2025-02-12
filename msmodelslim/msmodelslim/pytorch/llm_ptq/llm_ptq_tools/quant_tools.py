@@ -513,11 +513,11 @@ class Calibrator(object):
         # if SAVE_TYPE_SAFE_TENSOR in save_type:
         if not isinstance(safetensors_name, str):
             default_safetensors_name = f"quant_model_weight_{self.cfg.model_quant_type.lower()}.safetensors"
-            self.logger.warning(f"invalid `safetensors_name`, defaulting to `{default_safetensors_name}`")
+            self.logger.info(f"invalid `safetensors_name`, defaulting to `{default_safetensors_name}`")
             safetensors_name = default_safetensors_name
         if not isinstance(json_name, str):
             default_json_name = f"quant_model_description_{self.cfg.model_quant_type.lower()}.json"
-            self.logger.warning(f"invalid `json_name`, defaulting to `{default_json_name}`")
+            self.logger.info(f"invalid `json_name`, defaulting to `{default_json_name}`")
             json_name = default_json_name
         # self.save_safetensor(output_path, safetensors_name, json_name, part_file_size)
         quant_model_weight_path = os.path.join(output_path, safetensors_name)
@@ -718,7 +718,7 @@ class Calibrator(object):
     def get_quant_params(self):
         self.model.eval()
 
-        with tqdm(desc="Collect quant param", total=self.named_module_count) as progress:
+        with tqdm(desc="Save Process", total=self.named_module_count, position=1) as progress:
             for name, module in self.model.named_modules():
                 model_quant_type = self.cfg.model_quant_type
                 tmp_param_dict = {}
@@ -854,7 +854,7 @@ class Calibrator(object):
 
     def run_calib_mode(self):
         amp_done = False
-        for data in tqdm(self.calib_data):
+        for data in tqdm(iterable=self.calib_data, position=1, desc="Calibrator Process"):
             if not amp_done and self.cfg.fa_amp:
                 enable_fa_quantizer_record(self.model)
 
