@@ -42,7 +42,7 @@ class AutoSaveDict(OrderedDict):
 
         if tensor.device.type == 'meta' or "module" in key:
             # TODO: this can work because module.weight and module.bias is not needed
-            msmodelslim_logger.warning(f"Skip meta tensor {key}")
+            msmodelslim_logger.info(f"Skip meta tensor {key}")
             return
 
         self.quant_model_json_description.change_weight_type(key, self.model_quant_type)

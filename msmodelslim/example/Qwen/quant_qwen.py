@@ -3,6 +3,7 @@ import os
 import json
 import sys
 import torch
+from tqdm import tqdm
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
@@ -10,6 +11,7 @@ sys.path.append(parent_directory)
 
 from ascend_utils.common.security.path import get_valid_write_path, get_valid_read_path
 from example.common.utils import SafeGenerator, ArgumentParser, StringArgumentValidator, MAX_KEY_LENGTH, MAX_JSON_LENGTH
+from msmodelslim.tools.logger import set_logger_level
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlier, AntiOutlierConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 
@@ -108,6 +110,7 @@ class Quantifier:
         self.model_path_or_name = model_path_or_name
         self.config = safe_generator.get_config_from_pretrained(self.model_path_or_name, trust_remote_code=True)
         self.dtype = self.config.torch_dtype if self.device_type == NPU else torch.float32
+        self.pbar = tqdm(total=4, position=0, desc="Total Process")
         self.model = safe_generator.get_model_from_pretrained(
             self.model_path_or_name,
             low_cpu_mem_usage=True, torch_dtype=self.dtype,
@@ -120,6 +123,10 @@ class Quantifier:
             self.model_path_or_name, use_fast=False, trust_remote_code=True, legacy=False, **tokenizer_args
         )
         self.model_name = kwargs.get("model_name", None)
+        self.update_pbar()
+
+    def update_pbar(self):
+        self.pbar.update(1)
 
     def get_tokenized_data(self, input_texts,
                            input_ids_name='input_ids',
@@ -143,12 +150,14 @@ class Quantifier:
             else:
                 anti_outlier = AntiOutlier(self.model, calib_data=tokenized_data, cfg=self.anti_outlier_config)
             anti_outlier.process()
+        self.update_pbar()
 
         if not os.path.exists(save_path):
             os.mkdir(save_path)
 
         calibrator = Calibrator(self.model, self.quant_config, calib_data=tokenized_data, disable_level=disable_level)
         calibrator.run()
+        self.update_pbar()
         calibrator.save(save_path, save_type=["safe_tensor"], part_file_size=part_file_size)
 
     
@@ -156,6 +165,7 @@ if __name__ == '__main__':
     args = parse_arguments()
     checker = SafeGenerator()
     rank: int = int(os.getenv("RANK", "0"))
+    set_logger_level("warning")
 
     model_path = args.model_path
     save_directory = args.save_directory
@@ -241,3 +251,4 @@ if __name__ == '__main__':
     checker.modify_config(model_path, save_directory, auto_config.torch_dtype,
                 quant_type, args)
     checker.copy_tokenizer_files(model_path, save_directory)
+    quantifier.update_pbar()
