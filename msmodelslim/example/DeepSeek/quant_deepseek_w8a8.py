@@ -7,6 +7,8 @@ import torch.nn.functional as F
 from tqdm import tqdm
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+
+from msmodelslim.tools.convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
@@ -46,6 +48,9 @@ model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=model
                                                  "cpu": "1500GiB"
                                              },
                                              attn_implementation='eager')
+
+auto_convert_model_fp8_to_bf16(model, model_path)
+
 pbar.update(1)
 
 
