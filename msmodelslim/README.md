@@ -42,7 +42,7 @@ msModelSlim当前处于逐步开源过程中，计划通过CANN的8.0.RC2、8.0.
 - 下载安装CANN（8.0.RC3之后的版本）及开源版本的msModelSlim  
     **操作步骤：**
     - 下载安装CANN并设置环境变量，可以参考[安装CANN软件包](https://www.hiascend.com/document/detail/zh/canncommercial/80RC3/softwareinst/instg/instg_0007.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)
-    - git clone下载msit仓代码；
+    - git clone下载msit仓代码，并切换到br_noncom_MindStudio_8.0.0_POC_20251231分支：
     - 进入到msit/msmodelslim的目录 `cd msit/msmodelslim`；并在进入的msmodelslim目录下，运行安装脚本 `bash install.sh`;
     - (可选，稀疏量化场景下需要此步骤)进入python环境下的site_packages包管理路径 `cd {python环境路径}/site-packages/msmodelslim/pytorch/weight_compression/compress_graph/`  
     以下是以/usr/local/为用户所在目录，以3.7.5为python版本的样例代码：
