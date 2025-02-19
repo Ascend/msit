@@ -477,8 +477,7 @@ class AntiOutlier(object):
                         functools.partial(stat_input_hook, name=name))
                 )
 
-        for i in tqdm(range(len(self.calib_data))):
-            inputs = self.calib_data[i]
+        for inputs in self.calib_data:
             if not self.is_context_embedder_model:
                 input_dict = self.trans_to_dict(inputs)
                 self.model(**input_dict)
@@ -606,7 +605,7 @@ class AntiOutlier(object):
             fusion_kwargs = _PREDEFINED_FUSION_KWARGS
             scale_min = SCALE_MIN_SD3
         
-        for norm_name_group in tqdm(self.norm_linear_subgraph.keys()):
+        for norm_name_group in tqdm(iterable=self.norm_linear_subgraph.keys(), desc="AntiOutlier Process", position=1):
             linear_names = self.norm_linear_subgraph[norm_name_group]
             if isinstance(norm_name_group, str):
                 norm_module = PatternProcess.get_module_by_name(self.model, norm_name_group)

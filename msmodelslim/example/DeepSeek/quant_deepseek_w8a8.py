@@ -1,20 +1,18 @@
 #Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
 import argparse
-import sys
-import os
 import functools
 import json
 import torch
 import torch.nn.functional as F
-import sys
-import torch_npu
+from tqdm import tqdm
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+
+from msmodelslim.tools.convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
-from msmodelslim import logger
-import logging
+from msmodelslim.tools.logger import set_logger_level
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -29,6 +27,8 @@ def custom_hook(model_config):
     model_config["mla_quantize"] = "w8a8"
 
 args = parse_args()
+set_logger_level("warning")
+pbar = tqdm(total=4, position=0, desc="Total Process")
 model_path = args.model_path
 config = AutoConfig.from_pretrained(pretrained_model_name_or_path=model_path, trust_remote_code=True)
 config.num_hidden_layers = args.layer_count if args.layer_count != 0 else config.num_hidden_layers
@@ -48,6 +48,10 @@ model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=model
                                                  "cpu": "1500GiB"
                                              },
                                              attn_implementation='eager')
+
+auto_convert_model_fp8_to_bf16(model, model_path)
+
+pbar.update(1)
 
 
 def get_anti_dataset(tokenizer, calib_list, device="npu"):
@@ -96,6 +100,7 @@ with torch.no_grad():
                                     dev_id=model.device.index)
     anti_outlier = AntiOutlier(model, calib_data=anti_dataset, cfg=anti_config)
     anti_outlier.process()
+pbar.update(1)
 
 disable_names = []
 for ids in range(config.num_hidden_layers):
@@ -116,9 +121,11 @@ quant_config = QuantConfig(
 
 calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level="L0")
 calibrator.run()
+pbar.update(1)
 calibrator.save(args.save_path, save_type=["safe_tensor"], part_file_size=4)
 
 custom_hooks = {
     'config.json': functools.partial(modify_config_json, custom_hook=custom_hook)
 }
 copy_config_files(input_path=args.model_path, output_path=args.save_path, quant_config=quant_config, custom_hooks=custom_hooks)
+pbar.update(1)
