@@ -103,6 +103,7 @@ python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8
   --group_size 64 \
   --is_lowbit True \
   --open_outlier False \
+  --device "npu" \
   --calib_file ""
   ```
 

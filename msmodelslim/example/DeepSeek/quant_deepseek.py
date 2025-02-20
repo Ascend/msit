@@ -117,7 +117,11 @@ class Quantifier:
             self.model_path_or_name,
             low_cpu_mem_usage=True, torch_dtype=self.dtype,
             device_map=device_map,
-            trust_remote_code=True
+            trust_remote_code=True,
+            max_memory={
+                        0: "50GiB",
+                        "cpu": "1500GiB"
+                    },
         )
         auto_convert_model_fp8_to_bf16(self.model, self.model_path_or_name)
 
