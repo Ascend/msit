@@ -90,6 +90,23 @@ python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8
   ```shell
   python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} 
   ```
+
+##### DeepSeek-V2/V3/R1 w4a16 per-group量化(MLA：float，MOE：w4a16)
+注：当前量化只支持输入bfloat16格式模型
+- 生成DeepSeek-V2/V3/R1模型 w4a16 量化权重
+  ```shell
+  python3 quant_deepseek.py \
+  --model_path {浮点权重路径} \
+  --save_directory {W4A16量化权重路径} \
+  --w_bit 4 \
+  --a_bit 16 \
+  --group_size 64 \
+  --is_lowbit True \
+  --open_outlier False \
+  --device "npu" \
+  --calib_file ""
+  ```
+
 ##### DeepSeek量化QA
 - Q：报错 This modeling file requires the following packages that were not found in your environment： flash_attn. Run 'pip install flash_attn'
 - A: 当前环境中缺少flash_attn库且昇腾不支持该库，运行时需要注释掉权重文件夹中modeling_deepseek.py中的部分代码

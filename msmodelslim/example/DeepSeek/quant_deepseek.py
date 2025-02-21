@@ -37,6 +37,18 @@ def get_disable_names(num_layers: int) -> list:
     return disable_names
 
 
+def get_w4a16_disable_names(num_layers: int) -> list:
+    disable_names = []
+    # 遍历层数并添加对应的 disable_names
+    for i in range(num_layers):
+        disable_names.append(f"model.layers.{i}.self_attn.q_a_proj")
+        disable_names.append(f"model.layers.{i}.self_attn.q_b_proj")
+        disable_names.append(f"model.layers.{i}.self_attn.kv_a_proj_with_mqa")
+        disable_names.append(f"model.layers.{i}.self_attn.kv_b_proj")
+        disable_names.append(f"model.layers.{i}.self_attn.o_proj")
+    return disable_names
+
+
 def parse_arguments():
     parser = ArgumentParser()
     parser.add_argument('--model_path', type=str, help="model and tokenizer path")
@@ -105,7 +117,11 @@ class Quantifier:
             self.model_path_or_name,
             low_cpu_mem_usage=True, torch_dtype=self.dtype,
             device_map=device_map,
-            trust_remote_code=True
+            trust_remote_code=True,
+            max_memory={
+                        0: "50GiB",
+                        "cpu": "1500GiB"
+                    },
         )
         auto_convert_model_fp8_to_bf16(self.model, self.model_path_or_name)
 
@@ -164,7 +180,10 @@ if __name__ == '__main__':
     
     disable_names = args.disable_names
     if not disable_names:
-        disable_names = get_disable_names(num_layers)
+        if args.w_bit == 4 and args.a_bit == 16:
+            disable_names = get_w4a16_disable_names(num_layers)
+        else:
+            disable_names = get_disable_names(num_layers)
 
     quant_conf = QuantConfig(
         w_bit=args.w_bit,
@@ -204,7 +223,7 @@ if __name__ == '__main__':
         device_type=args.device_type, tokenizer_args=tokenizer_args,
         model_name=args.model_name,
     )
-    tokenized_calib_data = None
+    tokenized_calib_data = []
     calib_file = args.calib_file
     calib_texts = checker.load_jsonl(calib_file) if calib_file else args.calib_texts
     if calib_texts is not None:
