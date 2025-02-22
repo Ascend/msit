@@ -91,6 +91,13 @@ python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8
   python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} 
   ```
 
+##### DeepSeek-V2/V3/R1 w4a16 per-group datafree量化(MLA:float，MOE:w4a16量化)
+注：当前量化只支持输入bfloat16格式模型
+- 生成DeepSeek-V2/V3/R1模型 w8a8 混合量化权重
+  ```shell
+  python3 convert.py --model_path {浮点权重路径} --save_path {W4A16量化权重路径} 
+  ```
+
 ##### DeepSeek-V2/V3/R1 w4a16 per-group量化(MLA：float，MOE：w4a16)
 注：当前量化只支持输入bfloat16格式模型
 - 生成DeepSeek-V2/V3/R1模型 w4a16 量化权重
