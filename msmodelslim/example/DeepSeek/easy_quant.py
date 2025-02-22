@@ -1,15 +1,17 @@
+# Copyright Huawei Technologies Co., Ltd. 2025. All rights reserved.
 import os
 import re
 import psutil
 import torch
 from tqdm import tqdm
 from safetensors.torch import load_file, save_file
+from ascend_utils.common.security import get_valid_write_path, get_write_directory
+from ascend_utils.common.security import json_safe_dump
+
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs import (
     init_weight_quant_normal,
 )
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantType
-from ascend_utils.common.security import get_valid_write_path, get_write_directory
-from ascend_utils.common.security import json_safe_dump
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantModelJsonDescription
 from msmodelslim import logger as msmodelslim_logger
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save_utils import get_tensor_size
@@ -18,20 +20,21 @@ from msmodelslim.pytorch.lowbit.atomic_power_outlier import \
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs import (
     fake_quantize_save
 )
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import QuantConfig
 
 
-def check_linear_weight(name:str):
+def check_linear_weight(name: str):
     return name.endswith(".weight") and "norm" not in name.lower() and "embed" not in name.lower()
 
 
-def get_prefix(name, last_index = -1):
+def get_prefix(name, last_index=-1):
     key_list = name.split(".")[:last_index]
     return ".".join(key_list)
 
 
 def get_safetensors_name(path):
     weight_files = []
-    pattern = r"model-(\d+)-of-(\d+).safetensors"
+    pattern = r"model-(\d+)-of-(\d+)\.safetensors"
     path_list = os.listdir(path)
     for filename in path_list:
         if filename.endswith(".safetensors"):
@@ -51,7 +54,7 @@ def get_safetensors_name(path):
 
 def get_total_size(tensors):
     total_size = 0
-    for tensor in tensors.values():
+    for _, tensor in tensors.items():
         tensor_size = get_tensor_size(tensor)
         total_size += tensor_size
     return total_size
@@ -59,7 +62,10 @@ def get_total_size(tensors):
 
 class DataFreeConverter():
     def __init__(self, cfg):
-        self.cfg = cfg
+        if isinstance(cfg, QuantConfig):
+            self.cfg = cfg
+        else:
+            raise ValueError("cfg must be a QuantConfig instance")
         self.quant_model_json_description = QuantModelJsonDescription(cfg.model_quant_type,
                                                                       cfg.use_kvcache_quant,
                                                                       cfg.use_fa_quant)
@@ -70,9 +76,9 @@ class DataFreeConverter():
         self.process = psutil.Process(pid)
         self.before_memory_info = self.process.memory_info()
         self.disable_names = set(cfg.disable_names)
+        self.param_dict = {}
 
-
-    def convert_datafree_quant(self, weight):
+    def convert_datafree_weight(self, weight):
         if not self.cfg.is_lowbit:
             calling_params = self.cfg.w_bit, self.cfg.w_sym, True, True, [False, 1000]
             quant_weight, _, weight_scale, weight_offset = \
@@ -94,21 +100,21 @@ class DataFreeConverter():
                     open_outlier=self.cfg.open_outlier,
                     group_size=self.cfg.group_size,
                     w_sym=self.cfg.w_sym,
-                    use_hqq=self.cfg.hqq,
+                    use_hqq=self.cfg.hqq
                 )
-            quant_weight,_ = fake_quantize_save(fp_weight, weight_scale, weight_offset,
+            quant_weight, _ = fake_quantize_save(fp_weight, weight_scale, weight_offset,
                                                 bit=self.cfg.w_bit,
-                                                rount_opt=False,
+                                                round_opt=False,
                                                 device=fp_weight.device,
                                                 group_size=self.cfg.group_size)
-            return quant_weight.contiguous(), weight_scale.contiguous(), weight_offset.contiguous()
+        return quant_weight.contiguous(), weight_scale.contiguous(), weight_offset.contiguous()
 
     def add_params(self, param_dict, name, data, data_type):
         param_dict[name] = data
         self.quant_model_json_description.change_weight_type(name, data_type)
     
     def add_weight_file_map(self, weight, map_file):
-        self.metadata["total_size"] += get_tensor_size(weight)
+        self.metadata["total_size"] += get_total_size(weight)
         for key in weight.keys():
             self.weight_map[key] = map_file
 
@@ -123,10 +129,14 @@ class DataFreeConverter():
                     self.add_params(self.param_dict, name, weight, QuantType.FLOAT)
                     self.disable_names.remove(mod_name)
                     continue
-                quant_weight, weight_scale, weight_offset = self.convert_datafree_quant(weight.to(self.cfg.dev_type))
-                self.add_params(self.param_dict, mod_name + '.weight', quant_weight.to(torch.int8), self.cfg.model_quant_type)
-                self.add_params(self.param_dict, mod_name + '.weight_scale', weight_scale.cpu(), self.cfg.model_quant_type)
-                self.add_params(self.param_dict, mod_name + '.weight_offset', weight_offset.cpu(), self.cfg.model_quant_type)
+                quant_weight, weight_scale, weight_offset = \
+                    self.convert_datafree_weight(weight.to(self.cfg.dev_type))
+                self.add_params(self.param_dict, mod_name + '.weight', \
+                                quant_weight.to(torch.int8).cpu(), self.cfg.model_quant_type)
+                self.add_params(self.param_dict, mod_name + '.weight_scale', \
+                                weight_scale.cpu(), self.cfg.model_quant_type)
+                self.add_params(self.param_dict, mod_name + '.weight_offset', \
+                                weight_offset.cpu(), self.cfg.model_quant_type)
             else:
                 self.add_params(self.param_dict, name, weight, QuantType.FLOAT)
         after_memory_info = self.process.memory_info()
@@ -145,7 +155,7 @@ class DataFreeConverter():
 
     def save_index_map(self, output_path, index_name):
         index_path = os.path.join(output_path, index_name)
-        index_path = get_valid_write_path(index_path, extensions=[".index"])
+        index_path = get_valid_write_path(index_path, extensions=[".json"])
         index_json_dict = {"metadata": self.metadata, "weight_map": self.weight_map}
         json_safe_dump(index_json_dict, index_path, indent=2)
 
@@ -178,7 +188,7 @@ class DataFreeConverter():
         json_name = self.build_json_name()
         self.save_json(save_path, json_name)
 
-        index_name = self.build_index_name() + ".index.json"
+        index_name = self.build_safetensors_name() + ".index.json"
         self.save_index_map(save_path, index_name)
 
         if len(self.disable_names) > 0:
