@@ -11,7 +11,19 @@
 
 ## 环境配置
 
-- 环境配置以及量化工具安装请参考[使用说明](https://gitee.com/ascend/msit/blob/br_noncom_MindStudio_8.0.0_POC_20251231/msmodelslim/README.md)
+- 有关DeepSeek的量化，需要下载安装最新版CANN包及msmodelslim（br_noncom_MindStudio_8.0.0_POC_20251231分支），环境配置以及量化工具安装请参考[使用说明](https://gitee.com/ascend/msit/blob/br_noncom_MindStudio_8.0.0_POC_20251231/msmodelslim/README.md)的方式二安装。
+- 如果使用mindie镜像的话，需要下载安装msmodelslim（br_noncom_MindStudio_8.0.0_POC_20251231分支），安装方式参考[使用说明](https://gitee.com/ascend/msit/blob/br_noncom_MindStudio_8.0.0_POC_20251231/msmodelslim/README.md)的方式二安装。
+
+## 运行前必检
+在运行脚本前，请根据以下必检项对相关内容进行更改。
+
+- 1、昇腾不支持flash_attn库，运行时需要注释掉权重文件夹中modeling_deepseek.py中的部分代码
+- ![img.png](img.png)
+- 2、需安装更新transformers版本（>=4.48.2）
+- 3、当前昇腾设备不支持FP8格式加载，需要将权重文件夹中config.json中的以下字段删除：
+- ![img_1.png](img_1.png)
+- 4、修改quant_deepseek_w8a8.py脚本，增加卡数，eg: max_memory={0: "50GiB", 1: "50GiB", "cpu": "1500GiB"}, 可以根据自己的卡数以及显存情况设置，以防OOM显存不够报错。
+- ![img_2.png](img_2.png)
 
 ## 量化权重生成
 
@@ -79,22 +91,38 @@ python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8
   python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} 
   ```
 
-##### DeepSeek-V2/V3/R1 w4a16 量化(MLA:浮点，MOE:w4a16量化)
+##### DeepSeek-V2/V3/R1 w4a16 per-group datafree量化(MLA:float，MOE:w4a16量化)
 注：当前量化只支持输入bfloat16格式模型
 - 生成DeepSeek-V2/V3/R1模型 w8a8 混合量化权重
   ```shell
   python3 convert.py --model_path {浮点权重路径} --save_path {W4A16量化权重路径} 
   ```
 
+##### DeepSeek-V2/V3/R1 w4a16 per-group量化(MLA：float，MOE：w4a16)
+注：当前量化只支持输入bfloat16格式模型
+- 生成DeepSeek-V2/V3/R1模型 w4a16 量化权重
+  ```shell
+  python3 quant_deepseek.py \
+  --model_path {浮点权重路径} \
+  --save_directory {W4A16量化权重路径} \
+  --w_bit 4 \
+  --a_bit 16 \
+  --group_size 64 \
+  --is_lowbit True \
+  --open_outlier False \
+  --device "npu" \
+  --calib_file ""
+  ```
+
 ##### DeepSeek量化QA
 - Q：报错 This modeling file requires the following packages that were not found in your environment： flash_attn. Run 'pip install flash_attn'
 - A: 当前环境中缺少flash_attn库且昇腾不支持该库，运行时需要注释掉权重文件夹中modeling_deepseek.py中的部分代码
-![img.png](img.png)
+- ![img.png](img.png)
 - Q：modeling_utils.py报错 if metadata.get("format") not in ["pt", "tf", "flax", "mix"]: AttributeError: "NoneType" object has no attribute 'get';
 - A：说明输入的的权重中缺少metadata字段，需安装更新transformers版本（>=4.48.2）
 - Q：报错 Unknown quantization type， got fp8 - supported types are：['awq', 'bitsandbytes_4bit', 'bitsandbytes_8bit', 'gptq', 'aqlm', 'quanto', 'eetq', 'hqq', 'fbgemm_fp8']
 - A: 由于当前昇腾设备不支持FP8格式加载，需要将权重文件夹中config.json中的以下字段删除：
-![img_1.png](img_1.png)
+- ![img_1.png](img_1.png)
 - Q: 遇到OOM显存不够报错
 - A：修改quant_deepseek_w8a8.py脚本，增加卡数，eg: max_memory={0: "50GiB", 1: "50GiB", "cpu": "1500GiB"}, 可以根据自己的卡数以及显存情况设置。
 - ![img_2.png](img_2.png)

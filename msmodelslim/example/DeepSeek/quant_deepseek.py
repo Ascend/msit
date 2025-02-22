@@ -3,13 +3,16 @@ import os
 import json
 import sys
 import torch
+from tqdm import tqdm
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
 sys.path.append(parent_directory)
 
-from ascend_utils.common.security.path import get_valid_write_path, get_valid_read_path
 from example.common.utils import SafeGenerator, ArgumentParser, StringArgumentValidator, MAX_KEY_LENGTH, MAX_JSON_LENGTH
+from ascend_utils.common.security.path import get_valid_write_path, get_valid_read_path
+from msmodelslim.tools.logger import set_logger_level
+from msmodelslim.tools.convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlier, AntiOutlierConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 
@@ -31,6 +34,18 @@ def get_disable_names(num_layers: int) -> list:
     # 遍历层数并添加对应的 disable_names
     for i in range(num_layers):
         disable_names.append(f"model.layers.{i}.self_attn.kv_b_proj")
+    return disable_names
+
+
+def get_w4a16_disable_names(num_layers: int) -> list:
+    disable_names = []
+    # 遍历层数并添加对应的 disable_names
+    for i in range(num_layers):
+        disable_names.append(f"model.layers.{i}.self_attn.q_a_proj")
+        disable_names.append(f"model.layers.{i}.self_attn.q_b_proj")
+        disable_names.append(f"model.layers.{i}.self_attn.kv_a_proj_with_mqa")
+        disable_names.append(f"model.layers.{i}.self_attn.kv_b_proj")
+        disable_names.append(f"model.layers.{i}.self_attn.o_proj")
     return disable_names
 
 
@@ -97,18 +112,28 @@ class Quantifier:
         self.model_path_or_name = model_path_or_name
         self.config = safe_generator.get_config_from_pretrained(self.model_path_or_name, trust_remote_code=True)
         self.dtype = self.config.torch_dtype if self.device_type == NPU else torch.float32
+        self.pbar = tqdm(total=4, position=0, desc="Total Process")
         self.model = safe_generator.get_model_from_pretrained(
             self.model_path_or_name,
             low_cpu_mem_usage=True, torch_dtype=self.dtype,
             device_map=device_map,
-            trust_remote_code=True
+            trust_remote_code=True,
+            max_memory={
+                        0: "50GiB",
+                        "cpu": "1500GiB"
+                    },
         )
+        auto_convert_model_fp8_to_bf16(self.model, self.model_path_or_name)
 
         tokenizer_args = kwargs.get("tokenizer_args", {})
         self.tokenizer = safe_generator.get_tokenizer_from_pretrained(
             self.model_path_or_name, use_fast=False, trust_remote_code=True, legacy=False, **tokenizer_args
         )
         self.model_name = kwargs.get("model_name", None)
+        self.update_pbar()
+
+    def update_pbar(self):
+        self.pbar.update(1)
 
     def get_tokenized_data(self, input_texts,
                            input_ids_name='input_ids',
@@ -132,12 +157,14 @@ class Quantifier:
             else:
                 anti_outlier = AntiOutlier(self.model, calib_data=tokenized_data, cfg=self.anti_outlier_config)
             anti_outlier.process()
+        self.update_pbar()
 
         if not os.path.exists(save_path):
             os.mkdir(save_path)
 
         calibrator = Calibrator(self.model, self.quant_config, calib_data=tokenized_data, disable_level=disable_level)
         calibrator.run()
+        self.update_pbar()
         calibrator.save(save_path, save_type=["safe_tensor"], part_file_size=part_file_size)
 
 
@@ -145,6 +172,7 @@ if __name__ == '__main__':
     args = parse_arguments()
     checker = SafeGenerator()
     rank: int = int(os.getenv("RANK", "0"))
+    set_logger_level("warning")
 
     model_path = args.model_path
     save_directory = args.save_directory
@@ -152,7 +180,10 @@ if __name__ == '__main__':
     
     disable_names = args.disable_names
     if not disable_names:
-        disable_names = get_disable_names(num_layers)
+        if args.w_bit == 4 and args.a_bit == 16:
+            disable_names = get_w4a16_disable_names(num_layers)
+        else:
+            disable_names = get_disable_names(num_layers)
 
     quant_conf = QuantConfig(
         w_bit=args.w_bit,
@@ -192,7 +223,7 @@ if __name__ == '__main__':
         device_type=args.device_type, tokenizer_args=tokenizer_args,
         model_name=args.model_name,
     )
-    tokenized_calib_data = None
+    tokenized_calib_data = []
     calib_file = args.calib_file
     calib_texts = checker.load_jsonl(calib_file) if calib_file else args.calib_texts
     if calib_texts is not None:
@@ -220,3 +251,4 @@ if __name__ == '__main__':
     checker.modify_config(model_path, save_directory, auto_config.torch_dtype,
                 quant_type, args)
     checker.copy_tokenizer_files(model_path, save_directory)
+    quantifier.update_pbar()

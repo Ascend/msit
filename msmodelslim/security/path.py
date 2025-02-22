@@ -92,7 +92,7 @@ def get_valid_read_path(path, extensions=None, size_max=MAX_READ_FILE_SIZE_4G, c
     return real_path
 
 
-def get_valid_write_path(path, extensions=None, check_user_stat=True, is_dir=False, warn_exists=True):
+def get_valid_write_path(path, extensions=None, check_user_stat=True, is_dir=False, warn_exists=False):
     real_path = get_valid_path(path, extensions)
     real_path_dir = real_path if is_dir else os.path.dirname(real_path)
     check_write_directory(real_path_dir, check_user_stat=check_user_stat)
