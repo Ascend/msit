@@ -1,3 +1,4 @@
+# Copyright Huawei Technologies Co., Ltd. 2025. All rights reserved.
 import json
 import os
 import glob
@@ -137,5 +138,5 @@ if __name__ == "__main__":
     
 
 
-    add_safetensors(args.float_dir, args.quant_dir,args.new_safetensors_name, args.key_pattern)
+    add_safetensors(args.float_dir, args.quant_dir, args.new_safetensors_name, args.key_pattern)
     
