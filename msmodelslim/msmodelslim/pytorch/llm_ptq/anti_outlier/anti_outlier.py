@@ -51,7 +51,7 @@ except ImportError:
     msmodelslim_logger.warning(
         "The current CANN version does not support importing the migration and migration_vit packages."
     )
- 
+
 try:
     from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils import attach_op, Multiplier
 except ImportError:
@@ -218,8 +218,8 @@ def copy_state_dict(model: torch.nn.Module, typ: str = 'disk') -> Mapping:
 def is_model_multimodal(model):
     if not hasattr(model.config, 'architectures'):
         return False
-    if (model.config.architectures[0] == 'LlavaForConditionalGeneration' or 
-        (model.config.architectures[0] == 'QWenLMHeadModel' and 
+    if (model.config.architectures[0] == 'LlavaForConditionalGeneration' or
+        (model.config.architectures[0] == 'QWenLMHeadModel' and
         hasattr(model.config, 'visual'))):
         return True
     return False
@@ -285,7 +285,7 @@ class AntiOutlier(object):
         self.norm_class_name = norm_class_name
         if not enabled_adapter():
             self.org_model = model
-        
+
         self.hooks = get_process_hooks(model)
 
         # 非m4或m5场景下，保存anti_outlier处理前的原始权重，为避免显存的额外占用，原始权重放在内存上
@@ -300,7 +300,7 @@ class AntiOutlier(object):
             self.device_org = next(model.parameters()).device
         else:
             self.device_org = None
-        
+
          # 如果手动指定NORM_LINEAR结构，就无需拷贝模型了
         if ProcessHook.GET_NORM_LINEAR_SUBGRAPH in self.hooks and self.hooks[
             ProcessHook.GET_NORM_LINEAR_SUBGRAPH] is not None:
@@ -383,7 +383,7 @@ class AntiOutlier(object):
         if name not in act_stats:
             act_stats[name] = {}
             if not self.is_context_embedder_model:
-                act_stats[name][TENSOR] = tensor
+                act_stats[name][TENSOR] = tensor.cpu()
 
         hidden_dim = tensor.shape[-1]
         tensor = tensor.reshape(-1, hidden_dim).detach()  # [N,C]
@@ -562,7 +562,7 @@ class AntiOutlier(object):
             for s in sub_tokens:
                 cur_mod = getattr(cur_mod, s)
             setattr(cur_mod, tokens[-1], module)
-            
+
         block_dict = {
             "QWenBlock" : QuantV2QwenBlock,
             "VisualAttentionBlock" : QuantVisualAttentionBlock,
@@ -600,11 +600,11 @@ class AntiOutlier(object):
         if self.cfg.anti_method == 'm4':
             num_attention_heads = self.get_num_attention_heads()
         scale_min = SCALE_MIN_LLM
-        
+
         if self.is_context_embedder_model:
             fusion_kwargs = _PREDEFINED_FUSION_KWARGS
             scale_min = SCALE_MIN_SD3
-        
+
         for norm_name_group in tqdm(iterable=self.norm_linear_subgraph.keys(), desc="AntiOutlier Process", position=1):
             linear_names = self.norm_linear_subgraph[norm_name_group]
             if isinstance(norm_name_group, str):
@@ -636,9 +636,9 @@ class AntiOutlier(object):
             if ProcessHook.MODIFY_SMOOTH_ARGS in self.hooks and self.hooks[
                 ProcessHook.MODIFY_SMOOTH_ARGS] is not None:
                 args, fusion_kwargs = self.hooks[ProcessHook.MODIFY_SMOOTH_ARGS](
-                    self.cfg, 
-                    norm_name_group, 
-                    linear_names, args, 
+                    self.cfg,
+                    norm_name_group,
+                    linear_names, args,
                     fusion_kwargs
                 )
 
@@ -758,15 +758,15 @@ class QuantV2QwenBlock(nn.Module):
         residual = hidden_states
 
         layernorm_input = residual + attn_output
-        
+
         layernorm_output = self.post_attention_layernorm(layernorm_input)
         residual = layernorm_input
 
-        if self.cac_migrate_mlp:            
+        if self.cac_migrate_mlp:
             weight_list = torch.cat([self.mlp.w2.weight,  # gate_proj
                                      self.mlp.w1.weight]) # up_proj
             extra_dict = {
-                'observation_mask': None, 
+                'observation_mask': None,
             }
 
             a_qconfig, w_qconfig = get_config()
@@ -781,17 +781,17 @@ class QuantV2QwenBlock(nn.Module):
             self.cac_migrate_mlp = False
 
         mlp_output = self.mlp(layernorm_output)
-        
+
         hidden_states = residual + mlp_output
-        
+
         outputs = (hidden_states,)
-        
+
         if use_cache:
             outputs += outputs_tmp
         else:
             outputs += outputs_tmp[1:]
         return outputs
-    
+
 
 class QuantVisualAttentionBlock(nn.Module):
     def __init__(self, org_layer, cfg, layername):
@@ -815,7 +815,7 @@ class QuantVisualAttentionBlock(nn.Module):
     ):
         k_x = k_x if k_x is not None else q_x
         v_x = v_x if v_x is not None else q_x
-        
+
         attn_mask = attn_mask.to(q_x.dtype) if attn_mask is not None else None
         return self.attn(q_x, k_x, v_x, attn_mask=attn_mask)
 
@@ -829,7 +829,7 @@ class QuantVisualAttentionBlock(nn.Module):
         k_x = self.ln_1_kv(k_x) if hasattr(self, "ln_1_kv") and k_x is not None else None
         v_x = self.ln_1_kv(v_x) if hasattr(self, "ln_1_kv") and v_x is not None else None
         post_ln_1 = self.ln_1(q_x)
-         
+
         if self.cac_migrate_attn:
             msmodelslim_logger.info(
                 f"current block is QuantVisualAttentionBlock , "
@@ -842,7 +842,7 @@ class QuantVisualAttentionBlock(nn.Module):
             if (self.attn.in_proj.bias is None):
                 msmodelslim_logger.warning("attn.in_proj.bias is None")
             self.attn.in_proj.bias.data += shift @ self.attn.in_proj.weight.data.T
-                
+
             # calculate scale
             weight_list = torch.cat([self.attn.in_proj.weight])
             extra_dict = {
@@ -867,12 +867,12 @@ class QuantVisualAttentionBlock(nn.Module):
             self.ln_1.weight.data /= best_scale
             self.ln_1.bias.data /= best_scale
             self.cac_migrate_attn = False
-            
+
 
         x = q_x + self.attention(q_x=post_ln_1, k_x=k_x, v_x=v_x, attn_mask=attn_mask)
-        
+
         post_ln_2 = self.ln_2(x)
-        
+
         if self.cac_migrate_mlp:
             channel_max = post_ln_2.max(0)[0].max(0)[0]
             channel_min = post_ln_2.min(0)[0].min(0)[0]
@@ -904,14 +904,14 @@ class QuantVisualAttentionBlock(nn.Module):
 
         x = x + self.mlp(post_ln_2)
         return x
-       
+
 
 class LlavaQuantDecoder(nn.Module):
     def __init__(self, org_layer, cfg, layername):
         super().__init__()
-        self.self_attn = org_layer.self_attn 
+        self.self_attn = org_layer.self_attn
         self.mlp = org_layer.mlp
-        self.input_layernorm = org_layer.input_layernorm 
+        self.input_layernorm = org_layer.input_layernorm
         self.post_attention_layernorm = org_layer.post_attention_layernorm
         self.act_fn = org_layer.mlp.act_fn
 
@@ -983,9 +983,9 @@ class LlavaQuantDecoder(nn.Module):
 
             weight_list = torch.cat([self.mlp.gate_proj.weight,
                                      self.mlp.up_proj.weight])
-            
+
             extra_dict = {
-                'observation_mask': None, 
+                'observation_mask': None,
                 'act_fn': self.act_fn
             }
 
@@ -1010,7 +1010,7 @@ class LlavaQuantDecoder(nn.Module):
 
         if use_cache:
             outputs += (present_key_value,)
-     
+
         return outputs
 
 
@@ -1019,7 +1019,7 @@ class LlavaClipVision(nn.Module):
         super().__init__()
         self.layer_norm1 = org_layer.layer_norm1
         self.layer_norm2 = org_layer.layer_norm2
-        self.self_attn = org_layer.self_attn 
+        self.self_attn = org_layer.self_attn
         self.mlp = org_layer.mlp
         self.act_fn = org_layer.mlp.activation_fn
         self.layername = layername
@@ -1053,16 +1053,16 @@ class LlavaClipVision(nn.Module):
 
             # calculate scale
             weight_list = torch.cat([
-                self.self_attn.q_proj.weight, 
-                self.self_attn.k_proj.weight, 
+                self.self_attn.q_proj.weight,
+                self.self_attn.k_proj.weight,
                 self.self_attn.v_proj.weight]
             )
             bias_list = torch.cat([
-                self.self_attn.q_proj.bias, 
-                self.self_attn.k_proj.bias, 
+                self.self_attn.q_proj.bias,
+                self.self_attn.k_proj.bias,
                 self.self_attn.v_proj.bias]
             )
-            
+
 
             extra_dict = {
                 'split_size': self.self_attn.embed_dim,
@@ -1075,7 +1075,7 @@ class LlavaClipVision(nn.Module):
             }
 
             a_qconfig, w_qconfig = get_config()
-            
+
 
             # update scale
             best_scale = \
@@ -1133,7 +1133,7 @@ class LlavaClipVision(nn.Module):
             self.layer_norm2.bias.data -= shift
             self.layer_norm2.weight.data /= best_scale
             self.layer_norm2.bias.data /= best_scale
-            
+
             self.cac_migrate_mlp = False
 
         hidden_states = self.mlp(hidden_states)
@@ -1143,5 +1143,5 @@ class LlavaClipVision(nn.Module):
 
         if output_attentions:
             outputs += (attn_weights,)
-    
+
         return outputs

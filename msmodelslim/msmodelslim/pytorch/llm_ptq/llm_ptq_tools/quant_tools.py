@@ -414,7 +414,11 @@ class Calibrator(object):
         elif self.calib_data:
             enable_tensor_dump = False  # 模型规模较大的时候，dump_tensor非常消耗计算、内存和存储空间，默认关闭
             try:
-                self.act_states = get_features(model, self.calib_data[:5], "features.npy", enable_tensor_dump)
+                # only need act_states when disable_level is not 'L0' or act_method == 3
+                if self.disable_level != 'L0' or self.cfg.act_method == 3:
+                    self.act_states = get_features(model, self.calib_data[:5], "features.npy", enable_tensor_dump)
+                else:
+                    self.act_states = {}
             except Exception as e:
                 raise Exception("Please check the model and calibration data, "
                                 "ensure that your model can run with `model(*(calib_data[0]))`.", e) from e
@@ -1147,7 +1151,7 @@ def enable_quantization_by_module(name, module, act_states):
     if states_name in act_states:
         abs_max_tensor = max(abs(act_states[states_name]["t_max"]), abs(act_states[states_name]["t_min"]))
         range_param = abs_max_tensor / act_states[states_name]["std"]
-        
+
     module.enable_quantization(name, range_param)
     if module.is_input:
         module.init_act_and_observer(module.cfg)
