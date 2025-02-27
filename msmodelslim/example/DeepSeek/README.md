@@ -119,6 +119,10 @@ python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8
   --device "npu" \
   --calib_file ""
   ```
+- 添加MTP结构到量化模型（可选）
+  ```shell
+  python3 add_mtp.py --quant_dir {W8A8量化权重路径} --float_dir {浮点权重路径}
+  ```
 
 ##### DeepSeek量化QA
 - Q：报错 This modeling file requires the following packages that were not found in your environment： flash_attn. Run 'pip install flash_attn'
