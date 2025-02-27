@@ -77,20 +77,12 @@
   ```shell
   python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8A16量化权重路径} --device_type cpu --act_method 2 --w_bit 8 --a_bit 16
   ```
-- 添加MTP结构到量化模型（可选）
-  ```shell
-  python3 add_mtp.py --quant_dir {W8A16量化权重路径} --float_dir {浮点权重路径} --new_safetensors_name mtp.safetensors
-  ```
 
 ##### DeepSeek-V2 w8a8 Dynamic量化
 - 生成DeepSeek-V2模型 w8a8 dynamic量化权重，使用histogram量化方式，在CPU上进行运算
 ```shell
 python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --device_type cpu --act_method 2 --w_bit 8 --a_bit 8  --is_dynamic True
 ```
-- 添加MTP结构到量化模型（可选）
-  ```shell
-  python3 add_mtp.py --quant_dir {W8A8量化权重路径} --float_dir {浮点权重路径} --new_safetensors_name mtp.safetensors
-  ```
 
 ##### DeepSeek-V2/V3/R1 w8a8 混合量化(MLA:w8a8量化，MOE:w8a8 dynamic量化)
 - 生成DeepSeek-V2/V3/R1模型 w8a8 混合量化权重
@@ -99,36 +91,9 @@ python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8
   ```
 - 添加MTP结构到量化模型（可选）
   ```shell
-  python3 add_mtp.py --quant_dir {W8A8量化权重路径} --float_dir {浮点权重路径} --new_safetensors_name mtp.safetensors
+  python3 add_mtp.py --quant_dir {W8A8量化权重路径} --float_dir {浮点权重路径}
   ```
 
-##### DeepSeek-V2/V3/R1 w4a16 per-group datafree量化(MLA:float，MOE:w4a16量化)
-注：当前量化只支持输入bfloat16格式模型
-- 生成DeepSeek-V2/V3/R1模型 w4a16 混合量化权重
-  ```shell
-  python3 convert.py --model_path {浮点权重路径} --save_path {W4A16量化权重路径} 
-  ```
-
-##### DeepSeek-V2/V3/R1 w4a16 per-group量化(MLA：float，MOE：w4a16)
-注：当前量化只支持输入bfloat16格式模型
-- 生成DeepSeek-V2/V3/R1模型 w4a16 量化权重
-  ```shell
-  python3 quant_deepseek.py \
-  --model_path {浮点权重路径} \
-  --save_directory {W4A16量化权重路径} \
-  --w_bit 4 \
-  --a_bit 16 \
-  --group_size 64 \
-  --is_lowbit True \
-  --open_outlier False \
-  --device "npu" \
-  --calib_file ""
-  ```
-- 添加MTP结构到量化模型（可选）
-  ```shell
-  python3 add_mtp.py --quant_dir {W4A16量化权重路径} --float_dir {浮点权重路径} --new_safetensors_name mtp.safetensors
-  ```
-  
 ##### DeepSeek量化QA
 - Q：报错 This modeling file requires the following packages that were not found in your environment： flash_attn. Run 'pip install flash_attn'
 - A: 当前环境中缺少flash_attn库且昇腾不支持该库，运行时需要注释掉权重文件夹中modeling_deepseek.py中的部分代码
