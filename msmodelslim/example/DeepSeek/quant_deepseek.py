@@ -12,7 +12,6 @@ sys.path.append(parent_directory)
 from example.common.utils import SafeGenerator, ArgumentParser, StringArgumentValidator, MAX_KEY_LENGTH, MAX_JSON_LENGTH
 from ascend_utils.common.security.path import get_valid_write_path, get_valid_read_path
 from msmodelslim.tools.logger import set_logger_level
-from msmodelslim.tools.convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlier, AntiOutlierConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 
@@ -123,7 +122,6 @@ class Quantifier:
                         "cpu": "1500GiB"
                     },
         )
-        auto_convert_model_fp8_to_bf16(self.model, self.model_path_or_name)
 
         tokenizer_args = kwargs.get("tokenizer_args", {})
         self.tokenizer = safe_generator.get_tokenizer_from_pretrained(

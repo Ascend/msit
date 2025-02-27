@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
-from msmodelslim.tools.convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16
+from msmodelslim.tools.convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, OpsType
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
@@ -21,6 +21,8 @@ def parse_args():
     parser.add_argument('--layer_count', type=int, default=0)
     parser.add_argument('--anti_dataset', type=str, default="./anti_prompt.json")
     parser.add_argument('--calib_dataset', type=str, default="./calib_prompt.json")
+    parser.add_argument('--fp8', action='store_true')
+    parser.add_argument('--bf16', action='store_true')
     return parser.parse_args()
 
 def custom_hook(model_config):
@@ -49,7 +51,7 @@ model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=model
                                              },
                                              attn_implementation='eager')
 
-auto_convert_model_fp8_to_bf16(model, model_path)
+auto_convert_model_fp8_to_bf16(model, model_path, OpsType.get_ops_type(args.bf16, args.fp8))
 
 pbar.update(1)
 

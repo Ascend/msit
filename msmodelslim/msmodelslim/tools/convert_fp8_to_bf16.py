@@ -1,18 +1,38 @@
 # Copyright Huawei Technologies Co., Ltd. 2025. All rights reserved.
 
 import os
+from enum import Enum, auto
 
 import torch
 from safetensors.torch import load_file
 from tqdm import tqdm
 
 from ascend_utils.common.security import json_safe_load, get_valid_read_path, MAX_READ_FILE_SIZE_32G
+from msmodelslim import logger as msmodelslim_logger
 from msmodelslim.pytorch.llm_ptq.accelerate_adapter import replace_device_align_hook_if_needed, enable_adapter
 from msmodelslim.pytorch.llm_ptq.accelerate_adapter.hook_adapter import get_offloaded_weights_loader_if_have
 
 WEIGHT_SCALE_INV = '.weight_scale_inv'
 MAX_FILE_NUM = 3
 HF_HOOK = '_hf_hook'
+
+
+class OpsType(Enum):
+    FP8 = auto()
+    BF16 = auto()
+    AUTO = auto()
+
+    @staticmethod
+    def get_ops_type(is_bf16: bool, is_fp8: bool):
+        if is_bf16 and is_fp8:
+            raise ValueError(f'Using both label fp8 and label bf16.')
+
+        ops_type = OpsType.AUTO
+        if is_bf16:
+            ops_type = OpsType.BF16
+        if is_fp8:
+            ops_type = OpsType.FP8
+        return ops_type
 
 
 def weight_dequant(weight: torch.Tensor, scale: torch.Tensor, block_size: int = 128) -> torch.Tensor:
@@ -82,21 +102,46 @@ def get_module_by_name(model, submodule_key=None):
     return cur_mod
 
 
-def auto_convert_model_fp8_to_bf16(model, model_path):
+def auto_convert_model_fp8_to_bf16(model, model_path, ops_type: OpsType = OpsType.AUTO):
+    if ops_type is OpsType.BF16:
+        return
+
+    scale_list, weight_map = get_weight_map_and_scale_list_from_index(model, model_path)
+
+    if ops_type is OpsType.FP8:
+        if not scale_list:
+            raise ValueError('Can not find any fp8 inv scale, please check whether model is of fp8.')
+        convert_model_fp8_to_bf16(model, model_path, scale_list, weight_map)
+        return
+
+    # auto
+    if not scale_list:
+        return
+
+    try:
+        convert_model_fp8_to_bf16(model, model_path, scale_list, weight_map)
+    except KeyError:
+        msmodelslim_logger.warning(f'Safetensors files not match index.json, please check whether model is of bf16.')
+        msmodelslim_logger.warning(f'Skip fp8 to bf16.')
+    except Exception as e:
+        msmodelslim_logger.error(f'Unexpected error occurred: {e}.')
+        raise
+
+
+def get_weight_map_and_scale_list_from_index(model, model_path):
     model_index_path = os.path.join(model_path, "model.safetensors.index.json")
     model_index = json_safe_load(model_index_path)
     weight_map = model_index['weight_map']
-
     convert_list = set(
         map(lambda x: x.replace(WEIGHT_SCALE_INV, ''), filter(lambda x: WEIGHT_SCALE_INV in x, weight_map.keys())))
-    used_list = []
+    scale_list = []
     for name, _ in model.named_modules():
         if name in convert_list:
-            used_list.append(name)
+            scale_list.append(name)
+    return scale_list, weight_map
 
-    if not used_list:
-        return
 
+def convert_model_fp8_to_bf16(model, model_path, scale_list, weight_map):
     enable_adapter()
     replace_device_align_hook_if_needed(model)
 
@@ -104,7 +149,7 @@ def auto_convert_model_fp8_to_bf16(model, model_path):
     loaded_files_list = []
 
     with torch.no_grad():
-        for name in tqdm(used_list, desc='fp8 to bf16'):
+        for name in tqdm(scale_list, desc='fp8 to bf16'):
             module = get_module_by_name(model, name)
             scale = get_tensor(name + WEIGHT_SCALE_INV, model_path, weight_map, loaded_files, loaded_files_list)
 
