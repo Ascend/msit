@@ -51,13 +51,16 @@
 | is_dynamic | 是否使用per-token动态量化功能 | False | True: 使用per-token动态量化；<br>False: 不使用per-token动态量化。 |
 
 #### quant_deepseek_w8a8.py 量化参数说明
-| 参数名        | 含义 | 默认值 | 使用方法                       | 
-|------------| ---- | --- |----------------------------| 
-| model_path | 浮点权重路径 | 无默认值 | 必选参数；<br>输入DeepSeek权重目录路径。 |
-| save_path  | 量化权重路径 | 无默认值 | 必选参数；<br>输出量化结果目录路径。       |
-| layer_count  | 量化权重路径 | 无默认值 | 可选参数；<br>用于调试，实际量化的层数。     |
-| anti_dataset  | 量化权重路径 | 无默认值 | 可选参数；<br>离群值抑制校准集路径。       |
-| calib_dataset  | 量化权重路径 | 无默认值 | 可选参数；<br>量化校准集路径。          |
+| 参数名           | 含义           | 默认值                 | 使用方法                                                                                  | 
+|---------------|--------------|---------------------|---------------------------------------------------------------------------------------| 
+| model_path    | 浮点权重路径       | 无默认值                | 必选参数；<br>输入DeepSeek权重目录路径。                                                            |
+| save_path     | 量化权重路径       | 无默认值                | 必选参数；<br>输出量化结果目录路径。                                                                  |
+| layer_count   | 模型加载层数       | 0                   | 可选参数；<br>用于调试，实际量化的层数。0代表加载所有层。                                                       |
+| anti_dataset  | 异常值抑制校准集     | ./anti_prompt.json  | 可选参数；<br>离群值抑制校准集路径。通常无需调整。                                                           |
+| calib_dataset | 量化过程校准集      | ./calib_prompt.json | 可选参数；<br>量化校准集路径。通常无需调整。                                                              |
+| batch_size    | 输入batch size | 16                  | 可选参数；<br>生成量化校准数据时使用的batch size。batch size越大，校准速度越快，但也要求更多的显存和内存，如资源受限，请降低batch size。 |
+| fp8           | 从fp8模型进行转化   | 无默认值                  | 可选参数；<br>指定模型为fp8模型                                                                   |
+| bf16          | 从bf16模型进行转化  | 无默认值                  | 可选参数；<br>指定模型为bf16模型                                                                  |
 
 - 更多参数配置要求，请参考量化过程中配置的参数 [QuantConfig](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/QuantConfig.md)
   以及量化参数配置类 [Calibrator](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/Calibrator.md)
@@ -87,7 +90,34 @@ python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8
 ##### DeepSeek-V2/V3/R1 w8a8 混合量化(MLA:w8a8量化，MOE:w8a8 dynamic量化)
 - 生成DeepSeek-V2/V3/R1模型 w8a8 混合量化权重
   ```shell
-  python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} 
+  python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径}
+  ```
+   支持从fp8权重直接进行DeepSeek-V2/V3/R1模型 w8a8 混合量化权重：
+  ```shell
+  python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --fp8 --batch_size 4
+  ```
+  注：直接从fp8量化会消耗额外的内存，因此需要降低batch size
+##### DeepSeek-V2/V3/R1 w4a16 per-group datafree量化(MLA:float，MOE:w4a16量化)
+注：当前量化只支持输入bfloat16格式模型
+- 生成DeepSeek-V2/V3/R1模型 w8a8 混合量化权重
+  ```shell
+  python3 convert.py --model_path {浮点权重路径} --save_path {W4A16量化权重路径} 
+  ```
+
+##### DeepSeek-V2/V3/R1 w4a16 per-group量化(MLA：float，MOE：w4a16)
+注：当前量化只支持输入bfloat16格式模型
+- 生成DeepSeek-V2/V3/R1模型 w4a16 量化权重
+  ```shell
+  python3 quant_deepseek.py \
+  --model_path {浮点权重路径} \
+  --save_directory {W4A16量化权重路径} \
+  --w_bit 4 \
+  --a_bit 16 \
+  --group_size 64 \
+  --is_lowbit True \
+  --open_outlier False \
+  --device "npu" \
+  --calib_file ""
   ```
 
 ##### DeepSeek量化QA
