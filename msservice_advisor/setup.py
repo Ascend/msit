@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2023 Huawei Technologies Co., Ltd.
+# Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,14 +21,14 @@ with open(os.path.join(abs_path, "requirements.txt")) as f:
 
 setup(
     name="msservice-advisor",
-    version="7.0.0c1230",
+    version="0.0.1a1",
     description="MindStudio Service Profiler Advisor",
     long_description_content_type="text/markdown",
     packages=find_packages(),
     data_files=[("", ["requirements.txt"])],
     license="Apache-2.0",
     keywords="msservice advisor",
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     entry_points={
         "console_scripts": ["msservice_advisor=msservice_advisor.msservice_advisor:main"],
     },
