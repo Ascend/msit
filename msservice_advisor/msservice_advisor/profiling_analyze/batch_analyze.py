@@ -15,7 +15,7 @@
 import sys
 
 sys.path.append("..")
-from profiling_analyze.register import register_analyze, cached, answer
+from msservice_advisor.profiling_analyze.register import register_analyze, cached, answer
 import numpy as np
 import matplotlib.pyplot as plt
 import random
@@ -259,7 +259,7 @@ def find_best_batch_size(config, benchmark, output_log, limit, target_metrics):
 
 
 if __name__ == "__main__":
-    from profiling_analyze.register import print_answer
+    from msservice_advisor.profiling_analyze.register import print_answer
 
     print("<think>")
     find_best_batch_size(

@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import numpy as np
-from profiling_analyze.register import register_analyze, cached, answer
-from profiling_analyze.utils import TARGETS
+from msservice_advisor.profiling_analyze.register import register_analyze, cached, answer
+from msservice_advisor.profiling_analyze.utils import TARGETS
 
 
 def get_dict_value_by_pos(dict_value, target_pos):
