@@ -150,8 +150,6 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
 """ arg_parse """
 
 
-
-
 def arg_parse(argv):
     import argparse
 
@@ -177,6 +175,7 @@ def arg_parse(argv):
     )
     return parser.parse_known_args(argv)[0]
 
+
 def main():
     import sys
 
@@ -184,6 +183,7 @@ def main():
     benchmark_instance = parse_benchmark_instance(args.instance_path)
     mindie_service_config, mindie_server_log_path = parse_mindie_server_config()
     analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics)
+
 
 if __name__ == "__main__":
     main()

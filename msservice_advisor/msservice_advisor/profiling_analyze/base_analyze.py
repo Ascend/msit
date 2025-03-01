@@ -48,8 +48,8 @@ def check_input_tokens(mindie_service_config, benchmark_instance, mindie_server_
     max_prefill_tokens = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ScheduleConfig:maxPrefillTokens")
     print(f"maxPrefillTokens: {max_prefill_tokens}")
 
-    max_input_tokens = benchmark_instance.get('result_perf', {}).get('InputTokens', {}).get("max", "0").split(" ")[0]
-    max_input_tokens_float = float(max_input_tokens) if max_input_tokens.replace('.', '', 1).isdigit() else 0
+    max_input_tokens = benchmark_instance.get("result_perf", {}).get("InputTokens", {}).get("max", "0").split(" ")[0]
+    max_input_tokens_float = float(max_input_tokens) if max_input_tokens.replace(".", "", 1).isdigit() else 0
     print(f"Max InputTokens: {max_input_tokens_float}")
 
     if max_prefill_tokens is not None and max_input_tokens_float < max_prefill_tokens:
@@ -61,8 +61,10 @@ def check_output_tokens(mindie_service_config, benchmark_instance, mindie_server
     max_iter_times = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ScheduleConfig:maxIterTimes")
     print(f"maxIterTimes: {max_iter_times}")
 
-    max_output_tokens = benchmark_instance.get('result_perf', {}).get('GeneratedTokens', {}).get("max", "0").split(" ")[0]
-    max_output_tokens_float = float(max_output_tokens) if max_output_tokens.replace('.', '', 1).isdigit() else 0
+    max_output_tokens = (
+        benchmark_instance.get("result_perf", {}).get("GeneratedTokens", {}).get("max", "0").split(" ")[0]
+    )
+    max_output_tokens_float = float(max_output_tokens) if max_output_tokens.replace(".", "", 1).isdigit() else 0
     print(f"Max GeneratedTokens: {max_output_tokens_float}")
 
     if max_iter_times is not None and max_output_tokens_float < max_iter_times:
@@ -71,8 +73,8 @@ def check_output_tokens(mindie_service_config, benchmark_instance, mindie_server
 
 @register_analyze()
 def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
-    results_per_request = benchmark_instance.get('results_per_request').values()
-    prefill_latencies = np.array([ii['latency'][0] for ii in results_per_request if len(ii.get("latency", [])) > 0])
+    results_per_request = benchmark_instance.get("results_per_request").values()
+    prefill_latencies = np.array([ii["latency"][0] for ii in results_per_request if len(ii.get("latency", [])) > 0])
 
     counts, buckets = np.histogram(prefill_latencies)
     bucket_keys = ["{:.2f}-{:.2f}".format(ii, jj) for ii, jj in zip(buckets[:-1], buckets[1:])]
@@ -80,8 +82,14 @@ def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_serv
     print("First token latency:")
     print(" " * (4 + bucket_keys_max_len - 6) + "Bucket: Count")
     print(" " * 4 + "-" * bucket_keys_max_len + ": ------")
-    print("\n".join([" " * (4 + bucket_keys_max_len - len(ii)) + "{}: {}".format(ii, jj) for ii, jj in zip(bucket_keys, counts)]))
+    print(
+        "\n".join(
+            [" " * (4 + bucket_keys_max_len - len(ii)) + "{}: {}".format(ii, jj) for ii, jj in zip(bucket_keys, counts)]
+        )
+    )
 
-    support_select_batch = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ScheduleConfig:supportSelectBatch")
+    support_select_batch = get_dict_value_by_pos(
+        mindie_service_config, "BackendConfig:ScheduleConfig:supportSelectBatch"
+    )
     if target == TARGETS.FirstTokenTime and support_select_batch:
         answer(config="support_select_batch", action="set to False", reason="设置为数据集的最大输入长度")

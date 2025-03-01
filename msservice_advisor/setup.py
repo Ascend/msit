@@ -34,4 +34,3 @@ setup(
     },
     install_requires=required,
 )
-
