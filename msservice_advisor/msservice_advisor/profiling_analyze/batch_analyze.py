@@ -34,7 +34,7 @@ def summary_batch_info(batch_info):
         summary[batchsize]["P70"] = latency_list[int(len(latency_list) * 0.7)]
         summary[batchsize]["P90"] = latency_list[int(len(latency_list) * 0.9)]
         summary[batchsize]["MAX"] = latency_list[-1]
-        summary[batchsize]["FIT_DATA"] = latency_list[int(len(latency_list) * 0.3) : int(len(latency_list) * 0.7)]
+        summary[batchsize]["FIT_DATA"] = latency_list[int(len(latency_list) * 0.3):int(len(latency_list) * 0.7)]
     return summary
 
 
