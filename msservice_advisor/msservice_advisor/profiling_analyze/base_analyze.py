@@ -34,7 +34,7 @@ def get_dict_value_by_pos(dict_value, target_pos):
 
 
 @register_analyze()
-def numMemSizeChecker(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
+def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
     npu_mem_size_pos = "BackendConfig:ModelDeployConfig:ModelConfig:0:npuMemSize"
 
     npu_mem_size = get_dict_value_by_pos(mindie_service_config, npu_mem_size_pos)

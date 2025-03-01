@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
+import random
 
-sys.path.append("..")
-from msservice_advisor.profiling_analyze.register import register_analyze, cached, answer
 import numpy as np
 import matplotlib.pyplot as plt
-import random
+
+from msservice_advisor.profiling_analyze.register import register_analyze, cached, answer
 
 
 def summary_batch_info(batch_info):
@@ -68,81 +67,6 @@ def read_batch_and_latency(pre_request):
     decode_summary = summary_batch_info(decode_batch_info)  # batchsize => P50
 
     return prefill_summary, decode_summary
-
-
-def find_best_by_bayes(summary_P50):
-    from bayes_opt import BayesianOptimization
-
-    max_batch_size = summary_P50[-1]["BSZ"]
-
-    # 定义参数搜索空间
-    pbounds = {"BSZ": (0, max_batch_size * 2)}
-
-    # 定义目标函数（占位符，实际使用已有数据）
-    def target_function(bsz):
-        # 此函数不会被实际调用，仅用于初始化
-        return bsz * 1
-
-    # 初始化贝叶斯优化器
-    optimizer = BayesianOptimization(f=target_function, pbounds=pbounds, verbose=2, random_state=1)
-
-    # 将已有数据转换为库需要的格式（字典列表）
-    existing_points = [{"BSZ": x["BSZ"]} for x in summary_P50]
-    existing_target = [x["BSZ"] / x["P50"] for x in summary_P50]
-
-    # 将已有数据添加到优化器中
-    for x, y in zip(existing_points, existing_target):
-        optimizer.register(params=x, target=y)
-
-    # 确保高斯过程模型已拟合数据
-    optimizer._gp.fit(optimizer.space.params, optimizer.space.target)
-
-    # ----------- 可视化分析 -----------
-    # 生成单变量网格点用于模型预测
-    x_values = np.linspace(0, max_batch_size * 2, 300).reshape(-1, 1)
-    mu, sigma = optimizer._gp.predict(x_values, return_std=True)
-
-    # 创建画布
-    plt.figure(figsize=(10, 6))
-
-    # 绘制模型预测均值和置信区间
-    plt.plot(x_values, mu, label="Model Prediction (Mean)", color="blue")
-    plt.fill_between(
-        x_values.ravel(),
-        mu - 1.96 * sigma,  # 95% 置信区间
-        mu + 1.96 * sigma,
-        alpha=0.2,
-        color="blue",
-        label="95% Confidence Interval",
-    )
-
-    # 绘制已有数据点
-    plt.scatter(
-        [x["BSZ"] for x in existing_points],
-        existing_target,
-        c="green",
-        s=100,
-        edgecolor="black",
-        label="Existing Data Points",
-    )
-
-    # 标记模型预测的最优点
-    best_x = optimizer.max["params"]["BSZ"]
-    best_y = optimizer.max["target"]
-    plt.scatter(best_x, best_y, marker="*", s=200, color="red", label="Predicted Best Point")
-
-    # 图表标注
-    plt.title("Bayesian Optimization (1D Input)")
-    plt.xlabel("x")
-    plt.ylabel("Target Value")
-    plt.legend()
-    plt.grid(alpha=0.3)
-    plt.tight_layout()
-    plt.show()
-
-    best_predicted = optimizer.max
-    print(f"Best bayes value: {best_predicted}")
-    return int(best_predicted.get("params", {}).get("BSZ"))
 
 
 def find_best_by_curve_fit(summary_fit_data, process_name):
