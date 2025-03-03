@@ -2,15 +2,13 @@
 
 ## 介绍
 - 执行 mindie benchmark，输出结果的 instance 文件夹
-- 执行 `msservice_advisor.py`
+- 执行 `msservice_advisor`
   ```sh
   # 如果没有设置 mindie 环境变量，手动 export 路径
   export MIES_INSTALL_PATH=$HOME/workspace
 
-  # 切换到当前路径
-  cd msit/msservice_advisor
   # 执行调参建议
-  python msservice_advisor.py -i ../instance/
+  msservice_advisor -i ../instance/
   ```
 - 参数
 

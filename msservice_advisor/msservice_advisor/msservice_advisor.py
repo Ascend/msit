@@ -155,7 +155,11 @@ def arg_parse(argv):
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        "-i", "--instance_path", type=str, default="benchamrk instance output directory", help="instance"
+        "-i", "--instance_path",
+        type=str,
+        default="benchamrk instance output directory",
+        help="instance",
+        required=True
     )
     parser.add_argument(
         "-t",

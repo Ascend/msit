@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "msservice-advisor"
+version = "0.0.1a4"
+description = "MindStudio Service Profiler Advisor"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+keywords = ["msservice", "advisor"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent"
+]
+dependencies = [
+    "matplotlib",
+    "scipy",
+]
+requires-python = ">=3.8"
+
+[project.scripts]
+msservice_advisor = "msservice_advisor.msservice_advisor:main"
+
+[tool.setuptools]
+packages = {find = {}}
+include-package-data = true
