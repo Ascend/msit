@@ -18,7 +18,7 @@ import csv
 from collections import namedtuple
 from glob import glob
 
-from profiling_analyze.utils import TARGETS, str_ignore_case
+from msservice_advisor.profiling_analyze.utils import TARGETS, str_ignore_case
 
 
 # {"21559056a7ff44c88a891ecbb537c431": "0", ...}
@@ -134,9 +134,9 @@ def parse_mindie_server_config():
 
 
 def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
-    from profiling_analyze import base_analyze
-    from profiling_analyze import batch_analyze
-    from profiling_analyze.register import REGISTRY, print_answer
+    from msservice_advisor.profiling_analyze import base_analyze
+    from msservice_advisor.profiling_analyze import batch_analyze
+    from msservice_advisor.profiling_analyze.register import REGISTRY, print_answer
 
     print("\n<think>")
     for name, analyzer in REGISTRY.items():
@@ -148,8 +148,6 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
 
 
 """ arg_parse """
-
-
 
 
 def arg_parse(argv):
@@ -178,10 +176,14 @@ def arg_parse(argv):
     return parser.parse_known_args(argv)[0]
 
 
-if __name__ == "__main__":
+def main():
     import sys
 
     args = arg_parse(sys.argv)
     benchmark_instance = parse_benchmark_instance(args.instance_path)
     mindie_service_config, mindie_server_log_path = parse_mindie_server_config()
     analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics)
+
+
+if __name__ == "__main__":
+    main()

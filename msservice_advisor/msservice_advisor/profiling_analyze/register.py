@@ -54,6 +54,7 @@ def answer(env=None, config=None, action=None, reason=""):
         ANSWERS["config"].setdefault(config, [])
         ANSWERS["config"][config].append((action, reason))
 
+
 def print_answer():
     print("\n<answer>")
     for name, items in ANSWERS.get("env", dict()).items():

@@ -1,3 +1,0 @@
-bayesian-optimization
-matplotlib
-scipy

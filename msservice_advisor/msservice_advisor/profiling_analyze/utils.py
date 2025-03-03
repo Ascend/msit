@@ -16,6 +16,7 @@ from collections import namedtuple
 
 TARGETS = namedtuple("TARGETS", ["FirstTokenTime", "Throughput"])("FirstTokenTime", "Throughput")
 
+
 def str_ignore_case(value):
     return value.lower().replace("_", "").replace("-", "")
 
