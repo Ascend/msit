@@ -16,7 +16,6 @@ from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO)
 
-
 DB_PATTERN = "ascend_pytorch_profiler_*.db"
 
 QUERY_SQL = """
@@ -26,12 +25,22 @@ SELECT
     co.endNs - co.startNs AS communication_time,
     sii.value AS opName,
     host.hostUid as host_id,
-    co.opType,
+    op.value AS opType,
+    et.name AS dataType,
     CASE
-        WHEN et.name = 'INT8' THEN 1 * co.count
-        WHEN et.name = 'FP16' THEN 2 * co.count
-        WHEN et.name = 'FP32' THEN 4 * co.count
-        WHEN et.name = 'BF16' THEN 2 * co.count
+WHEN et.name = 'INT8' THEN 1 * co.count 
+    WHEN et.name = 'INT16' THEN 2 * co.count
+    WHEN et.name = 'INT32' THEN 4 * co.count
+    WHEN et.name = 'INT64' THEN 8 * co.count
+    WHEN et.name = 'UINT64' THEN 8 * co.count 
+    WHEN et.name = 'UINT8' THEN 1 * co.count
+    WHEN et.name = 'UINT16' THEN 2 * co.count
+    WHEN et.name = 'UINT32' THEN 4 * co.count
+    WHEN et.name = 'FP16' THEN 2 * co.count
+    WHEN et.name = 'FP32' THEN 4 * co.count
+    WHEN et.name = 'FP64' THEN 8 * co.count 
+    WHEN et.name = 'BFP16' THEN 2 * co.count
+    WHEN et.name = 'INT128' THEN 16 * co.count 
     END AS dataSize
 FROM
     COMMUNICATION_OP co
@@ -40,43 +49,43 @@ CROSS
     JOIN STRING_IDS si ON co.groupName = si.id
     JOIN STRING_IDS sii ON co.opName = sii.id
     JOIN ENUM_HCCL_DATA_TYPE et ON co.dataType = et.id
+    JOIN STRING_IDS op ON co.opType = op.id 
     JOIN HOST_INFO host
 """
 
-
-DIXTON_95_TABLE = {
-    3:0.941,
-    4:0.765,
-    5:0.642,
-    6:0.562,
-    7:0.507,
-    8:0.554,
-    9:0.512,
-    10:0.477,
-    11:0.575,
-    12:0.546,
-    13:0.521,
-    14:0.546,
-    15:0.524,
-    16:0.505,
-    17:0.489,
-    18:0.475,
-    19:0.462,
-    20:0.450,
-    21:0.440,
-    22:0.431,
-    23:0.422,
-    24:0.413,
-    25:0.406,
-    26:0.399,
-    27:0.393,
-    28:0.387,
-    29:0.381,
-    30:0.376
+DIXON_95_TABLE = {
+    3: 0.941,
+    4: 0.765,
+    5: 0.642,
+    6: 0.562,
+    7: 0.507,
+    8: 0.554,
+    9: 0.512,
+    10: 0.477,
+    11: 0.575,
+    12: 0.546,
+    13: 0.521,
+    14: 0.546,
+    15: 0.524,
+    16: 0.505,
+    17: 0.489,
+    18: 0.475,
+    19: 0.462,
+    20: 0.450,
+    21: 0.440,
+    22: 0.431,
+    23: 0.422,
+    24: 0.413,
+    25: 0.406,
+    26: 0.399,
+    27: 0.393,
+    28: 0.387,
+    29: 0.381,
+    30: 0.376
 }
 
 
-class MulitProcessor:
+class MultiProcessor:
     def __init__(self):
         self._executor = futures.ProcessPoolExecutor(max_workers=os.cpu_count())
 
@@ -84,7 +93,7 @@ class MulitProcessor:
         if self._executor is None:
             raise RuntimeError("executor is None")
         return self
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
@@ -92,10 +101,10 @@ class MulitProcessor:
         if self._executor:
             self._executor.shutdown(wait=True)
             self._executor = None
-    
+
     def launch(self, func, *args, **kwargs):
         return self._executor.submit(func, *args, **kwargs).result()
-    
+
     def map(self, func, *iterables, **kwargs):
         partial_func = partial(func, **kwargs)
         return list(self._executor.map(partial_func, *iterables))
@@ -127,12 +136,12 @@ class DBLoader:
         t1 = time.time()
         logging.info("loading data from db...")
 
-        with MulitProcessor() as executor:
+        with MultiProcessor() as executor:
             mapper_res = executor.map(
                 self.mapper_func,
                 self.path_list,
             )
-         
+
         self.concat_db(mapper_res)
         t2 = time.time()
         logging.info(f"loading cost time {t2 - t1}s")
@@ -142,29 +151,31 @@ class DBProcessor:
     def __init__(self, dfs):
         self.dfs = dfs
         self.rankid_arr = dfs["rankId"].values
-        self.n = len(self.rankid_arr)
+        self.num_ranks = len(self.rankid_arr)
         self.group_name_arr = dfs["groupName"].values
         self.communication_time_arr = dfs["communication_time"].values
         self.op_name_arr = dfs["opName"].values
         self.host_id_arr = dfs["host_id"].values
         self.vote_result = defaultdict(lambda: [0, 0])
-    
+        self.slow_link_sum = []
+        self.slow_link_ops = []
+
     def run(self):
         process_group = defaultdict(lambda: defaultdict(list))
-        transmit_time_arr = np.zeros((self.n), dtype=np.int64)
-        related_ranks_arr = np.zeros((self.n), dtype=np.int32)
-        across_nodes_arr = np.zeros((self.n), dtype=np.bool_)
+        transmit_time_arr = np.zeros(self.num_ranks, dtype=np.int64)
+        related_ranks_arr = np.zeros(self.num_ranks, dtype=np.int32)
+        across_nodes_arr = np.zeros(self.num_ranks, dtype=np.bool_)
 
-        for idx in range(self.n):
+        for idx in range(self.num_ranks):
             if "send" in self.op_name_arr[idx] or "receive" in self.op_name_arr[idx]:
                 continue
             process_group[self.group_name_arr[idx]][self.op_name_arr[idx]].append(idx)
-        
+
         for _, ops_same_group in tqdm(process_group.items(), desc="Processing DB data..."):
             for _, ops in ops_same_group.items():
                 communication_time_list = [self.communication_time_arr[op_idx] for op_idx in ops]
                 transmit_time = min(communication_time_list)
-                
+
                 judge_flag, outlier_idx, vote_string = judge_vote(communication_time_list)
 
                 if judge_flag:
@@ -173,7 +184,7 @@ class DBProcessor:
 
                 for op_idx in ops:
                     self.vote_result[self.rankid_arr[op_idx]][1] += 1
-                
+
                 across_nodes_flag = len(set([self.host_id_arr[idx] for idx in ops])) != 1
 
                 related_ranks_num = len(ops)
@@ -182,8 +193,9 @@ class DBProcessor:
                     transmit_time_arr[op_idx] = transmit_time
                     related_ranks_arr[op_idx] = related_ranks_num
                     across_nodes_arr[op_idx] = across_nodes_flag
-        
+
         self.dfs.insert(self.dfs.shape[1], 'transmit_time', transmit_time_arr)
+        self.dfs.insert(self.dfs.shape[1], 'related_ranks', related_ranks_arr)
 
     def vote_result_to_df(self):
         res = pd.DataFrame(columns=["rankId", "perpetrator_times", "count_times"])
@@ -191,10 +203,10 @@ class DBProcessor:
             perpetrator_times, count_times = vote_list[0], vote_list[1]
             res.loc[len(res.index)] = [rank, perpetrator_times, count_times]
         return res
-    
+
     def parser_host_rank_map(self):
         map_dic = defaultdict(list)
-        for i in range(self.n):
+        for i in range(self.num_ranks):
             if self.rankid_arr[i] not in map_dic[self.host_id_arr[i]]:
                 map_dic[self.host_id_arr[i]].append(self.rankid_arr[i])
 
@@ -203,10 +215,10 @@ class DBProcessor:
             value.sort()
             res.loc[len(res.index)] = [key, str(value)]
         return res
-    
+
     def parser_group_rank_map(self):
         map_dic = defaultdict(list)
-        for i in range(self.n):
+        for i in range(self.num_ranks):
             if self.rankid_arr[i] not in map_dic[self.group_name_arr[i]]:
                 map_dic[self.group_name_arr[i]].append(self.rankid_arr[i])
         res = pd.DataFrame(columns=["groupName", "rankId"])
@@ -219,33 +231,83 @@ class DBProcessor:
         transmit_time_sum = self.dfs.groupby('rankId')['transmit_time'].sum().reset_index()
         return transmit_time_sum
 
-    def parser_operator_classification_statistics(self):
-        df = self.dfs
+    def slow_link(self):
+        """
+        处理数据，分组并检测异常值。
+        """
+        mapper_res = self.dfs
+        # 按 opType, dataSize, related_ranks 分组
+        grouped = mapper_res.groupby(['opType', 'dataSize', 'related_ranks'])
 
-        # 计算 RankedData
-        df['rn'] = df.groupby(['opType', 'dataSize', 'across_nodes', 'related_ranks'])['transmit_time'].rank(
-            method='dense', ascending=True)
+        for _, group in grouped:
+            # 提取分组数据中的 transmit_time 列
+            transmit_time_data = group['transmit_time'].values
 
-        # 计算 AggregatedData
-        agg_df = df.groupby(['opType', 'dataSize', 'across_nodes', 'related_ranks']).agg(
-            minTransmitTime=('transmit_time', 'min'),
-            timeDiff=('transmit_time', lambda x: x.max() - x.min())
-        ).reset_index()
+            # 检测异常值
+            outliers = detect_outliers_z_score(transmit_time_data)
 
-        # 合并 AggregatedData 和原始数据
-        merged_df = pd.merge(df, agg_df, on=['opType', 'dataSize', 'across_nodes', 'related_ranks'])
+            if outliers:
+                # 如果存在异常值，将整个分组数据存入 Slow_Link_Ops
+                self.slow_link_ops.append(group)
 
-        # 过滤 RankedData 中 rn = 1 的行
-        result = merged_df[merged_df['rn'] == 1]
+        if self.slow_link_ops:
+            self.slow_link_ops = pd.concat(self.slow_link_ops, ignore_index=True)
+            # 重置索引并去掉多余的索引列
+            data = pd.DataFrame(self.slow_link_ops)
 
-        # 选择需要的列
-        result = result[
-            ['rankId', 'groupName', 'opName', 'opType', 'dataSize', 'across_nodes', 'related_ranks', 'dataType',
-             'host_id', 'minTransmitTime', 'timeDiff']]
+            # 按 'opType', 'dataSize', 'related_ranks' 分组
+            grouped = data.groupby(['opType', 'dataSize', 'related_ranks'])
 
-        # 按 timeDiff 降序排序
-        result = result.sort_values(by='timeDiff', ascending=False)
-        return result
+            # 计算统计信息
+            group_data = describe_duration(grouped['transmit_time'])
+
+            # 找到每个组中 transmit_time 最小值和最大值对应的 rankId
+            min_rank = grouped['transmit_time'].idxmin().map(data['rankId'])
+            max_rank = grouped['transmit_time'].idxmax().map(data['rankId'])
+
+            # 将最大值和最小值对应的 rankId 添加到 group_data
+            group_data['max_rank'] = max_rank.values
+            group_data['min_rank'] = min_rank.values
+
+            # 构造 filteringName
+            group_data['opType_relatedRanks_dataSize'] = group_data.index.map(lambda x: f"{x[0]}{x[2]}_{x[1]}")
+            # 将 filteringName 移动到第一列
+            cols = ['opType_relatedRanks_dataSize'] + [col for col in group_data.columns if
+                                                       col != 'opType_relatedRanks_dataSize']
+            group_data = group_data[cols]
+
+            # 重置索引
+            group_data = group_data.reset_index(drop=True)
+            # 计算最大值和最小值与均值的绝对值
+            group_data['abs_max_mean'] = abs(group_data['maxNs'] - group_data['meanNs'])
+            group_data['abs_min_mean'] = abs(group_data['minNs'] - group_data['meanNs'])
+
+            # 计算最大值和最小值与均值的绝对值中的较大值
+            group_data['max_abs_mean'] = group_data[['abs_max_mean', 'abs_min_mean']].max(axis=1)
+
+            # 计算偏移比值
+            group_data['offset_ratio'] = group_data['max_abs_mean'] / group_data['stdNs']
+
+            # 按偏移比值降序排序
+            group_data = group_data.sort_values(by='offset_ratio', ascending=False)
+
+            # 删除辅助列 'abs_max_mean', 'abs_min_mean', 'max_abs_mean'
+            group_data = group_data.drop(columns=['abs_max_mean', 'abs_min_mean', 'max_abs_mean'])
+
+            # 调整列的顺序，将 offsetRatio 移到 MinRank 和 MaxRank 之前
+            columns = [col for col in group_data.columns if col not in ['max_rank', 'min_rank', 'offset_ratio']]
+            columns.insert(len(columns), 'offset_ratio')  # 将 offsetRatio 插入到倒数第三的位置
+            columns.extend(['max_rank', 'min_rank'])  # 添加 MaxRank 和 MinRank 到列的最后
+
+            # 重新排列列的顺序
+            group_data = group_data[columns]
+
+            # 在处理 group_data 的最后部分并保存
+            self.slow_link_sum = group_data
+            return self.slow_link_sum, self.slow_link_ops
+        else:
+            # 如果没有异常值，返回空的 DataFrame
+            return pd.DataFrame(), pd.DataFrame()
 
     def save_db(self, path="./"):
         default_name = "vote_result.db"
@@ -254,8 +316,8 @@ class DBProcessor:
         conn = sqlite3.connect(save_file)
 
         def df_to_db(sql_obj, df_obj, tabel_name):
-            df_obj.to_sql(tabel_name, sql_obj, if_exists="replace")
-        
+            df_obj.to_sql(tabel_name, sql_obj, if_exists="replace", index=False)
+
         vote_res = self.vote_result_to_df()
         df_to_db(conn, vote_res, "vote_result")
         group_rank_map = self.parser_group_rank_map()
@@ -264,10 +326,82 @@ class DBProcessor:
         df_to_db(conn, host_rank_map, "host_rank_map")
         transmit_time_sum = self.sum_time_per_rank()
         df_to_db(conn, transmit_time_sum, "transmit_time_sum")
-        operator_classification_statistics = self.parser_operator_classification_statistics()
-        df_to_db(conn, operator_classification_statistics, "operator_classification_statistics")
+        slow_link_sum, slow_link_ops = self.slow_link()
+        df_to_db(conn, slow_link_sum, "slow_link_sum")
+        df_to_db(conn, slow_link_ops, "slow_link_ops")
 
         conn.close()
+
+
+def format_columns(df: pd.DataFrame):
+    formatted_df = df.rename(
+        {
+            "25%": "q1Ns",
+            "50%": "medianNs",
+            "75%": "q3Ns",
+            0.25: "q1Ns",
+            0.5: "medianNs",
+            0.75: "q3Ns",
+            "Q1": "q1Ns",
+            "Q3": "q3Ns",
+            "min": "minNs",
+            "max": "maxNs",
+            "median": "medianNs",
+            "sum": "sumNs",
+            "std": "stdNs",
+            "mean": "meanNs",
+            "count": "count"
+        },
+        axis="columns"
+    )
+
+    stats_cols = ["count", "meanNs", "stdNs", "minNs", "q1Ns", "medianNs", "q3Ns", "maxNs", "sumNs"]
+    other_cols = [col for col in formatted_df.columns if col not in stats_cols]
+    return formatted_df[stats_cols + other_cols]
+
+
+def describe_duration(series_groupby):
+    agg_df = series_groupby.agg(["min", "max", "count", "std", "mean", "sum"])
+    quantile_df = series_groupby.quantile([0.25, 0.5, 0.75])
+
+    quantile_df = quantile_df.unstack()
+    quantile_df.columns = ["25%", "50%", "75%"]
+
+    stats_df = pd.merge(agg_df, quantile_df, left_index=True, right_index=True)
+    formated_df = format_columns(stats_df)
+    formated_df.index.name = stats_df.index.name
+    return formated_df
+
+
+def detect_outliers_z_score(data, threshold=3):
+    """
+    使用 Z-Score 方法判断是否存在异常值。
+    Z-Score 是一种统计方法，用于衡量数据点与均值的标准差距离。
+    如果某个数据点的 Z-Score 超过阈值（默认为3），则认为它是异常值。
+
+    返回值：
+    - True：存在异常值
+    - False：不存在异常值
+    """
+    # 计算数据的均值
+    mean = np.mean(data)  # 均值表示数据的中心位置
+
+    # 计算数据的标准差
+    std = np.std(data)  # 标准差表示数据的离散程度
+
+    # 如果标准差为0，直接返回 False（不存在异常值）
+    if std == 0:
+        return False
+
+    # 计算 Z-Score 的上阈值和下阈值
+    z_scores_upper_threshold = threshold * std + mean
+    z_scores_lower_threshold = -threshold * std + mean
+
+    # 判断是否存在 Z-Score 超过阈值的数据点
+    has_outliers = any(x > z_scores_upper_threshold or x < z_scores_lower_threshold for x in data)
+
+    # 返回是否存在异常值的布尔值
+    return has_outliers
 
 
 def judge_vote(time_list):
@@ -293,7 +427,7 @@ def judge_vote(time_list):
     return None, None, None
 
 
-def load_db(path):                                                                         
+def load_db(path):
     db_loader = DBLoader(path)
     return db_loader.all_json_objects
 
@@ -314,7 +448,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--path', type=str, required=True, help="profiling data path")
     parser.add_argument('-o', '--output_path', type=str, required=True, help="output path")
     args = parser.parse_args()
-    
+
     dfs = load_db(args.path)
     processor = DBProcessor(dfs)
     processor.run()
