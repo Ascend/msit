@@ -43,7 +43,7 @@ def connect_and_process_sql(database_path: Path, query_sql: str) -> object:
     return df
 
 
-class MulitProcessor:
+class MultiProcessor:
     def __init__(self):
         self._executor = futures.ProcessPoolExecutor(max_workers=os.cpu_count())
 
@@ -94,7 +94,7 @@ class DBLoader:
         t1 = time.time()
         logging.info("loading data from db...")
 
-        with MulitProcessor() as executor:
+        with MultiProcessor() as executor:
             mapper_res = executor.map(
                 self.mapper_func,
                 self.path_list,
