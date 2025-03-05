@@ -42,6 +42,6 @@ def simple_env_checker(*_):
         if env_value != env_suggest_value:
             answer(suggesion_type=SUGGESTION_TYPES.env, 
                    suggesion_item=env_item, 
-                   action=f"export {env_item}={env_value}" if env_value else f"unset {env_item}",
+                   action=f"export {env_item}={env_suggest_value}" if env_suggest_value else f"unset {env_item}",
                    reason=suggest_reason)
         
