@@ -15,7 +15,7 @@
 from collections import namedtuple
 
 CHECK_TYPES = namedtuple("CHECK_TYPES", ["basic", "deepseek"])("basic", "deepseek")
-_SUGGESTION_TYPES = ["env", "server", "config"]
+_SUGGESTION_TYPES = ["env", "system", "config"]
 SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTION_TYPES)
 
 
@@ -38,3 +38,19 @@ def walk_dict(data, parent_key=""):
             else:
                 new_key = f"{parent_key}.{index}" if parent_key else index
                 yield from walk_dict(item, new_key)
+
+
+def get_dict_value_by_pos(dict_value, target_pos):
+    cur = dict_value
+    for kk in target_pos.split(":"):
+        if not cur:
+            cur = None
+            break
+        if isinstance(cur, list) and str.isdigit(kk):
+            cur = cur[int(kk)]
+        elif kk in cur:
+            cur = cur[kk]
+        else:
+            cur = None
+            break
+    return cur
