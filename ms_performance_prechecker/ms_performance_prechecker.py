@@ -73,7 +73,7 @@ def parse_mindie_server_config():
 
 
 def prechecker(mindie_service_config, check_type):
-    from ms_performance_prechecker.prechecker import base_checker
+    import ms_performance_prechecker.prechecker
     from ms_performance_prechecker.prechecker.register import REGISTRY, print_answer
 
     print("\n<think>")

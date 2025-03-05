@@ -18,8 +18,30 @@ from ms_performance_prechecker.prechecker.register import register_checker, cach
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
 
 
+# @register_checker()
+# def env_mindie_log_level_checker(mindie_service_config, check_type):
+#     mindie_log_level = os.getenv("MINDIE_LOG_LEVEL", "INFO")
+#     if mindie_log_level != "ERROR":
+#         answer(suggesion_type=SUGGESTION_TYPES.env, suggesion_item="MINDIE_LOG_LEVEL", action="set to ERROR", reason="大量的日志打印是十分耗时的行为，且在正常的服务过程中，不需要这些日志")
+
 @register_checker()
-def env_mindie_log_level_checker(mindie_service_config, check_type):
-    mindie_log_level = os.getenv("MINDIE_LOG_LEVEL", "INFO")
-    if mindie_log_level != "ERROR":
-        answer(suggesion_type=SUGGESTION_TYPES.env, suggesion_item="MINDIE_LOG_LEVEL", action="set to ERROR", reason="大量的日志打印是十分耗时的行为，且在正常的服务过程中，不需要这些日志")
+def simple_env_checker(*_):
+    suggestion_file = os.path.join(os.path.dirname(__file__), "env_suggestion.yml")
+    import yaml
+    with open(suggestion_file, 'r') as f:
+        suggestion_content = yaml.safe_load(f)
+    
+    for item in suggestion_content.get("envs"):
+        env_item = item.get("ENV")
+        env_value = os.getenv(env_item, "")
+        env_suggest_value = item.get("SUGGESTION_VALUE") or ""
+        suggest_reason = item.get("REASON", "")
+        allow_undefined = item.get("ALLOW_UNDEFINED", False)
+        if allow_undefined and not env_value:
+            continue
+        if env_value != env_suggest_value:
+            answer(suggesion_type=SUGGESTION_TYPES.env, 
+                   suggesion_item=env_item, 
+                   action=f"export {env_item}={env_value}" if env_value else f"unset {env_item}",
+                   reason=suggest_reason)
+        
