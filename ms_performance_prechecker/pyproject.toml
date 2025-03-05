@@ -18,10 +18,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent"
 ]
-dependencies = [
-    "matplotlib",
-    "scipy",
-]
+dependencies = []
 requires-python = ">=3.8"
 
 [project.scripts]
