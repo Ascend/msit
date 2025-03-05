@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import numpy as np
 from ms_performance_prechecker.prechecker.register import register_checker, cached, answer
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
 

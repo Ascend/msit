@@ -14,7 +14,6 @@
 
 import os
 import platform
-import numpy as np
 from ms_performance_prechecker.prechecker.register import register_checker, cached, answer
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES, get_dict_value_by_pos, str_to_digit
 
