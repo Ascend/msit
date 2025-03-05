@@ -23,6 +23,12 @@ def str_ignore_case(value):
     return value.lower().replace("_", "").replace("-", "")
 
 
+def str_to_digit(input_str, default_value=None):
+    if not input_str.replace(".", "", 1).isdigit():
+        return default_value
+    return float(input_str) if "." in input_str else int(input_str)
+
+
 def walk_dict(data, parent_key=""):
     if isinstance(data, dict):
         for key, value in data.items():
