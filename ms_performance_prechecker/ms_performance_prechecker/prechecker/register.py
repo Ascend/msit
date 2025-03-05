@@ -57,6 +57,6 @@ def print_answer():
     for suggesion_type in SUGGESTION_TYPES:
         for name, items in ANSWERS.get(suggesion_type, dict()).items():
             for action, reason in items:
-                print("[{}] {} {}. reason: {}".format(suggesion_type, name, action, reason))
+                print("[{}] {}\n[action] {}\n[reason] {}\n".format(suggesion_type, name, action, reason))
 
     print("</answer>")
