@@ -136,8 +136,7 @@ def parse_mindie_server_config():
 
 
 def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
-    from msservice_advisor.profiling_analyze import base_analyze
-    from msservice_advisor.profiling_analyze import batch_analyze
+    import msservice_advisor.profiling_analyze
     from msservice_advisor.profiling_analyze.register import REGISTRY, ANSWERS
 
     logger.info("")

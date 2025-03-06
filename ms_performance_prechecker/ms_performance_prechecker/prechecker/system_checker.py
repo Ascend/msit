@@ -15,34 +15,41 @@
 import os
 import platform
 from ms_performance_prechecker.prechecker.register import register_checker, cached, answer
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES, get_dict_value_by_pos, str_to_digit
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES, get_dict_value_by_pos, str_to_digit, logger
 
 DRIVER_VERSION_PATH = "/usr/local/Ascend/driver/version.info"
 CPUINFO_PATH = "/proc/cpuinfo"
 TRANSPARENT_HUGEPAGE_PATH = "/sys/kernel/mm/transparent_hugepage/enabled"
 GOVERNOR_PATH_FORMATTER = "/sys/devices/system/cpu/cpu{core}/cpufreq/scaling_governor"
 
+
 @register_checker()
 def linux_kernel_release_checker(mindie_service_config, check_type):
     target_major_version, target_minor_version = 5, 10
     target_version = ".".join([str(ii) for ii in [target_major_version, target_minor_version]])
 
-
     kernel_release = platform.release()
+    logger.debug(f"Got kernel_release: {kernel_release}, suggested is {target_version}")
     kernel_release_split = kernel_release.split(".")
     if len(kernel_release_split) < 2:
-        print(f"[ERROR] failed parsing kernel release version: {kernel_release}")
+        logger.warning(f"failed parsing kernel release version: {kernel_release}")
         return
 
     major_version, minor_version = str_to_digit(kernel_release_split[0]), str_to_digit(kernel_release_split[1])
     if major_version is None or minor_version is None:
-        print(f"[ERROR] failed parsing kernel release version: {kernel_release}")
+        logger.warning(f"failed parsing kernel release version: {kernel_release}")
         return
 
+    answer_kwargs = dict(
+        suggesion_type=SUGGESTION_TYPES.system,
+        suggesion_item="内核版本",
+        action=f"升级到 {target_version} 以上",
+        reason="内核版本升级后以上 host bound 时性能有提升",
+    )
     if major_version < target_major_version:
-        answer(suggesion_type=SUGGESTION_TYPES.system, suggesion_item="内核版本", action=f"升级到 {target_version} 以上", reason="内核版本升级后以上 host bound 时性能有提升")
-    if major_version == target_major_version and minor_version < target_minor_version:
-        answer(suggesion_type=SUGGESTION_TYPES.system, suggesion_item="内核版本", action=f"升级到 {target_version} 以上", reason="内核版本升级后以上 host bound 时性能有提升")
+        answer(**answer_kwargs)
+    elif major_version == target_major_version and minor_version < target_minor_version:
+        answer(**answer_kwargs)
 
 
 @register_checker()
@@ -51,7 +58,7 @@ def driver_version_checker(mindie_service_config, check_type):
     target_version = ".".join([str(ii) for ii in [target_major_version, target_minor_version, target_mini_version]])
 
     if not os.path.exists(DRIVER_VERSION_PATH) or not os.access(DRIVER_VERSION_PATH, os.R_OK):
-        print(f"[ERROR] {DRIVER_VERSION_PATH} not accessible")
+        logger.warning(f"{DRIVER_VERSION_PATH} not accessible")
         return
 
     version = ""
@@ -60,28 +67,36 @@ def driver_version_checker(mindie_service_config, check_type):
             if "Version=" in line:
                 version = line.strip().split("=")[-1]
                 break
+    logger.debug(f"Got driver version: {version}, suggested is {target_version}")
+
     version_split = version.split(".")
     if len(version_split) < 3:
-        print(f"[ERROR] failed parsing Ascend driver version: {version}")
+        logger.warning(f"failed parsing Ascend driver version: {version}")
         return
     major_version, minor_version = str_to_digit(version_split[0]), str_to_digit(version_split[1])
     mini_version = str_to_digit(version_split[2], default_value=-1)  # value like "rc1" convert to -1
     if major_version is None or minor_version is None:
-        print(f"[ERROR] failed parsing Ascend driver version: {version}")
+        logger.warning(f"failed parsing Ascend driver version: {version}")
         return
 
+    answer_kwargs = dict(
+        suggesion_type=SUGGESTION_TYPES.system,
+        suggesion_item="驱动版本",
+        action=f"升级到 {target_version} 以上",
+        reason="驱动版本升级后性能有提升",
+    )
     if major_version < target_major_version:
-        answer(suggesion_type=SUGGESTION_TYPES.system, suggesion_item="驱动版本", action=f"升级到 {target_version} 以上", reason="驱动版本升级后性能有提升")
-    if major_version == target_major_version and minor_version < target_minor_version:
-        answer(suggesion_type=SUGGESTION_TYPES.system, suggesion_item="内核版本", action=f"升级到 {target_version} 以上", reason="驱动版本升级后性能有提升")
-    if major_version == target_major_version and minor_version == target_minor_version and mini_version < target_mini_version:
-        answer(suggesion_type=SUGGESTION_TYPES.system, suggesion_item="内核版本", action=f"升级到 {target_version} 以上", reason="驱动版本升级后性能有提升")
+        answer(**answer_kwargs)
+    elif major_version == target_major_version and minor_version < target_minor_version:
+        answer(**answer_kwargs)
+    elif major_version == target_major_version and minor_version == target_minor_version and mini_version < target_mini_version:
+        answer(**answer_kwargs)
 
 
 @register_checker()
 def virtual_machine_checker(mindie_service_config, check_type):
     if not os.path.exists(CPUINFO_PATH) or not os.access(CPUINFO_PATH, os.R_OK):
-        print(f"[ERROR] {CPUINFO_PATH} not accessible")
+        logger.warning(f"{CPUINFO_PATH} not accessible")
         return
 
     is_virtual_machine = False
@@ -89,16 +104,21 @@ def virtual_machine_checker(mindie_service_config, check_type):
         for line in ff.readlines():
             if "hypervisor" in line:
                 is_virtual_machine = True
+                logger.debug(f"Got hypervisor info from: {CPUINFO_PATH}")
                 break
     if is_virtual_machine:
-        answer(suggesion_type=SUGGESTION_TYPES.system, suggesion_item="虚拟机", action="确定分配的 cpu 是完全体", reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降")
-
+        answer(
+            suggesion_type=SUGGESTION_TYPES.system,
+            suggesion_item="可能是虚拟机",
+            action="确定分配的 cpu 是完全体",
+            reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降"，
+        )
 
 
 @register_checker()
 def transparent_hugepage_checker(mindie_service_config, check_type):
     if not os.path.exists(TRANSPARENT_HUGEPAGE_PATH) or not os.access(TRANSPARENT_HUGEPAGE_PATH, os.R_OK):
-        print(f"[ERROR] {TRANSPARENT_HUGEPAGE_PATH} not accessible")
+        logger.warning(f"{TRANSPARENT_HUGEPAGE_PATH} not accessible")
         return
 
     is_transparent_hugepage_enable = False
@@ -106,9 +126,15 @@ def transparent_hugepage_checker(mindie_service_config, check_type):
         for line in ff.readlines():
             if "always" in line:
                 is_transparent_hugepage_enable = True
+                logger.debug(f"Got 'always' from: {TRANSPARENT_HUGEPAGE_PATH}")
                 break
     if not is_transparent_hugepage_enable:
-        answer(suggesion_type=SUGGESTION_TYPES.system, suggesion_item="透明大页", action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}", reason="开启透明大页，多次实验的吞吐率结果会更稳定")
+        answer(
+            suggesion_type=SUGGESTION_TYPES.system,
+            suggesion_item="透明大页",
+            action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}",
+            reason="开启透明大页，多次实验的吞吐率结果会更稳定",
+        )
 
 
 @register_checker()
@@ -126,4 +152,9 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
                     is_performances.append(True)
                     break
     if len(is_performances) != cpu_count:
-        answer(suggesion_type=SUGGESTION_TYPES.system, suggesion_item="CPU高性能模式", action="开启 CPU 高性能模式：cpupower -c all frequency-set -g performance", reason="在相同时延约束下，TPS会有~3%的提升")
+        answer(
+            suggesion_type=SUGGESTION_TYPES.system,
+            suggesion_item="CPU 可能不是高性能模式",
+            action="开启 CPU 高性能模式：cpupower -c all frequency-set -g performance",
+            reason="在相同时延约束下，TPS会有~3%的提升"，
+        )

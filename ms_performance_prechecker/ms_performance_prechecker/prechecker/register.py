@@ -50,13 +50,3 @@ def cached():
 
 def answer(suggesion_type=None, suggesion_item=None, action=None, reason=""):
     ANSWERS[suggesion_type].setdefault(suggesion_item, []).append((action, reason))
-
-
-def print_answer():
-    print("\n<answer>")
-    for suggesion_type in SUGGESTION_TYPES:
-        for name, items in ANSWERS.get(suggesion_type, dict()).items():
-            for action, reason in items:
-                print("[{}] {}\n[action] {}\n[reason] {}\n".format(suggesion_type, name, action, reason))
-
-    print("</answer>")

@@ -18,6 +18,15 @@ CHECK_TYPES = namedtuple("CHECK_TYPES", ["basic", "deepseek"])("basic", "deepsee
 _SUGGESTION_TYPES = ["env", "system", "config"]
 SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTION_TYPES)
 
+LOG_LEVELS = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "fatal": logging.FATAL,
+    "critical": logging.CRITICAL
+}
+
 
 def str_ignore_case(value):
     return value.lower().replace("_", "").replace("-", "")
@@ -60,3 +69,24 @@ def get_dict_value_by_pos(dict_value, target_pos):
             cur = None
             break
     return cur
+
+
+def set_log_level(level="info"):
+    if level.lower() in LOG_LEVELS:
+        logger.setLevel(LOG_LEVELS.get(level.lower()))
+    else:
+        logger.warning("Set %s log level failed.", level)
+
+
+def set_logger(msit_logger):
+    msit_logger.propagate = False
+    msit_logger.setLevel(logging.INFO)
+    if not msit_logger.handlers:
+        stream_handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+        stream_handler.setFormatter(formatter)
+        msit_logger.addHandler(stream_handler)
+
+
+logger = logging.getLogger("msservice_advisor_logger")
+set_logger(logger)

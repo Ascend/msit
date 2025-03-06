@@ -18,11 +18,13 @@ import csv
 from collections import namedtuple
 from glob import glob
 
-from ms_performance_prechecker.prechecker.utils import str_ignore_case, CHECK_TYPES
+from ms_performance_prechecker.prechecker.utils import str_ignore_case, CHECK_TYPES, logger, LOG_LEVELS, SUGGESTION_TYPES， set_log_level
+
 
 MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
 MINDIE_SERVICE_DEFAULT_PATH = "/usr/local/Ascend/mindie/latest/mindie-service"
 
+LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
 
 def read_csv(file_path):
     result = {}
@@ -40,7 +42,7 @@ def read_json(file_path):
 
 
 def read_csv_or_json(file_path):
-    print(f">>>> {file_path = }")
+    logger.debug(f"{file_path = }")
     if not file_path or not os.path.exists(file_path):
         return None
     if file_path.endswith(".json"):
@@ -58,14 +60,14 @@ def get_next_dict_item(dict_value):
 
 
 def parse_mindie_server_config():
-    print("\n>>>> mindie_service_config:")
+    logger.debug("mindie_service_config:")
     mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
     if not os.path.exists(mindie_service_path):
-        print(f"[WARNING] mindie config.json: {mindie_service_path} not exists, will skip related checkers")
+        logger.warning(f"mindie config.json: {mindie_service_path} not exists, will skip related checkers")
         return None
 
     mindie_service_config = read_csv_or_json(os.path.join(mindie_service_path, "conf", "config.json"))
-    print(f">>>> mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}")
+    logger.debug(f"mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}")
     return mindie_service_config
 
 
@@ -74,15 +76,25 @@ def parse_mindie_server_config():
 
 def prechecker(mindie_service_config, check_type):
     import ms_performance_prechecker.prechecker
-    from ms_performance_prechecker.prechecker.register import REGISTRY, print_answer
+    from ms_performance_prechecker.prechecker.register import REGISTRY, ANSWERS
 
-    print("\n<think>")
-    for name, checker in REGISTRY.items():
-        print(name)
+    logger.info("")
+    logger.info("<think>")
+    for name, analyzer in REGISTRY.items():
+        logger.info(name)
         checker(mindie_service_config, check_type)
-    print("</think>")
+    logger.info("</think>")
 
-    print_answer()
+    logger.info("")
+    logger.info("<answer>")
+    for suggesion_type in SUGGESTION_TYPES:
+        for name, items in ANSWERS.get(suggesion_type, dict()).items():
+            for action, reason in items:
+                logger.info(f"[{suggesion_type}] {name}")
+                logger.info(f"[action] {action}")
+                logger.info(f"[reason] {reason}")
+                logger.info("")
+    logger.info("</answer>")
 
 
 """ arg_parse """
@@ -99,6 +111,7 @@ def arg_parse(argv):
         choices=CHECK_TYPES,
         help="check type",
     )
+    parser.add_argument("--log-level", "-l", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
     return parser.parse_known_args(argv)[0]
 
 
