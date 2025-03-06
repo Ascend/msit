@@ -103,7 +103,7 @@ def parse_benchmark_instance(instance_path):
 
     logger.debug("\nresult_perf:")
     result_perf = read_csv_or_json(get_latest_matching_file(instance_path, RESULT_PERF_PATTERN))
-    result_perf = {kk: dict(zip(PERF_METRICS, vv)) for kk, vv in result_perf.items()} if result_perf else None
+    result_perf = {kk: dict(zip(PERF_METRICS, vv)) for kk, vv in result_perf.items()} if result_perf else {}
     logger.debug(f"result_perf: {get_next_dict_item(result_perf) if result_perf else None}")
 
     logger.debug("\nresult_common:")
