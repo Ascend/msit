@@ -80,7 +80,7 @@ def prechecker(mindie_service_config, check_type):
 
     logger.info("")
     logger.info("<think>")
-    for name, analyzer in REGISTRY.items():
+    for name, checker in REGISTRY.items():
         logger.info(name)
         checker(mindie_service_config, check_type)
     logger.info("</think>")
