@@ -132,7 +132,7 @@ def parse_mindie_server_config(service_config_path):
     else:  # mindie service path
         mindie_service_path = service_config_path
         service_config_path = os.path.join(service_config_path, "conf", "config.json")
-    logger.debug(f"mindie_service_path: {mindie_service_path}, service_config_path: {service_config_path}")
+    logger.info(f"mindie_service_path: {mindie_service_path}, service_config_path: {service_config_path}")
     mindie_service_config = read_csv_or_json(service_config_path)
     
     logger.debug(
