@@ -15,7 +15,7 @@
 import logging
 from collections import namedtuple
 
-TARGETS = namedtuple("TARGETS", ["FirstTokenTime", "Throughput"])("FirstTokenTime", "Throughput")
+CHECK_TYPES = namedtuple("CHECK_TYPES", ["basic", "deepseek"])("basic", "deepseek")
 _SUGGESTION_TYPES = ["env", "system", "config"]
 SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTION_TYPES)
 
@@ -31,6 +31,12 @@ LOG_LEVELS = {
 
 def str_ignore_case(value):
     return value.lower().replace("_", "").replace("-", "")
+
+
+def str_to_digit(input_str, default_value=None):
+    if not input_str.replace(".", "", 1).isdigit():
+        return default_value
+    return float(input_str) if "." in input_str else int(input_str)
 
 
 def walk_dict(data, parent_key=""):
@@ -50,6 +56,22 @@ def walk_dict(data, parent_key=""):
                 yield from walk_dict(item, new_key)
 
 
+def get_dict_value_by_pos(dict_value, target_pos):
+    cur = dict_value
+    for kk in target_pos.split(":"):
+        if not cur:
+            cur = None
+            break
+        if isinstance(cur, list) and str.isdigit(kk):
+            cur = cur[int(kk)]
+        elif kk in cur:
+            cur = cur[kk]
+        else:
+            cur = None
+            break
+    return cur
+
+
 def set_log_level(level="info"):
     if level.lower() in LOG_LEVELS:
         logger.setLevel(LOG_LEVELS.get(level.lower()))
@@ -67,5 +89,5 @@ def set_logger(msit_logger):
         msit_logger.addHandler(stream_handler)
 
 
-logger = logging.getLogger("msservice_advisor_logger")
+logger = logging.getLogger("ms_performance_prechecker_logger")
 set_logger(logger)

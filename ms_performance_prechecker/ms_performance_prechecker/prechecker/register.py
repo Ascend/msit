@@ -12,16 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msservice_advisor.profiling_analyze.utils import SUGGESTION_TYPES
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
 
 # 创建一个全局的注册表，注册为分析函数
 REGISTRY = {}
 
-ANSWERS = dict(env=dict(), config=dict())
 ANSWERS = {ii: {} for ii in SUGGESTION_TYPES}
 
 
-def register_analyze(analyze_name=None):
+def register_checker(analyze_name=None):
     def decorator(func):
         name = analyze_name if analyze_name is not None else func.__name__
         REGISTRY[name] = func

@@ -14,7 +14,7 @@
 
 import numpy as np
 from msservice_advisor.profiling_analyze.register import register_analyze, cached, answer
-from msservice_advisor.profiling_analyze.utils import TARGETS
+from msservice_advisor.profiling_analyze.utils import TARGETS, SUGGESTION_TYPES, logger
 
 
 def get_dict_value_by_pos(dict_value, target_pos):
@@ -39,36 +39,51 @@ def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_serve
 
     npu_mem_size = get_dict_value_by_pos(mindie_service_config, npu_mem_size_pos)
     if npu_mem_size is not None and npu_mem_size != -1:
-        print(f"获取目前 numMemSize 的值为 {npu_mem_size}, 并不是 -1")
-        answer(config="npuMemSize", action="set to -1", reason="设置为-1，将由服务化自动根据剩余的显存数量，配置block数量，会尽量用满显存空间")
+        logger.info(f"获取目前 numMemSize 的值为 {npu_mem_size}, 并不是 -1")
+        answer(
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="npuMemSize",
+            action="set to -1",
+            reason="设置为-1，将由服务化自动根据剩余的显存数量，配置block数量，会尽量用满显存空间",
+        )
 
 
 @register_analyze()
 def check_input_tokens(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
     max_prefill_tokens = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ScheduleConfig:maxPrefillTokens")
-    print(f"maxPrefillTokens: {max_prefill_tokens}")
+    logger.info(f"maxPrefillTokens: {max_prefill_tokens}")
 
     max_input_tokens = benchmark_instance.get("result_perf", {}).get("InputTokens", {}).get("max", "0").split(" ")[0]
     max_input_tokens_float = float(max_input_tokens) if max_input_tokens.replace(".", "", 1).isdigit() else 0
-    print(f"Max InputTokens: {max_input_tokens_float}")
+    logger.info(f"Max InputTokens: {max_input_tokens_float}")
 
     if max_prefill_tokens is not None and max_input_tokens_float < max_prefill_tokens:
-        answer(config="maxPrefillTokens", action=f"set to {max_input_tokens}", reason="设置为数据集的最大输入长度")
+        answer(
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="maxPrefillTokens",
+            action=f"set to {max_input_tokens}",
+            reason="设置为数据集的最大输入长度",
+        )
 
 
 @register_analyze()
 def check_output_tokens(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
     max_iter_times = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ScheduleConfig:maxIterTimes")
-    print(f"maxIterTimes: {max_iter_times}")
+    logger.info(f"maxIterTimes: {max_iter_times}")
 
     max_output_tokens = (
         benchmark_instance.get("result_perf", {}).get("GeneratedTokens", {}).get("max", "0").split(" ")[0]
     )
     max_output_tokens_float = float(max_output_tokens) if max_output_tokens.replace(".", "", 1).isdigit() else 0
-    print(f"Max GeneratedTokens: {max_output_tokens_float}")
+    logger.info(f"Max GeneratedTokens: {max_output_tokens_float}")
 
     if max_iter_times is not None and max_output_tokens_float < max_iter_times:
-        answer(config="max_iter_times", action=f"set to {max_output_tokens_float}", reason="设置为数据集的最大输入长度")
+        answer(
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="max_iter_times",
+            action=f"set to {max_output_tokens_float}",
+            reason="设置为数据集的最大输入长度",
+        )
 
 
 @register_analyze()
@@ -79,17 +94,20 @@ def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_serv
     counts, buckets = np.histogram(prefill_latencies)
     bucket_keys = ["{:.2f}-{:.2f}".format(ii, jj) for ii, jj in zip(buckets[:-1], buckets[1:])]
     bucket_keys_max_len = len(max(bucket_keys, key=lambda ii: len(ii)))
-    print("First token latency:")
-    print(" " * (4 + bucket_keys_max_len - 6) + "Bucket: Count")
-    print(" " * 4 + "-" * bucket_keys_max_len + ": ------")
-    print(
-        "\n".join(
-            [" " * (4 + bucket_keys_max_len - len(ii)) + "{}: {}".format(ii, jj) for ii, jj in zip(bucket_keys, counts)]
-        )
-    )
+    logger.debug("First token latency:")
+    logger.debug(" " * (4 + bucket_keys_max_len - 14) + "Bucket [0, -1]: Count")
+    logger.debug(" " * 4 + "-" * bucket_keys_max_len + ": ------")
+    for bucket_key, count in zip(bucket_keys, counts):
+        logger.debug(" " * (4 + bucket_keys_max_len - len(bucket_key)) + "{}: {}".format(bucket_key, count))
 
     support_select_batch = get_dict_value_by_pos(
         mindie_service_config, "BackendConfig:ScheduleConfig:supportSelectBatch"
     )
+    logger.info(f"Got support_select_batch: {support_select_batch}")
     if target == TARGETS.FirstTokenTime and support_select_batch:
-        answer(config="support_select_batch", action="set to False", reason="设置为数据集的最大输入长度")
+        answer(
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="support_select_batch",
+            action="set to False",
+            reason="设置为数据集的最大输入长度",
+        )
