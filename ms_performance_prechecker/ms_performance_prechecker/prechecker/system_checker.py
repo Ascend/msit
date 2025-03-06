@@ -111,7 +111,7 @@ def virtual_machine_checker(mindie_service_config, check_type):
             suggesion_type=SUGGESTION_TYPES.system,
             suggesion_item="可能是虚拟机",
             action="确定分配的 cpu 是完全体",
-            reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降"，
+            reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降",
         )
 
 
@@ -156,5 +156,5 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
             suggesion_type=SUGGESTION_TYPES.system,
             suggesion_item="CPU 可能不是高性能模式",
             action="开启 CPU 高性能模式：cpupower -c all frequency-set -g performance",
-            reason="在相同时延约束下，TPS会有~3%的提升"，
+            reason="在相同时延约束下，TPS会有~3%的提升",
         )
