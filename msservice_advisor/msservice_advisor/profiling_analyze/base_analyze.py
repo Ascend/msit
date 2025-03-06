@@ -97,8 +97,8 @@ def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_serv
     logger.info("First token latency:")
     logger.info(" " * (4 + bucket_keys_max_len - 14) + "Bucket [0, -1]: Count")
     logger.info(" " * 4 + "-" * bucket_keys_max_len + ": ------")
-    logger.info(" " * (4 + bucket_keys_max_len - len(bucket_keys[0])) + "{}: {}".format(bucket_keys[0], counts[0]))
-    logger.info(" " * (4 + bucket_keys_max_len - len(bucket_keys[-1])) + "{}: {}".format(bucket_keys[-1], counts[-1]))
+    for bucket_key, count in zip(bucket_keys, counts):
+        logger.info(" " * (4 + bucket_keys_max_len - len(bucket_key)) + "{}: {}".format(bucket_key, count))
 
     support_select_batch = get_dict_value_by_pos(
         mindie_service_config, "BackendConfig:ScheduleConfig:supportSelectBatch"
