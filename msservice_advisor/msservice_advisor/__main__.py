@@ -115,10 +115,10 @@ def parse_benchmark_instance(instance_path):
     logger.debug(f"results_per_request: {get_next_dict_item(results_per_request) if results_per_request else None}")
 
     return dict(
-        req_to_data_map=req_to_data_map,
-        result_perf=result_perf,
-        result_common=result_common,
-        results_per_request=results_per_request,
+        req_to_data_map=req_to_data_map if req_to_data_map else {},
+        result_perf=result_perf if result_perf else {},
+        result_common=result_common if result_common else {},
+        results_per_request=results_per_request if results_per_request else {},
     )
 
 
