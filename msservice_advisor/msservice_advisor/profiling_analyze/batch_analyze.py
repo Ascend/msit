@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from msservice_advisor.profiling_analyze.register import register_analyze, cached, answer
+from msservice_advisor.profiling_analyze.utils import TARGETS, SUGGESTION_TYPES, logger
 
 
 def summary_batch_info(batch_info):
@@ -40,7 +41,7 @@ def summary_batch_info(batch_info):
 
 def print_list(array):
     for item in array:
-        print(item)
+        logger.info(item)
 
 
 @cached()
@@ -73,7 +74,7 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
     from scipy.optimize import curve_fit, minimize
 
     max_batch_size = summary_fit_data[-1]["BSZ"]
-    print(process_name, "上次运行组的最大的 batch size 为", max_batch_size)
+    logger.info(process_name, "上次运行组的最大的 batch size 为", max_batch_size)
 
     if len(summary_fit_data) > 2:
 
@@ -98,7 +99,7 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
     targets.append(0.00001)
 
     popt, pcov = curve_fit(func_curv, points, targets, maxfev=10000)
-    print(process_name, "函数拟合后参数：", popt)
+    logger.info(process_name, "函数拟合后参数：", popt)
 
     # 或者使用数值优化（通用方法，适用于任何模型）
     def negative_func(x):
@@ -106,8 +107,8 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
 
     best_predicted = minimize(negative_func, x0=max_batch_size, bounds=[(0, max_batch_size * 2)])
     aggressive_predicted = minimize(negative_func, x0=max_batch_size, bounds=[(0, max_batch_size * 5)])
-    print(process_name, f"搜索范围 2 倍当前最大batchsize. 结果是: {best_predicted.x[0]} {best_predicted}")
-    print(process_name, f"搜索范围 5 倍当前最大batchsize. 结果是:  {aggressive_predicted.x[0]} {aggressive_predicted}")
+    logger.info(process_name, f"搜索范围 2 倍当前最大batchsize. 结果是: {best_predicted.x[0]} {best_predicted}")
+    logger.info(process_name, f"搜索范围 5 倍当前最大batchsize. 结果是:  {aggressive_predicted.x[0]} {aggressive_predicted}")
 
     # 开始画图
     x_values = np.linspace(0, max_batch_size * 5, 300)
@@ -129,7 +130,7 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
 
     # 生成一个指定范围内的随机整数
     png_name = f"func_curv_{process_name}.png"
-    print(process_name, "拟合画图路径：", png_name)
+    logger.info(process_name, "拟合画图路径：", png_name)
     plt.savefig(png_name)
     plt.close()
 
@@ -151,21 +152,31 @@ def find_best_batch_size(config, benchmark, output_log, limit, target_metrics):
     prefill_to_fit, prefill_to_print = divide_fit_and_print(list(prefill_summary.values()))
     decode_to_fit, decode_to_print = divide_fit_and_print(list(decode_summary.values()))
 
-    print("==decode==")
+    logger.info("==decode==")
     print_list(decode_to_print)
-    print("==prefill==")
+    logger.info("==prefill==")
     print_list(prefill_to_print)
 
     if len(decode_to_fit) <= 1:
-        answer(config="maxBatchSize", action=f"set bigger", reason="目前batch样本太小，建议调大点试试")
+        answer(
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="maxBatchSize",
+            action="set bigger",
+            reason="目前batch样本太小，建议调大点试试",
+        )
 
     if len(prefill_to_fit) <= 1:
-        answer(config="maxPrefillBatchSize", action=f"set bigger", reason="目前batch样本太小，建议调大点试试")
-
+        answer(
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="maxPrefillBatchSize",
+            action="set bigger",
+            reason="目前batch样本太小，建议调大点试试",
+        )
     if len(decode_to_fit) > 1:
         best_decode_batchsize = find_best_by_curve_fit(decode_to_fit, "decode")
         answer(
-            config="maxBatchSize",
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="maxBatchSize",
             action=f"set to {best_decode_batchsize}",
             reason="经过当前不同batch的时延数据，通过函数拟合分析，建议最优batchsize",
         )
@@ -174,39 +185,8 @@ def find_best_batch_size(config, benchmark, output_log, limit, target_metrics):
         best_prefill_batchsize = find_best_by_curve_fit(prefill_to_fit, "prefill")
 
         answer(
-            config="maxPrefillBatchSize",
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="maxPrefillBatchSize",
             action=f"set to {best_prefill_batchsize}",
             reason="经过当前不同batch的时延数据，通过函数拟合分析，建议最优batchsize",
         )
-
-
-if __name__ == "__main__":
-    from msservice_advisor.profiling_analyze.register import print_answer
-
-    print("<think>")
-    find_best_batch_size(
-        None,
-        dict(
-            results_per_request=dict(
-                ee=dict(
-                    input_len=132,
-                    output_len=12,
-                    prefill_bsz=15,
-                    decode_bsz=[2, 2, 1, 2, 4, 4, 7, 7, 67, 8, 20, 9, 20, 4],
-                    latency=[234, 234, 456, 34, 54, 4457, 5, 678, 67, 45, 645, 76, 8, 345645, 5467],
-                ),
-                ee2=dict(
-                    input_len=132,
-                    output_len=12,
-                    prefill_bsz=15,
-                    decode_bsz=[2, 2, 1, 2, 4, 4, 7, 7, 67, 8, 20, 9, 20, 4, 5, 6, 7, 8, 9, 4, 5],
-                    latency=[224, 2654, 476, 4565, 756, 7, 6, 8, 34, 5, 2, 5, 4, 75, 634, 5, 34, 54, 56, 54634, 534, 6],
-                ),
-            ),
-        ),
-        None,
-        None,
-        None,
-    )
-    print("</think>")
-    print_answer()

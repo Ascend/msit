@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from ms_performance_prechecker.prechecker.utils import SUGGESTION_TYPES
 # 创建一个全局的注册表，注册为分析函数
 REGISTRY = {}
 
 ANSWERS = dict(env=dict(), config=dict())
+ANSWERS = {ii: {} for ii in SUGGESTION_TYPES}
 
 
 def register_analyze(analyze_name=None):
@@ -46,23 +48,5 @@ def cached():
     return decorator
 
 
-def answer(env=None, config=None, action=None, reason=""):
-    if env:
-        ANSWERS["env"].setdefault(env, [])
-        ANSWERS["env"][env].append((action, reason))
-    if config:
-        ANSWERS["config"].setdefault(config, [])
-        ANSWERS["config"][config].append((action, reason))
-
-
-def print_answer():
-    print("\n<answer>")
-    for name, items in ANSWERS.get("env", dict()).items():
-        for action, reason in items:
-            print("env {} {} . reason: {}".format(name, action, reason))
-
-    for name, items in ANSWERS.get("config", dict()).items():
-        for action, reason in items:
-            print("config {} {} . reason: {}".format(name, action, reason))
-
-    print("</answer>")
+def answer(suggesion_type=None, suggesion_item=None, action=None, reason=""):
+    ANSWERS[suggesion_type].setdefault(suggesion_item, []).append((action, reason))

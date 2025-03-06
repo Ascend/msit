@@ -1,7 +1,11 @@
 # MindStudio Performance Prechecker
 
 ## 介绍
-- 执行 `ms_performance_prechecker`
+- **安装**
+  ```sh
+  pip install ms-performance-prechecker
+  ```
+- **执行**
   ```sh
   ms_performance_prechecker
   ```

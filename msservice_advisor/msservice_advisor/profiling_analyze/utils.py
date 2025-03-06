@@ -12,9 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from collections import namedtuple
 
 TARGETS = namedtuple("TARGETS", ["FirstTokenTime", "Throughput"])("FirstTokenTime", "Throughput")
+_SUGGESTION_TYPES = ["env", "system", "config"]
+SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTION_TYPES)
+
+LOG_LEVELS = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "fatal": logging.FATAL,
+    "critical": logging.CRITICAL
+}
 
 
 def str_ignore_case(value):
@@ -36,3 +48,24 @@ def walk_dict(data, parent_key=""):
             else:
                 new_key = f"{parent_key}.{index}" if parent_key else index
                 yield from walk_dict(item, new_key)
+
+
+def set_log_level(level="info"):
+    if level.lower() in LOG_LEVELS:
+        logger.setLevel(LOG_LEVELS.get(level.lower()))
+    else:
+        logger.warning("Set %s log level failed.", level)
+
+
+def set_logger(msit_logger):
+    msit_logger.propagate = False
+    msit_logger.setLevel(logging.INFO)
+    if not msit_logger.handlers:
+        stream_handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(process)s - %(name)s - %(levelname)s - %(message)s')
+        stream_handler.setFormatter(formatter)
+        msit_logger.addHandler(stream_handler)
+
+
+logger = logging.getLogger("msit_logger")
+set_logger(logger)

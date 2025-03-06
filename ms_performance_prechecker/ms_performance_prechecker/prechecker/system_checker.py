@@ -87,7 +87,7 @@ def virtual_machine_checker(mindie_service_config, check_type):
     is_virtual_machine = False
     with open(CPUINFO_PATH) as ff:
         for line in ff.readlines():
-            if "hypervisor" in line or "vmx" in line or "svm" in line:
+            if "hypervisor" in line:
                 is_virtual_machine = True
                 break
     if is_virtual_machine:
@@ -104,7 +104,7 @@ def transparent_hugepage_checker(mindie_service_config, check_type):
     is_transparent_hugepage_enable = False
     with open(TRANSPARENT_HUGEPAGE_PATH) as ff:
         for line in ff.readlines():
-            if "always " in line:
+            if "always" in line:
                 is_transparent_hugepage_enable = True
                 break
     if not is_transparent_hugepage_enable:
