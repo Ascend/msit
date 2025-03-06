@@ -89,5 +89,5 @@ def set_logger(msit_logger):
         msit_logger.addHandler(stream_handler)
 
 
-logger = logging.getLogger("msservice_advisor_logger")
+logger = logging.getLogger("ms_performance_prechecker_logger")
 set_logger(logger)
