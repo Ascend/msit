@@ -140,17 +140,21 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
     from msservice_advisor.profiling_analyze import batch_analyze
     from msservice_advisor.profiling_analyze.register import REGISTRY, ANSWERS
 
-    logger.info("\n<think>")
+    logger.info("\n")
+    logger.info("<think>")
     for name, analyzer in REGISTRY.items():
         logger.info(name)
         analyzer(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics)
     logger.info("</think>")
 
-    logger.info("\n<answer>")
+    logger.info("\n")
+    logger.info("<answer>")
     for suggesion_type in SUGGESTION_TYPES:
         for name, items in ANSWERS.get(suggesion_type, dict()).items():
             for action, reason in items:
-                logger.info("[{}] {}\n[action] {}\n[reason] {}\n".format(suggesion_type, name, action, reason))
+                logger.info(f"[{suggesion_type}] {name}")
+                logger.info(f"[action] {action}")
+                logger.info(f"[reason] {reason}")
     logger.info("</answer>")
 
 
