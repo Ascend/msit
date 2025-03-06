@@ -8,7 +8,28 @@
   ```
 - **执行**
   ```sh
-  ms_performance_prechecker
+  msservice_advisor_logger - INFO - <think>
+  msservice_advisor_logger - INFO - simple_env_checker
+  msservice_advisor_logger - INFO - linux_kernel_release_checker
+  msservice_advisor_logger - INFO - Got kernel_release: 5.15.167.4-microsoft-standard-WSL2, suggested is 5.10
+  ...
+  msservice_advisor_logger - INFO - </think>
+  msservice_advisor_logger - INFO -
+  msservice_advisor_logger - INFO - <answer>
+  msservice_advisor_logger - INFO - [env] TASK_QUEUE_ENABLE
+  msservice_advisor_logger - INFO - [action] export TASK_QUEUE_ENABLE=2
+  msservice_advisor_logger - INFO - [reason] 配置task_queue 算子下发队列优化登记，可能导致运行中NPU内存峰值上升
+  msservice_advisor_logger - INFO -
+  msservice_advisor_logger - INFO - [env] HCCL_OP_EXPANSION_MODE
+  msservice_advisor_logger - INFO - [action] export HCCL_OP_EXPANSION_MODE=AIV
+  msservice_advisor_logger - INFO - [reason] 配置通信算法的编排展开位置，代表通信算法的编排展开位置在Device侧的AI Vector Core 计算单元（MindIE 2.0.T3 和 MindIE 2.0.T3.1 是能AIV会有崩溃风险，请不要设置它）
+  ...
+  msservice_advisor_logger - INFO -
+  msservice_advisor_logger - INFO - [system] CPU 可能不是高性能模式
+  msservice_advisor_logger - INFO - [action] 开启 CPU 高性能模式：cpupower -c all frequency-set -g performance
+  msservice_advisor_logger - INFO - [reason] 在相同时延约束下，TPS会有~3%的提升
+  msservice_advisor_logger - INFO -
+  msservice_advisor_logger - INFO - </answer>
   ```
 - 参数
 
