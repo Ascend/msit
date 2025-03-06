@@ -169,6 +169,16 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
 
 """ arg_parse """
 
+def str_to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif value.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError(f"Boolean value expected. Got {value}")
+
 
 def arg_parse(argv):
     import argparse
@@ -200,6 +210,13 @@ def arg_parse(argv):
     )
     parser.add_argument("--log_level", "-l", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
 
+    parser.add_argument(
+        "-s",
+        "--is_show",
+        type=str_to_bool,
+        default=True,
+        help="control to show the plot",
+    )
     return parser.parse_known_args(argv)[0]
 
 
@@ -209,8 +226,8 @@ def main():
     args = arg_parse(sys.argv)
     set_log_level(args.log_level)
     benchmark_instance = parse_benchmark_instance(args.instance_path)
-    mindie_service_config, mindie_server_log_path = parse_mindie_server_config(args.service_config_path)
-    analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics)
+    mindie_service_config, mindie_server_log_path = parse_mindie_server_config()
+    analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics, args.is_show)
 
 
 if __name__ == "__main__":
