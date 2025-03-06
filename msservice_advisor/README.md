@@ -6,11 +6,29 @@
   ```sh
   pip install msservice-advisor
   ```
-- 执行 mindie benchmark，输出结果的 instance 文件夹
-- 执行
+- **执行 mindie benchmark，输出结果的 instance 文件夹**
+- **执行调参建议**
   ```sh
-  # 执行调参建议
   msservice_advisor -i ../instance/
+  # msservice_advisor_logger - INFO - <think>
+  # msservice_advisor_logger - INFO - num_mem_size_checker
+  # msservice_advisor_logger - INFO - check_input_tokens
+  # ...
+  # msservice_advisor_logger - INFO - find_best_batch_size
+  # msservice_advisor_logger - INFO - ==decode==
+  # msservice_advisor_logger - INFO - ==prefill==
+  # msservice_advisor_logger - INFO - </think>
+  # msservice_advisor_logger - INFO -
+  # msservice_advisor_logger - INFO - <answer>
+  # msservice_advisor_logger - INFO - [config] maxBatchSize
+  # msservice_advisor_logger - INFO - [action] set bigger
+  # msservice_advisor_logger - INFO - [reason] 目前batch样本太小，建议调大点试试
+  # msservice_advisor_logger - INFO -
+  # msservice_advisor_logger - INFO - [config] maxPrefillBatchSize
+  # msservice_advisor_logger - INFO - [action] set bigger
+  # msservice_advisor_logger - INFO - [reason] 目前batch样本太小，建议调大点试试
+  # msservice_advisor_logger - INFO -
+  # msservice_advisor_logger - INFO - </answer>
   ```
 - 参数
 

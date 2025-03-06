@@ -24,6 +24,11 @@ requires-python = ">=3.8"
 [project.scripts]
 ms_performance_prechecker = "ms_performance_prechecker.__main__:main"
 
+[project.url]
+source = "https://gitee.com/ascend/msit/tree/msserviceprofiler_dev/ms_performance_prechecker"
+documentation = "https://gitee.com/ascend/msit/tree/msserviceprofiler_dev/ms_performance_prechecker"
+tracker = "https://gitee.com/ascend/msit/issues"
+
 [tool.setuptools]
 packages = {find = {}}
 include-package-data = true

@@ -18,14 +18,8 @@ import csv
 from collections import namedtuple
 from glob import glob
 
-from msservice_advisor.profiling_analyze.utils import (
-    TARGETS,
-    str_ignore_case,
-    logger,
-    LOG_LEVELS,
-    SUGGESTION_TYPES,
-    set_log_level,
-)
+from msservice_advisor.profiling_analyze.utils import TARGETS, LOG_LEVELS, SUGGESTION_TYPES
+from msservice_advisor.profiling_analyze.utils import str_ignore_case, logger, set_log_level
 
 
 # {"21559056a7ff44c88a891ecbb537c431": "0", ...}

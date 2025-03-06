@@ -27,6 +27,11 @@ requires-python = ">=3.8"
 [project.scripts]
 msservice_advisor = "msservice_advisor.__main__:main"
 
+[project.url]
+source = "https://gitee.com/ascend/msit/tree/msserviceprofiler_dev/msservice_advisor"
+documentation = "https://gitee.com/ascend/msit/tree/msserviceprofiler_dev/msservice_advisor"
+tracker = "https://gitee.com/ascend/msit/issues"
+
 [tool.setuptools]
 packages = {find = {}}
 include-package-data = true

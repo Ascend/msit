@@ -6,7 +6,7 @@
   ```sh
   pip install ms-performance-prechecker
   ```
-- **执行**
+- **执行检查**
   ```sh
   ms_performance_prechecker
   # ms_performance_prechecker_logger - INFO - <think>

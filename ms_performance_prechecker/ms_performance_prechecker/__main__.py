@@ -18,15 +18,8 @@ import csv
 from collections import namedtuple
 from glob import glob
 
-from ms_performance_prechecker.prechecker.utils import (
-    str_ignore_case,
-    CHECK_TYPES,
-    logger,
-    LOG_LEVELS,
-    SUGGESTION_TYPES,
-    set_log_level,
-)
-
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, SUGGESTION_TYPES
+from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level
 
 MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
 MINDIE_SERVICE_DEFAULT_PATH = "/usr/local/Ascend/mindie/latest/mindie-service"

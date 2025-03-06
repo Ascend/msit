@@ -15,13 +15,8 @@
 import os
 import platform
 from ms_performance_prechecker.prechecker.register import register_checker, cached, answer
-from ms_performance_prechecker.prechecker.utils import (
-    CHECK_TYPES,
-    SUGGESTION_TYPES,
-    get_dict_value_by_pos,
-    str_to_digit,
-    logger,
-)
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
+from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger
 
 DRIVER_VERSION_PATH = "/usr/local/Ascend/driver/version.info"
 CPUINFO_PATH = "/proc/cpuinfo"
@@ -117,10 +112,12 @@ def virtual_machine_checker(mindie_service_config, check_type):
                 logger.info(f"Got hypervisor info from: {CPUINFO_PATH}")
                 break
     if is_virtual_machine:
+        vmware_action = "启用 CPU/MMU Virtualization（ESXi 高级设置）、禁用 CPU 限制（cpuid.coresPerSocket 配置为物理核心数）"
+        kvm_action = "配置 host-passthrough 模式（暴露完整 CPU 指令集）、启用多队列 virtio-net（减少网络延迟）"
         answer(
             suggesion_type=SUGGESTION_TYPES.system,
             suggesion_item="可能是虚拟机",
-            action="确定分配的 cpu 是完全体",
+            action=f"确定分配的 cpu 是完全体，如 VMware 中 {vmware_action}；KVM 中 {kvm_action}",
             reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降",
         )
 
