@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ms_performance_prechecker.prechecker.utils import SUGGESTION_TYPES
+from msservice_advisor.prechecker.utils import SUGGESTION_TYPES
 # 创建一个全局的注册表，注册为分析函数
 REGISTRY = {}
 
