@@ -125,12 +125,18 @@ def parse_benchmark_instance(instance_path):
 """ parse_mindie_server_config """
 
 
-def parse_mindie_server_config():
-    logger.debug("\n>>>> mindie_service_config:")
-    mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
-    mindie_service_config = read_csv_or_json(os.path.join(mindie_service_path, "conf", "config.json"))
+def parse_mindie_server_config(service_config_path):
+    logger.debug("\nmindie_service_config:")
+    if service_config_path.endswith(".json"):  # config.json directly
+        mindie_service_path = os.path.dirname(os.path.dirname(service_config_path))
+    else:  # mindie service path
+        mindie_service_path = service_config_path
+        service_config_path = os.path.join(service_config_path, "conf", "config.json")
+    logger.debug(f"mindie_service_path: {mindie_service_path}, service_config_path: {service_config_path}")
+    mindie_service_config = read_csv_or_json(service_config_path)
+    
     logger.debug(
-        f">>>> mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}"
+        f"mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}"
     )
 
     if mindie_service_config:
@@ -173,10 +179,13 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
 def arg_parse(argv):
     import argparse
 
+    mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        "-i", "--instance_path", type=str, default="benchamrk instance output directory", help="instance", required=True
+        "-i", "--instance_path", type=str, default="instance", help="benchamrk instance output directory", required=True
     )
+    parser.add_argument("-s", "--service_config_path", type=str, default=mindie_service_path, help="service config json path")
     parser.add_argument(
         "-t",
         "--target",
@@ -204,7 +213,7 @@ def main():
     args = arg_parse(sys.argv)
     set_log_level(args.log_level)
     benchmark_instance = parse_benchmark_instance(args.instance_path)
-    mindie_service_config, mindie_server_log_path = parse_mindie_server_config()
+    mindie_service_config, mindie_server_log_path = parse_mindie_server_config(args.service_config_path)
     analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics)
 
 
