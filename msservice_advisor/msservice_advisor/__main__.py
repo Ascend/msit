@@ -185,7 +185,9 @@ def arg_parse(argv):
     parser.add_argument(
         "-i", "--instance_path", type=str, default="instance", help="benchamrk instance output directory", required=True
     )
-    parser.add_argument("-s", "--service_config_path", type=str, default=mindie_service_path, help="service config json path")
+    parser.add_argument(
+        "-s", "--service_config_path", type=str, default=mindie_service_path, help="service config json path"
+    )
     parser.add_argument(
         "-t",
         "--target",
