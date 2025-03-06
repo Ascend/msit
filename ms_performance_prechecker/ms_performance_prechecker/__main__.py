@@ -18,7 +18,7 @@ import csv
 from collections import namedtuple
 from glob import glob
 
-from ms_performance_prechecker.prechecker.utils import str_ignore_case, CHECK_TYPES, logger, LOG_LEVELS, SUGGESTION_TYPES， set_log_level
+from ms_performance_prechecker.prechecker.utils import str_ignore_case, CHECK_TYPES, logger, LOG_LEVELS, SUGGESTION_TYPES, set_log_level
 
 
 MIES_INSTALL_PATH = "MIES_INSTALL_PATH"

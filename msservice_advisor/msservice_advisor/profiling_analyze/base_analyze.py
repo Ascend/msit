@@ -94,15 +94,16 @@ def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_serv
     counts, buckets = np.histogram(prefill_latencies)
     bucket_keys = ["{:.2f}-{:.2f}".format(ii, jj) for ii, jj in zip(buckets[:-1], buckets[1:])]
     bucket_keys_max_len = len(max(bucket_keys, key=lambda ii: len(ii)))
-    logger.info("First token latency:")
-    logger.info(" " * (4 + bucket_keys_max_len - 14) + "Bucket [0, -1]: Count")
-    logger.info(" " * 4 + "-" * bucket_keys_max_len + ": ------")
+    logger.debug("First token latency:")
+    logger.debug(" " * (4 + bucket_keys_max_len - 14) + "Bucket [0, -1]: Count")
+    logger.debug(" " * 4 + "-" * bucket_keys_max_len + ": ------")
     for bucket_key, count in zip(bucket_keys, counts):
-        logger.info(" " * (4 + bucket_keys_max_len - len(bucket_key)) + "{}: {}".format(bucket_key, count))
+        logger.debug(" " * (4 + bucket_keys_max_len - len(bucket_key)) + "{}: {}".format(bucket_key, count))
 
     support_select_batch = get_dict_value_by_pos(
         mindie_service_config, "BackendConfig:ScheduleConfig:supportSelectBatch"
     )
+    logger.info(f"Got support_select_batch: {support_select_batch}")
     if target == TARGETS.FirstTokenTime and support_select_batch:
         answer(
             suggesion_type=SUGGESTION_TYPES.config,
