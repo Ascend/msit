@@ -59,6 +59,9 @@ def read_batch_and_latency(pre_request):
             if index == 0:
                 prefill_batch_info.setdefault(prefill_batch_size, [])
                 prefill_batch_info[prefill_batch_size].append(latency)
+            elif len(decode_batch_size_list) < index:
+                logger.debug("Check the result_perf_*.csv data, decode_bsz not matching with latency")
+                break
             else:
                 decode_batch_size = decode_batch_size_list[index - 1]
                 decode_batch_info.setdefault(decode_batch_size, [])
