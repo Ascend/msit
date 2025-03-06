@@ -1,4 +1,4 @@
-# MindStudio profiling advisor
+# MindStudio Service Profiling Advisor
 
 ## 介绍
 - **基本功能** 根据当前的 benchmark 输出结果以及 service 的 config.json 配置，分析提高 TFTT / Throughput 等的优化点
