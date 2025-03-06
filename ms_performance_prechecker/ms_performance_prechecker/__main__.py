@@ -119,6 +119,7 @@ def main():
     import sys
 
     args = arg_parse(sys.argv)
+    set_log_level(args.log_level)
     mindie_service_config = parse_mindie_server_config()
     prechecker(mindie_service_config, args.check_type)
 
