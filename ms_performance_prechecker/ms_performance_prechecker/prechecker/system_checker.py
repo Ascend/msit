@@ -29,7 +29,7 @@ def linux_kernel_release_checker(mindie_service_config, check_type):
     target_version = ".".join([str(ii) for ii in [target_major_version, target_minor_version]])
 
     kernel_release = platform.release()
-    logger.debug(f"Got kernel_release: {kernel_release}, suggested is {target_version}")
+    logger.info(f"Got kernel_release: {kernel_release}, suggested is {target_version}")
     kernel_release_split = kernel_release.split(".")
     if len(kernel_release_split) < 2:
         logger.warning(f"failed parsing kernel release version: {kernel_release}")
@@ -67,7 +67,7 @@ def driver_version_checker(mindie_service_config, check_type):
             if "Version=" in line:
                 version = line.strip().split("=")[-1]
                 break
-    logger.debug(f"Got driver version: {version}, suggested is {target_version}")
+    logger.info(f"Got driver version: {version}, suggested is {target_version}")
 
     version_split = version.split(".")
     if len(version_split) < 3:
@@ -104,7 +104,7 @@ def virtual_machine_checker(mindie_service_config, check_type):
         for line in ff.readlines():
             if "hypervisor" in line:
                 is_virtual_machine = True
-                logger.debug(f"Got hypervisor info from: {CPUINFO_PATH}")
+                logger.info(f"Got hypervisor info from: {CPUINFO_PATH}")
                 break
     if is_virtual_machine:
         answer(
@@ -126,7 +126,7 @@ def transparent_hugepage_checker(mindie_service_config, check_type):
         for line in ff.readlines():
             if "always" in line:
                 is_transparent_hugepage_enable = True
-                logger.debug(f"Got 'always' from: {TRANSPARENT_HUGEPAGE_PATH}")
+                logger.info(f"Got 'always' from: {TRANSPARENT_HUGEPAGE_PATH}")
                 break
     if not is_transparent_hugepage_enable:
         answer(
