@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from msservice_advisor.profiling_analyze.utils import SUGGESTION_TYPES
+
 # 创建一个全局的注册表，注册为分析函数
 REGISTRY = {}
 

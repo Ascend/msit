@@ -18,13 +18,21 @@ import csv
 from collections import namedtuple
 from glob import glob
 
-from ms_performance_prechecker.prechecker.utils import str_ignore_case, CHECK_TYPES, logger, LOG_LEVELS, SUGGESTION_TYPES, set_log_level
+from ms_performance_prechecker.prechecker.utils import (
+    str_ignore_case,
+    CHECK_TYPES,
+    logger,
+    LOG_LEVELS,
+    SUGGESTION_TYPES,
+    set_log_level,
+)
 
 
 MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
 MINDIE_SERVICE_DEFAULT_PATH = "/usr/local/Ascend/mindie/latest/mindie-service"
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
+
 
 def read_csv(file_path):
     result = {}
@@ -67,7 +75,9 @@ def parse_mindie_server_config():
         return None
 
     mindie_service_config = read_csv_or_json(os.path.join(mindie_service_path, "conf", "config.json"))
-    logger.debug(f"mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}")
+    logger.debug(
+        f"mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}"
+    )
     return mindie_service_config
 
 
@@ -105,7 +115,8 @@ def arg_parse(argv):
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        "-t", "--check_type",
+        "-t",
+        "--check_type",
         type=str_ignore_case,
         default=CHECK_TYPES.deepseek,
         choices=CHECK_TYPES,

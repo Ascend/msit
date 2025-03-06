@@ -15,7 +15,13 @@
 import os
 import platform
 from ms_performance_prechecker.prechecker.register import register_checker, cached, answer
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES, get_dict_value_by_pos, str_to_digit, logger
+from ms_performance_prechecker.prechecker.utils import (
+    CHECK_TYPES,
+    SUGGESTION_TYPES,
+    get_dict_value_by_pos,
+    str_to_digit,
+    logger,
+)
 
 DRIVER_VERSION_PATH = "/usr/local/Ascend/driver/version.info"
 CPUINFO_PATH = "/proc/cpuinfo"
@@ -89,7 +95,11 @@ def driver_version_checker(mindie_service_config, check_type):
         answer(**answer_kwargs)
     elif major_version == target_major_version and minor_version < target_minor_version:
         answer(**answer_kwargs)
-    elif major_version == target_major_version and minor_version == target_minor_version and mini_version < target_mini_version:
+    elif (
+        major_version == target_major_version
+        and minor_version == target_minor_version
+        and mini_version < target_mini_version
+    ):
         answer(**answer_kwargs)
 
 

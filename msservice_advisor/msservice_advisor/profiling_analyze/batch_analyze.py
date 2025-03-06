@@ -35,7 +35,7 @@ def summary_batch_info(batch_info):
         summary[batchsize]["P70"] = latency_list[int(len(latency_list) * 0.7)]
         summary[batchsize]["P90"] = latency_list[int(len(latency_list) * 0.9)]
         summary[batchsize]["MAX"] = latency_list[-1]
-        summary[batchsize]["FIT_DATA"] = latency_list[int(len(latency_list) * 0.3):int(len(latency_list) * 0.7)]
+        summary[batchsize]["FIT_DATA"] = latency_list[int(len(latency_list) * 0.3) : int(len(latency_list) * 0.7)]
     return summary
 
 
@@ -111,7 +111,9 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
     best_predicted = minimize(negative_func, x0=max_batch_size, bounds=[(0, max_batch_size * 2)])
     aggressive_predicted = minimize(negative_func, x0=max_batch_size, bounds=[(0, max_batch_size * 5)])
     logger.info(process_name, f"搜索范围 2 倍当前最大batchsize. 结果是: {best_predicted.x[0]} {best_predicted}")
-    logger.info(process_name, f"搜索范围 5 倍当前最大batchsize. 结果是:  {aggressive_predicted.x[0]} {aggressive_predicted}")
+    logger.info(
+        process_name, f"搜索范围 5 倍当前最大batchsize. 结果是:  {aggressive_predicted.x[0]} {aggressive_predicted}"
+    )
 
     # 开始画图
     x_values = np.linspace(0, max_batch_size * 5, 300)

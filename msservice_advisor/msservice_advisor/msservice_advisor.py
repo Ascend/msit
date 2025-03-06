@@ -18,7 +18,14 @@ import csv
 from collections import namedtuple
 from glob import glob
 
-from msservice_advisor.profiling_analyze.utils import TARGETS, str_ignore_case, logger, LOG_LEVELS, SUGGESTION_TYPES, set_log_level
+from msservice_advisor.profiling_analyze.utils import (
+    TARGETS,
+    str_ignore_case,
+    logger,
+    LOG_LEVELS,
+    SUGGESTION_TYPES,
+    set_log_level,
+)
 
 
 # {"21559056a7ff44c88a891ecbb537c431": "0", ...}
@@ -122,7 +129,9 @@ def parse_mindie_server_config():
     logger.debug("\n>>>> mindie_service_config:")
     mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
     mindie_service_config = read_csv_or_json(os.path.join(mindie_service_path, "conf", "config.json"))
-    logger.debug(f">>>> mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}")
+    logger.debug(
+        f">>>> mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}"
+    )
 
     if mindie_service_config:
         mindie_server_log_path = mindie_service_config.get("LogConfig", {}).get("logPath", "logs/mindie-server.log")
@@ -166,11 +175,7 @@ def arg_parse(argv):
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        "-i", "--instance_path",
-        type=str,
-        default="benchamrk instance output directory",
-        help="instance",
-        required=True
+        "-i", "--instance_path", type=str, default="benchamrk instance output directory", help="instance", required=True
     )
     parser.add_argument(
         "-t",

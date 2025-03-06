@@ -25,7 +25,7 @@ LOG_LEVELS = {
     "warning": logging.WARNING,
     "error": logging.ERROR,
     "fatal": logging.FATAL,
-    "critical": logging.CRITICAL
+    "critical": logging.CRITICAL,
 }
 
 
@@ -84,7 +84,7 @@ def set_logger(msit_logger):
     msit_logger.setLevel(logging.INFO)
     if not msit_logger.handlers:
         stream_handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
         stream_handler.setFormatter(formatter)
         msit_logger.addHandler(stream_handler)
 
