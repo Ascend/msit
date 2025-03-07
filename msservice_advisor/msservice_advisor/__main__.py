@@ -166,20 +166,49 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
                 logger.info("")
     logger.info("</answer>")
 
+def get_predict_image(results, show=True):
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        print(f"Failed to import matplotlib.pyplot: {e}")
+        plt = None
+    
+    max_batch_size = results.get('max_batch_size', 0)
+    points = results.get('points', [])
+    targets = results.get('targets', [])
+    popt = results.get('popt', None)
+    process_name = results.get('process_name', '')
+    func_curv = results.get('func_curv', None)
+    if func_curv is None or max_batch_size == 0:
+        logger.info("func_curv is None")
+        return
+    # 开始画图
+    x_values = np.linspace(0, max_batch_size * 5, 300)
+
+    # 创建画布
+    if plt is not None:
+        plt.figure(figsize=(10, 6))
+
+        # 绘制模型预测均值和置信区间
+        plt.plot(x_values, func_curv(x_values, *popt), label=f"Model Prediction", color="blue")
+        plt.scatter(points, targets, c="green", s=100, edgecolor="black", label="Existing Data Points")
+
+        plt.title(f"Curve Fit Optimization({process_name})")
+        plt.xlabel("Batch Size")
+        plt.ylabel("Speed")
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.tight_layout()
+        if show:
+            plt.show()
+
+        # 生成一个指定范围内的随机整数
+        png_name = f"func_curv_{process_name}.png"
+        logger.info(process_name, "拟合画图路径：", png_name)
+        plt.savefig(png_name)
+        plt.close()
 
 """ arg_parse """
-
-def str_to_bool(value):
-    if isinstance(value, bool):
-        return value
-    if value.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif value.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError(f"Boolean value expected. Got {value}")
-
-
 def arg_parse(argv):
     import argparse
 
@@ -211,10 +240,8 @@ def arg_parse(argv):
     parser.add_argument("--log_level", "-l", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
 
     parser.add_argument(
-        "-s",
-        "--is_show",
-        type=str_to_bool,
-        default=True,
+        "--show",
+        action='store_true'
         help="control to show the plot",
     )
     return parser.parse_known_args(argv)[0]
@@ -226,8 +253,8 @@ def main():
     args = arg_parse(sys.argv)
     set_log_level(args.log_level)
     benchmark_instance = parse_benchmark_instance(args.instance_path)
-    mindie_service_config, mindie_server_log_path = parse_mindie_server_config()
-    analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics, args.is_show)
+    mindie_service_config, mindie_server_log_path = parse_mindie_server_config(args.service_config_path)
+    analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics, args.show)
 
 
 if __name__ == "__main__":

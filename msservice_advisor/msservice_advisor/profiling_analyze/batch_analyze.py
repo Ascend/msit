@@ -15,11 +15,6 @@
 import random
 
 import numpy as np
-try:
-    import matplotlib.pyplot as plt
-except ImportError as e:
-    print(f"Failed to import matplotlib.pyplot: {e}")
-    plt = None
 
 from msservice_advisor.profiling_analyze.register import register_analyze, cached, answer
 from msservice_advisor.profiling_analyze.utils import TARGETS, SUGGESTION_TYPES, logger
@@ -77,7 +72,7 @@ def read_batch_and_latency(pre_request):
     return prefill_summary, decode_summary
 
 
-def find_best_by_curve_fit(summary_fit_data, process_name, is_show=True):
+def find_best_by_curve_fit(summary_fit_data, process_name):
     from scipy.optimize import curve_fit, minimize
 
     max_batch_size = summary_fit_data[-1]["BSZ"]
@@ -119,37 +114,20 @@ def find_best_by_curve_fit(summary_fit_data, process_name, is_show=True):
         f"{process_name} 搜索范围 5 倍当前最大batchsize. 结果是:  {aggressive_predicted.x[0]} {aggressive_predicted}"
     )
 
-    # 开始画图
-    x_values = np.linspace(0, max_batch_size * 5, 300)
+    result = {
+        "best_batch_size": int(best_predicted.x[0]),
+        "max_batch_size": max_batch_size,
+        "points": points,
+        "targets": targets,
+        "popt": popt,
+        "process_name": process_name,
+        "func_curv": func_curv
+    }
 
-    # 创建画布
-    if plt is not None:
-        plt.figure(figsize=(10, 6))
-
-        # 绘制模型预测均值和置信区间
-        plt.plot(x_values, func_curv(x_values, *popt), label=f"Model Prediction", color="blue")
-        plt.scatter(points, targets, c="green", s=100, edgecolor="black", label="Existing Data Points")
-
-        plt.title(f"Curve Fit Optimization({process_name})")
-        plt.xlabel("Batch Size")
-        plt.ylabel("Speed")
-        plt.legend()
-        plt.grid(alpha=0.3)
-        plt.tight_layout()
-        if is_show:
-            plt.show()
-
-    # 生成一个指定范围内的随机整数
-    png_name = f"func_curv_{process_name}.png"
-    logger.info(f"{process_name} 拟合画图路径：{png_name}")
-    plt.savefig(png_name)
-    plt.close()
-
-    return int(best_predicted.x[0])
-
+    return result
 
 @register_analyze()
-def find_best_batch_size(config, benchmark, output_log, limit, target_metrics, is_show=True):
+def find_best_batch_size(config, benchmark, output_log, limit, target_metrics):
     if "results_per_request" not in benchmark:
         return
 
@@ -191,12 +169,12 @@ def find_best_batch_size(config, benchmark, output_log, limit, target_metrics, i
             reason="目前batch样本太小，建议调大点试试",
         )
     if len(prefill_to_fit) > 1:
-        best_prefill_batchsize = find_best_by_curve_fit(prefill_to_fit, "prefill", is_show=is_show)
+        best_prefill_result = find_best_by_curve_fit(prefill_to_fit, "prefill")
 
         answer(
             suggesion_type=SUGGESTION_TYPES.config,
             suggesion_item="maxPrefillBatchSize",
-            action=f"set to {best_prefill_batchsize}",
+            action=f"set to {best_prefill_result['best_batch_size']}",
             reason="经过当前不同batch的时延数据，通过函数拟合分析，建议最优batchsize",
         )
     if len(decode_to_fit) > 1:
