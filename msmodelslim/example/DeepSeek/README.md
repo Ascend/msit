@@ -103,6 +103,13 @@ python3 quant_deepseek.py --model_path {浮点权重路径} --save_directory {W8
   python3 add_mtp.py --quant_dir {W8A8量化权重路径} --float_dir {浮点权重路径}
   ```
 
+##### DeepSeek-V3/R1 w4a16 per-group datafree量化(MLA:float，MOE:w4a16量化)
+
+- 生成DeepSeek-V3/R1模型 w4a16量化权重
+  ```shell
+  python3 convert.py --model_path {浮点权重路径} --save_path {W4A16量化权重路径} 
+  ```
+
 ##### DeepSeek量化QA
 - Q：报错 This modeling file requires the following packages that were not found in your environment： flash_attn. Run 'pip install flash_attn'
 - A: 当前环境中缺少flash_attn库且昇腾不支持该库，运行时需要注释掉权重文件夹中modeling_deepseek.py中的部分代码
