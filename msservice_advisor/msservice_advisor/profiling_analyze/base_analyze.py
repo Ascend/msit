@@ -49,21 +49,14 @@ def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_serve
 
 @register_analyze()
 def check_input_tokens(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
-    max_prefill_tokens = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ScheduleConfig:maxPrefillTokens")
     max_input_token_len = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ModelDeployConfig:maxInputTokenLen")
-    logger.info(f"maxPrefillTokens: {max_prefill_tokens}, max_input_token_len: {max_input_token_len}")
+    logger.info(f"max_input_token_len: {max_input_token_len}")
 
     max_input_tokens = benchmark_instance.get("result_perf", {}).get("InputTokens", {}).get("max", "0").split(" ")[0]
     max_input_tokens_float = float(max_input_tokens) if max_input_tokens.replace(".", "", 1).isdigit() else 0
     logger.info(f"Max InputTokens: {max_input_tokens_float}")
 
-    if max_prefill_tokens is not None and max_input_tokens_float < max_prefill_tokens:
-        answer(
-            suggesion_type=SUGGESTION_TYPES.config,
-            suggesion_item="maxPrefillTokens",
-            action=f"set to {max_input_tokens}",
-            reason="设置为数据集的最大输入长度",
-        )
+    if max_input_token_len is not None and max_input_tokens_float > max_input_token_len:
         answer(
             suggesion_type=SUGGESTION_TYPES.config,
             suggesion_item="maxInputTokenLen",

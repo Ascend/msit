@@ -164,6 +164,6 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
         answer(
             suggesion_type=SUGGESTION_TYPES.system,
             suggesion_item="CPU 可能不是高性能模式",
-            action=f"开启 CPU 高性能模式：{run_cmd}，如果没有 cpupower 可以安装 {install_cmd}",
+            action=f"开启 CPU 高性能模式：{run_cmd}，如果没有 cpupower 可以通过 {install_cmd} 安装",
             reason="在相同时延约束下，TPS会有~3%的提升",
         )
