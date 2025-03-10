@@ -20,7 +20,11 @@ from glob import glob
 
 from msservice_advisor.profiling_analyze.utils import TARGETS, LOG_LEVELS, SUGGESTION_TYPES
 from msservice_advisor.profiling_analyze.utils import str_ignore_case, logger, set_log_level
-
+try:
+    import matplotlib.pyplot as plt
+except ImportError as e:
+    print(f"Failed to import matplotlib.pyplot: {e}")
+    plt = None
 
 # {"21559056a7ff44c88a891ecbb537c431": "0", ...}
 REQ_TO_DATA_MAP_PATTERN = "req_to_data_map.json"
@@ -167,12 +171,8 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
     logger.info("</answer>")
 
 def get_predict_image(results, show=True):
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError as e:
-        print(f"Failed to import matplotlib.pyplot: {e}")
-        plt = None
-    
+    import numpy as np
+
     max_batch_size = results.get('max_batch_size', 0)
     points = results.get('points', [])
     targets = results.get('targets', [])
