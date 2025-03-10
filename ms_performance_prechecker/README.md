@@ -37,3 +37,5 @@
   | 参数                 | 说明                                                            |
   | -------------------- | --------------------------------------------------------------- |
   | -t, --check_type  | 检查项类型，可选值：basic, deepseek                                  |
+  | -s, --save_env  | 保存环境变量相关改动输出路径，默认值 ms_performance_prechecker_env.sh    |
+  | -l, --log_level  | 日志级别，可选值 debug, info, warning, error                         |

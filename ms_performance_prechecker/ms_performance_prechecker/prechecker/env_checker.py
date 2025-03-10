@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import os
-from ms_performance_prechecker.prechecker.register import register_checker, cached, answer
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
+from ms_performance_prechecker.prechecker.register import register_checker, cached, answer, record
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, logger, SUGGESTION_TYPES
 
 
 @register_checker()
@@ -34,10 +34,13 @@ def simple_env_checker(*_):
         if allow_undefined and not env_value:
             continue
         if str(env_value) != str(env_suggest_value):
-            print(env_item, ":", str(env_value), "->", str(env_suggest_value))
+            logger.info(f"{env_item}: {env_value} -> {env_suggest_value}")
+            env_cmd = f"export {env_item}={env_suggest_value}" if env_suggest_value else f"unset {env_item}"
             answer(
                 suggesion_type=SUGGESTION_TYPES.env,
                 suggesion_item=env_item,
-                action=f"export {env_item}={env_suggest_value}" if env_suggest_value else f"unset {env_item}",
+                action=env_cmd,
                 reason=suggest_reason,
             )
+            record(f"# export {env_item} {env_value}  # Before" if env_value else f"# unset {env_item}  # Before")
+            record(env_cmd)

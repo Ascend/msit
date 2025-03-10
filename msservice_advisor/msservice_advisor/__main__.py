@@ -198,7 +198,7 @@ def arg_parse(argv):
         choices=PERF_METRICS,
         help="profiling key target metrics",
     )
-    parser.add_argument("--log-level", "-l", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
+    parser.add_argument("--log_level", "-l", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
 
     return parser.parse_known_args(argv)[0]
 
