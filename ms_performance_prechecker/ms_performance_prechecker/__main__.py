@@ -108,7 +108,7 @@ def save_contents(save_path):
         return
 
     with open(save_path, "w") as ff:
-        ff.write("\n".join(CONTENTS))
+        ff.write("\n".join(CONTENTS) + "\n")
 
     logger.info(f"环境相关改动使能：source {save_path}")
 

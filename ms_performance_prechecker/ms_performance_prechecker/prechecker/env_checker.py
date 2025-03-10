@@ -34,7 +34,7 @@ def simple_env_checker(*_):
         if allow_undefined and not env_value:
             continue
         if str(env_value) != str(env_suggest_value):
-            logger.info(env_item, ":", str(env_value), "->", str(env_suggest_value))
+            logger.info(f"{env_item}: {env_value} -> {env_suggest_value}")
             env_cmd = f"export {env_item}={env_suggest_value}" if env_suggest_value else f"unset {env_item}"
             answer(
                 suggesion_type=SUGGESTION_TYPES.env,
@@ -42,4 +42,5 @@ def simple_env_checker(*_):
                 action=env_cmd,
                 reason=suggest_reason,
             )
+            record(f"# export {env_item} {env_value}  # Before")
             record(env_cmd)
