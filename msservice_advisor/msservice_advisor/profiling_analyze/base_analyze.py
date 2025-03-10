@@ -49,7 +49,8 @@ def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_serve
 
 @register_analyze()
 def check_input_tokens(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
-    max_input_token_len = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ModelDeployConfig:maxInputTokenLen")
+    max_input_token_len_pos = "BackendConfig:ModelDeployConfig:maxInputTokenLen"
+    max_input_token_len = get_dict_value_by_pos(mindie_service_config, max_input_token_len_pos)
     logger.info(f"max_input_token_len: {max_input_token_len}")
 
     max_input_tokens = benchmark_instance.get("result_perf", {}).get("InputTokens", {}).get("max", "0").split(" ")[0]
@@ -63,6 +64,7 @@ def check_input_tokens(mindie_service_config, benchmark_instance, mindie_server_
             action=f"set to {max_input_tokens}",
             reason="设置为数据集的最大输入长度",
         )
+
 
 @register_analyze()
 def check_output_tokens(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
