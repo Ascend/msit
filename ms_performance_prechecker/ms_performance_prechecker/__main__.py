@@ -110,6 +110,8 @@ def save_contents(save_path):
     with open(save_path, "w") as ff:
         ff.write("\n".join(CONTENTS))
 
+    logger.info(f"环境相关改动使能：source {save_path}")
+
 
 """ arg_parse """
 
@@ -128,8 +130,8 @@ def arg_parse(argv):
     )
     parser.add_argument(
         "-s",
-        "--save",
-        default="info",
+        "--save_env",
+        default="ms_performance_prechecker_env.sh",
         choices=LOG_LEVELS_LOWER,
         help="Save env changes as a file which could be applied directly.",
     )
@@ -144,6 +146,7 @@ def main():
     set_log_level(args.log_level)
     mindie_service_config = parse_mindie_server_config()
     prechecker(mindie_service_config, args.check_type)
+    save_contents(args.save_env)
 
 
 if __name__ == "__main__":
