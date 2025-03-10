@@ -33,7 +33,8 @@ def simple_env_checker(*_):
         allow_undefined = item.get("ALLOW_UNDEFINED", False)
         if allow_undefined and not env_value:
             continue
-        if env_value != env_suggest_value:
+        if str(env_value) != str(env_suggest_value):
+            print(env_item, ":", str(env_value), "->", str(env_suggest_value))
             answer(
                 suggesion_type=SUGGESTION_TYPES.env,
                 suggesion_item=env_item,
