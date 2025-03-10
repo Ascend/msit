@@ -36,7 +36,6 @@ def get_dict_value_by_pos(dict_value, target_pos):
 @register_analyze()
 def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
     npu_mem_size_pos = "BackendConfig:ModelDeployConfig:ModelConfig:0:npuMemSize"
-
     npu_mem_size = get_dict_value_by_pos(mindie_service_config, npu_mem_size_pos)
     if npu_mem_size is not None and npu_mem_size != -1:
         logger.info(f"获取目前 numMemSize 的值为 {npu_mem_size}, 并不是 -1")
@@ -51,7 +50,8 @@ def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_serve
 @register_analyze()
 def check_input_tokens(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
     max_prefill_tokens = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ScheduleConfig:maxPrefillTokens")
-    logger.info(f"maxPrefillTokens: {max_prefill_tokens}")
+    max_input_token_len = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ModelDeployConfig:maxInputTokenLen")
+    logger.info(f"maxPrefillTokens: {max_prefill_tokens}, max_input_token_len: {max_input_token_len}")
 
     max_input_tokens = benchmark_instance.get("result_perf", {}).get("InputTokens", {}).get("max", "0").split(" ")[0]
     max_input_tokens_float = float(max_input_tokens) if max_input_tokens.replace(".", "", 1).isdigit() else 0
@@ -64,7 +64,12 @@ def check_input_tokens(mindie_service_config, benchmark_instance, mindie_server_
             action=f"set to {max_input_tokens}",
             reason="设置为数据集的最大输入长度",
         )
-
+        answer(
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="maxInputTokenLen",
+            action=f"set to {max_input_tokens}",
+            reason="设置为数据集的最大输入长度",
+        )
 
 @register_analyze()
 def check_output_tokens(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
@@ -82,7 +87,7 @@ def check_output_tokens(mindie_service_config, benchmark_instance, mindie_server
             suggesion_type=SUGGESTION_TYPES.config,
             suggesion_item="max_iter_times",
             action=f"set to {max_output_tokens_float}",
-            reason="设置为数据集的最大输入长度",
+            reason="设置为数据集的最大输出长度",
         )
 
 
@@ -109,5 +114,5 @@ def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_serv
             suggesion_type=SUGGESTION_TYPES.config,
             suggesion_item="support_select_batch",
             action="set to False",
-            reason="设置为数据集的最大输入长度",
+            reason="关闭 supportSelectBatch 可降低首 token 时延",
         )
