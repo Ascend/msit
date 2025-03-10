@@ -206,7 +206,12 @@ def arg_parse(argv):
 
 def main():
     import sys
-
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        logger.error(f"Failed to import matplotlib.pyplot: {e}")
+        plt = None
+        
     args = arg_parse(sys.argv)
     set_log_level(args.log_level)
     benchmark_instance = parse_benchmark_instance(args.instance_path)
