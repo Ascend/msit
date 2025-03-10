@@ -15,11 +15,6 @@
 import os
 import json
 import csv
-try:
-    import matplotlib.pyplot as plt
-except ImportError as e:
-    print(f"Failed to import matplotlib.pyplot: {e}")
-    plt = None
 from collections import namedtuple
 from glob import glob
 
