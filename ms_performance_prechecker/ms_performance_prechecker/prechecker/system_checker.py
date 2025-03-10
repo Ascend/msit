@@ -161,9 +161,10 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
     if len(is_performances) != cpu_count:
         install_cmd = "EulerOS/CentOS: yum install kernel-tools；Ubuntu：apt install cpufrequtils"
         run_cmd = "cpupower -c all frequency-set -g performance"
+        fail_info = "如果失败，可能需要在 BIOS 中开启"
         answer(
             suggesion_type=SUGGESTION_TYPES.system,
             suggesion_item="CPU 可能不是高性能模式",
-            action=f"开启 CPU 高性能模式：{run_cmd}，如果没有 cpupower 可以通过 {install_cmd} 安装",
+            action=f"开启 CPU 高性能模式：{run_cmd}，如果没有 cpupower 可以通过 {install_cmd} 安装. {fail_info}",
             reason="在相同时延约束下，TPS会有~3%的提升",
         )

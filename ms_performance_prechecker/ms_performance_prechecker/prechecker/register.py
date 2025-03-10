@@ -18,6 +18,7 @@ from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_T
 REGISTRY = {}
 
 ANSWERS = {ii: {} for ii in SUGGESTION_TYPES}
+CONTENTS = []  # Will save to file in the end
 
 
 def register_checker(analyze_name=None):
@@ -50,3 +51,7 @@ def cached():
 
 def answer(suggesion_type=None, suggesion_item=None, action=None, reason=""):
     ANSWERS[suggesion_type].setdefault(suggesion_item, []).append((action, reason))
+
+
+def record(content):
+    CONTENTS.append(content)

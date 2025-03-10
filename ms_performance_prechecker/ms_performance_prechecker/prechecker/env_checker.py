@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import os
-from ms_performance_prechecker.prechecker.register import register_checker, cached, answer
+from ms_performance_prechecker.prechecker.register import register_checker, cached, answer, record
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, logger, SUGGESTION_TYPES
 
 
@@ -42,3 +42,4 @@ def simple_env_checker(*_):
                 action=env_cmd,
                 reason=suggest_reason,
             )
+            record(env_cmd)

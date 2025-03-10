@@ -48,25 +48,6 @@ def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_serve
 
 
 @register_analyze()
-def check_input_tokens(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
-    max_input_token_len_pos = "BackendConfig:ModelDeployConfig:maxInputTokenLen"
-    max_input_token_len = get_dict_value_by_pos(mindie_service_config, max_input_token_len_pos)
-    logger.info(f"max_input_token_len: {max_input_token_len}")
-
-    max_input_tokens = benchmark_instance.get("result_perf", {}).get("InputTokens", {}).get("max", "0").split(" ")[0]
-    max_input_tokens_float = float(max_input_tokens) if max_input_tokens.replace(".", "", 1).isdigit() else 0
-    logger.info(f"Max InputTokens: {max_input_tokens_float}")
-
-    if max_input_token_len is not None and max_input_tokens_float > max_input_token_len:
-        answer(
-            suggesion_type=SUGGESTION_TYPES.config,
-            suggesion_item="maxInputTokenLen",
-            action=f"set to {max_input_tokens}",
-            reason="设置为数据集的最大输入长度",
-        )
-
-
-@register_analyze()
 def check_output_tokens(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
     max_iter_times = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ScheduleConfig:maxIterTimes")
     logger.info(f"maxIterTimes: {max_iter_times}")
@@ -82,7 +63,7 @@ def check_output_tokens(mindie_service_config, benchmark_instance, mindie_server
             suggesion_type=SUGGESTION_TYPES.config,
             suggesion_item="max_iter_times",
             action=f"set to {max_output_tokens_float}",
-            reason="设置为数据集的最大输出长度",
+            reason="对于当前数据集，可以设置为数据集的最大输出长度",
         )
 
 

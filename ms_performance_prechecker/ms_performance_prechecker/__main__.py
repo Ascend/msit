@@ -100,6 +100,17 @@ def prechecker(mindie_service_config, check_type):
     logger.info("</answer>")
 
 
+def save_contents(save_path):
+    from ms_performance_prechecker.prechecker.register import CONTENTS
+
+    if not CONTENTS:
+        logger.info("Nothing needs to save")
+        return
+
+    with open(save_path, "w") as ff:
+        ff.write("\n".join(CONTENTS))
+
+
 """ arg_parse """
 
 
@@ -115,7 +126,14 @@ def arg_parse(argv):
         choices=CHECK_TYPES,
         help="check type",
     )
-    parser.add_argument("--log-level", "-l", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
+    parser.add_argument(
+        "-s",
+        "--save",
+        default="info",
+        choices=LOG_LEVELS_LOWER,
+        help="Save env changes as a file which could be applied directly.",
+    )
+    parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
     return parser.parse_known_args(argv)[0]
 
 
