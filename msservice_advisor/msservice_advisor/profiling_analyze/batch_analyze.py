@@ -134,7 +134,7 @@ def get_predict_image(results):
     import numpy as np
     import datetime
     # 获取当前时间戳
-    timestamp = datetime.datetime.now().strftime("H%M%S")
+    timestamp = datetime.datetime.now().strftime("%H%M%S")
 
     if plt is not None:
         len_result = len(results)
@@ -177,6 +177,7 @@ def find_best_batch_size(config, benchmark, output_log, limit, target_metrics):
     if "results_per_request" not in benchmark:
         return
 
+    results = []
     prefill_summary, decode_summary = read_batch_and_latency(benchmark.get("results_per_request", {}))
 
     def divide_fit_and_print(summary):
@@ -214,20 +215,23 @@ def find_best_batch_size(config, benchmark, output_log, limit, target_metrics):
             action="set bigger",
             reason="目前batch样本太小，建议调大点试试",
         )
+    if len(decode_to_fit) > 1:
+        best_decode_result = find_best_by_curve_fit(decode_to_fit, "decode")
+        results.append(best_decode_result)
+        answer(
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="maxBatchSize",
+            action=f"set to {best_decode_result['best_batch_size']}",
+            reason="经过当前不同batch的时延数据，通过函数拟合分析，建议最优batchsize",
+        )
+
     if len(prefill_to_fit) > 1:
         best_prefill_result = find_best_by_curve_fit(prefill_to_fit, "prefill")
-
+        results.append(best_prefill_result)
         answer(
             suggesion_type=SUGGESTION_TYPES.config,
             suggesion_item="maxPrefillBatchSize",
             action=f"set to {best_prefill_result['best_batch_size']}",
             reason="经过当前不同batch的时延数据，通过函数拟合分析，建议最优batchsize",
         )
-    if len(decode_to_fit) > 1:
-        best_decode_batchsize = find_best_by_curve_fit(decode_to_fit, "decode")
-        answer(
-            suggesion_type=SUGGESTION_TYPES.config,
-            suggesion_item="maxBatchSize",
-            action=f"set to {max(best_decode_batchsize, best_prefill_batchsize)}",
-            reason="经过当前不同batch的时延数据，通过函数拟合分析，建议最优batchsize",
-        )
+    get_predict_image(results)

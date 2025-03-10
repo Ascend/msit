@@ -198,7 +198,7 @@ def arg_parse(argv):
 
     parser.add_argument(
         "--show",
-        action='store_true'
+        action='store_true',
         help="control to show the plot",
     )
     return parser.parse_known_args(argv)[0]
@@ -213,7 +213,7 @@ def main():
     mindie_service_config, mindie_server_log_path = parse_mindie_server_config(args.service_config_path)
     analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics)
     if plt is not None:
-        if arg.show:
+        if args.show:
             plt.show()
         plt.close()
 
