@@ -42,5 +42,5 @@ def simple_env_checker(*_):
                 action=env_cmd,
                 reason=suggest_reason,
             )
-            record(f"# export {env_item} {env_value}  # Before" if env_value else f"unset {env_item}  # Before")
+            record(f"# export {env_item} {env_value}  # Before" if env_value else f"# unset {env_item}  # Before")
             record(env_cmd)
