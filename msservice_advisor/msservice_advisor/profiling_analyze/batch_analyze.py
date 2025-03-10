@@ -13,7 +13,11 @@
 # limitations under the License.
 
 import random
-
+try:
+    import matplotlib.pyplot as plt
+except ImportError as e:
+    logger.error(f"Failed to import matplotlib.pyplot: {e}")
+    plt = None
 import numpy as np
 
 from msservice_advisor.profiling_analyze.register import register_analyze, cached, answer
@@ -125,6 +129,48 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
     }
 
     return result
+
+def get_predict_image(results):
+    import numpy as np
+    import datetime
+    # 获取当前时间戳
+    timestamp = datetime.datetime.now().strftime("H%M%S")
+
+    if plt is not None:
+        len_result = len(results)
+        if len_result <= 3:
+            fig, axes = plt.subplots(1, len_result, figsize=(10 * len_result, 6))
+        else:
+            num_rows = len_result // 3 + (len_result % 3 > 0)
+            fig, axes = plt.subplots(num_rows, 3, figsize=(10 * 3, 6 * num_rows))
+            axes = axes.flatten()
+        for idx, result in enumerate(results):
+            max_batch_size = result.get('max_batch_size', 0)
+            points = result.get('points', [])
+            targets = result.get('targets', [])
+            popt = result.get('popt', None)
+            process_name = result.get('process_name', '')
+            func_curv = result.get('func_curv', None)
+            if func_curv is None or max_batch_size == 0:
+                logger.info("func_curv is None")
+                return
+            # 开始画图
+            x_values = np.linspace(0, max_batch_size * 5, 300)
+
+            # 绘制模型预测均值和置信区间
+            axes[idx].plot(x_values, func_curv(x_values, *popt), label=f"Model Prediction", color="blue")
+            axes[idx].scatter(points, targets, c="green", s=100, edgecolor="black", label="Existing Data Points")
+
+            axes[idx].set_title(f"Curve Fit Optimization({process_name})")
+            axes[idx].set_xlabel("Batch Size")
+            axes[idx].set_ylabel("Speed")
+            axes[idx].legend()
+            axes[idx].grid(alpha=0.3)
+        plt.tight_layout()
+
+        png_name = f"func_curv_{timestamp}.png"
+        logger.info("拟合画图路径：", png_name)
+        plt.savefig(png_name)
 
 @register_analyze()
 def find_best_batch_size(config, benchmark, output_log, limit, target_metrics):

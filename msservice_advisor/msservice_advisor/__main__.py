@@ -20,11 +20,6 @@ from glob import glob
 
 from msservice_advisor.profiling_analyze.utils import TARGETS, LOG_LEVELS, SUGGESTION_TYPES
 from msservice_advisor.profiling_analyze.utils import str_ignore_case, logger, set_log_level
-try:
-    import matplotlib.pyplot as plt
-except ImportError as e:
-    print(f"Failed to import matplotlib.pyplot: {e}")
-    plt = None
 
 # {"21559056a7ff44c88a891ecbb537c431": "0", ...}
 REQ_TO_DATA_MAP_PATTERN = "req_to_data_map.json"
@@ -170,44 +165,6 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
                 logger.info("")
     logger.info("</answer>")
 
-def get_predict_image(results, show=True):
-    import numpy as np
-
-    max_batch_size = results.get('max_batch_size', 0)
-    points = results.get('points', [])
-    targets = results.get('targets', [])
-    popt = results.get('popt', None)
-    process_name = results.get('process_name', '')
-    func_curv = results.get('func_curv', None)
-    if func_curv is None or max_batch_size == 0:
-        logger.info("func_curv is None")
-        return
-    # 开始画图
-    x_values = np.linspace(0, max_batch_size * 5, 300)
-
-    # 创建画布
-    if plt is not None:
-        plt.figure(figsize=(10, 6))
-
-        # 绘制模型预测均值和置信区间
-        plt.plot(x_values, func_curv(x_values, *popt), label=f"Model Prediction", color="blue")
-        plt.scatter(points, targets, c="green", s=100, edgecolor="black", label="Existing Data Points")
-
-        plt.title(f"Curve Fit Optimization({process_name})")
-        plt.xlabel("Batch Size")
-        plt.ylabel("Speed")
-        plt.legend()
-        plt.grid(alpha=0.3)
-        plt.tight_layout()
-        if show:
-            plt.show()
-
-        # 生成一个指定范围内的随机整数
-        png_name = f"func_curv_{process_name}.png"
-        logger.info(process_name, "拟合画图路径：", png_name)
-        plt.savefig(png_name)
-        plt.close()
-
 """ arg_parse """
 def arg_parse(argv):
     import argparse
@@ -254,8 +211,11 @@ def main():
     set_log_level(args.log_level)
     benchmark_instance = parse_benchmark_instance(args.instance_path)
     mindie_service_config, mindie_server_log_path = parse_mindie_server_config(args.service_config_path)
-    analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics, args.show)
-
+    analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics)
+    if plt is not None:
+        if arg.show:
+            plt.show()
+        plt.close()
 
 if __name__ == "__main__":
     main()
