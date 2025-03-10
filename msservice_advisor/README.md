@@ -38,3 +38,4 @@
   | -s, --service_config_path  | mindie service config.json path, 默认值为环境变量中的 `MIES_INSTALL_PATH` |
   | -t, --target         | 调参指标, 可选值：ttft, firsttokentime, throughput              |
   | -m, --target_metrics | 调参指标的具体项，可选值：average,max,min,P75,P90,SLO_P90,P99,N |
+  | -l, --log_level  | 日志级别，可选值 debug, info, warning, error                         |
