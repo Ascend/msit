@@ -14,6 +14,7 @@
 
 import os
 from ms_performance_prechecker.prechecker.register import register_checker, cached, answer, record, CONTENT_PARTS
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, logger, SUGGESTION_TYPES
 from ms_performance_prechecker.prechecker.env_suggestion import ENVS
 
 
