@@ -1,0 +1,1 @@
+from __main__ import parse_mindie_server_config, run_precheck

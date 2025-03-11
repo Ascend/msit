@@ -77,7 +77,7 @@ def parse_mindie_server_config():
 """ prechecker """
 
 
-def prechecker(mindie_service_config, check_type):
+def run_precheck(mindie_service_config, check_type=CHECK_TYPES.deepseek):
     import ms_performance_prechecker.prechecker
     from ms_performance_prechecker.prechecker.register import REGISTRY, ANSWERS, CONTENTS, CONTENT_PARTS
 
@@ -156,7 +156,7 @@ def main():
     args = arg_parse(sys.argv)
     set_log_level(args.log_level)
     mindie_service_config = parse_mindie_server_config()
-    prechecker(mindie_service_config, args.check_type)
+    run_precheck(mindie_service_config, args.check_type)
     save_env_contents(args.save_env)
 
 
