@@ -20,7 +20,7 @@ from msservice_advisor.profiling_analyze.utils import TARGETS, SUGGESTION_TYPES,
 try:
     import matplotlib.pyplot as plt
 except ImportError as e:
-    logger.error(f"Failed to import matplotlib.pyplot: {e}")
+    logger.warning(f"Failed to import matplotlib.pyplot, cannot create a fit curve plot: {e}")
     plt = None
 
 def summary_batch_info(batch_info):
