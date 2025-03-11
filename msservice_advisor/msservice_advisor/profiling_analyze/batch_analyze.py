@@ -171,7 +171,7 @@ def get_predict_image(results):
     plt.tight_layout()
 
     png_name = f"func_curv_{timestamp}.png"
-    logger.info("拟合画图路径：", png_name)
+    logger.info(f"拟合画图路径：{png_name}")
     plt.savefig(png_name)
 
 
