@@ -108,7 +108,7 @@ def save_env_contents(save_path):
     from ms_performance_prechecker.prechecker.register import CONTENTS, CONTENT_PARTS
 
     if not CONTENTS.get(CONTENT_PARTS.before, None) and not CONTENTS.get(CONTENT_PARTS.after, None):
-        logger.info("Nothing needs to save")
+        logger.info("Nothing env related needs to save")
         return
 
 
