@@ -165,7 +165,10 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
                 logger.info("")
     logger.info("</answer>")
 
+
 """ arg_parse """
+
+
 def arg_parse(argv):
     import argparse
 

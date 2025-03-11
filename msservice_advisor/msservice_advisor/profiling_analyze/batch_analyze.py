@@ -130,10 +130,11 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
 
     return result
 
+
 def get_predict_image(results):
     import datetime
     # 获取当前时间戳
-    timestamp = datetime.datetime.now().strftime("%H%M%S")
+    timestamp = datetime.datetime.now(tz=timezone.utc).strftime("%H%M%S")
 
     if plt is not None:
         len_result = len(results)
@@ -170,6 +171,7 @@ def get_predict_image(results):
         png_name = f"func_curv_{timestamp}.png"
         logger.info("拟合画图路径：", png_name)
         plt.savefig(png_name)
+
 
 @register_analyze()
 def find_best_batch_size(config, benchmark, output_log, limit, target_metrics):
