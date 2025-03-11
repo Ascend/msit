@@ -22,6 +22,7 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to import matplotlib.pyplot, cannot create a fit curve plot: {e}")
     plt = None
+    
 
 def summary_batch_info(batch_info):
     summary = {}
