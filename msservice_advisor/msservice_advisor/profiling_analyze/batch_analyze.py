@@ -134,7 +134,7 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
 def get_predict_image(results):
     import datetime
     # 获取当前时间戳
-    timestamp = datetime.datetime.now(tz=timezone.utc).strftime("%H%M%S")
+    timestamp = datetime.datetime.now(tz=datetime.timezone.utc).strftime("%H%M%S")
 
     if plt is not None:
         len_result = len(results)
