@@ -212,7 +212,7 @@ def main():
     try:
         import matplotlib.pyplot as plt
     except ImportError as e:
-        logger.error(f"Failed to import matplotlib.pyplot: {e}")
+        logger.warning(f"Failed to import matplotlib.pyplot, cannot create a fit curve plot: {e}")
         plt = None
         
     args = arg_parse(sys.argv)
@@ -220,10 +220,15 @@ def main():
     benchmark_instance = parse_benchmark_instance(args.instance_path)
     mindie_service_config, mindie_server_log_path = parse_mindie_server_config(args.service_config_path)
     analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics)
-    if plt is not None:
-        if args.show:
-            plt.show()
-        plt.close()
+    
+    if not args.show:
+        return
+    if plt is None:
+        logger.error("Failed to import matplotlib.pyplot, can not show the plot.")
+        return
+    plt.show()
+    plt.close()
+        
 
 if __name__ == "__main__":
     main()
