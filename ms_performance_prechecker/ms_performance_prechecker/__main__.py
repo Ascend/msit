@@ -89,7 +89,7 @@ def prechecker(mindie_service_config, check_type):
     logger.info("</think>")
 
     if CONTENTS.get(CONTENT_PARTS.sys, None):
-        sys_info = "系统信息：\n    " + "\n    ".join(CONTENTS[CONTENT_PARTS.sys]) + "\n"
+        sys_info = "系统信息：\n\n    " + "\n    ".join(CONTENTS[CONTENT_PARTS.sys]) + "\n"
         logger.info(sys_info)
 
     logger.info("")
@@ -114,8 +114,8 @@ def save_env_contents(save_path):
 
     with open(save_path, "w") as ff:
         ff.write("ENABLE={1-1}\n")
-        ff.write('echo "ENABLE=$ENABLE"')
-        ff.write('if [ "$ENABLE" = "1"; then\n    ')
+        ff.write('echo "ENABLE=$ENABLE"\n\n')
+        ff.write('if [ "$ENABLE" = "1" ]; then\n    ')
         ff.write("\n    ".join(CONTENTS[CONTENT_PARTS.after]) + "\n")
         ff.write('else\n    ')
         ff.write("\n    ".join(CONTENTS[CONTENT_PARTS.before]) + "\n")
