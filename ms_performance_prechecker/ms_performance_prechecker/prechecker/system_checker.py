@@ -69,8 +69,8 @@ def system_info_checker(mindie_service_config, check_type):
         record(f"NPU 型号：{acl.get_soc_name()}", part=CONTENT_PARTS.sys)
 
     ascend_toolkit_home = os.getenv("ASCEND_TOOLKIT_HOME")
-    ascend_toolkit_version_file = os.path.join(ascend_toolkit_home, "version.cfg")
-    if os.path.exists(ascend_toolkit_version_file):
+    ascend_toolkit_version_file = os.path.join(ascend_toolkit_home, "version.cfg") if ascend_toolkit_home else None
+    if ascend_toolkit_version_file and os.path.exists(ascend_toolkit_version_file):
         ascend_toolkit_version = ""
         with open(ascend_toolkit_version_file) as ff:
             for line in ff.readlines():
@@ -80,8 +80,8 @@ def system_info_checker(mindie_service_config, check_type):
         record(f"CANN 版本：{ascend_toolkit_version}", part=CONTENT_PARTS.sys)
 
     mies_install_path = os.getenv("MIES_INSTSALL_PATH")
-    mindie_version_file = os.path.join(mies_install_path, "version.info")
-    if os.path.exists(mindie_version_file):
+    mindie_version_file = os.path.join(mies_install_path, "version.info") if mies_install_path else None
+    if mindie_version_file and os.path.exists(mindie_version_file):
         mindie_version = ""
         with open(mindie_version_file) as ff:
             for line in ff.readlines():
