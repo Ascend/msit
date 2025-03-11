@@ -66,7 +66,29 @@ def system_info_checker(mindie_service_config, check_type):
     record(f"页表大小：{page_size}", part=CONTENT_PARTS.sys)
 
     if acl is not None:
-        record("NPU 型号：acl.get_soc_name()", part=CONTENT_PARTS.sys)
+        record(f"NPU 型号：{acl.get_soc_name()}", part=CONTENT_PARTS.sys)
+
+    ascend_toolkit_home = os.getenv("ASCEND_TOOLKIT_HOME")
+    ascend_toolkit_version_file = os.apth.join(ascend_toolkit_home, "version.cfg")
+    if os.path.exists(ascend_toolkit_version_file):
+        ascend_toolkit_version = ""
+        with open(ascend_toolkit_version_file) as ff:
+            for line in ff.readlines():
+                if "=" in line:
+                    ascend_toolkit_version = line.split("=")[-1].strip()
+                    break
+        record(f"CANN 版本：{ascend_toolkit_version}", part=CONTENT_PARTS.sys)
+
+    mies_install_path = os.getenv("MIES_INSTSALL_PATH")
+    mindie_version_file = os.apth.join(mies_install_path, "version.info")
+    if os.path.exists(mindie_version_file):
+        mindie_version = ""
+        with open(mindie_version_file) as ff:
+            for line in ff.readlines():
+                if "Ascend-mindie-service" in line and ":" in line:
+                    mindie_version = line.split(":")[-1].strip()
+                    break
+        record(f"MINDIE 版本：{mindie_version}", part=CONTENT_PARTS.sys)
 
 
 @register_checker()
