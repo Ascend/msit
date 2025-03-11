@@ -144,7 +144,6 @@ def arg_parse(argv):
         "-s",
         "--save_env",
         default="ms_performance_prechecker_env.sh",
-        choices=LOG_LEVELS_LOWER,
         help="Save env changes as a file which could be applied directly.",
     )
     parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
