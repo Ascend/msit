@@ -19,7 +19,6 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 dependencies = [
-    "matplotlib",
     "scipy",
 ]
 requires-python = ">=3.8"

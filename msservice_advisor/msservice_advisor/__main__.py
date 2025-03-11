@@ -21,7 +21,6 @@ from glob import glob
 from msservice_advisor.profiling_analyze.utils import TARGETS, LOG_LEVELS, SUGGESTION_TYPES
 from msservice_advisor.profiling_analyze.utils import str_ignore_case, logger, set_log_level
 
-
 # {"21559056a7ff44c88a891ecbb537c431": "0", ...}
 REQ_TO_DATA_MAP_PATTERN = "req_to_data_map.json"
 
@@ -200,18 +199,36 @@ def arg_parse(argv):
     )
     parser.add_argument("--log_level", "-l", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
 
+    parser.add_argument(
+        "--show",
+        action='store_true',
+        help="control to show the plot",
+    )
     return parser.parse_known_args(argv)[0]
 
 
 def main():
     import sys
-
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        logger.warning(f"Failed to import matplotlib.pyplot, cannot create a fit curve plot: {e}")
+        plt = None
+        
     args = arg_parse(sys.argv)
     set_log_level(args.log_level)
     benchmark_instance = parse_benchmark_instance(args.instance_path)
     mindie_service_config, mindie_server_log_path = parse_mindie_server_config(args.service_config_path)
     analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics)
-
+    
+    if not args.show:
+        return
+    if plt is None:
+        logger.error("Failed to import matplotlib.pyplot, can not show the plot.")
+        return
+    plt.show()
+    plt.close()
+        
 
 if __name__ == "__main__":
     main()
