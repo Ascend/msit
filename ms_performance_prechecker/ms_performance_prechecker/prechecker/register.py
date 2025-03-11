@@ -19,7 +19,7 @@ from collections import namedtuple
 REGISTRY = {}
 
 ANSWERS = {ii: {} for ii in SUGGESTION_TYPES}
-CONTENT_PARTS = namedtuple("CONTENT_PARTS", ["before", "after"， "sys"])("before", "after", "sys")
+CONTENT_PARTS = namedtuple("CONTENT_PARTS", ["before", "after", "sys"])("before", "after", "sys")
 CONTENTS = {}  # Will save to file in the end
 
 
