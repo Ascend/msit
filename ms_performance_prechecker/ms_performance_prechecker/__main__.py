@@ -113,7 +113,7 @@ def save_env_contents(save_path):
 
 
     with open(save_path, "w") as ff:
-        ff.write("ENABLE={1-1}\n")
+        ff.write("ENABLE=${1-1}\n")
         ff.write('echo "ENABLE=$ENABLE"\n\n')
         ff.write('if [ "$ENABLE" = "1" ]; then\n    ')
         ff.write("\n    ".join(CONTENTS[CONTENT_PARTS.after]) + "\n")
