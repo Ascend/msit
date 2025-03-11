@@ -104,7 +104,7 @@ def simple_env_checker(*_):
             action=env_cmd,
             reason=suggest_reason,
         )
-        record(env_cmd, , part=CONTENT_PARTS.after)
+        record(env_cmd, part=CONTENT_PARTS.after)
 
         pre_env = f"export {env_item} {env_value}" if env_value else f"unset {env_item}"
         record(pre_env, part=CONTENT_PARTS.before)
