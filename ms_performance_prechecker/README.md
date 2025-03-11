@@ -2,6 +2,8 @@
 
 ## 介绍
 - **基本功能** 检查当前环境中 log level、cpu 绑核、内核版本等，是否达到最佳要求，并给出相应建议
+- **环境要求**
+  - Python >= 3.8
 - **安装**
   ```sh
   pip install ms-performance-prechecker
@@ -39,3 +41,10 @@
   | -t, --check_type  | 检查项类型，可选值：basic, deepseek                                  |
   | -s, --save_env  | 保存环境变量相关改动输出路径，默认值 ms_performance_prechecker_env.sh    |
   | -l, --log_level  | 日志级别，可选值 debug, info, warning, error                         |
+- **Python 接口调用**
+  ```py
+  from ms_performance_prechecker import parse_mindie_server_config, run_precheck
+
+  mindie_service_config = parse_mindie_server_config()
+  run_precheck(mindie_service_config)
+  ```
