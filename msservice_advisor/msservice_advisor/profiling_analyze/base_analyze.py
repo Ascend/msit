@@ -92,3 +92,10 @@ def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_serv
             action="set to False",
             reason="关闭 supportSelectBatch 可降低首 token 时延",
         )
+    elif target == TARGETS.Throughput and not support_select_batch:
+        answer(
+            suggesion_type=SUGGESTION_TYPES.config,
+            suggesion_item="support_select_batch",
+            action="set to True",
+            reason="开启 supportSelectBatch 可降低首 Throughput 时延",
+        )

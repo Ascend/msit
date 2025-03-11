@@ -14,14 +14,46 @@
 
 import os
 import platform
+
 from ms_performance_prechecker.prechecker.register import register_checker, cached, answer
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES, record, CONTENT_PARTS
 from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger
 
 DRIVER_VERSION_PATH = "/usr/local/Ascend/driver/version.info"
 CPUINFO_PATH = "/proc/cpuinfo"
 TRANSPARENT_HUGEPAGE_PATH = "/sys/kernel/mm/transparent_hugepage/enabled"
 GOVERNOR_PATH_FORMATTER = "/sys/devices/system/cpu/cpu{core}/cpufreq/scaling_governor"
+
+
+def get_cpu_info():
+    import subprocess
+    from shutil import which
+
+    lscpu_path = which("lscpu")
+    if not lscpu_path:
+        logger.error("lscpu command not exists, will skip getting cpu info.")
+        return None
+
+    try:
+        result = subprocess.run([lscpu_path], capture_output=True, text=True, check=True, shell=False)
+    except Exception as err:
+        logger.error("Failed calling lscpu, will skip getting cpu info.")
+    
+    cpu_info = {}
+    for line in result.stdout.splitlines():
+        if ":" in line:
+            key, value = line.split(":", 1)
+            cpu_info[key.strip()] = value.strip()
+    return cpu_info
+
+    
+@register_checker()
+def system_info_checker(mindie_service_config, check_type):
+    cpu_info = get_cpu_info()
+    cpu_num = cpu_info.get("CPU(s)", None)
+    cpu_model_name = cpu_info.get("Model name", None)
+    record(f"CPU 型号：{cpu_model_name}", part=CONTENT_PARTS.sys)
+    record(f"CPU 核心数：{cpu_num}", part=CONTENT_PARTS.sys)
 
 
 @register_checker()
@@ -31,6 +63,8 @@ def linux_kernel_release_checker(mindie_service_config, check_type):
 
     kernel_release = platform.release()
     logger.info(f"Got kernel_release: {kernel_release}, suggested is {target_version}")
+    record(f"内核版本：{kernel_release}", part=CONTENT_PARTS.sys)
+
     kernel_release_split = kernel_release.split(".")
     if len(kernel_release_split) < 2:
         logger.warning(f"failed parsing kernel release version: {kernel_release}")
@@ -69,6 +103,7 @@ def driver_version_checker(mindie_service_config, check_type):
                 version = line.strip().split("=")[-1]
                 break
     logger.info(f"Got driver version: {version}, suggested is {target_version}")
+    record(f"驱动版本：{version}", part=CONTENT_PARTS.sys)
 
     version_split = version.split(".")
     if len(version_split) < 3:
@@ -120,6 +155,7 @@ def virtual_machine_checker(mindie_service_config, check_type):
             action=f"确定分配的 cpu 是完全体，如 VMware 中 {vmware_action}；KVM 中 {kvm_action}",
             reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降",
         )
+    record(f"是否虚拟机：{'是' if is_virtual_machine else '否'}", part=CONTENT_PARTS.sys)
 
 
 @register_checker()
@@ -142,6 +178,7 @@ def transparent_hugepage_checker(mindie_service_config, check_type):
             action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}",
             reason="开启透明大页，多次实验的吞吐率结果会更稳定",
         )
+    record(f"是否开启透明大页：{'是' if is_transparent_hugepage_enable else '否'}", part=CONTENT_PARTS.sys)
 
 
 @register_checker()
@@ -158,7 +195,9 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
                 if line.strip() == "performance":
                     is_performances.append(True)
                     break
-    if len(is_performances) != cpu_count:
+    
+    is_cpu_all_performance_mode = len(is_performances) != cpu_count
+    if is_cpu_all_performance_mode:
         yum_cmd = "EulerOS/CentOS: yum install kernel-tools"
         apt_cmd = "Ubuntu：apt install cpufrequtils"
         run_cmd = "cpupower -c all frequency-set -g performance"
@@ -169,3 +208,4 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
             action=f"开启 CPU 高性能模式：{run_cmd}；如果没有 cpupower 命令可以通过 {yum_cmd} 或 {apt_cmd} 安装；{fail_info}",
             reason="在相同时延约束下，TPS会有~3%的提升",
         )
+    record(f"CPU 是否高性能模式：{'是' if is_cpu_all_performance_mode else '否'}", part=CONTENT_PARTS.sys)

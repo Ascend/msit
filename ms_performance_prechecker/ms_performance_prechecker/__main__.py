@@ -88,6 +88,10 @@ def prechecker(mindie_service_config, check_type):
         checker(mindie_service_config, check_type)
     logger.info("</think>")
 
+    if CONTENTS.get(CONTENT_PARTS.sys, None):
+        sys_info = "系统信息：\n    " + "\n    ".join(CONTENTS[CONTENT_PARTS.sys]) + "\n"
+        logger.info(sys_info)
+
     logger.info("")
     logger.info("<answer>")
     for suggesion_type in SUGGESTION_TYPES:
@@ -100,18 +104,25 @@ def prechecker(mindie_service_config, check_type):
     logger.info("</answer>")
 
 
-def save_contents(save_path):
-    from ms_performance_prechecker.prechecker.register import CONTENTS
+def save_env_contents(save_path):
+    from ms_performance_prechecker.prechecker.register import CONTENTS, CONTENT_PARTS
 
-    if not CONTENTS:
+    if not CONTENTS.get(CONTENT_PARTS.before, None) and not CONTENTS.get(CONTENT_PARTS.after, None):
         logger.info("Nothing needs to save")
         return
 
+
     with open(save_path, "w") as ff:
-        ff.write("\n".join(CONTENTS) + "\n")
+        ff.write("ENABLE={1-1}\n")
+        ff.write('echo "ENABLE=$ENABLE"')
+        ff.write('if [ "$ENABLE" = "1"; then\n    ')
+        ff.write("\n    ".join(CONTENTS[CONTENT_PARTS.after]) + "\n")
+        ff.write('else\n    ')
+        ff.write("\n    ".join(CONTENTS[CONTENT_PARTS.before]) + "\n")
+        ff.write('fi\n')
 
     logger.info("")
-    logger.info(f"环境相关改动使能：source {save_path}")
+    logger.info(f"环境相关改动使能：source {save_path}; 使能后恢复：source {save_path} 0")
 
 
 """ arg_parse """
@@ -147,7 +158,7 @@ def main():
     set_log_level(args.log_level)
     mindie_service_config = parse_mindie_server_config()
     prechecker(mindie_service_config, args.check_type)
-    save_contents(args.save_env)
+    save_env_contents(args.save_env)
 
 
 if __name__ == "__main__":

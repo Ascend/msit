@@ -44,4 +44,7 @@ envs:
   - ENV: ATB_WORKSPACE_MEM_ALLOC_GLOBAL
     SUGGESTION_VALUE: 1
     REASON: 使用全局中间tensor 内存分配算法，会对中间tensor内存进行大小计算与分配
-  
+
+  - ENV: ATB_WORKSPACE_MEM_ALLOC_GLOBAL
+    SUGGESTION_VALUE: 1
+    REASON: 使用全局中间tensor 内存分配算法，会对中间tensor内存进行大小计算与分配

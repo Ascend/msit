@@ -13,12 +13,14 @@
 # limitations under the License.
 
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
+from collections import namedtuple
 
 # 创建一个全局的注册表，注册为分析函数
 REGISTRY = {}
 
 ANSWERS = {ii: {} for ii in SUGGESTION_TYPES}
-CONTENTS = []  # Will save to file in the end
+CONTENT_PARTS = namedtuple("CONTENT_PARTS", ["before", "after"， "sys"])("before", "after", "sys")
+CONTENTS = {}  # Will save to file in the end
 
 
 def register_checker(analyze_name=None):
@@ -53,5 +55,5 @@ def answer(suggesion_type=None, suggesion_item=None, action=None, reason=""):
     ANSWERS[suggesion_type].setdefault(suggesion_item, []).append((action, reason))
 
 
-def record(content):
-    CONTENTS.append(content)
+def record(content, part=CONTENT_PARTS.after):
+    CONTENTS.setdefault(part, []).append(content)
