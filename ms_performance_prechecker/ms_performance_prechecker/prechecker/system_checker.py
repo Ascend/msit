@@ -95,7 +95,7 @@ def linux_kernel_release_checker(mindie_service_config, check_type):
 
     kernel_release = platform.release()
     logger.info(f"Got kernel_release: {kernel_release}, suggested is {target_version}")
-    record(f"内核版本：{kernel_release}", part=CONTENT_PARTS.sys)
+    record(f"Linux 内核版本：{kernel_release}", part=CONTENT_PARTS.sys)
 
     kernel_release_split = kernel_release.split(".")
     if len(kernel_release_split) < 2:
