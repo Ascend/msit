@@ -19,6 +19,13 @@ from ms_performance_prechecker.prechecker.register import register_checker, cach
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
 from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger
 
+try:
+    import acl
+except:
+    logger.warning("Import acl error, will skip getting NPU info. Install and source cann toolkit if needed")
+    acl = None
+
+
 DRIVER_VERSION_PATH = "/usr/local/Ascend/driver/version.info"
 CPUINFO_PATH = "/proc/cpuinfo"
 TRANSPARENT_HUGEPAGE_PATH = "/sys/kernel/mm/transparent_hugepage/enabled"
@@ -54,6 +61,12 @@ def system_info_checker(mindie_service_config, check_type):
     cpu_model_name = cpu_info.get("Model name", None)
     record(f"CPU 型号：{cpu_model_name}", part=CONTENT_PARTS.sys)
     record(f"CPU 核心数：{cpu_num}", part=CONTENT_PARTS.sys)
+
+    page_size = os.sysconf("SC_PAGESIZE")
+    record(f"页表大小：{page_size}", part=CONTENT_PARTS.sys)
+
+    if acl is not None:
+        record("NPU 型号：acl.get_soc_name()", part=CONTENT_PARTS.sys)
 
 
 @register_checker()
