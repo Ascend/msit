@@ -50,7 +50,7 @@ ENVS = [
   },
   {
     "ENV": "ASCEND_LAUNCH_BLOCKING",
-    "SUGGESTION_VALUE": "~",
+    "SUGGESTION_VALUE": "",
     "REASON": "关闭算子执行时启动同步模式（异步更快）",
   },
   {
