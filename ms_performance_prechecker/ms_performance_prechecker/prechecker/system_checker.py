@@ -77,7 +77,7 @@ def system_info_checker(mindie_service_config, check_type):
                 if "=" in line:
                     ascend_toolkit_version = line.split("=")[-1].strip()
                     break
-        record(f"CANN 版本：{ascend_toolkit_version}", part=CONTENT_PARTS.sys)
+        record(f"CANN 版本：{ascend_toolkit_version[1:-1]}", part=CONTENT_PARTS.sys)
 
     mies_install_path = os.getenv("MIES_INSTSALL_PATH")
     mindie_version_file = os.path.join(mies_install_path, "version.info") if mies_install_path else None
