@@ -13,16 +13,15 @@
 # limitations under the License.
 
 import random
+import numpy as np
+
+from msservice_advisor.profiling_analyze.register import register_analyze, cached, answer
+from msservice_advisor.profiling_analyze.utils import TARGETS, SUGGESTION_TYPES, logger
 try:
     import matplotlib.pyplot as plt
 except ImportError as e:
     logger.error(f"Failed to import matplotlib.pyplot: {e}")
     plt = None
-import numpy as np
-
-from msservice_advisor.profiling_analyze.register import register_analyze, cached, answer
-from msservice_advisor.profiling_analyze.utils import TARGETS, SUGGESTION_TYPES, logger
-
 
 def summary_batch_info(batch_info):
     summary = {}
