@@ -131,7 +131,6 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
     return result
 
 def get_predict_image(results):
-    import numpy as np
     import datetime
     # 获取当前时间戳
     timestamp = datetime.datetime.now().strftime("%H%M%S")
@@ -144,7 +143,7 @@ def get_predict_image(results):
             num_rows = len_result // 3 + (len_result % 3 > 0)
             fig, axes = plt.subplots(num_rows, 3, figsize=(10 * 3, 6 * num_rows))
             axes = axes.flatten()
-        for idx, result in enumerate(results):
+        for result, ax in zip(results, axes):
             max_batch_size = result.get('max_batch_size', 0)
             points = result.get('points', [])
             targets = result.get('targets', [])
@@ -158,14 +157,14 @@ def get_predict_image(results):
             x_values = np.linspace(0, max_batch_size * 5, 300)
 
             # 绘制模型预测均值和置信区间
-            axes[idx].plot(x_values, func_curv(x_values, *popt), label=f"Model Prediction", color="blue")
-            axes[idx].scatter(points, targets, c="green", s=100, edgecolor="black", label="Existing Data Points")
+            ax.plot(x_values, func_curv(x_values, *popt), label=f"Model Prediction", color="blue")
+            ax.scatter(points, targets, c="green", s=100, edgecolor="black", label="Existing Data Points")
 
-            axes[idx].set_title(f"Curve Fit Optimization({process_name})")
-            axes[idx].set_xlabel("Batch Size")
-            axes[idx].set_ylabel("Speed")
-            axes[idx].legend()
-            axes[idx].grid(alpha=0.3)
+            ax.set_title(f"Curve Fit Optimization({process_name})")
+            ax.set_xlabel("Batch Size")
+            ax.set_ylabel("Speed")
+            ax.legend()
+            ax.grid(alpha=0.3)
         plt.tight_layout()
 
         png_name = f"func_curv_{timestamp}.png"
