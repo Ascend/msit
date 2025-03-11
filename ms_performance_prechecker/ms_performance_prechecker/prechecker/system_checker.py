@@ -65,9 +65,6 @@ def system_info_checker(mindie_service_config, check_type):
     page_size = os.sysconf("SC_PAGESIZE")
     record(f"页表大小：{page_size}", part=CONTENT_PARTS.sys)
 
-    if acl is not None:
-        record(f"NPU 型号：{acl.get_soc_name()}", part=CONTENT_PARTS.sys)
-
     ascend_toolkit_home = os.getenv("ASCEND_TOOLKIT_HOME")
     ascend_toolkit_version_file = os.path.join(ascend_toolkit_home, "version.cfg") if ascend_toolkit_home else None
     if ascend_toolkit_version_file and os.path.exists(ascend_toolkit_version_file):
