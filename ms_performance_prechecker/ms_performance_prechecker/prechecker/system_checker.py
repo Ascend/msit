@@ -15,8 +15,8 @@
 import os
 import platform
 
-from ms_performance_prechecker.prechecker.register import register_checker, cached, answer
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES, record, CONTENT_PARTS
+from ms_performance_prechecker.prechecker.register import register_checker, cached, answer, record, CONTENT_PARTS
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
 from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger
 
 DRIVER_VERSION_PATH = "/usr/local/Ascend/driver/version.info"
