@@ -77,7 +77,7 @@ def parse_mindie_server_config():
 """ prechecker """
 
 
-def run_precheck(mindie_service_config, check_type=CHECK_TYPES.deepseek):
+def run_precheck(mindie_service_config=None, check_type=CHECK_TYPES.deepseek):
     import ms_performance_prechecker.prechecker
     from ms_performance_prechecker.prechecker.register import REGISTRY, ANSWERS, CONTENTS, CONTENT_PARTS
 
