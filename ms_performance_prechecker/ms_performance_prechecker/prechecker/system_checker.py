@@ -187,7 +187,7 @@ def virtual_machine_checker(mindie_service_config, check_type):
             action=f"确定分配的 cpu 是完全体，如 VMware 中 {vmware_action}；KVM 中 {kvm_action}",
             reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降",
         )
-    record(f"1000 是否虚拟机：{'是' if is_virtual_@machine else '否'}", part=CONTENT_PARTS.sys)
+    record(f"1000 是否虚拟机：{'是' if is_virtual_machine else '否'}", part=CONTENT_PARTS.sys)
 
 
 @register_checker()
