@@ -81,15 +81,16 @@ def run_precheck(mindie_service_config, check_type=CHECK_TYPES.deepseek):
     import ms_performance_prechecker.prechecker
     from ms_performance_prechecker.prechecker.register import REGISTRY, ANSWERS, CONTENTS, CONTENT_PARTS
 
-    logger.info("")
-    logger.info("<think>")
+    logger.debug("")
+    logger.debug("<think>")
     for name, checker in REGISTRY.items():
-        logger.info(name)
+        logger.debug(name)
         checker(mindie_service_config, check_type)
-    logger.info("</think>")
+    logger.debug("</think>")
 
     if CONTENTS.get(CONTENT_PARTS.sys, None):
-        sys_info = "系统信息：\n\n    " + "\n    ".join(CONTENTS[CONTENT_PARTS.sys]) + "\n"
+        sorted_contents = [ii.split(" ", 1)[-1] for ii in sorted(CONTENTS[CONTENT_PARTS.sys])]
+        sys_info = "系统信息：\n\n    " + "\n    ".join(sorted_contents) + "\n"
         logger.info(sys_info)
 
     logger.info("")
