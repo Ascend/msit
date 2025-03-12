@@ -228,8 +228,8 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
                     is_performances.append(True)
                     break
     
-    is_cpu_all_performance_mode = len(is_performances) != cpu_count
-    if is_cpu_all_performance_mode:
+    is_cpu_all_performance_mode = len(is_performances) == cpu_count
+    if not is_cpu_all_performance_mode:
         yum_cmd = "EulerOS/CentOS: yum install kernel-tools"
         apt_cmd = "Ubuntu：apt install cpufrequtils"
         run_cmd = "cpupower -c all frequency-set -g performance"
