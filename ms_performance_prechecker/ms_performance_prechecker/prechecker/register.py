@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from collections import namedtuple
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES, logger
+from enum import Enum
 
 # 创建一个全局的注册表，注册为分析函数
 REGISTRY = {}
@@ -57,3 +58,23 @@ def answer(suggesion_type=None, suggesion_item=None, action=None, reason=""):
 
 def record(content, part=CONTENT_PARTS.after):
     CONTENTS.setdefault(part, []).append(content)
+
+
+CheckResult = Enum('CheckResult', ['OK', 'UNFINISH', 'WARN', 'ERROR', "VIP"])
+
+def check_result(domain, checker, result: CheckResult=None, action=None, reason=None):
+    color_and_text = {CheckResult.OK: ('\033[92m', "OK"),
+                       CheckResult.UNFINISH: ('\033[93m', "UNFINISH"),
+                       CheckResult.WARN: ('\033[93m', "WARN"),
+                       CheckResult.ERROR: ('\033[91m', "NOK"),
+                       CheckResult.VIP: ('\033[94m', action)}
+
+    if result is None:
+        color, text = '\033[97m', ""
+    else:
+        color, text = color_and_text[result]
+    logger.info(f"{domain} {checker} ... {color} {text} \033[0m")
+    if action is not None and result != CheckResult.VIP:
+        logger.info(f"    * {action}")
+    if reason is not None:
+        logger.info(f"    * {reason}")

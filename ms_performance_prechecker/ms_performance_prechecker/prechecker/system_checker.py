@@ -15,7 +15,7 @@
 import os
 import platform
 
-from ms_performance_prechecker.prechecker.register import register_checker, cached, answer, record, CONTENT_PARTS
+from ms_performance_prechecker.prechecker.register import register_checker, cached, check_result, record, CONTENT_PARTS, CheckResult
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
 from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger
 
@@ -39,7 +39,7 @@ def get_cpu_info():
     lscpu_path = which("lscpu")
     if not lscpu_path:
         logger.error("lscpu command not exists, will skip getting cpu info.")
-        return None
+        return {}
 
     try:
         result = subprocess.run([lscpu_path], capture_output=True, text=True, check=True, shell=False)
@@ -55,7 +55,7 @@ def get_cpu_info():
 
 
 @register_checker()
-def system_info_checker(mindie_service_config, check_type):
+def system_info_checker(mindie_service_config, check_type, **kwargs):
     cpu_info = get_cpu_info()
     cpu_num = cpu_info.get("CPU(s)", None)
     cpu_model_name = cpu_info.get("Model name", None)
@@ -89,7 +89,7 @@ def system_info_checker(mindie_service_config, check_type):
 
 
 @register_checker()
-def linux_kernel_release_checker(mindie_service_config, check_type):
+def linux_kernel_release_checker(mindie_service_config, check_type, **kwargs):
     target_major_version, target_minor_version = 5, 10
     target_version = ".".join([str(ii) for ii in [target_major_version, target_minor_version]])
 
@@ -108,19 +108,24 @@ def linux_kernel_release_checker(mindie_service_config, check_type):
         return
 
     answer_kwargs = dict(
+        domain="system",
+        checker="内核版本", 
+        result=CheckResult.ERROR,
         suggesion_type=SUGGESTION_TYPES.system,
         suggesion_item="内核版本",
         action=f"升级到 {target_version} 以上",
         reason="内核版本升级后以上 host bound 时性能有提升",
     )
     if major_version < target_major_version:
-        answer(**answer_kwargs)
+        check_result(**answer_kwargs)
     elif major_version == target_major_version and minor_version < target_minor_version:
-        answer(**answer_kwargs)
+        check_result(**answer_kwargs)
+    else:
+        check_result("system", "内核版本", CheckResult.OK)
 
 
 @register_checker()
-def driver_version_checker(mindie_service_config, check_type):
+def driver_version_checker(mindie_service_config, check_type, **kwargs):
     target_major_version, target_minor_version, target_mini_version = 24, 1, 0
     target_version = ".".join([str(ii) for ii in [target_major_version, target_minor_version, target_mini_version]])
 
@@ -148,25 +153,28 @@ def driver_version_checker(mindie_service_config, check_type):
         return
 
     answer_kwargs = dict(
-        suggesion_type=SUGGESTION_TYPES.system,
-        suggesion_item="驱动版本",
+        domain="system",
+        checker="驱动版本", 
+        result=CheckResult.ERROR,
         action=f"升级到 {target_version} 以上",
         reason="驱动版本升级后性能有提升",
     )
     if major_version < target_major_version:
-        answer(**answer_kwargs)
+        check_result(**answer_kwargs)
     elif major_version == target_major_version and minor_version < target_minor_version:
-        answer(**answer_kwargs)
+        check_result(**answer_kwargs)
     elif (
         major_version == target_major_version
         and minor_version == target_minor_version
         and mini_version < target_mini_version
     ):
-        answer(**answer_kwargs)
+        check_result(**answer_kwargs)
+    else:
+        check_result("system", "驱动版本", CheckResult.OK)
 
 
 @register_checker()
-def virtual_machine_checker(mindie_service_config, check_type):
+def virtual_machine_checker(mindie_service_config, check_type, **kwargs):
     if not os.path.exists(CPUINFO_PATH) or not os.access(CPUINFO_PATH, os.R_OK):
         logger.warning(f"{CPUINFO_PATH} not accessible")
         return
@@ -181,9 +189,7 @@ def virtual_machine_checker(mindie_service_config, check_type):
     if is_virtual_machine:
         vmware_action = "启用 CPU/MMU Virtualization（ESXi 高级设置）、禁用 CPU 限制（cpuid.coresPerSocket 配置为物理核心数）"
         kvm_action = "配置 host-passthrough 模式（暴露完整 CPU 指令集）、启用多队列 virtio-net（减少网络延迟）"
-        answer(
-            suggesion_type=SUGGESTION_TYPES.system,
-            suggesion_item="可能是虚拟机",
+        check_result("system", "可能是虚拟机", CheckResult.ERROR, 
             action=f"确定分配的 cpu 是完全体，如 VMware 中 {vmware_action}；KVM 中 {kvm_action}",
             reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降",
         )
@@ -191,7 +197,7 @@ def virtual_machine_checker(mindie_service_config, check_type):
 
 
 @register_checker()
-def transparent_hugepage_checker(mindie_service_config, check_type):
+def transparent_hugepage_checker(mindie_service_config, check_type, **kwargs):
     if not os.path.exists(TRANSPARENT_HUGEPAGE_PATH) or not os.access(TRANSPARENT_HUGEPAGE_PATH, os.R_OK):
         logger.warning(f"{TRANSPARENT_HUGEPAGE_PATH} not accessible")
         return
@@ -204,9 +210,7 @@ def transparent_hugepage_checker(mindie_service_config, check_type):
                 logger.debug(f"Got 'always' from: {TRANSPARENT_HUGEPAGE_PATH}")
                 break
     if not is_transparent_hugepage_enable:
-        answer(
-            suggesion_type=SUGGESTION_TYPES.system,
-            suggesion_item="透明大页",
+        check_result("system", "透明大页", CheckResult.ERROR,
             action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}",
             reason="开启透明大页，多次实验的吞吐率结果会更稳定",
         )
@@ -214,7 +218,7 @@ def transparent_hugepage_checker(mindie_service_config, check_type):
 
 
 @register_checker()
-def cpu_high_performance_checker(mindie_service_config, check_type):
+def cpu_high_performance_checker(mindie_service_config, check_type, **kwargs):
     cpu_count = os.cpu_count()
     is_performances = []
     for core in range(cpu_count):
@@ -233,9 +237,7 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
         apt_cmd = "Ubuntu：apt install cpufrequtils"
         run_cmd = "cpupower -c all frequency-set -g performance"
         fail_info = "如果失败可能需要在 BIOS 中开启"
-        answer(
-            suggesion_type=SUGGESTION_TYPES.system,
-            suggesion_item="CPU 可能不是高性能模式",
+        check_result("system", "CPU高性能模式", CheckResult.ERROR,
             action=f"开启 CPU 高性能模式：{run_cmd}；如果没有 cpupower 命令可以通过 {yum_cmd} 或 {apt_cmd} 安装；{fail_info}",
             reason="在相同时延约束下，TPS会有~3%的提升",
         )
