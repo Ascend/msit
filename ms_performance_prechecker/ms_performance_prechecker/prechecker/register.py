@@ -62,6 +62,7 @@ def record(content, part=CONTENT_PARTS.after):
 
 CheckResult = Enum('CheckResult', ['OK', 'UNFINISH', 'WARN', 'ERROR', "VIP"])
 
+
 def check_result(domain, checker, result=None, action=None, reason=None):
     color_and_text = {CheckResult.OK: ('\033[92m', "OK"),
                        CheckResult.UNFINISH: ('\033[93m', "UNFINISH"),

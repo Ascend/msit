@@ -37,6 +37,8 @@ def version_in_black_list(version_info, black_list):
     for black_version in black_list:
         if version_info.startswith(black_version):
             return True
+    return False
+
 
 @register_checker()
 def simple_env_checker(env_save_path, **kwargs):
