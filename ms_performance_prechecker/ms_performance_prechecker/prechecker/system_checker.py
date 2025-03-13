@@ -53,17 +53,17 @@ def get_cpu_info():
             cpu_info[key.strip()] = value.strip()
     return cpu_info
 
-    
+
 @register_checker()
 def system_info_checker(mindie_service_config, check_type):
     cpu_info = get_cpu_info()
     cpu_num = cpu_info.get("CPU(s)", None)
     cpu_model_name = cpu_info.get("Model name", None)
-    record(f"CPU 型号：{cpu_model_name}", part=CONTENT_PARTS.sys)
-    record(f"CPU 核心数：{cpu_num}", part=CONTENT_PARTS.sys)
+    record(f"0500 CPU 型号：{cpu_model_name}", part=CONTENT_PARTS.sys)
+    record(f"0600 CPU 核心数：{cpu_num}", part=CONTENT_PARTS.sys)
 
     page_size = os.sysconf("SC_PAGESIZE")
-    record(f"页表大小：{page_size}", part=CONTENT_PARTS.sys)
+    record(f"0800 页表大小：{page_size}", part=CONTENT_PARTS.sys)
 
     ascend_toolkit_home = os.getenv("ASCEND_TOOLKIT_HOME")
     ascend_toolkit_version_file = os.path.join(ascend_toolkit_home, "version.cfg") if ascend_toolkit_home else None
@@ -74,7 +74,7 @@ def system_info_checker(mindie_service_config, check_type):
                 if "=" in line:
                     ascend_toolkit_version = line.split("=")[-1].strip()
                     break
-        record(f"CANN 版本：{ascend_toolkit_version[1:-1]}", part=CONTENT_PARTS.sys)
+        record(f"0100 CANN 版本：{ascend_toolkit_version[1:-1]}", part=CONTENT_PARTS.sys)
 
     mies_install_path = os.getenv("MIES_INSTALL_PATH")
     mindie_version_file = os.path.join(mies_install_path, "version.info") if mies_install_path else None
@@ -85,7 +85,7 @@ def system_info_checker(mindie_service_config, check_type):
                 if "Ascend-mindie-service" in line and ":" in line:
                     mindie_version = line.split(":")[-1].strip()
                     break
-        record(f"MINDIE 版本：{mindie_version}", part=CONTENT_PARTS.sys)
+        record(f"0200 MINDIE 版本：{mindie_version}", part=CONTENT_PARTS.sys)
 
 
 @register_checker()
@@ -94,8 +94,8 @@ def linux_kernel_release_checker(mindie_service_config, check_type):
     target_version = ".".join([str(ii) for ii in [target_major_version, target_minor_version]])
 
     kernel_release = platform.release()
-    logger.info(f"Got kernel_release: {kernel_release}, suggested is {target_version}")
-    record(f"Linux 内核版本：{kernel_release}", part=CONTENT_PARTS.sys)
+    logger.debug(f"Got kernel_release: {kernel_release}, suggested is {target_version}")
+    record(f"0400 Linux 内核版本：{kernel_release}", part=CONTENT_PARTS.sys)
 
     kernel_release_split = kernel_release.split(".")
     if len(kernel_release_split) < 2:
@@ -134,8 +134,8 @@ def driver_version_checker(mindie_service_config, check_type):
             if "Version=" in line:
                 version = line.strip().split("=")[-1]
                 break
-    logger.info(f"Got driver version: {version}, suggested is {target_version}")
-    record(f"驱动版本：{version}", part=CONTENT_PARTS.sys)
+    logger.debug(f"Got driver version: {version}, suggested is {target_version}")
+    record(f"0300 驱动版本：{version}", part=CONTENT_PARTS.sys)
 
     version_split = version.split(".")
     if len(version_split) < 3:
@@ -187,7 +187,7 @@ def virtual_machine_checker(mindie_service_config, check_type):
             action=f"确定分配的 cpu 是完全体，如 VMware 中 {vmware_action}；KVM 中 {kvm_action}",
             reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降",
         )
-    record(f"是否虚拟机：{'是' if is_virtual_machine else '否'}", part=CONTENT_PARTS.sys)
+    record(f"1000 是否虚拟机：{'是' if is_virtual_machine else '否'}", part=CONTENT_PARTS.sys)
 
 
 @register_checker()
@@ -201,7 +201,7 @@ def transparent_hugepage_checker(mindie_service_config, check_type):
         for line in ff.readlines():
             if "always" in line:
                 is_transparent_hugepage_enable = True
-                logger.info(f"Got 'always' from: {TRANSPARENT_HUGEPAGE_PATH}")
+                logger.debug(f"Got 'always' from: {TRANSPARENT_HUGEPAGE_PATH}")
                 break
     if not is_transparent_hugepage_enable:
         answer(
@@ -210,7 +210,7 @@ def transparent_hugepage_checker(mindie_service_config, check_type):
             action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}",
             reason="开启透明大页，多次实验的吞吐率结果会更稳定",
         )
-    record(f"是否开启透明大页：{'是' if is_transparent_hugepage_enable else '否'}", part=CONTENT_PARTS.sys)
+    record(f"0900 是否开启透明大页：{'是' if is_transparent_hugepage_enable else '否'}", part=CONTENT_PARTS.sys)
 
 
 @register_checker()
@@ -228,8 +228,8 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
                     is_performances.append(True)
                     break
     
-    is_cpu_all_performance_mode = len(is_performances) != cpu_count
-    if is_cpu_all_performance_mode:
+    is_cpu_all_performance_mode = len(is_performances) == cpu_count
+    if not is_cpu_all_performance_mode:
         yum_cmd = "EulerOS/CentOS: yum install kernel-tools"
         apt_cmd = "Ubuntu：apt install cpufrequtils"
         run_cmd = "cpupower -c all frequency-set -g performance"
@@ -240,4 +240,4 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
             action=f"开启 CPU 高性能模式：{run_cmd}；如果没有 cpupower 命令可以通过 {yum_cmd} 或 {apt_cmd} 安装；{fail_info}",
             reason="在相同时延约束下，TPS会有~3%的提升",
         )
-    record(f"CPU 是否高性能模式：{'是' if is_cpu_all_performance_mode else '否'}", part=CONTENT_PARTS.sys)
+    record(f"0700 CPU 是否高性能模式：{'是' if is_cpu_all_performance_mode else '否'}", part=CONTENT_PARTS.sys)

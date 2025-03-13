@@ -31,7 +31,7 @@ def simple_env_checker(*_):
         if str(env_value) == str(env_suggest_value):
             continue
 
-        logger.info(f"{env_item}: {env_value} -> {env_suggest_value}")
+        logger.debug(f"{env_item}: {env_value} -> {env_suggest_value}")
         env_cmd = f"export {env_item}={env_suggest_value}" if env_suggest_value else f"unset {env_item}"
         answer(
             suggesion_type=SUGGESTION_TYPES.env,
@@ -41,5 +41,5 @@ def simple_env_checker(*_):
         )
         record(env_cmd, part=CONTENT_PARTS.after)
 
-        pre_env = f"export {env_item} {env_value}" if env_value else f"unset {env_item}"
+        pre_env = f"export {env_item}={env_value}" if env_value else f"unset {env_item}"
         record(pre_env, part=CONTENT_PARTS.before)
