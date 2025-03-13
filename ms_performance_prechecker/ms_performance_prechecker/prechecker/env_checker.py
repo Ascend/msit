@@ -23,12 +23,12 @@ def simple_env_checker(*_):
     for item in ENVS:
         env_item = item.get("ENV")
         env_value = os.getenv(env_item, "")
-        env_suggest_value = item.get("SUGGESTION_VALUE") or ""
+        env_suggest_value = item.get("SUGGESTION_VALUE", "")
         suggest_reason = item.get("REASON", "")
         allow_undefined = item.get("ALLOW_UNDEFINED", False)
         if allow_undefined and not env_value:
             continue
-        if str(env_value) == str(env_suggest_value):
+        if str(env_value).lower() == str(env_suggest_value).lower():
             continue
 
         logger.debug(f"{env_item}: {env_value} -> {env_suggest_value}")
