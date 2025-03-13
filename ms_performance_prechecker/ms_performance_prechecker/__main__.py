@@ -78,7 +78,8 @@ def parse_mindie_server_config(mindie_service_path=None):
 """ prechecker """
 
 
-def run_precheck(mindie_service_path=None, check_type=CHECK_TYPES.deepseek, env_save_path="ms_performance_prechecker_env.sh", **kwargs):
+def run_precheck(mindie_service_path=None, check_type=CHECK_TYPES.deepseek,
+    env_save_path="ms_performance_prechecker_env.sh", **kwargs):
     import ms_performance_prechecker.prechecker
     from ms_performance_prechecker.prechecker.register import REGISTRY, ANSWERS, CONTENTS, CONTENT_PARTS
 
@@ -87,7 +88,8 @@ def run_precheck(mindie_service_path=None, check_type=CHECK_TYPES.deepseek, env_
     logger.debug("<think>")
     for name, checker in REGISTRY.items():
         logger.debug(name)
-        checker(mindie_service_config=mindie_service_config, check_type=check_type, env_save_path=env_save_path, **kwargs)
+        checker(mindie_service_config=mindie_service_config, check_type=check_type,
+            env_save_path=env_save_path, **kwargs)
     logger.debug("</think>")
 
     if CONTENTS.get(CONTENT_PARTS.sys, None):
@@ -97,7 +99,6 @@ def run_precheck(mindie_service_path=None, check_type=CHECK_TYPES.deepseek, env_
 
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
-""" arg_parse """
 
 def arg_parse(argv):
     import argparse

@@ -14,8 +14,8 @@
 
 import os
 import platform
-
-from ms_performance_prechecker.prechecker.register import register_checker, cached, check_result, record, CONTENT_PARTS, CheckResult
+from ms_performance_prechecker.prechecker.register import register_checker, cached
+from ms_performance_prechecker.prechecker.register import check_result, record, CONTENT_PARTS, CheckResult
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
 from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger
 

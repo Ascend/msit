@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import Enum
 from collections import namedtuple
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES, logger
-from enum import Enum
 
 # 创建一个全局的注册表，注册为分析函数
 REGISTRY = {}
@@ -62,7 +62,7 @@ def record(content, part=CONTENT_PARTS.after):
 
 CheckResult = Enum('CheckResult', ['OK', 'UNFINISH', 'WARN', 'ERROR', "VIP"])
 
-def check_result(domain, checker, result: CheckResult=None, action=None, reason=None):
+def check_result(domain, checker, result=None, action=None, reason=None):
     color_and_text = {CheckResult.OK: ('\033[92m', "OK"),
                        CheckResult.UNFINISH: ('\033[93m', "UNFINISH"),
                        CheckResult.WARN: ('\033[93m', "WARN"),
@@ -72,7 +72,7 @@ def check_result(domain, checker, result: CheckResult=None, action=None, reason=
     if result is None:
         color, text = '\033[97m', ""
     else:
-        color, text = color_and_text[result]
+        color, text = color_and_text.get(result, ('\033[97m', ""))
     logger.info(f"{domain} {checker} ... {color} {text} \033[0m")
     if action is not None and result != CheckResult.VIP:
         logger.info(f"    * {action}")

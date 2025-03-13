@@ -13,15 +13,14 @@
 # limitations under the License.
 
 import os
-from ms_performance_prechecker.prechecker.register import register_checker, cached, check_result, record, CONTENT_PARTS, CheckResult
+from ms_performance_prechecker.prechecker.register import register_checker, cached
+from ms_performance_prechecker.prechecker.register import check_result, record, CONTENT_PARTS, CheckResult
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, logger, SUGGESTION_TYPES
 from ms_performance_prechecker.prechecker.env_suggestion import ENV_SUGGESTIONS
 
 
 def save_env_contents(fix_pair, save_path):
     save_path = os.path.realpath(save_path)
-        
-    from ms_performance_prechecker.prechecker.register import CONTENTS, CONTENT_PARTS
 
     with open(save_path, "w") as ff:
         ff.write("ENABLE=${1-1}\n")
@@ -34,8 +33,13 @@ def save_env_contents(fix_pair, save_path):
     return save_path
 
 
+def version_in_black_list(version_info, black_list):
+    for black_version in black_list:
+        if version_info.startswith(black_version):
+            return True
+
 @register_checker()
-def simple_env_checker(env_save_path, **kwargs):
+def simple_env_checker(env_save_path, mindie_service_path, **kwargs):
     env = kwargs.get("env", {})
     fix_pair = []
     for item in ENV_SUGGESTIONS:
@@ -43,6 +47,7 @@ def simple_env_checker(env_save_path, **kwargs):
         env_value = os.getenv(env_item, "")
         env_suggest_value = item.get("SUGGESTION_VALUE", "")
         suggest_reason = item.get("REASON", "")
+        version_black_list = item.get("VERSION_BLACK_LIST", [])
         allow_undefined = item.get("ALLOW_UNDEFINED", False)
         if allow_undefined and not env_value:
             check_result("env", env_item, CheckResult.OK)

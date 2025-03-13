@@ -14,6 +14,7 @@
 
 import logging
 from collections import namedtuple
+from ms_performance_prechecker.prechecker.register import cached
 
 CHECK_TYPES = namedtuple("CHECK_TYPES", ["basic", "deepseek"])("basic", "deepseek")
 _SUGGESTION_TYPES = ["env", "system", "config"]
@@ -87,6 +88,25 @@ def set_logger(msit_logger):
         formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
         stream_handler.setFormatter(formatter)
         msit_logger.addHandler(stream_handler)
+
+@cached()
+def get_version_info(mindie_service_path):
+    if mindie_service_path is None:
+        mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+
+    version_path = os.path.join(mindie_service_path, "version.info")
+
+    if not os.path.exists(version_path): 
+        return {}
+    
+    version_info = {}
+    with open(version_path) as f:
+        for line in f:
+            line_split = line.split(":")
+            key, value = line_split[0], line_split[-1]
+            version_info[key.strip()] = value.strip()
+
+    return version_info
 
 
 logger = logging.getLogger("ms_performance_prechecker_logger")
