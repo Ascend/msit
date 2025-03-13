@@ -60,7 +60,7 @@ def get_next_dict_item(dict_value):
 """ parse_mindie_server_config """
 
 
-def parse_mindie_server_config(mindie_service_path):
+def parse_mindie_server_config(mindie_service_path=None):
     logger.debug("mindie_service_config:")
     if mindie_service_path is None:
         mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
