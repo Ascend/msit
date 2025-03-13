@@ -22,7 +22,7 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to import matplotlib.pyplot, cannot create a fit curve plot: {e}")
     plt = None
-    
+
 
 def summary_batch_info(batch_info):
     summary = {}
@@ -229,4 +229,6 @@ def find_best_batch_size(config, benchmark, output_log, limit, target_metrics):
             action=f"set to {max(best_decode_result['best_batch_size'], best_prefill_result['best_batch_size'])}",
             reason="经过当前不同batch的时延数据，通过函数拟合分析，建议最优batchsize",
         )
+    if len(results) == 0:
+        return
     get_predict_image(results)

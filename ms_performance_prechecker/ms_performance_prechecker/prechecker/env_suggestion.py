@@ -35,12 +35,6 @@ ENVS = [
     "（MindIE 2.0.T3 和 MindIE 2.0.T3.1 使能 AIV 会有崩溃风险，请不要设置它）",
   },
   {
-    "ENV": "HCCL_OP_EXPANSION_MODE",
-    "SUGGESTION_VALUE": "AIV",
-    "REASON": "配置通信算法的编排展开位置，代表通信算法的编排展开位置在 Device 侧的 AI Vector Core 计算单元"\
-    "（MindIE 2.0.T3 和 MindIE 2.0.T3.1 使能 AIV 会有崩溃风险，请不要设置它）",
-  },
-  {
     "ENV": "HCCL_DETERMINISTIC",
     "SUGGESTION_VALUE": False,
     "REASON": "关闭确定性计算，只有在调试的时候才会需要打开",
@@ -71,11 +65,6 @@ ENVS = [
     "ENV": "ATB_WORKSPACE_MEM_ALLOC_ALG_TYPE",
     "SUGGESTION_VALUE": 2,
     "REASON": "wordkpace 内存分配算法选择，可通过选择不同的算法测试workspace分配情况",
-  },
-  {
-    "ENV": "ATB_WORKSPACE_MEM_ALLOC_GLOBAL",
-    "SUGGESTION_VALUE": 1,
-    "REASON": "使用全局中间tensor 内存分配算法，会对中间tensor内存进行大小计算与分配",
   },
   {
     "ENV": "ATB_WORKSPACE_MEM_ALLOC_GLOBAL",

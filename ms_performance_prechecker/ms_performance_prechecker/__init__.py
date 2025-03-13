@@ -1,1 +1,1 @@
-from ms_performance_prechecker.__main__ import parse_mindie_server_config, run_precheck
+from ms_performance_prechecker.__main__ import parse_mindie_server_config, run_precheck, save_env_contents

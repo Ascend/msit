@@ -43,8 +43,8 @@
   | -l, --log_level  | 日志级别，可选值 debug, info, warning, error                         |
 - **Python 接口调用**
   ```py
-  from ms_performance_prechecker import parse_mindie_server_config, run_precheck
+  from ms_performance_prechecker import run_precheck, save_env_contents
 
-  mindie_service_config = parse_mindie_server_config()
-  run_precheck(mindie_service_config)
+  run_precheck(mindie_service_config)  # 执行检查
+  save_env_contents("foo_env.sh")  # 保存环境变量相关改动到 foo_env.sh
   ```
