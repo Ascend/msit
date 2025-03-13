@@ -95,7 +95,7 @@ def run_precheck(mindie_service_path=None, check_type=CHECK_TYPES.deepseek, env_
         sys_info = "系统信息：\n\n    " + "\n    ".join(sorted_contents) + "\n"
         logger.info(sys_info)
 
-    logger.info("\033[91m 本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准 \033[0m")
+    logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
 """ arg_parse """
 
