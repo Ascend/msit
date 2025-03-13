@@ -38,6 +38,7 @@ ENVS = [
     "ENV": "HCCL_DETERMINISTIC",
     "SUGGESTION_VALUE": False,
     "REASON": "关闭确定性计算，只有在调试的时候才会需要打开",
+    "ALLOW_UNDEFINED": True,
   },
   {
     "ENV": "HCCL_RDMA_PCIE_DIRECT_POST_NOSTRICT",
