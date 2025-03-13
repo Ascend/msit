@@ -48,26 +48,6 @@ def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_serve
 
 
 @register_analyze()
-def check_output_tokens(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
-    max_iter_times = get_dict_value_by_pos(mindie_service_config, "BackendConfig:ScheduleConfig:maxIterTimes")
-    logger.info(f"maxIterTimes: {max_iter_times}")
-
-    max_output_tokens = (
-        benchmark_instance.get("result_perf", {}).get("GeneratedTokens", {}).get("max", "0").split(" ")[0]
-    )
-    max_output_tokens_float = float(max_output_tokens) if max_output_tokens.replace(".", "", 1).isdigit() else 0
-    logger.info(f"Max GeneratedTokens: {max_output_tokens_float}")
-
-    if max_iter_times is not None and max_output_tokens_float < max_iter_times:
-        answer(
-            suggesion_type=SUGGESTION_TYPES.config,
-            suggesion_item="max_iter_times",
-            action=f"set to {max_output_tokens_float}",
-            reason="对于当前数据集，可以设置为数据集的最大输出长度",
-        )
-
-
-@register_analyze()
 def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
     results_per_request = benchmark_instance.get("results_per_request").values()
     prefill_latencies = np.array([ii["latency"][0] for ii in results_per_request if len(ii.get("latency", [])) > 0])
