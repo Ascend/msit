@@ -60,9 +60,10 @@ def get_next_dict_item(dict_value):
 """ parse_mindie_server_config """
 
 
-def parse_mindie_server_config():
+def parse_mindie_server_config(mindie_service_path=None):
     logger.debug("mindie_service_config:")
-    mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+    if mindie_service_path is None:
+        mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
     if not os.path.exists(mindie_service_path):
         logger.warning(f"mindie config.json: {mindie_service_path} not exists, will skip related checkers")
         return None
@@ -77,15 +78,18 @@ def parse_mindie_server_config():
 """ prechecker """
 
 
-def run_precheck(mindie_service_config=None, check_type=CHECK_TYPES.deepseek):
+def run_precheck(mindie_service_path=None, check_type=CHECK_TYPES.deepseek,
+    env_save_path="ms_performance_prechecker_env.sh", **kwargs):
     import ms_performance_prechecker.prechecker
     from ms_performance_prechecker.prechecker.register import REGISTRY, ANSWERS, CONTENTS, CONTENT_PARTS
 
+    mindie_service_config = parse_mindie_server_config(mindie_service_path)
     logger.debug("")
     logger.debug("<think>")
     for name, checker in REGISTRY.items():
         logger.debug(name)
-        checker(mindie_service_config, check_type)
+        checker(mindie_service_config=mindie_service_config, check_type=check_type,
+            env_save_path=env_save_path, **kwargs)
     logger.debug("</think>")
 
     if CONTENTS.get(CONTENT_PARTS.sys, None):
@@ -93,40 +97,7 @@ def run_precheck(mindie_service_config=None, check_type=CHECK_TYPES.deepseek):
         sys_info = "系统信息：\n\n    " + "\n    ".join(sorted_contents) + "\n"
         logger.info(sys_info)
 
-    logger.info("")
-    logger.info("<answer>")
-    for suggesion_type in SUGGESTION_TYPES:
-        for name, items in ANSWERS.get(suggesion_type, dict()).items():
-            for action, reason in items:
-                logger.info(f"[{suggesion_type}] {name}")
-                logger.info(f"[action] {action}")
-                logger.info(f"[reason] {reason}")
-                logger.info("")
-    logger.info("</answer>")
-
-
-def save_env_contents(save_path):
-    from ms_performance_prechecker.prechecker.register import CONTENTS, CONTENT_PARTS
-
-    if not CONTENTS.get(CONTENT_PARTS.before, None) and not CONTENTS.get(CONTENT_PARTS.after, None):
-        logger.info("None env related needs to save")
-        return
-
-
-    with open(save_path, "w") as ff:
-        ff.write("ENABLE=${1-1}\n")
-        ff.write('echo "ENABLE=$ENABLE"\n\n')
-        ff.write('if [ "$ENABLE" = "1" ]; then\n    ')
-        ff.write("\n    ".join(CONTENTS[CONTENT_PARTS.after]) + "\n")
-        ff.write('else\n    ')
-        ff.write("\n    ".join(CONTENTS[CONTENT_PARTS.before]) + "\n")
-        ff.write('fi\n')
-
-    logger.info("")
-    logger.info(f"环境相关改动使能：source {save_path}; 使能后恢复：source {save_path} 0")
-
-
-""" arg_parse """
+    logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
 
 def arg_parse(argv):
@@ -156,9 +127,7 @@ def main():
 
     args = arg_parse(sys.argv)
     set_log_level(args.log_level)
-    mindie_service_config = parse_mindie_server_config()
-    run_precheck(mindie_service_config, args.check_type)
-    save_env_contents(args.save_env)
+    run_precheck(None, args.check_type, args.save_env, args=args)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ENVS = [
+ENV_SUGGESTIONS = [
   {
     "ENV": "CPU_AFFINITY_CONF",
     "SUGGESTION_VALUE": 2,
@@ -36,13 +36,13 @@ ENVS = [
   },
   {
     "ENV": "HCCL_DETERMINISTIC",
-    "SUGGESTION_VALUE": False,
-    "REASON": "关闭确定性计算，只有在调试的时候才会需要打开",
+    "SUGGESTION_VALUE": "false",
+    "REASON": "关闭确定性计算，一般情况下无需开启确定性计算，当模型多次执行结果不同或者精度调优时，可通过此环境变量开启确定性计算进行辅助调试调优，但开启确定性计算后，算子执行时间会变慢，导致性能下降。",
     "ALLOW_UNDEFINED": True,
   },
   {
     "ENV": "HCCL_RDMA_PCIE_DIRECT_POST_NOSTRICT",
-    "SUGGESTION_VALUE": True,
+    "SUGGESTION_VALUE": "TRUE",
     "REASON": "host bound 时性能有提升 (某些局点该环境变量和内核版本升级可以二选一)",
   },
   {
@@ -65,7 +65,7 @@ ENVS = [
   {
     "ENV": "ATB_WORKSPACE_MEM_ALLOC_ALG_TYPE",
     "SUGGESTION_VALUE": 2,
-    "REASON": "wordkpace 内存分配算法选择，可通过选择不同的算法测试workspace分配情况",
+    "REASON": "workspace 内存分配算法选择，可通过选择不同的算法测试workspace分配情况",
   },
   {
     "ENV": "ATB_WORKSPACE_MEM_ALLOC_GLOBAL",
