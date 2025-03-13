@@ -39,7 +39,7 @@ def version_in_black_list(version_info, black_list):
             return True
 
 @register_checker()
-def simple_env_checker(env_save_path, mindie_service_path, **kwargs):
+def simple_env_checker(env_save_path, **kwargs):
     env = kwargs.get("env", {})
     fix_pair = []
     for item in ENV_SUGGESTIONS:
