@@ -45,7 +45,7 @@ def get_cpu_info():
         result = subprocess.run([lscpu_path], capture_output=True, text=True, check=True, shell=False)
     except Exception as err:
         logger.error("Failed calling lscpu, will skip getting cpu info.")
-    
+
     cpu_info = {}
     for line in result.stdout.splitlines():
         if ":" in line:
@@ -53,7 +53,7 @@ def get_cpu_info():
             cpu_info[key.strip()] = value.strip()
     return cpu_info
 
-    
+
 @register_checker()
 def system_info_checker(mindie_service_config, check_type):
     cpu_info = get_cpu_info()
@@ -227,7 +227,7 @@ def cpu_high_performance_checker(mindie_service_config, check_type):
                 if line.strip() == "performance":
                     is_performances.append(True)
                     break
-    
+
     is_cpu_all_performance_mode = len(is_performances) != cpu_count
     if is_cpu_all_performance_mode:
         yum_cmd = "EulerOS/CentOS: yum install kernel-tools"

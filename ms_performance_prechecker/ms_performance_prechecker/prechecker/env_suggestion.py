@@ -84,7 +84,7 @@ ENVS = [
   },
   {
     "ENV": "PYTORCH_NPU_ALLOC_CONF",
-    "SUGGESTION_VALUE": "expandable_se,gments:True",
+    "SUGGESTION_VALUE": "expandable_segments:True",
     "REASON": "使能内存池扩展段功能，既虚拟内存特性；设置为True,可以优化内存碎片对内存的占用",
   },
 ]
