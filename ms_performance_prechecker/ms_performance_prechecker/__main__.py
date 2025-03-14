@@ -98,7 +98,7 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
     deep_compare_dict(env_infos, env_names)
 
 
-def run_precheck2(check_type=CHECK_TYPES.deepseek,
+def run_precheck(check_type=CHECK_TYPES.deepseek,
     env_save_path="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs):
     percheckers = get_all_register_perchecker()
 
@@ -155,7 +155,7 @@ def main():
 
     # run
     if args.mode == RUN_MODES.precheck:
-        run_precheck2(None, args.check_type, args.save_env, args=args)
+        run_precheck(None, args.check_type, args.save_env, args=args)
     elif args.mode == RUN_MODES.envdump:
         dump_file_path = args.dump_file_path[0]
         run_env_dump(dump_file_path, args=args)
