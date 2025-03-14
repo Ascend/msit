@@ -17,6 +17,7 @@ import logging
 from collections import namedtuple
 
 CHECK_TYPES = namedtuple("CHECK_TYPES", ["basic", "deepseek"])("basic", "deepseek")
+RUN_MODES = namedtuple("RUN_MODES", ["precheck", "envdump", "compare"])("precheck", "envdump", "compare")
 _SUGGESTION_TYPES = ["env", "system", "config"]
 SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTION_TYPES)
 
@@ -58,6 +59,41 @@ def walk_dict(data, parent_key=""):
             else:
                 new_key = f"{parent_key}.{index}" if parent_key else index
                 yield from walk_dict(item, new_key)
+
+def same(array):
+    return len(set(array)) == 1
+
+def print_diff(diffs, names, key=""):
+    print("key {key} diffs")
+    for index, name in enumerate(names):
+        print(f"{name}:")
+        print(f"{diffs[index]}")
+
+
+def deep_compare_dict(dicts, names, parent_key=""):
+    types = [type(ii) for ii in dicts.values()]
+    if not same(types):
+        print_diff([f"type: {x}" for x in types], names, parent_key)
+        return
+    all_keys = set()
+    if isinstance(dicts[0], dict):
+        for dict in dicts:
+            all_keys.update(dict.keys())
+    
+        for key in all_keys:
+            deep_compare_dict([dict_item.get(key) for dict_item in dicts], names, parent_key + "." + key)
+    elif isinstance(dicts[0], list):
+        lens = [len(x) for x in dicts]
+        if not same(lens):
+            print_diff([f"len: {x}" for x in lens], names, parent_key)
+            return
+        else:
+            for index in range(len(dicts[0])):
+                deep_compare_dict([x[index] for x in dicts], names, parent_key + f"[{index}]")
+    else:
+        if not same([str(x) for x in dicts]):
+            print_diff([str(x) for x in dicts], names, parent_key)
+            return
 
 
 def get_dict_value_by_pos(dict_value, target_pos):
@@ -114,3 +150,29 @@ def get_version_info(mindie_service_path):
 
 logger = logging.getLogger("ms_performance_prechecker_logger")
 set_logger(logger)
+
+
+def read_csv(file_path):
+    result = {}
+    with open(file_path, mode="r", newline="", encoding="utf-8") as ff:
+        for row in csv.DictReader(ff):
+            for kk, vv in row.items():
+                result.setdefault(kk, []).append(vv)
+    return result
+
+
+def read_json(file_path):
+    with open(file_path) as ff:
+        result = json.load(ff)
+    return result
+
+
+def read_csv_or_json(file_path):
+    logger.debug(f"{file_path = }")
+    if not file_path or not os.path.exists(file_path):
+        return None
+    if file_path.endswith(".json"):
+        return read_json(file_path)
+    if file_path.endswith(".csv"):
+        return read_csv(file_path)
+    return None

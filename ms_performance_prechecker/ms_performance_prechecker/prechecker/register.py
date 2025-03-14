@@ -63,7 +63,7 @@ def record(content, part=CONTENT_PARTS.after):
 CheckResult = Enum('CheckResult', ['OK', 'UNFINISH', 'WARN', 'ERROR', "VIP"])
 
 
-def check_result(domain, checker, result=None, action=None, reason=None):
+def show_check_result(domain, checker, result=None, action=None, reason=None):
     color_and_text = {CheckResult.OK: ('\033[92m', "OK"),
                        CheckResult.UNFINISH: ('\033[93m', "UNFINISH"),
                        CheckResult.WARN: ('\033[93m', "WARN"),
@@ -79,3 +79,51 @@ def check_result(domain, checker, result=None, action=None, reason=None):
         print(f"    * {action}")
     if reason is not None:
         print(f"    * {reason}")
+
+
+
+class RrecheckerBase():
+    __checker_name__ = "undefined"
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def name(cls):
+        return cls.__checker_name__
+
+    def do_precheck(self, **kwargs):
+        pass
+
+    def collect_env(self, **kwargs):
+        pass
+
+    def precheck(self, **kwargs):
+        envs = self.collect_env(**kwargs)
+        self.do_precheck(envs, **kwargs)
+        
+    def show_check_result(self, checker, result=None, action=None, reason=None):
+        show_check_result(self.name(), checker, result, action, reason)
+
+
+
+class GroupRrechecker(RrecheckerBase):
+    __checker_name__ = "undefined"
+
+    def __init__(self, *sub):
+        self.sub_checkers = self.init_sub_checkers()
+
+    def init_sub_checkers(self):
+        return []
+
+    def collect_env(self, **kwargs):
+        group_envs = {}
+        for sub in self.sub_checkers:
+            group_envs.update({sub.name(): sub.collect_env(**kwargs)})
+        return group_envs
+
+    def do_precheck(self, group_envs, **kwargs):
+        
+        for sub in self.sub_checkers:
+            sub.precheck(group_envs.get(sub.name()))
+        

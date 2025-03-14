@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import os
-from ms_performance_prechecker.prechecker.register import register_checker, cached
-from ms_performance_prechecker.prechecker.register import check_result, record, CONTENT_PARTS, CheckResult
+from ms_performance_prechecker.prechecker.register import register_checker, cached, RrecheckerBase
+from ms_performance_prechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, logger, SUGGESTION_TYPES, get_version_info
 from ms_performance_prechecker.prechecker.env_suggestion import ENV_SUGGESTIONS
 
@@ -41,7 +41,8 @@ def version_in_list(version_info, version_list):
 
     return True
 
-def env_rule_checker(env_rule, version_info):
+
+def env_rule_checker(envs, env_rule, version_info):
     if not env_rule:
         return (CheckResult.OK, None, None)
     suggestions = []
@@ -74,10 +75,10 @@ def env_rule_checker(env_rule, version_info):
             not_suggestion_version_list = suggestion.get("NOT_SUGGESTION").get("VERSION_LIST",
                 not_suggestion_version_list)
             not_suggestion_reason = suggestion.get("NOT_SUGGESTION").get("REASON", not_suggestion_reason)
-            if  not_suggestion_version_list is None or version_in_list(version_info, not_suggestion_version_list):
+            if not_suggestion_version_list is None or version_in_list(version_info, not_suggestion_version_list):
                 not_suggest_value_dict.update({x: not_suggestion_reason for x in suggestion_value})
 
-    env_value = os.getenv(env_item, None)
+    env_value = envs.get(env_item, None)
     if env_value in not_suggest_value_dict:
         # 最后加一个建议，如果前面没有命中，就直接让用户unset 当前环境变量
         # 如果不建议配置为空，那么一定要有一个前置建议能命中，否则就是配置问题，代码中不做保证
@@ -87,46 +88,66 @@ def env_rule_checker(env_rule, version_info):
         if suggestion_value not in not_suggest_value_dict:
             env_cmd = f"export {env_item}={suggestion_value}" if suggestion_value else f"unset {env_item}"
             undo_env_cmd = f"export {env_item}={env_value}" if env_value else f"unset {env_item}"
-            check_result("env", env_item, CheckResult.ERROR,
+            show_check_result("env", env_item, CheckResult.ERROR,
                 action=env_cmd,
                 reason=reason,
             )
             return (CheckResult.ERROR, env_cmd, undo_env_cmd)
 
-    check_result("env", env_item, CheckResult.OK)
+    show_check_result("env", env_item, CheckResult.OK)
     return (CheckResult.OK, None, None)
+
+
+class EnvChecker(RrecheckerBase):
+    __checker_name__ = "Env"
+
+    def collect_env(self, **kwargs):
+        import os
+        env_vars = os.environ
+
+        ret_envs = {}
+
+        for suggestion in ENV_SUGGESTIONS:
+            env_name = suggestion.get("ENV")
+            ret_envs.update({env_name: env_vars.get(env_name)})
+
+        for key, value in env_vars.items():
+            if "ASCEND" in key or "MINDIE" in key or "ATB_" in key or "HCCL_" in key:
+                ret_envs.update({key: value})
+
+        return ret_envs
+
+    def do_precheck(self, envs, **kwargs):
+        env_save_path = kwargs.get("env_save_path", None)
+
+        fix_pair = []
+        version_info = get_version_info(kwargs.get("mindie_service_path", None))
+        for item in ENV_SUGGESTIONS:
+            result, env_cmd, undo_env_cmd = env_rule_checker(envs, item, version_info)
+
+            if result == CheckResult.ERROR:
+                fix_pair.append((env_cmd, undo_env_cmd))
+
+        if not env_save_path:
+            show_check_result("env", "SAVE ENV FILE", CheckResult.UNFINISH,
+                reason="save_env setting to None/Empty",
+            )
+            return
         
+        if len(fix_pair) == 0:
+            show_check_result("env", "SAVE ENV FILE", CheckResult.VIP,
+                action=f"None env related needs to save",
+            )
+            return 
 
-@register_checker()
-def simple_env_checker(env_save_path, mindie_service_path, **kwargs):
-    env = kwargs.get("env", {})
-    fix_pair = []
-    version_info = get_version_info(mindie_service_path)
-    for item in ENV_SUGGESTIONS:
-        result, env_cmd, undo_env_cmd = env_rule_checker(item, version_info)
-
-        if result == CheckResult.ERROR:
-            fix_pair.append((env_cmd, undo_env_cmd))
-
-    if not env_save_path:
-        check_result("env", "SAVE ENV FILE", CheckResult.UNFINISH,
-            reason="save_env setting to None/Empty",
+        save_path = save_env_contents(fix_pair, env_save_path)
+        
+        show_check_result("env", "", CheckResult.VIP,
+            action=f"使能环境变量配置：source {save_path}",
         )
-        return
-    
-    if len(fix_pair) == 0:
-        check_result("env", "SAVE ENV FILE", CheckResult.VIP,
-            action=f"None env related needs to save",
+        show_check_result("env", "", CheckResult.VIP,
+            action=f"恢复环境变量配置：source {save_path} 0",
         )
-        return 
-
-    save_path = save_env_contents(fix_pair, env_save_path)
-    
-    check_result("env", "", CheckResult.VIP,
-        action=f"使能环境变量配置：source {save_path}",
-    )
-    check_result("env", "", CheckResult.VIP,
-        action=f"恢复环境变量配置：source {save_path} 0",
-    )
 
 
+env_checker = EnvChecker()
