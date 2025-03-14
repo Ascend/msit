@@ -113,7 +113,7 @@ class KernelReleaseChecker(RrecheckerBase):
             logger.warning(f"failed parsing kernel release version: {kernel_release}")
             return
         return (major_version, minor_version)
-    def collect_env(self, release_version, **kwargs):
+    def do_precheck(self, release_version, **kwargs):
         target_major_version, target_minor_version = 5, 10
         target_version = ".".join([str(ii) for ii in [target_major_version, target_minor_version]])
         logger.debug(f"kernel_release suggested is {target_version}")
