@@ -30,9 +30,27 @@ ENV_SUGGESTIONS = [
   },
   {
     "ENV": "HCCL_OP_EXPANSION_MODE",
-    "SUGGESTION_VALUE": "AIV",
-    "REASON": "配置通信算法的编排展开位置，代表通信算法的编排展开位置在 Device侧的 AI Vector Core 计算单元"\
+    "SUGGESTIONS": [
+      {
+        "VALUE": "AIV", 
+        "SUGGESTION": { 
+          "WHEN": {},
+          "REASON": "配置通信算法的编排展开位置，代表通信算法的编排展开位置在 Device侧的 AI Vector Core 计算单元"
+        },
+        "NOT_SUGGESTION": { 
+          "VERSION_LIST": {"Ascend-mindie" : ["2.0.T3", "2.0.T3.1", "2.0.T6"]},
+          "REASON": "使能 AIV 会有崩溃风险，请不要设置它"
+        }
+      },
+ ],
+    
     "（MindIE 2.0.T3 和 MindIE 2.0.T3.1 使能 AIV 会有崩溃风险，请不要设置它）",
+    "VERSION_BLACK_LIST": {
+      "Ascend-mindie" : {
+        "VERSION": ["2.0.T3", "2.0.T3.1", "2.0.T6"],
+        "REASON": "使能 AIV 会有崩溃风险，请不要设置它",
+        }
+    }
   },
   {
     "ENV": "HCCL_DETERMINISTIC",

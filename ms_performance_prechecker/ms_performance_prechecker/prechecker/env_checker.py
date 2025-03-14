@@ -26,9 +26,9 @@ def save_env_contents(fix_pair, save_path):
         ff.write("ENABLE=${1-1}\n")
         ff.write('echo "ENABLE=$ENABLE"\n\n')
         ff.write('if [ "$ENABLE" = "1" ]; then\n    ')
-        ff.write("\n    ".join((x[1] for x in fix_pair)) + "\n")
-        ff.write('else\n    ')
         ff.write("\n    ".join((x[0] for x in fix_pair)) + "\n")
+        ff.write('else\n    ')
+        ff.write("\n    ".join((x[1] for x in fix_pair)) + "\n")
         ff.write('fi\n')
     return save_path
 

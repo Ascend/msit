@@ -111,8 +111,6 @@ def linux_kernel_release_checker(mindie_service_config, check_type, **kwargs):
         domain="system",
         checker="内核版本", 
         result=CheckResult.ERROR,
-        suggesion_type=SUGGESTION_TYPES.system,
-        suggesion_item="内核版本",
         action=f"升级到 {target_version} 以上",
         reason="内核版本升级后以上 host bound 时性能有提升",
     )
