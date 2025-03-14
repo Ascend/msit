@@ -163,7 +163,7 @@ def main():
         run_precheck(None, args.check_type, args.save_env, args=args)
     elif args.mode == RUN_MODES.envdump:
         dump_file_path = args.dump_file_path[0]
-        run_env_dump(dump_file_path, args=args)
+        _ = run_env_dump(dump_file_path, args=args)
     elif args.mode == RUN_MODES.compare:
         run_compare(args.dump_file_path, args=args)
     else:

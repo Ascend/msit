@@ -110,7 +110,8 @@ class RrecheckerBase():
 class GroupRrechecker(RrecheckerBase):
     __checker_name__ = "undefined"
 
-    def __init__(self, *sub):
+    def __init__(self, *sub):        
+        super().__init__()
         self.sub_checkers = self.init_sub_checkers()
 
     def init_sub_checkers(self):

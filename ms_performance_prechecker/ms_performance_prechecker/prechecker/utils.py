@@ -170,8 +170,9 @@ def read_json(file_path):
     return result
 
 
-def read_csv_or_json(file_path):
-    logger.debug(f"{file_path = }")
+def read_csv_or_json(file_path):    
+    logger.debug("file_path = %s", file_path)
+
     if not file_path or not os.path.exists(file_path):
         return None
     if file_path.endswith(".json"):
