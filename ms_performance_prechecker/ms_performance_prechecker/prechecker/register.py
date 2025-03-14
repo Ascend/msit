@@ -92,7 +92,7 @@ class RrecheckerBase():
     def name(cls):
         return cls.__checker_name__
 
-    def do_precheck(self, **kwargs):
+    def do_precheck(self, envs, **kwargs):
         pass
 
     def collect_env(self, **kwargs):
