@@ -94,7 +94,7 @@ def set_logger(msit_logger):
 
 
 def get_version_info(mindie_service_path):
-    if mindie_service_path is None:
+    if mindie_service_path is None or mindie_service_path == "":
         mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
 
     version_path = os.path.join(mindie_service_path, "version.info")

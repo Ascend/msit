@@ -34,11 +34,11 @@ def save_env_contents(fix_pair, save_path):
 
 
 def version_in_list(version_info, version_list):
-    for version_item, version_value_list in version_info.items():
+    for version_item, version_value_list in version_list.items():
         now_version = version_info.get(version_item, None)
         if now_version not in version_value_list:
             return False
-            
+
     return True
 
 def env_rule_checker(env_rule, version_info):

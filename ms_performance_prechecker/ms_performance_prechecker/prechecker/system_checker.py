@@ -235,8 +235,12 @@ def cpu_high_performance_checker(mindie_service_config, check_type, **kwargs):
         apt_cmd = "Ubuntu：apt install cpufrequtils"
         run_cmd = "cpupower -c all frequency-set -g performance"
         fail_info = "如果失败可能需要在 BIOS 中开启"
+        undo_cmd = "cpupower -c all frequency-set -g powersave"
         check_result("system", "CPU高性能模式", CheckResult.ERROR,
-            action=f"开启 CPU 高性能模式：{run_cmd}；如果没有 cpupower 命令可以通过 {yum_cmd} 或 {apt_cmd} 安装；{fail_info}",
+            action=f"开启 CPU 高性能模式：{run_cmd}；\n"
+                    "如果没有 cpupower 命令可以通过 {yum_cmd} 或 {apt_cmd} 安装；\n"
+                    "{fail_info}\n"
+                    "如果需要回退，可以使用命令：{undo_cmd}",
             reason="在相同时延约束下，TPS会有~3%的提升",
         )
     record(f"0700 CPU 是否高性能模式：{'是' if is_cpu_all_performance_mode else '否'}", part=CONTENT_PARTS.sys)
