@@ -106,14 +106,16 @@ class KernelReleaseChecker(RrecheckerBase):
         kernel_release_split = kernel_release.split(".")
         if len(kernel_release_split) < 2:
             logger.warning(f"failed parsing kernel release version: {kernel_release}")
-            return
+            return None
 
         major_version, minor_version = str_to_digit(kernel_release_split[0]), str_to_digit(kernel_release_split[1])
         if major_version is None or minor_version is None:
             logger.warning(f"failed parsing kernel release version: {kernel_release}")
-            return
+            return None
         return (major_version, minor_version)
     def do_precheck(self, release_version, **kwargs):
+        if release_version is None:
+            return
         target_major_version, target_minor_version = 5, 10
         target_version = ".".join([str(ii) for ii in [target_major_version, target_minor_version]])
         logger.debug(f"kernel_release suggested is {target_version}")
@@ -164,6 +166,8 @@ class DriverVersionChecker(RrecheckerBase):
         return dict(major_version=major_version, minor_version=minor_version, mini_version=mini_version)
 
     def do_precheck(self, driver_version, **kwargs):
+        if driver_version is None:
+            return
         target_major_version, target_minor_version, target_mini_version = 24, 1, 0
         target_version = ".".join([str(ii) for ii in [target_major_version, target_minor_version, target_mini_version]])
         logger.debug(f"suggested is {target_version}")
@@ -199,7 +203,7 @@ class VirtualMachineChecker(RrecheckerBase):
     def collect_env(self, **kwargs):
         if not os.path.exists(CPUINFO_PATH) or not os.access(CPUINFO_PATH, os.R_OK):
             logger.warning(f"{CPUINFO_PATH} not accessible")
-        return
+        return None
 
         is_virtual_machine = False
         with open(CPUINFO_PATH) as ff:
@@ -212,6 +216,8 @@ class VirtualMachineChecker(RrecheckerBase):
         return is_virtual_machine
 
     def do_precheck(self, is_virtual_machine, **kwargs):
+        if is_virtual_machine is None:
+            return
         if is_virtual_machine:
             vmware_action = "启用 CPU/MMU Virtualization（ESXi 高级设置）、禁用 CPU 限制（cpuid.coresPerSocket 配置为物理核心数）"
             kvm_action = "配置 host-passthrough 模式（暴露完整 CPU 指令集）、启用多队列 virtio-net（减少网络延迟）"
@@ -240,6 +246,8 @@ class TransparentHugepageChecker(RrecheckerBase):
         return is_transparent_hugepage_enable
 
     def do_precheck(self, is_transparent_hugepage_enable, **kwargs):
+        if is_transparent_hugepage_enable is None:
+            return
         if not is_transparent_hugepage_enable:
             show_check_result("system", "透明大页", CheckResult.ERROR,
                 action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}",
@@ -267,6 +275,8 @@ class CpuHighPerformanceChecker(RrecheckerBase):
         return dict(cpu_count=cpu_count, performance_count=performance_count)
 
     def do_precheck(self, cpu_info, **kwargs):
+        if cpu_info is None:
+            return
         cpu_count = cpu_info.get("cpu_count")
         performance_count = cpu_info.get("performance_count")
         

@@ -118,6 +118,8 @@ class EnvChecker(RrecheckerBase):
         return ret_envs
 
     def do_precheck(self, envs, **kwargs):
+        if envs is None:
+            return
         env_save_path = kwargs.get("env_save_path", None)
 
         fix_pair = []
