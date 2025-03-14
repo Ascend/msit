@@ -96,7 +96,7 @@ class RrecheckerBase():
         pass
 
     def collect_env(self, **kwargs):
-        pass
+        return None
 
     def precheck(self, **kwargs):
         envs = self.collect_env(**kwargs)

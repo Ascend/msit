@@ -56,6 +56,7 @@ def get_cpu_info():
 
 class SystemInfoCollect(RrecheckerBase):
     __checker_name__ = "SystemInfo"
+    
     def collect_env(self, **kwargs):
         cpu_info = get_cpu_info()
         cpu_num = cpu_info.get("CPU(s)", None)
@@ -88,16 +89,17 @@ class SystemInfoCollect(RrecheckerBase):
                         break
             record(f"0200 MINDIE 版本：{mindie_version}", part=CONTENT_PARTS.sys)
         return dict(
-            cpu_model_name= cpu_model_name, 
-            cpu_num = cpu_num, 
-            page_size = page_size,
-            ascend_toolkit_version = ascend_toolkit_version,
-            mindie_version = mindie_version,
+            cpu_model_name=cpu_model_name, 
+            cpu_num=cpu_num, 
+            page_size=page_size,
+            ascend_toolkit_version=ascend_toolkit_version,
+            mindie_version=mindie_version,
         )
 
 
 class KernelReleaseChecker(RrecheckerBase):
     __checker_name__ = "KernelRelease"
+
     def collect_env(self, **kwargs):
         kernel_release = platform.release()
         logger.debug(f"Got kernel_release: {kernel_release}")
@@ -113,6 +115,7 @@ class KernelReleaseChecker(RrecheckerBase):
             logger.warning(f"failed parsing kernel release version: {kernel_release}")
             return None
         return (major_version, minor_version)
+
     def do_precheck(self, release_version, **kwargs):
         if release_version is None:
             return
@@ -203,7 +206,7 @@ class VirtualMachineChecker(RrecheckerBase):
     def collect_env(self, **kwargs):
         if not os.path.exists(CPUINFO_PATH) or not os.access(CPUINFO_PATH, os.R_OK):
             logger.warning(f"{CPUINFO_PATH} not accessible")
-        return None
+            return None
 
         is_virtual_machine = False
         with open(CPUINFO_PATH) as ff:
@@ -233,7 +236,7 @@ class TransparentHugepageChecker(RrecheckerBase):
     def collect_env(self, **kwargs):
         if not os.path.exists(TRANSPARENT_HUGEPAGE_PATH) or not os.access(TRANSPARENT_HUGEPAGE_PATH, os.R_OK):
             logger.warning(f"{TRANSPARENT_HUGEPAGE_PATH} not accessible")
-        return None
+            return None
 
         is_transparent_hugepage_enable = False
         with open(TRANSPARENT_HUGEPAGE_PATH) as ff:
@@ -257,6 +260,7 @@ class TransparentHugepageChecker(RrecheckerBase):
 
 class CpuHighPerformanceChecker(RrecheckerBase):
     __checker_name__ = "CpuHighPerformance"
+    
     def collect_env(self, **kwargs):
         cpu_count = os.cpu_count()
         is_performances = []
@@ -297,6 +301,7 @@ class CpuHighPerformanceChecker(RrecheckerBase):
 
 class SystemChecker(GroupRrechecker):
     __checker_name__ = "System"
+    
     def init_sub_checkers(self):
         return [
             SystemInfoCollect(),

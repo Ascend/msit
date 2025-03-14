@@ -102,7 +102,6 @@ class EnvChecker(RrecheckerBase):
     __checker_name__ = "Env"
 
     def collect_env(self, **kwargs):
-        import os
         env_vars = os.environ
 
         ret_envs = {}

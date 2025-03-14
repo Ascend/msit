@@ -60,8 +60,10 @@ def walk_dict(data, parent_key=""):
                 new_key = f"{parent_key}.{index}" if parent_key else index
                 yield from walk_dict(item, new_key)
 
+
 def same(array):
     return len(set(array)) == 1
+
 
 def print_diff(diffs, names, key=""):
     print(f"- key\033[94m {key}\033[91m diffs \033[0m")

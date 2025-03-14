@@ -21,8 +21,9 @@ from collections import namedtuple
 from glob import glob
 
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, SUGGESTION_TYPES, RUN_MODES
-from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level, deep_compare_dict, read_csv_or_json
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
+from ms_performance_prechecker.prechecker.utils import logger, set_log_level
+from ms_performance_prechecker.prechecker.utils import str_ignore_case, deep_compare_dict, read_csv_or_json
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
 
@@ -72,10 +73,8 @@ def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **k
         name = perchecker.name()
         envs = perchecker.collect_env(dump_file_path=dump_file_path, mindie_service_path=mindie_service_path, **kwargs)
         
-        print(name, envs)
         all_envs[name] = envs
     
-    print(dump_file_path, all_envs)
     with open(dump_file_path, "w") as f:
         json.dump(all_envs, f, indent=2)
 
@@ -108,7 +107,8 @@ def run_precheck(check_type=CHECK_TYPES.deepseek,
     percheckers = get_all_register_perchecker()
 
     for perchecker in percheckers:
-        perchecker.precheck(check_type=check_type, env_save_path=env_save_path, mindie_service_path=mindie_service_path, **kwargs)
+        perchecker.precheck(check_type=check_type, env_save_path=env_save_path,
+            mindie_service_path=mindie_service_path, **kwargs)
 
     print_contents()
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
@@ -123,7 +123,7 @@ def arg_parse():
         type=str_ignore_case,
         default=RUN_MODES.precheck,
         choices=RUN_MODES,
-        nargs = '?',
+        nargs='?',
         help="run mode",
     )
     parser.add_argument(
@@ -167,7 +167,7 @@ def main():
     elif args.mode == RUN_MODES.compare:
         run_compare(args.dump_file_path, args=args)
     else:
-        print("Unknown mode")
+        logger.error("Unknown mode")
 
 if __name__ == "__main__":
     main()
