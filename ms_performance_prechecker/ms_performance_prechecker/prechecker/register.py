@@ -74,8 +74,8 @@ def check_result(domain, checker, result=None, action=None, reason=None):
         color, text = '\033[97m', ""
     else:
         color, text = color_and_text.get(result, ('\033[97m', ""))
-    logger.info(f"{domain} {checker} ... {color} {text} \033[0m")
+    print(f"- {domain} {checker} ... {color} {text} \033[0m")
     if action is not None and result != CheckResult.VIP:
-        logger.info(f"    * {action}")
+        print(f"    * {action}")
     if reason is not None:
-        logger.info(f"    * {reason}")
+        print(f"    * {reason}")
