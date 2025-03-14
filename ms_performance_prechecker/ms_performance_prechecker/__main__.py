@@ -20,9 +20,7 @@ from glob import glob
 
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, SUGGESTION_TYPES
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level
-
-MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
-MINDIE_SERVICE_DEFAULT_PATH = "/usr/local/Ascend/mindie/latest/mindie-service"
+from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
 

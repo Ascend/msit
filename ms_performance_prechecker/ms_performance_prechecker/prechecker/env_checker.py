@@ -46,7 +46,7 @@ def env_rule_checker(env_rule, version_info):
         return (CheckResult.OK, None, None)
     suggestions = []
     
-    env_item = item.get("ENV")
+    env_item = env_rule.get("ENV")
     if "SUGGESTIONS" in env_rule:
         suggestions = env_rule["SUGGESTIONS"]
     if "SUGGESTION_VALUE" in env_rule:
