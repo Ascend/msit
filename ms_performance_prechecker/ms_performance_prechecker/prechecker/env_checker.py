@@ -123,10 +123,10 @@ def simple_env_checker(env_save_path, mindie_service_path, **kwargs):
     save_path = save_env_contents(fix_pair, env_save_path)
     
     check_result("env", "", CheckResult.VIP,
-        action=f"环境相关改动使能：source {save_path};",
+        action=f"使能环境变量配置：source {save_path}",
     )
     check_result("env", "", CheckResult.VIP,
-        action=f"使能后恢复：source {save_path} 0",
+        action=f"恢复环境变量配置：source {save_path} 0",
     )
 
 
