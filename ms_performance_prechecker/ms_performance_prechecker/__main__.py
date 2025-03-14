@@ -89,6 +89,7 @@ def run_precheck(mindie_service_path=None, check_type=CHECK_TYPES.deepseek,
     for name, checker in REGISTRY.items():
         logger.debug(name)
         checker(mindie_service_config=mindie_service_config, check_type=check_type,
+            mindie_service_path=mindie_service_path,
             env_save_path=env_save_path, **kwargs)
     logger.debug("</think>")
 
