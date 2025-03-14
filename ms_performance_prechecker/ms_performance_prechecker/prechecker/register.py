@@ -123,7 +123,6 @@ class GroupRrechecker(RrecheckerBase):
         return group_envs
 
     def do_precheck(self, group_envs, **kwargs):
-        
         for sub in self.sub_checkers:
             sub.do_precheck(group_envs.get(sub.name()))
         
