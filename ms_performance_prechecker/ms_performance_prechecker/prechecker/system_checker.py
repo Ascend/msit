@@ -57,12 +57,13 @@ def get_cpu_info():
 class SystemInfoCollect(RrecheckerBase):
     __checker_name__ = "SystemInfo"
     def collect_env(self, **kwargs):
-        
         cpu_info = get_cpu_info()
         cpu_num = cpu_info.get("CPU(s)", None)
         cpu_model_name = cpu_info.get("Model name", None)
         record(f"0500 CPU 型号：{cpu_model_name}", part=CONTENT_PARTS.sys)
         record(f"0600 CPU 核心数：{cpu_num}", part=CONTENT_PARTS.sys)
+        mindie_version = ""
+        ascend_toolkit_version = ""
 
         page_size = os.sysconf("SC_PAGESIZE")
         record(f"0800 页表大小：{page_size}", part=CONTENT_PARTS.sys)
@@ -70,7 +71,6 @@ class SystemInfoCollect(RrecheckerBase):
         ascend_toolkit_home = os.getenv("ASCEND_TOOLKIT_HOME")
         ascend_toolkit_version_file = os.path.join(ascend_toolkit_home, "version.cfg") if ascend_toolkit_home else None
         if ascend_toolkit_version_file and os.path.exists(ascend_toolkit_version_file):
-            ascend_toolkit_version = ""
             with open(ascend_toolkit_version_file) as ff:
                 for line in ff.readlines():
                     if "=" in line:
@@ -81,7 +81,6 @@ class SystemInfoCollect(RrecheckerBase):
         mies_install_path = os.getenv("MIES_INSTALL_PATH")
         mindie_version_file = os.path.join(mies_install_path, "version.info") if mies_install_path else None
         if mindie_version_file and os.path.exists(mindie_version_file):
-            mindie_version = ""
             with open(mindie_version_file) as ff:
                 for line in ff.readlines():
                     if "Ascend-mindie-service" in line and ":" in line:
