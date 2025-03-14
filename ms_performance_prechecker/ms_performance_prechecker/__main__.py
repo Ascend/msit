@@ -55,6 +55,15 @@ def parse_mindie_server_config(mindie_service_path=None):
     return mindie_service_config
 
 
+def print_contents():
+    from ms_performance_prechecker.prechecker.register import CONTENTS, CONTENT_PARTS
+
+    if CONTENTS.get(CONTENT_PARTS.sys, None):
+        sorted_contents = [ii.split(" ", 1)[-1] for ii in sorted(CONTENTS[CONTENT_PARTS.sys])]
+        sys_info = "系统信息：\n\n    " + "\n    ".join(sorted_contents) + "\n"
+        logger.info(sys_info)
+
+
 def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **kwargs):
     percheckers = get_all_register_perchecker()
     all_envs = {}
@@ -69,6 +78,7 @@ def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **k
     with open(dump_file_path, "w") as f:
         json.dump(all_envs, f, indent=2)
 
+    print_contents()
     logger.info(f"dump file saved: {dump_file_path}")
     return all_envs
 
@@ -95,48 +105,7 @@ def run_precheck2(check_type=CHECK_TYPES.deepseek,
     for perchecker in percheckers:
         perchecker.precheck(check_type=check_type, env_save_path=env_save_path, mindie_service_path=mindie_service_path, **kwargs)
 
-
-    # import ms_performance_prechecker.prechecker
-    # from ms_performance_prechecker.prechecker.register import REGISTRY, ANSWERS, CONTENTS, CONTENT_PARTS
-
-    # mindie_service_config = parse_mindie_server_config(mindie_service_path)
-    # logger.debug("")
-    # logger.debug("<think>")
-    # for name, checker in REGISTRY.items():
-    #     logger.debug(name)
-    #     checker(mindie_service_config=mindie_service_config, check_type=check_type,
-    #         mindie_service_path=mindie_service_path,
-    #         env_save_path=env_save_path, **kwargs)
-    # logger.debug("</think>")
-
-    # if CONTENTS.get(CONTENT_PARTS.sys, None):
-    #     sorted_contents = [ii.split(" ", 1)[-1] for ii in sorted(CONTENTS[CONTENT_PARTS.sys])]
-    #     sys_info = "系统信息：\n\n    " + "\n    ".join(sorted_contents) + "\n"
-    #     logger.info(sys_info)
-
-    logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
-
-
-def run_precheck(check_type=CHECK_TYPES.deepseek,
-    env_save_path="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs):
-    import ms_performance_prechecker.prechecker
-    from ms_performance_prechecker.prechecker.register import REGISTRY, ANSWERS, CONTENTS, CONTENT_PARTS
-
-    mindie_service_config = parse_mindie_server_config(mindie_service_path)
-    logger.debug("")
-    logger.debug("<think>")
-    for name, checker in REGISTRY.items():
-        logger.debug(name)
-        checker(mindie_service_config=mindie_service_config, check_type=check_type,
-            mindie_service_path=mindie_service_path,
-            env_save_path=env_save_path, **kwargs)
-    logger.debug("</think>")
-
-    if CONTENTS.get(CONTENT_PARTS.sys, None):
-        sorted_contents = [ii.split(" ", 1)[-1] for ii in sorted(CONTENTS[CONTENT_PARTS.sys])]
-        sys_info = "系统信息：\n\n    " + "\n    ".join(sorted_contents) + "\n"
-        logger.info(sys_info)
-
+    print_contents()
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
 
