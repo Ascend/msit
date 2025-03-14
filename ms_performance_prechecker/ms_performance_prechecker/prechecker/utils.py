@@ -64,21 +64,22 @@ def same(array):
     return len(set(array)) == 1
 
 def print_diff(diffs, names, key=""):
-    print("key {key} diffs")
+    print(f"- key\033[94m {key}\033[91m diffs \033[0m")
     for index, name in enumerate(names):
-        print(f"{name}:")
-        print(f"{diffs[index]}")
+        print(f"    * {name}:")
+        print(f"        {diffs[index]}")
+    
 
 
 def deep_compare_dict(dicts, names, parent_key=""):
-    types = [type(ii) for ii in dicts.values()]
+    types = [type(ii) for ii in dicts]
     if not same(types):
         print_diff([f"type: {x}" for x in types], names, parent_key)
         return
     all_keys = set()
     if isinstance(dicts[0], dict):
-        for dict in dicts:
-            all_keys.update(dict.keys())
+        for dict_item in dicts:
+            all_keys.update(dict_item.keys())
     
         for key in all_keys:
             deep_compare_dict([dict_item.get(key) for dict_item in dicts], names, parent_key + "." + key)

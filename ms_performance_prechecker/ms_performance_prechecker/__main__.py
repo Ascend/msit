@@ -57,6 +57,7 @@ def parse_mindie_server_config(mindie_service_path=None):
 
 def print_contents():
     from ms_performance_prechecker.prechecker.register import CONTENTS, CONTENT_PARTS
+    logger.info(f"")
 
     if CONTENTS.get(CONTENT_PARTS.sys, None):
         sorted_contents = [ii.split(" ", 1)[-1] for ii in sorted(CONTENTS[CONTENT_PARTS.sys])]
@@ -86,6 +87,7 @@ def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **k
 def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
     if dump_file_paths is None or len(dump_file_paths) < 2:
         logger.error("Please provide dump file path")
+        return
 
     env_infos = []
     env_names = []
@@ -95,7 +97,10 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
             env_names.append(dump_file_path)
         
     # 递归逐层比对
+    logger.info("compare start")
     deep_compare_dict(env_infos, env_names)
+    logger.info("")
+    logger.info("compare end")
 
 
 def run_precheck(check_type=CHECK_TYPES.deepseek,
