@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import csv
 import os
 import json
 import logging
@@ -181,3 +182,7 @@ def read_csv_or_json(file_path):
     if file_path.endswith(".csv"):
         return read_csv(file_path)
     return None
+
+
+def get_next_dict_item(dict_value):
+    return dict([next(iter(dict_value.items()))])

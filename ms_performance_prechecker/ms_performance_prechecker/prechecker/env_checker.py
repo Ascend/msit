@@ -61,6 +61,7 @@ def env_rule_checker(envs, env_rule, version_info):
         suggestion_value = suggestion.get("VALUE", None)
         if not isinstance(suggestion_value, list):
             suggestion_value = [suggestion_value]
+        value_list = [x if x is None else str(x) for x in suggestion_value]
         suggestion_reason = ""
         suggestion_version_list = None
         not_suggestion_reason = ""
@@ -70,7 +71,7 @@ def env_rule_checker(envs, env_rule, version_info):
             suggestion_reason = suggestion.get("SUGGESTION").get("REASON", suggestion_reason)
             
             if suggestion_version_list is None or version_in_list(version_info, suggestion_version_list):
-                suggest_value_list.extend(((x, suggestion_reason) for x in suggestion_value))
+                suggest_value_list.append((value_list, suggestion_reason))
         if "NOT_SUGGESTION" in suggestion:
             not_suggestion_version_list = suggestion.get("NOT_SUGGESTION").get("VERSION_LIST",
                 not_suggestion_version_list)
@@ -82,10 +83,12 @@ def env_rule_checker(envs, env_rule, version_info):
     if env_value in not_suggest_value_dict:
         # 最后加一个建议，如果前面没有命中，就直接让用户unset 当前环境变量
         # 如果不建议配置为空，那么一定要有一个前置建议能命中，否则就是配置问题，代码中不做保证
-        suggest_value_list.append((None, not_suggest_value_dict[env_value]))
+        suggest_value_list.append(([None], not_suggest_value_dict[env_value]))
 
-    for suggestion_value, reason in suggest_value_list:
-        if suggestion_value not in not_suggest_value_dict:
+    for value_list, reason in suggest_value_list:
+        not_in_unsuggest_values = [x for x in value_list if x not in not_suggest_value_dict]
+        if len(not_in_unsuggest_values) > 0 and env_value not in not_in_unsuggest_values:
+            suggestion_value = not_in_unsuggest_values[0]
             env_cmd = f"export {env_item}={suggestion_value}" if suggestion_value else f"unset {env_item}"
             undo_env_cmd = f"export {env_item}={env_value}" if env_value else f"unset {env_item}"
             show_check_result("env", env_item, CheckResult.ERROR,
@@ -111,10 +114,13 @@ class EnvChecker(RrecheckerBase):
             ret_envs.update({env_name: env_vars.get(env_name)})
 
         for key, value in env_vars.items():
-            if "ASCEND" in key or "MINDIE":
-                ret_envs.update({key: value})
-            if "ATB_" in key or "HCCL_" in key:
-                ret_envs.update({key: value})
+            key_word_list = [
+                "ASCEND", "MINDIE", "ATB_", "HCCL_", "MIES", "RANKTABLE", "GE_", "TORCH", "ACL_", "NPU_", "LCCL_",
+                "LCAL_", "OPS", "INF_"
+            ]
+            for key_word in key_word_list:
+                if key_word in key:
+                    ret_envs.update({key: value})
 
         return ret_envs
 
