@@ -16,7 +16,7 @@ import os
 from ms_performance_prechecker.prechecker.register import RrecheckerBase
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level, deep_compare_dict
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
-from ms_performance_prechecker.prechecker.utils import read_csv_or_json
+from ms_performance_prechecker.prechecker.utils import read_csv_or_json, get_next_dict_item
 
 
 class MindieConfigCollecter(RrecheckerBase):

@@ -74,12 +74,11 @@ def show_check_result(domain, checker, result=None, action=None, reason=None):
         color, text = '\033[97m', ""
     else:
         color, text = color_and_text.get(result, ('\033[97m', ""))
-    print(f"- {domain} {checker} ... {color} {text} \033[0m")
+    print(f"- {domain} {color}[{text}]\033[0m {checker} ")
     if action is not None and result != CheckResult.VIP:
         print(f"    * {action}")
     if reason is not None:
         print(f"    * {reason}")
-
 
 
 class RrecheckerBase():

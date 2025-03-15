@@ -14,16 +14,16 @@
 
 import os
 import json
-import csv
 import datetime
 import tempfile
 from collections import namedtuple
 from glob import glob
 
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, SUGGESTION_TYPES, RUN_MODES
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, RUN_MODES
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
 from ms_performance_prechecker.prechecker.utils import logger, set_log_level
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, deep_compare_dict, read_csv_or_json
+from ms_performance_prechecker.prechecker.utils import get_next_dict_item
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
 
