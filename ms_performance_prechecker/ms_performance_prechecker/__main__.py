@@ -75,10 +75,11 @@ def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **k
         
         all_envs[name] = envs
     
-    with open(dump_file_path, "w") as f:
-        json.dump(all_envs, f, indent=2)
+    if dump_file_path is not None:
+        with open(dump_file_path, "w") as f:
+            json.dump(all_envs, f, indent=2)
 
-    logger.info(f"dump file saved to: {dump_file_path}")
+        logger.info(f"dump file saved to: {dump_file_path}")
     return all_envs
 
 
