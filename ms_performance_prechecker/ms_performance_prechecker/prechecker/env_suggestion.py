@@ -103,7 +103,7 @@ ENV_SUGGESTIONS = [
       {
         "VALUE": "AIV", 
         "SUGGESTION": {
-          "REASON": "配置通信算法的编排展开位置，代表通信算法的编排展开位置在 Device侧的 AI Vector Core 计算单元"
+          "REASON": "配置通信算法的编排展开位置，代表通信算法的编排展开位置在 Device侧的 AI Vector Core 计算单元。（但是在 '2.0.T3', '2.0.T3.1', '2.0.T6' 版本中，使能 AIV 会有崩溃风险，请不要设置它"
         },
         "NOT_SUGGESTION": {
           "VERSION_LIST": {"Ascend-mindie": ["2.0.T3", "2.0.T3.1", "2.0.T6"]},
