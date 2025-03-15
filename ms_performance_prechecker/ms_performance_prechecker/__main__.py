@@ -101,6 +101,7 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
     if not has_diff:
         logger.info("No difference found")
     logger.info("== compare end ==")
+    return has_diff
 
 
 def run_precheck(check_type=CHECK_TYPES.deepseek,
