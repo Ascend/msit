@@ -19,10 +19,10 @@ ENV_SUGGESTIONS 配置项说明：
   * SUGGESTIONS: 建议列表
       - VALUE: 环境变量值（如果不建议配置，可以配置为None，表示不建议配置该环境变量）
       - SUGGESTION: 建议配置该值
-          + VERSION_LIST: 哪些版本建议配置，为空表示所有版本
+          + VERSION_LIST: 哪些版本建议配置，不配置表示所有版本适用
           + REASON: 建议值对应的原因
       - NOT_SUGGESTION: 不建议配置该值（优先级高）
-          + VERSION_LIST: 哪些版本不建议配置，为空表示所有版本
+          + VERSION_LIST: 哪些版本不建议配置，不配置表示所有版本适用
           + REASON: 不建议的原因
 
 简化配置：
