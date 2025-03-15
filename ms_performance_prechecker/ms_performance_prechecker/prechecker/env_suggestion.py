@@ -30,15 +30,23 @@ ENV_SUGGESTIONS = [
   },
   {
     "ENV": "HCCL_OP_EXPANSION_MODE",
-    "SUGGESTION_VALUE": "AIV",
-    "REASON": "配置通信算法的编排展开位置，代表通信算法的编排展开位置在 Device侧的 AI Vector Core 计算单元"\
-    "（MindIE 2.0.T3 和 MindIE 2.0.T3.1 使能 AIV 会有崩溃风险，请不要设置它）",
+    "SUGGESTIONS": [
+      {
+        "VALUE": "AIV", 
+        "SUGGESTION": {
+          "REASON": "配置通信算法的编排展开位置，代表通信算法的编排展开位置在 Device侧的 AI Vector Core 计算单元"
+        },
+        "NOT_SUGGESTION": {
+          "VERSION_LIST": {"Ascend-mindie": ["2.0.T3", "2.0.T3.1", "2.0.T6"]},
+          "REASON": "使能 AIV 会有崩溃风险，请不要设置它"
+        }
+      },
+    ],
   },
   {
     "ENV": "HCCL_DETERMINISTIC",
-    "SUGGESTION_VALUE": "false",
+    "SUGGESTION_VALUE": ["false", None],
     "REASON": "关闭确定性计算，一般情况下无需开启确定性计算，当模型多次执行结果不同或者精度调优时，可通过此环境变量开启确定性计算进行辅助调试调优，但开启确定性计算后，算子执行时间会变慢，导致性能下降。",
-    "ALLOW_UNDEFINED": True,
   },
   {
     "ENV": "HCCL_RDMA_PCIE_DIRECT_POST_NOSTRICT",
@@ -47,15 +55,13 @@ ENV_SUGGESTIONS = [
   },
   {
     "ENV": "MINDIE_LOG_LEVEL",
-    "SUGGESTION_VALUE": "ERROR",
+    "SUGGESTION_VALUE": ["ERROR", None],
     "REASON": "大量的日志打印是十分耗时的行为，且在正常的服务过程中，不需要这些日志",
-    "ALLOW_UNDEFINED": True,
   },
   {
     "ENV": "ASCEND_GLOBAL_LOG_LEVEL",
-    "SUGGESTION": 3,
+    "SUGGESTION": [3, None],
     "REASON": "大量的日志打印是十分耗时的行为，且在正常的服务过程中，不需要这些日志",
-    "ALLOW_UNDEFINED": True,
   },
   {
     "ENV": "ASCEND_LAUNCH_BLOCKING",

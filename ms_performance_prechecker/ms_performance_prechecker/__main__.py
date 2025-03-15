@@ -15,49 +15,30 @@
 import os
 import json
 import csv
+import datetime
+import tempfile
 from collections import namedtuple
 from glob import glob
 
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, SUGGESTION_TYPES
-from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level
-
-MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
-MINDIE_SERVICE_DEFAULT_PATH = "/usr/local/Ascend/mindie/latest/mindie-service"
+from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, SUGGESTION_TYPES, RUN_MODES
+from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
+from ms_performance_prechecker.prechecker.utils import logger, set_log_level
+from ms_performance_prechecker.prechecker.utils import str_ignore_case, deep_compare_dict, read_csv_or_json
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
 
 
-def read_csv(file_path):
-    result = {}
-    with open(file_path, mode="r", newline="", encoding="utf-8") as ff:
-        for row in csv.DictReader(ff):
-            for kk, vv in row.items():
-                result.setdefault(kk, []).append(vv)
-    return result
-
-
-def read_json(file_path):
-    with open(file_path) as ff:
-        result = json.load(ff)
-    return result
-
-
-def read_csv_or_json(file_path):
-    logger.debug(f"{file_path = }")
-    if not file_path or not os.path.exists(file_path):
-        return None
-    if file_path.endswith(".json"):
-        return read_json(file_path)
-    if file_path.endswith(".csv"):
-        return read_csv(file_path)
-    return None
+DEFAULT_DUMP_PATH = os.path.join(tempfile.gettempdir(),
+    f"ms_performance_prechecker_dump_{ datetime.datetime.now().strftime('%Y%m%d_%H%M%S') }.json")
 
 
 def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))])
 
 
-""" parse_mindie_server_config """
+def get_all_register_perchecker():
+    from ms_performance_prechecker.prechecker import checkers
+    return checkers
 
 
 def parse_mindie_server_config(mindie_service_path=None):
@@ -75,35 +56,76 @@ def parse_mindie_server_config(mindie_service_path=None):
     return mindie_service_config
 
 
-""" prechecker """
-
-
-def run_precheck(mindie_service_path=None, check_type=CHECK_TYPES.deepseek,
-    env_save_path="ms_performance_prechecker_env.sh", **kwargs):
-    import ms_performance_prechecker.prechecker
-    from ms_performance_prechecker.prechecker.register import REGISTRY, ANSWERS, CONTENTS, CONTENT_PARTS
-
-    mindie_service_config = parse_mindie_server_config(mindie_service_path)
-    logger.debug("")
-    logger.debug("<think>")
-    for name, checker in REGISTRY.items():
-        logger.debug(name)
-        checker(mindie_service_config=mindie_service_config, check_type=check_type,
-            env_save_path=env_save_path, **kwargs)
-    logger.debug("</think>")
+def print_contents():
+    from ms_performance_prechecker.prechecker.register import CONTENTS, CONTENT_PARTS
+    logger.info(f"")
 
     if CONTENTS.get(CONTENT_PARTS.sys, None):
         sorted_contents = [ii.split(" ", 1)[-1] for ii in sorted(CONTENTS[CONTENT_PARTS.sys])]
         sys_info = "系统信息：\n\n    " + "\n    ".join(sorted_contents) + "\n"
         logger.info(sys_info)
 
+
+def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **kwargs):
+    percheckers = get_all_register_perchecker()
+    all_envs = {}
+    for perchecker in percheckers:
+        name = perchecker.name()
+        envs = perchecker.collect_env(dump_file_path=dump_file_path, mindie_service_path=mindie_service_path, **kwargs)
+        
+        all_envs[name] = envs
+    
+    with open(dump_file_path, "w") as f:
+        json.dump(all_envs, f, indent=2)
+
+    print_contents()
+    logger.info(f"dump file saved: {dump_file_path}")
+    return all_envs
+
+
+def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
+    if dump_file_paths is None or len(dump_file_paths) < 2:
+        logger.error("Please provide dump file path")
+        return
+
+    env_infos = []
+    env_names = []
+    for dump_file_path in dump_file_paths:
+        with open(dump_file_path, "r") as f:
+            env_infos.append(json.load(f))
+            env_names.append(dump_file_path)
+        
+    # 递归逐层比对
+    logger.info("compare start")
+    deep_compare_dict(env_infos, env_names)
+    logger.info("")
+    logger.info("compare end")
+
+
+def run_precheck(check_type=CHECK_TYPES.deepseek,
+    env_save_path="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs):
+    percheckers = get_all_register_perchecker()
+
+    for perchecker in percheckers:
+        perchecker.precheck(check_type=check_type, env_save_path=env_save_path,
+            mindie_service_path=mindie_service_path, **kwargs)
+
+    print_contents()
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
 
-def arg_parse(argv):
+def arg_parse():
     import argparse
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+        "mode",
+        type=str_ignore_case,
+        default=RUN_MODES.precheck,
+        choices=RUN_MODES,
+        nargs='?',
+        help="run mode",
+    )
     parser.add_argument(
         "-t",
         "--check_type",
@@ -118,17 +140,34 @@ def arg_parse(argv):
         default="ms_performance_prechecker_env.sh",
         help="Save env changes as a file which could be applied directly.",
     )
+    parser.add_argument(
+        "-d",
+        "--dump_file_path",
+        nargs="*",
+        default=[DEFAULT_DUMP_PATH],
+        help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
+    )
     parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
-    return parser.parse_known_args(argv)[0]
+    return parser.parse_known_args()[0]
 
 
 def main():
-    import sys
-
-    args = arg_parse(sys.argv)
+    # args
+    args = arg_parse()
+    
+    # init
     set_log_level(args.log_level)
-    run_precheck(None, args.check_type, args.save_env, args=args)
 
+    # run
+    if args.mode == RUN_MODES.precheck:
+        run_precheck(None, args.check_type, args.save_env, args=args)
+    elif args.mode == RUN_MODES.envdump:
+        dump_file_path = args.dump_file_path[0]
+        _ = run_env_dump(dump_file_path, args=args)
+    elif args.mode == RUN_MODES.compare:
+        run_compare(args.dump_file_path, args=args)
+    else:
+        logger.error("Unknown mode")
 
 if __name__ == "__main__":
     main()

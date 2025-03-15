@@ -13,8 +13,15 @@
 # limitations under the License.
 
 __all__ = [
-    "system_checker",
-    "env_checker",
+    "checkers",
 ]
 
-from ms_performance_prechecker.prechecker import env_checker, system_checker
+from ms_performance_prechecker.prechecker.mindie_config_collecter import mindie_config_collecter
+from ms_performance_prechecker.prechecker.env_checker import env_checker
+from ms_performance_prechecker.prechecker.system_checker import system_checker
+
+checkers = [
+    mindie_config_collecter,
+    env_checker,
+    system_checker,
+]

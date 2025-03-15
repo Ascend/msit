@@ -63,7 +63,7 @@ def record(content, part=CONTENT_PARTS.after):
 CheckResult = Enum('CheckResult', ['OK', 'UNFINISH', 'WARN', 'ERROR', "VIP"])
 
 
-def check_result(domain, checker, result=None, action=None, reason=None):
+def show_check_result(domain, checker, result=None, action=None, reason=None):
     color_and_text = {CheckResult.OK: ('\033[92m', "OK"),
                        CheckResult.UNFINISH: ('\033[93m', "UNFINISH"),
                        CheckResult.WARN: ('\033[93m', "WARN"),
@@ -74,8 +74,56 @@ def check_result(domain, checker, result=None, action=None, reason=None):
         color, text = '\033[97m', ""
     else:
         color, text = color_and_text.get(result, ('\033[97m', ""))
-    logger.info(f"{domain} {checker} ... {color} {text} \033[0m")
+    print(f"- {domain} {checker} ... {color} {text} \033[0m")
     if action is not None and result != CheckResult.VIP:
-        logger.info(f"    * {action}")
+        print(f"    * {action}")
     if reason is not None:
-        logger.info(f"    * {reason}")
+        print(f"    * {reason}")
+
+
+
+class RrecheckerBase():
+    __checker_name__ = "undefined"
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def name(cls):
+        return cls.__checker_name__
+
+    def do_precheck(self, envs, **kwargs):
+        pass
+
+    def collect_env(self, **kwargs):
+        return None
+
+    def precheck(self, **kwargs):
+        envs = self.collect_env(**kwargs)
+        self.do_precheck(envs, **kwargs)
+        
+    def show_check_result(self, checker, result=None, action=None, reason=None):
+        show_check_result(self.name(), checker, result, action, reason)
+
+
+
+class GroupRrechecker(RrecheckerBase):
+    __checker_name__ = "undefined"
+
+    def __init__(self, *sub):        
+        super().__init__()
+        self.sub_checkers = self.init_sub_checkers()
+
+    def init_sub_checkers(self):
+        return []
+
+    def collect_env(self, **kwargs):
+        group_envs = {}
+        for sub in self.sub_checkers:
+            group_envs.update({sub.name(): sub.collect_env(**kwargs)})
+        return group_envs
+
+    def do_precheck(self, group_envs, **kwargs):
+        for sub in self.sub_checkers:
+            sub.do_precheck(group_envs.get(sub.name()))
+        
