@@ -78,7 +78,7 @@ def print_diff(diffs, names, key=""):
 def deep_compare_dict(dicts, names, parent_key=""):
     types = [type(ii) for ii in dicts]
     if not same(types):
-        print_diff([f"type: {x}" for x in types], names, parent_key)
+        print_diff([f"type<{t.__name__}> : {str(x)[0:30]}" for t, x in zip(types, dicts)], names, parent_key)
         return
     all_keys = set()
     if isinstance(dicts[0], dict):

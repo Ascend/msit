@@ -138,13 +138,13 @@ class EnvChecker(RrecheckerBase):
                 fix_pair.append((env_cmd, undo_env_cmd))
 
         if not env_save_path:
-            show_check_result("env", "SAVE ENV FILE", CheckResult.UNFINISH,
+            show_check_result("env", "ENV FILE", CheckResult.UNFINISH,
                 reason="save_env setting to None/Empty",
             )
             return
         
         if len(fix_pair) == 0:
-            show_check_result("env", "SAVE ENV FILE", CheckResult.VIP,
+            show_check_result("env", "ENV FILE", CheckResult.VIP,
                 action=f"None env related needs to save",
             )
             return 
