@@ -154,7 +154,6 @@ def arg_parse():
 def main():
     # args
     args = arg_parse()
-    print(args)
     
     # init
     set_log_level(args.log_level)
