@@ -154,13 +154,14 @@ def arg_parse():
 def main():
     # args
     args = arg_parse()
+    print(args)
     
     # init
     set_log_level(args.log_level)
 
     # run
     if args.mode == RUN_MODES.precheck:
-        run_precheck(None, args.check_type, args.save_env, args=args)
+        run_precheck(check_type=args.check_type, env_save_path=args.save_env, args=args)
     elif args.mode == RUN_MODES.envdump:
         dump_file_path = args.dump_file_path[0]
         _ = run_env_dump(dump_file_path, args=args)
