@@ -114,7 +114,7 @@ class EnvChecker(RrecheckerBase):
             ret_envs.update({env_name: env_vars.get(env_name)})
 
         for key, value in env_vars.items():
-            if "ASCEND" in key or "MINDIE":
+            if "ASCEND" in key or "MINDIE" in key:
                 ret_envs.update({key: value})
             if "ATB_" in key or "HCCL_" in key:
                 ret_envs.update({key: value})
