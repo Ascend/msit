@@ -95,10 +95,11 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
             env_names.append(dump_file_path)
         
     # 递归逐层比对
-    logger.info("compare start")
-    deep_compare_dict(env_infos, env_names)
-    logger.info("")
-    logger.info("compare end")
+    logger.info("== compare start ==")
+    has_diff = deep_compare_dict(env_infos, env_names)
+    if not has_diff:
+        logger.info("No difference found")
+    logger.info("== compare end ==")
 
 
 def run_precheck(check_type=CHECK_TYPES.deepseek,
