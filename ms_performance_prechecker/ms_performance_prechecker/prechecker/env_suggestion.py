@@ -129,7 +129,7 @@ ENV_SUGGESTIONS = [
   },
   {
     "ENV": "ASCEND_GLOBAL_LOG_LEVEL",
-    "SUGGESTION": [3, None],
+    "SUGGESTION_VALUE": [3, None],
     "REASON": "控制昇腾应用类日志级别，大量的日志打印会影响程序性能，建议提高日志级别。",
   },
   {

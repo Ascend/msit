@@ -130,7 +130,7 @@ class KernelReleaseChecker(RrecheckerBase):
             checker="内核版本", 
             result=CheckResult.ERROR,
             action=f"升级到 {target_version} 以上",
-            reason="内核版本升级后以上 host bound 时性能有提升",
+            reason="建议从4.19 升级到5.10以上，cpu下发加快，减少 host bound",
         )
         if major_version < target_major_version:
             show_check_result(**answer_kwargs)
@@ -184,7 +184,7 @@ class DriverVersionChecker(RrecheckerBase):
             checker="驱动版本", 
             result=CheckResult.ERROR,
             action=f"升级到 {target_version} 以上",
-            reason="驱动版本升级后性能有提升",
+            reason="建议升级到最新的版本的驱动，性能会有提升",
         )
         if major_version < target_major_version:
             show_check_result(**answer_kwargs)
@@ -226,7 +226,7 @@ class VirtualMachineChecker(RrecheckerBase):
             kvm_action = "配置 host-passthrough 模式（暴露完整 CPU 指令集）、启用多队列 virtio-net（减少网络延迟）"
             show_check_result("system", "可能是虚拟机", CheckResult.ERROR, 
                 action=f"确定分配的 cpu 是完全体，如 VMware 中 {vmware_action}；KVM 中 {kvm_action}",
-                reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降",
+                reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降，如果是虚拟机环境，建议检查 cpu 情况",
             )
 
 
@@ -254,7 +254,7 @@ class TransparentHugepageChecker(RrecheckerBase):
         if not is_transparent_hugepage_enable:
             show_check_result("system", "透明大页", CheckResult.ERROR,
                 action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}",
-                reason="开启透明大页，多次实验的吞吐率结果会更稳定",
+                reason="开启透明大页，吞吐率结果会更稳定",
             )
 
 
@@ -295,7 +295,7 @@ class CpuHighPerformanceChecker(RrecheckerBase):
                         f"如果没有 cpupower 命令可以通过 {yum_cmd} 或 {apt_cmd} 安装；\n        "
                         f"{fail_info}\n        "
                         f"如果需要回退，可以使用命令：{undo_cmd}",
-                reason="在相同时延约束下，TPS会有~3%的提升",
+                reason="让CPU运行在最大频率下，可以提升CPU性能，但是会提高能耗",
             )
 
 
