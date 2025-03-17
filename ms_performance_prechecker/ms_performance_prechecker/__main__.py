@@ -105,32 +105,48 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
 
 
 def run_precheck(check_type=CHECK_TYPES.deepseek,
-    env_save_path="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs):
+    save_env="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs):
     percheckers = get_all_register_perchecker()
 
     for perchecker in percheckers:
-        perchecker.precheck(check_type=check_type, env_save_path=env_save_path,
+        perchecker.precheck(check_type=check_type, env_save_path=save_env,
             mindie_service_path=mindie_service_path, **kwargs)
 
     print_contents()
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
 
-def arg_parse():
-    import argparse
+def distribute_collector(*args):
+    return {
+        "xxx": json.dumps(dict(xx=1234, yy=5678)),
+        "xxx2": json.dumps(dict(xx=12343, yy=5678)),
+    }
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        "mode",
-        type=str_ignore_case,
-        default=RUN_MODES.precheck,
-        choices=RUN_MODES,
-        nargs='?',
-        help="run mode",
-    )
+def run_distribute_compare(master_ip=None, master_port=None, local_rank=None, word_size=None, **kwargs):
+    dump_env = run_env_dump(None)
+    dump_env_json_str = json.dumps(dump_env)
+    dump_env_json_str_dict = distribute_collector(dump_env_json_str, master_ip, master_port, local_rank, word_size)
+    if dump_env_json_str_dict is None:
+        logger.info("I'm not master")
+        return 
+
+    env_ips = []
+    env_infos = []
+    for ip, dump_env_json_str in dump_env_json_str_dict.items():
+        env_ips.append(ip)
+        env_infos.append(json.loads(dump_env_json_str))
+    has_diff = deep_compare_dict(env_infos, env_ips)
+    if not has_diff:
+        logger.info("No difference found")
+    logger.info("== compare end ==")
+
+
+def sub_parser_precheck(subparsers):
+    parser = subparsers.add_parser(RUN_MODES.precheck, help='precheck evns')
     parser.add_argument(
         "-t",
         "--check_type",
+        "--check-type",
         type=str_ignore_case,
         default=CHECK_TYPES.deepseek,
         choices=CHECK_TYPES,
@@ -139,37 +155,94 @@ def arg_parse():
     parser.add_argument(
         "-s",
         "--save_env",
+        "--save-env",
         default="ms_performance_prechecker_env.sh",
         help="Save env changes as a file which could be applied directly.",
     )
+    parser.set_defaults(func=run_precheck)
+
+
+def sub_parser_envdump(subparsers):
+    parser = subparsers.add_parser(RUN_MODES.envdump, help='dump env')
+    
     parser.add_argument(
         "-d",
         "--dump_file_path",
-        nargs="*",
-        default=[DEFAULT_DUMP_PATH],
+        "--dump-file-path",
+        nargs="?",
+        default=DEFAULT_DUMP_PATH,
         help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
     )
-    parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
-    return parser.parse_known_args()[0]
+    
+    parser.set_defaults(func=run_env_dump)
+    
+    
+def sub_parser_compare(subparsers):
+    parser = subparsers.add_parser(RUN_MODES.compare, help='compare dump envs')
+    parser.add_argument(
+        "-d",
+        "--dump_file_paths",
+        "--dump-file-paths",
+        nargs="+",
+        help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
+    )
+    parser.set_defaults(func=run_compare)
 
+def sub_parser_distribute_compare(subparsers):
+    # Multi-machine
+    
+    parser = subparsers.add_parser(RUN_MODES.distribute_compare, help='compare distribute envs')
+    parser.add_argument(
+        "-ip",
+        "--master_ip",
+        "--master-ip",
+        default=None,
+        help="master ip, you should set it when you not have a correct RANKTABLE",
+    )
+    parser.add_argument(
+        "-port",
+        "--master_port",
+        "--master-port",
+        default=None,
+        help="master port, you should set it when you not have a correct RANKTABLE",
+    )
+    parser.add_argument(
+        "-rank",
+        "--local_rank",
+        "--local-rank",
+        default=None,
+        help="local rank, you should set it when you not have a correct RANKTABLE",
+    )
+    parser.add_argument(
+        "-size",
+        "--word_size",
+        "--word-size",
+        default=None,
+        help="word size, you should set it when you not have a correct RANKTABLE",
+    )
+    parser.set_defaults(func=run_distribute_compare)
 
 def main():
     # args
-    args = arg_parse()
-    
+    import argparse
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    subparsers = parser.add_subparsers(help='sub-command help')
+    sub_parser_precheck(subparsers)
+    sub_parser_envdump(subparsers)
+    sub_parser_compare(subparsers)
+    sub_parser_distribute_compare(subparsers)
+    parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
+    args, _ =  parser.parse_known_args()
+
     # init
     set_log_level(args.log_level)
-
+    
     # run
-    if args.mode == RUN_MODES.precheck:
-        run_precheck(check_type=args.check_type, env_save_path=args.save_env, args=args)
-    elif args.mode == RUN_MODES.envdump:
-        dump_file_path = args.dump_file_path[0]
-        _ = run_env_dump(dump_file_path, args=args)
-    elif args.mode == RUN_MODES.compare:
-        run_compare(args.dump_file_path, args=args)
+    if hasattr(args, 'func'):
+        args.func(args=args, **vars(args))
     else:
-        logger.error("Unknown mode")
+        parser.print_help()
 
 if __name__ == "__main__":
     main()

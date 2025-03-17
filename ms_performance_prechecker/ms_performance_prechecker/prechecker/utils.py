@@ -19,7 +19,9 @@ import logging
 from collections import namedtuple
 
 CHECK_TYPES = namedtuple("CHECK_TYPES", ["basic", "deepseek"])("basic", "deepseek")
-RUN_MODES = namedtuple("RUN_MODES", ["precheck", "envdump", "compare"])("precheck", "envdump", "compare")
+RUN_MODES = namedtuple("RUN_MODES", ["precheck", "envdump", 
+                                     "compare", "distribute_compare"])("precheck", "envdump", 
+                                                                       "compare", "distribute_compare")
 _SUGGESTION_TYPES = ["env", "system", "config"]
 SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTION_TYPES)
 
