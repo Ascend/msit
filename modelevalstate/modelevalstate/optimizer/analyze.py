@@ -9,6 +9,7 @@ import pandas as pd
 
 try:
     import orjson
+
     has_orjson = True
 except ImportError:
     has_orjson = False
