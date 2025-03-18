@@ -223,25 +223,21 @@ class DecodeDataSet:
     @staticmethod
     def count_punctuation_marks(line: str):
         # 定义一个包含所有标点符号的正则表达式模式
-        punctuation_pattern = (r'[.,!?;:"(){}[]#$%&*<>\/@\u3000\u3001\u3002\u300A\u300B\uFF01'
-                               r'\uFF03\uFF0E\u2018\u2019\u201C\u201D\u201F\u201E\u2032\u2036'
-                               r'\u2039\u203B\u2045\u205F\u301F\uFE50\uFF5E\uFF5F\uFF61\uFF62'
-                               r'\uFF64\uFF65\uFF66\uFF67\uFF68\uFF69\uFF6A\uFF6B\uFF6C\uFF6D'
-                               r'\uFF6E\uFF6F\uFF70\uFF71\uFF72\uFF73\uFF74\uFF75\uFF76\uFF77'
-                               r'\uFF78\uFF79\uFF7A\uFF7B\uFF7C\uFF7D\uFF7E\uFF7F\uFF80\uFF81'
-                               r'\uFF82\uFF83\uFF84\uFF85\uFF86\uFF87\uFF88\uFF89\uFF8A\uFF8B'
-                               r'\uFF8C\uFF8D\uFF8E\uFF8F\uFF90\uFF91\uFF92\uFF93\uFF94\uFF95'
-                               r'\uFF96\uFF97\uFF98\uFF99\uFF9A\uFF9B\uFF9C\uFF9D\uFF9E\uFF9F'
-                               r'\uFFA0\uFFA1\uFFA2\uFFA3\uFFA4\uFFA5\uFFA6\uFFA7\uFFA8\uFFA9'
-                               r'\uFFAA\uFFAB\uFFAC\uFFAD\uFFAE\uFFAF\uFFB0\uFFB1\uFFB2\uFFB3'
-                               r'\uFFB4\uFFB5\uFFB6\uFFB7\uFFB8\uFFB9\uFFBA\uFFBB\uFFBC\uFFBD'
-                               r'\uFFBE\uFFBF\uFFC0\uFFC1\uFFC2\uFFC3\uFFC4\uFFC5\uFFC6\uFFC7'
-                               r'\uFFC8\uFFC9\uFFCA\uFFCB\uFFCC\uFFCD\uFFCE\uFFCF\uFFD0\uFFD1'
-                               r'\uFFD2\uFFD3\uFFD4\uFFD5\uFFD6\uFFD7\uFFD8\uFFD9\uFFDA\uFFDB'
-                               r'\uFFDC\uFFDD\uFFDE\uFFDF\uFFE0\uFFE1\uFFE2\uFFE3\uFFE4\uFFE5'
-                               r'\uFFE6\uFFE7\uFFE8\uFFE9\uFFEA\uFFEB\uFFEC\uFFED\uFFEE\uFFEF'
-                               r'\uFFF0\uFFF1\uFFF2\uFFF3\uFFF4\uFFF5\uFFF6\uFFF7\uFFF8\uFFF9'
-                               r'\uFFFA\uFFFB\uFFFC\uFFFD\uFFFE\uFFFF]')
+        punctuation_pattern = (r'[.,!?;:"\(\)\{\}\[\]\#\$\%\&\*\<\>\\\/\@\u3000\u3001\u3002\u300A\u300B\uFF01'
+                               r'\uFF03\uFF0E\u2018\u2019\u201C\u201D\u201F\u201E\u2032\u2036\u2039\u203B\u2045'
+                               r'\u205F\u301F\uFE50\uFF5E\uFF5F\uFF61\uFF62\uFF64\uFF65\uFF66\uFF67\uFF68\uFF69'
+                               r'\uFF6A\uFF6B\uFF6C\uFF6D\uFF6E\uFF6F\uFF70\uFF71\uFF72\uFF73\uFF74\uFF75\uFF76'
+                               r'\uFF77\uFF78\uFF79\uFF7A\uFF7B\uFF7C\uFF7D\uFF7E\uFF7F\uFF80\uFF81\uFF82\uFF83'
+                               r'\uFF84\uFF85\uFF86\uFF87\uFF88\uFF89\uFF8A\uFF8B\uFF8C\uFF8D\uFF8E\uFF8F\uFF90'
+                               r'\uFF91\uFF92\uFF93\uFF94\uFF95\uFF96\uFF97\uFF98\uFF99\uFF9A\uFF9B\uFF9C\uFF9D'
+                               r'\uFF9E\uFF9F\uFFA0\uFFA1\uFFA2\uFFA3\uFFA4\uFFA5\uFFA6\uFFA7\uFFA8\uFFA9\uFFAA'
+                               r'\uFFAB\uFFAC\uFFAD\uFFAE\uFFAF\uFFB0\uFFB1\uFFB2\uFFB3\uFFB4\uFFB5\uFFB6\uFFB7'
+                               r'\uFFB8\uFFB9\uFFBA\uFFBB\uFFBC\uFFBD\uFFBE\uFFBF\uFFC0\uFFC1\uFFC2\uFFC3\uFFC4'
+                               r'\uFFC5\uFFC6\uFFC7\uFFC8\uFFC9\uFFCA\uFFCB\uFFCC\uFFCD\uFFCE\uFFCF\uFFD0\uFFD1'
+                               r'\uFFD2\uFFD3\uFFD4\uFFD5\uFFD6\uFFD7\uFFD8\uFFD9\uFFDA\uFFDB\uFFDC\uFFDD\uFFDE'
+                               r'\uFFDF\uFFE0\uFFE1\uFFE2\uFFE3\uFFE4\uFFE5\uFFE6\uFFE7\uFFE8\uFFE9\uFFEA\uFFEB'
+                               r'\uFFEC\uFFED\uFFEE\uFFEF\uFFF0\uFFF1\uFFF2\uFFF3\uFFF4\uFFF5\uFFF6\uFFF7\uFFF8'
+                               r'\uFFF9\uFFFA\uFFFB\uFFFC\uFFFD\uFFFE\uFFFF]')
 
         # 使用正则表达式查找所有标点符号
         matches = re.findall(punctuation_pattern, line)
@@ -286,7 +282,7 @@ class DecodeDataSet:
     def plt_data(self, line_data: DataFrame, middle_save_path: Optional[Path] = None):
         p = sns.pairplot(self.load_data, corner=True)
         if middle_save_path:
-            p.savefig(middle_save_path.joinpath("decode_num_feature.png"))
+            p.savefig(middle_save_path.joinpath("decore_num_feature.png"))
         else:
             plt.show()
         plt.close()
