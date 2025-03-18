@@ -18,6 +18,7 @@
 """
 import copy
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 from statistics import mean, stdev
@@ -29,6 +30,16 @@ from modelevalstate.common import State, my_std
 
 plt.rcParams['font.sans-serif'] = ['Kaitt', 'SimHei']
 plt.rcParams['axes.unicode_minus'] = False
+
+
+class PlotInputVelocityParams:
+    data: Dict[State, List]
+    predict_data: Dict[State, List]
+    x_field: str
+    title: str
+    x_label: str
+    y_label: str
+    save_path: Optional[str] = None
 
 
 class AnalysisState:
@@ -74,41 +85,39 @@ class AnalysisState:
         return _x, _mean, _positive_sigma, _negative_sigma
 
     @staticmethod
-    def plot_input_velocity(data: Dict[State, List], x_field: str, title: str, x_label: str, y_label: str,
-                            save_path=None):
+    def plot_input_velocity(params: PlotInputVelocityParams):
         """
         绘制输入数据的平均值, 上波动和下波动曲线
         :return:
         """
         # 合并只有decode, prefill
-        _x, _mean, _positive_sigma, _negative_sigma = AnalysisState.computer_mean_sigma(data, x_field)
+        _x, _mean, _positive_sigma, _negative_sigma = AnalysisState.computer_mean_sigma(params.data, params.x_field)
         plt.plot(_x, _mean, label="mean")
         plt.plot(_x, _positive_sigma, label="positive std")
         plt.plot(_x, _negative_sigma, label="negative std")
-        plt.title(title)
+        plt.title(params.title)
         plt.legend()
         plt.grid()
         if x_label:
-            plt.xlabel(x_label)
+            plt.xlabel(params.x_label)
         if y_label:
-            plt.ylabel(y_label)
+            plt.ylabel(params.y_label)
         if save_path:
-            plt.savefig(Path(save_path)).joinpath(f"{x_label}_{y_label}_{title}.png")
+            plt.savefig(Path(params.save_path)).joinpath(f"{params.x_label}_{params.y_label}_{params.title}.png")
             plt.close()
         else:
             plt.show()
 
     @staticmethod
-    def plot_input_velocity_with_predict(data: Dict[State, List], predict_data: Dict[State, List], x_field: str,
-                                         title: str, x_label: str, y_label: str, save_path=None):
+    def plot_input_velocity_with_predict(params: PlotInputVelocityParams):
         """
         绘制输入数据和预测数据的平均值, 上波动和下波动曲线。
         :return:
         """
         # 合并只有decode, prefill
-        _x, _mean, _positive_sigma, _negative_sigma = AnalysisState.computer_mean_sigma(data, x_field)
-        _x, _predict, _predict_positive_sigma, _predict_negative_sigma = AnalysisState.computer_mean_sigma(predict_data,
-                                                                                                           x_field)
+        _x, _mean, _positive_sigma, _negative_sigma = AnalysisState.computer_mean_sigma(params.data, params.x_field)
+        _x, _predict, _predict_positive_sigma, _predict_negative_sigma = AnalysisState.computer_mean_sigma(
+            params.predict_data, params.x_field)
         plt.figure()
         plt.plot(_x, _mean, label="mean")
         plt.plot(_x, _positive_sigma, label="positive std")
@@ -116,19 +125,19 @@ class AnalysisState:
         plt.plot(_x, _predict, label="predict")
         plt.plot(_x, _predict_positive_sigma, label="predict positive std")
         plt.plot(_x, _predict_negative_sigma, label="predict negative std")
-        plt.title(title)
+        plt.title(params.title)
         plt.legend()
         plt.grid()
         if x_label:
-            plt.xlabel(x_label)
+            plt.xlabel(params.x_label)
         if y_label:
-            plt.ylabel(y_label)
+            plt.ylabel(params.y_label)
         if save_path:
-            plt.savefig(Path(save_path)).joinpath(f"{x_label}_{y_label}_{title}.png")
+            plt.savefig(Path(params.save_path)).joinpath(f"{params.x_label}_{params.y_label}_{params.title}.png")
             plt.close()
         else:
             plt.show()
-        with open(save_path.joinpath(f"{title}.txt"), "w") as f:
+        with open(params.save_path.joinpath(f"{params.title}.txt"), "w") as f:
             f.write('mean\n')
             f.write(json.dumps(_mean))
             f.write('\n')
