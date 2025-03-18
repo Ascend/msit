@@ -8,11 +8,14 @@ import logging
 import pandas as pd
 
 has_orjson = False
+
 try:
     import orjson
-    has_orjson = True
 except ImportError:
     pass
+
+else:
+    has_orjson = True
 
 req_map = {}
 
