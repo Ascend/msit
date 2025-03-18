@@ -1,6 +1,7 @@
 # !/usr/bin/python3.8
 # -*- coding: utf-8 -*-
 # Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
+
 import time
 from pathlib import Path
 from typing import Tuple, Type, Callable
@@ -33,7 +34,11 @@ class PerformanceIndex(BaseModel):
 class BenchMarkConfig(BaseModel):
     source_env: str = ""
     name: str = "benchmark"
-    command: str = r"benchmark --DatasetPath /data/xjt/data/gsm8k --DatasetType gsm8k --ModelName llama3-8b --ModelPath /data/LLM/llama3-8b --TestType client --MaxOutputLen 256 --Http http://127.0.0.1:7425 --ManagementHttp http://127.0.0.2:7426 --Concurrency 300 --RequestRate 20 --WarmupSize 20 --Tokenizer True --SaveTokensPath /data/xjt/output/gsm8k.csv"
+    command: str = (r"benchmark --DatasetPath /data/xjt/data/gsm8k --DatasetType gsm8k --ModelName llama3-8b "
+                    r"--ModelPath /data/LLM/llama3-8b --TestType client --MaxOutputLen 256 "
+                    r"--Http http://127.0.0.1:7425 --ManagementHttp http://127.0.0.2:7426 "
+                    r"--Concurrency 300 --RequestRate 20 --WarmupSize 20 --Tokenizer True "
+                    r"--SaveTokensPath /data/xjt/output/gsm8k.csv")
     output_path: str = r"/data/xjt/1210test/Ascend-mindie-server_1.0.RC3_linux-aarch64/instance"
     custom_collect_output_path: str = r"/data/xjt/1210test/Ascend-mindie-server_1.0.RC3_linux-aarch64/simulate_logs"
     custom_analysis_output_path: str = r"/data/xjt/model_forward.csv"

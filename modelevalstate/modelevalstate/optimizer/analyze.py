@@ -1,10 +1,14 @@
+# !/usr/bin/python3.8
+# -*- coding: utf-8 -*-
+# Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
+
 import os
 import json
+import logging
 import pandas as pd
 
 try:
     import orjson
-
     has_orjson = True
 except Exception:
     has_orjson = False
@@ -49,14 +53,14 @@ def concat_func(x):
 
 
 def parse_batch_info(file1):
-    batch_E = file1[file1["batch_id"].notnull()].dropna(axis=1, how="all").reset_index(drop=True).sort_values(
+    batch_e = file1[file1["batch_id"].notnull()].dropna(axis=1, how="all").reset_index(drop=True).sort_values(
         by=["batch_id", "ts"])
-    batch_execute = batch_E.groupby("batch_id").apply(concat_func).reset_index()
+    batch_execute = batch_e.groupby("batch_id").apply(concat_func).reset_index()
 
-    model_E = file1[(file1["name"] == "model_execute") & (file1["timing"] == "E")].dropna(axis=1, how="all")
-    model_E = model_E.reset_index(drop=True).rename(
+    model_e = file1[(file1["name"] == "model_execute") & (file1["timing"] == "E")].dropna(axis=1, how="all")
+    model_e = model_e.reset_index(drop=True).rename(
         columns={"ts": "ts_model_execute_end", "sts": "ts_model_execute_begin"})
-    model_execute = model_E
+    model_execute = model_e
 
     batch_info = pd.merge(batch_execute, model_execute, on="reqInfo").reset_index()
     return batch_info
@@ -99,7 +103,7 @@ def get_batch_need(batch_info):
 def analyze(input_path_1, input_path_2):
     # 1. parse log files to csv files using yaml
     log2csv(input_path_2)
-    print("log2csv end!")
+    logging.info("log2csv end!")
     # 2. parse csv files for needed info
     ## read in all csv files
     file1 = pd.read_csv(os.path.join(input_path_2, "all_data.csv"), dtype={
@@ -135,7 +139,7 @@ def analyze(input_path_1, input_path_2):
     prefill_total_execute_time = 0
     decode_total_request_time = 0
     # 遍历DataFrame
-    for index, row in batch_need.iterrows():
+    for _, row in batch_need.iterrows():
         if row['batch_stage'] == 'decode':
             decode_token_num += row['batch_size']
             decode_total_execute_time += row['total_execute_time']
