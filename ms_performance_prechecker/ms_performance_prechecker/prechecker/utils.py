@@ -72,7 +72,7 @@ def print_diff(diffs, names, key=""):
     for index, name in enumerate(names):
         print(f"    * {name}:")
         print(f"        {diffs[index]}")
-    
+
 
 
 def deep_compare_dict(dicts, names, parent_key=""):
@@ -84,7 +84,7 @@ def deep_compare_dict(dicts, names, parent_key=""):
     if isinstance(dicts[0], dict):
         for dict_item in dicts:
             all_keys.update(dict_item.keys())
-    
+
         for key in all_keys:
             deep_compare_dict([dict_item.get(key) for dict_item in dicts], names, parent_key + "." + key)
     elif isinstance(dicts[0], list):
@@ -140,9 +140,9 @@ def get_version_info(mindie_service_path):
 
     version_path = os.path.join(mindie_service_path, "version.info")
 
-    if not os.path.exists(version_path): 
+    if not os.path.exists(version_path):
         return {}
-    
+
     version_info = {}
     with open(version_path) as f:
         for line in f:
@@ -172,7 +172,7 @@ def read_json(file_path):
     return result
 
 
-def read_csv_or_json(file_path):    
+def read_csv_or_json(file_path):
     logger.debug("file_path = %s", file_path)
 
     if not file_path or not os.path.exists(file_path):
@@ -186,3 +186,18 @@ def read_csv_or_json(file_path):
 
 def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))])
+
+
+def parse_mindie_server_config(mindie_service_path=None):
+    logger.debug("mindie_service_config:")
+    if mindie_service_path is None:
+        mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+    if not os.path.exists(mindie_service_path):
+        logger.warning(f"mindie config.json: {mindie_service_path} not exists, will skip related checkers")
+        return None
+
+    mindie_service_config = read_csv_or_json(os.path.join(mindie_service_path, "conf", "config.json"))
+    logger.debug(
+        f"mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}"
+    )
+    return mindie_service_config

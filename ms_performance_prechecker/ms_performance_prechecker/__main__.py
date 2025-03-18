@@ -28,8 +28,13 @@ from ms_performance_prechecker.prechecker.utils import get_next_dict_item
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
 
 
-DEFAULT_DUMP_PATH = os.path.join(tempfile.gettempdir(),
-    f"ms_performance_prechecker_dump_{ datetime.datetime.now().strftime('%Y%m%d_%H%M%S') }.json")
+DEFAULT_DUMP_PATH = os.path.join(
+    tempfile.gettempdir(), f"ms_performance_prechecker_dump_{ datetime.datetime.now().strftime('%Y%m%d_%H%M%S') }.json"
+)
+DAFAULT_ENV_SAVE_PATH = "ms_performance_prechecker_env.sh"
+RANKTABLEFILE = "RANKTABLEFILE"
+MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
+MINDIE_SERVICE_DEFAULT_PATH = "/usr/local/Ascend/mindie/latest/mindie-service"
 
 
 def get_next_dict_item(dict_value):
@@ -39,21 +44,6 @@ def get_next_dict_item(dict_value):
 def get_all_register_perchecker():
     from ms_performance_prechecker.prechecker import checkers
     return checkers
-
-
-def parse_mindie_server_config(mindie_service_path=None):
-    logger.debug("mindie_service_config:")
-    if mindie_service_path is None:
-        mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
-    if not os.path.exists(mindie_service_path):
-        logger.warning(f"mindie config.json: {mindie_service_path} not exists, will skip related checkers")
-        return None
-
-    mindie_service_config = read_csv_or_json(os.path.join(mindie_service_path, "conf", "config.json"))
-    logger.debug(
-        f"mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}"
-    )
-    return mindie_service_config
 
 
 def print_contents():
@@ -72,9 +62,9 @@ def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **k
     for perchecker in percheckers:
         name = perchecker.name()
         envs = perchecker.collect_env(dump_file_path=dump_file_path, mindie_service_path=mindie_service_path, **kwargs)
-        
+
         all_envs[name] = envs
-    
+
     with open(dump_file_path, "w") as f:
         json.dump(all_envs, f, indent=2)
 
@@ -94,7 +84,7 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
         with open(dump_file_path, "r") as f:
             env_infos.append(json.load(f))
             env_names.append(dump_file_path)
-        
+
     # 递归逐层比对
     logger.info("compare start")
     deep_compare_dict(env_infos, env_names)
@@ -102,8 +92,9 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
     logger.info("compare end")
 
 
-def run_precheck(check_type=CHECK_TYPES.deepseek,
-    env_save_path="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs):
+def run_precheck(
+    check_type=CHECK_TYPES.deepseek, env_save_path=DAFAULT_ENV_SAVE_PATH, mindie_service_path=None, **kwargs
+):
     percheckers = get_all_register_perchecker()
 
     for perchecker in percheckers:
@@ -116,6 +107,9 @@ def run_precheck(check_type=CHECK_TYPES.deepseek,
 
 def arg_parse():
     import argparse
+
+    ranktable_file = os.getenv(RANKTABLEFILE, None)
+    mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
@@ -137,7 +131,7 @@ def arg_parse():
     parser.add_argument(
         "-s",
         "--save_env",
-        default="ms_performance_prechecker_env.sh",
+        default=DAFAULT_ENV_SAVE_PATH,
         help="Save env changes as a file which could be applied directly.",
     )
     parser.add_argument(
@@ -147,14 +141,30 @@ def arg_parse():
         default=[DEFAULT_DUMP_PATH],
         help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
     )
+    parser.add_argument(
+        "-s", "--service_config_path", type=str, default=mindie_service_path, help="service config json path"
+    )
+    parser.add_argument(
+        "-r",
+        "--ranktable_file",
+        default=ranktable_file,
+        help="HCCL rank table file path.",
+    )
     parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
-    return parser.parse_known_args()[0]
+    args = parser.parse_known_args()[0]
+
+    if not args.ranktable_file or not os.path.exists(args.ranktable_file):
+        logger.error(
+            f"ranktable_file: {args.ranktable_file} is empty or not exists."
+            "Provide by env RANKTABLEFILE or argument --ranktable_file."
+        )
+    return args
 
 
 def main():
     # args
     args = arg_parse()
-    
+
     # init
     set_log_level(args.log_level)
 

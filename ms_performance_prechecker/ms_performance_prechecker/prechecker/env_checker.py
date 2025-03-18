@@ -22,13 +22,14 @@ from ms_performance_prechecker.prechecker.env_suggestion import ENV_SUGGESTIONS
 def save_env_contents(fix_pair, save_path):
     save_path = os.path.realpath(save_path)
 
+    indent = " " * 4
     with open(save_path, "w") as ff:
         ff.write("ENABLE=${1-1}\n")
         ff.write('echo "ENABLE=$ENABLE"\n\n')
-        ff.write('if [ "$ENABLE" = "1" ]; then\n    ')
-        ff.write("\n    ".join((x[0] for x in fix_pair)) + "\n")
-        ff.write('else\n    ')
-        ff.write("\n    ".join((x[1] for x in fix_pair)) + "\n")
+        ff.write('if [ "$ENABLE" = "1" ]; then\n')
+        ff.write(indent + f"\n{indent}".join((x[0] for x in fix_pair)) + "\n")
+        ff.write('else\n')
+        ff.write(indent + f"\n{indent}".join((x[1] for x in fix_pair)) + "\n")
         ff.write('fi\n')
     return save_path
 
@@ -46,14 +47,14 @@ def env_rule_checker(envs, env_rule, version_info):
     if not env_rule:
         return (CheckResult.OK, None, None)
     suggestions = []
-    
+
     env_item = env_rule.get("ENV")
     if "SUGGESTIONS" in env_rule:
         suggestions = env_rule["SUGGESTIONS"]
     if "SUGGESTION_VALUE" in env_rule:
-        suggestions.append(dict(VALUE=env_rule.get("SUGGESTION_VALUE", None), 
+        suggestions.append(dict(VALUE=env_rule.get("SUGGESTION_VALUE", None),
             SUGGESTION=dict(REASON=env_rule.get("REASON", ""))))
-    
+
     suggest_value_list = [] # (value, reason) 优先级从前到后，在前面的优先级高
     not_suggest_value_dict = {} # value： reason
 
@@ -69,7 +70,7 @@ def env_rule_checker(envs, env_rule, version_info):
         if "SUGGESTION" in suggestion:
             suggestion_version_list = suggestion.get("SUGGESTION").get("VERSION_LIST", suggestion_version_list)
             suggestion_reason = suggestion.get("SUGGESTION").get("REASON", suggestion_reason)
-            
+
             if suggestion_version_list is None or version_in_list(version_info, suggestion_version_list):
                 suggest_value_list.append((value_list, suggestion_reason))
         if "NOT_SUGGESTION" in suggestion:
@@ -142,15 +143,15 @@ class EnvChecker(RrecheckerBase):
                 reason="save_env setting to None/Empty",
             )
             return
-        
+
         if len(fix_pair) == 0:
             show_check_result("env", "SAVE ENV FILE", CheckResult.VIP,
                 action=f"None env related needs to save",
             )
-            return 
+            return
 
         save_path = save_env_contents(fix_pair, env_save_path)
-        
+
         show_check_result("env", "", CheckResult.VIP,
             action=f"使能环境变量配置：source {save_path}",
         )
