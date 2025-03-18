@@ -83,13 +83,13 @@ class Settings(BaseSettings):
     @classmethod
     def settings_customise_sources(
             cls,
-            settings_cls: Type[BaseSettings],
-            init_settings: PydanticBaseSettingsSource,
-            env_settings: PydanticBaseSettingsSource,
-            dotenv_settings: PydanticBaseSettingsSource,
             file_secret_settings: PydanticBaseSettingsSource,
+            init_settings: PydanticBaseSettingsSource,
+            settings_cls: Type[BaseSettings],
+            dotenv_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
     ) -> Tuple[PydanticBaseSettingsSource, ...]:
-        return (init_settings, JsonConfigSettingsSource(settings_cls), env_settings, file_secret_settings)
+        return init_settings, JsonConfigSettingsSource(settings_cls), env_settings, file_secret_settings
 
 
 default_support_field = (
