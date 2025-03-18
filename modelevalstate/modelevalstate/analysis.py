@@ -45,7 +45,7 @@ class PlotInputVelocityParams:
 class AnalysisState:
 
     @staticmethod
-    def computer_mean_sigma(data: Dict[State, List], x_field: str, ):
+    def computer_mean_sigma(data: Dict[State, List], x_field: str):
         # 合并只有decode, prefill
         res = {}
         tmp_data = copy.deepcopy(data)
@@ -64,7 +64,7 @@ class AnalysisState:
         _positive_sigma = []
         _negative_sigma = []
         for k in sorted(res.keys(), key=lambda x: getattr(x, x_field)):
-            v = res[k]
+            v = res.get(k)
             if len(v) < 2:
                 _x.append(getattr(k, x_field))
                 _mean.append(v[0])
