@@ -18,14 +18,12 @@
 """
 import copy
 import json
-
-import josn
 from pathlib import Path
 from typing import Dict, List, Optional
-from matplotlib import pyplot as plt
 from statistics import mean, stdev
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 from modelevalstate.common import State, my_std
 
@@ -54,7 +52,7 @@ class AnalysisState:
         _mean = []
         _positive_sigma = []
         _negative_sigma = []
-        for k in stored(res.keys(), key=lambda x: getattr(x, x_field)):
+        for k in sorted(res.keys(), key=lambda x: getattr(x, x_field)):
             v = res[k]
             if len(v) < 2:
                 _x.append(getattr(k, x_field))
@@ -70,7 +68,6 @@ class AnalysisState:
                 try:
                     _sigma = np.std(v)
                 except Exception:
-                    print('Failed stdenv', v)
                     _sigma = my_std(v)
             _positive_sigma.append(_mean[-1] + _sigma)
             _negative_sigma.append(_mean[-1] - _sigma)
@@ -132,16 +129,16 @@ class AnalysisState:
         else:
             plt.show()
         with open(save_path.joinpath(f"{title}.txt"), "w") as f:
-             f.write('mean\n')
-             f.write(json.dumps(_mean))
-             f.write('\n')
-             f.write('positive std\n')
-             f.write(json.dumps(_positive_sigma))
-             f.write('negative std\n')
-             f.write(json.dumps(_negative_sigma))
-             f.write('\n')
-             f.write('predict \n')
-             f.write(json.dumps([float(i) for i in _predict]))
+            f.write('mean\n')
+            f.write(json.dumps(_mean))
+            f.write('\n')
+            f.write('positive std\n')
+            f.write(json.dumps(_positive_sigma))
+            f.write('negative std\n')
+            f.write(json.dumps(_negative_sigma))
+            f.write('\n')
+            f.write('predict \n')
+            f.write(json.dumps([float(i) for i in _predict]))
 
     @staticmethod
     def plot_pred_and_real(pred, real, save_path: Optional[Path] = None):
