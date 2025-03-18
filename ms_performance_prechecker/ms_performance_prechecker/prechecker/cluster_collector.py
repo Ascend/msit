@@ -1,3 +1,4 @@
+import os
 import socket
 import torch
 from collections import namedtuple
@@ -42,7 +43,7 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None):
 
     if not ranktable_file or not os.path.exists(ranktable_file):
         logger.error(
-            f"ranktable_file: {ranktable_file} is empty or not exists."
+            f"ranktable_file={ranktable_file} is empty or not exists."
             "Provide by env RANKTABLEFILE or argument --ranktable_file."
         )
         return
@@ -51,12 +52,12 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None):
         server.get("server_id", None): rank_id for rank_id, server in enumerate(ranktable.get("server_list"))
     }
     if not ranktable_map:
-        logger.error(f"ranktable_file: {ranktable_file} is empty or not correctly set.")
+        logger.error(f"ranktable_file={ranktable_file} is empty or not correctly set.")
         return
-    master_ip = ranktable_map[0]
+    master_ip = ranktable.["server_list"][0]["server_id"]  # already checked keys exists
     local_ip = get_local_to_master_ip(master_ip)
     if local_ip not in ranktable_map:
-        logger.error(f"local_ip: {local_ip } not exists in ranktable_file: {ranktable_file}.")
+        logger.error(f"local_ip={local_ip } not exists in ranktable_file: {ranktable_file}.")
         return
     interface = get_interface_by_ip(local_ip)
 
