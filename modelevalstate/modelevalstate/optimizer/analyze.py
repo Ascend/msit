@@ -10,7 +10,7 @@ import pandas as pd
 try:
     import orjson
     has_orjson = True
-except Exception:
+except ImportError:
     has_orjson = False
 
 req_map = {}
