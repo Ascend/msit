@@ -17,33 +17,33 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from modelevalstate.inference.file_reader import FileHandler
+from modelevalstate.inference.file_reader import FileHanlder
 from modelevalstate.inference.common import get_bins_and_label
 
 HARDWARE_FIELD = ("cpu_count", "cpu_mem", "soc_name", "npu_mem")
 HardWare = namedtuple("HardWare", HARDWARE_FIELD, defaults=[0, 0, "Ascend910B3", 0])
 
 ENV_FIELD = (
-"atb_llm_razor_attention_enable", "atb_llm_razor_attention_rope", "bind_cpu", "mies_use_mb_swapper",
-"mies_pecompute_threshold",
-"mies_tokenizer_sliding_window_size", "atb_llm_lcoc_enable", "lccl_deterministic",
-"hccl_deterministic", "atb_matmul_shuffle_k_enable")
+    "atb_llm_razor_attention_enable", "atb_llm_razor_attention_rope", "bind_cpu", "mies_use_mb_swapper",
+    "mies_pecompute_threshold",
+    "mies_tokenizer_sliding_window_size", "atb_llm_lcoc_enable", "lccl_deterministic",
+    "hccl_deterministic", "atb_matmul_shuffle_k_enable")
 EnvField = namedtuple("EnvField", ENV_FIELD)
 
 MINDIE_FIELD = (
-"cache_block_size", "mindie__max_seq_len", "world_size", "cpu_mem_size", "npu_mem_size", "max_prefill_tokens",
-"max_prefill_batch_size", "max_batch_size")
+    "cache_block_size", "mindie__max_seq_len", "world_size", "cpu_mem_size", "npu_mem_size", "max_prefill_tokens",
+    "max_prefill_batch_size", "max_batch_size")
 MindieConfig = namedtuple("MindieConfig", MINDIE_FIELD)
 
 MODEL_CONFIG_FIELD = (
-"architectures", "hidden_act", "initializer_range", "intermediate_size", "max_position_embeddings", "model_type",
-"num_attention_heads", "num_hidden_layers", "tie_word_embeddings", "torch_dtype", "use_cache", "vocab_size",
-"quantize", "quantization_config")
+    "architectures", "hidden_act", "initializer_range", "intermediate_size", "max_position_embeddings", "model_type",
+    "num_attention_heads", "num_hidden_layers", "tie_word_embeddings", "torch_dtype", "use_cache", "vocab_size",
+    "quantize", "quantization_config")
 
 ModelConfig = namedtuple("ModelConfig", MODEL_CONFIG_FIELD)
 
 BATCH_FIELD = (
-"batch_stage", "batch_size", "total_need_blocks", "total_prefill_token", "max_seq_len", "model_execute_time")
+    "batch_stage", "batch_size", "total_need_blocks", "total_prefill_token", "max_seq_len", "model_execute_time")
 BATCH_FILE_FIELD = ("ibis_batchid", *BATCH_FIELD, "req_info")
 BatchField = namedtuple("BatchField", BATCH_FIELD)
 BatchFileField = namedtuple("BatchFileField", BATCH_FILE_FIELD)
@@ -54,17 +54,17 @@ RequestField = namedtuple("RequestField", REQUEST_FIELD)
 RequestFileField = namedtuple("RequestFileField", REQUEST_FILE_FIELD)
 
 MODEL_OP_FIELD = (
-"op_name", "call_count", "input_count", "input_dtype", "input_shape", "output_count", "output_dtype",
-"output_shape", "host_setup_time", "host_execute_time", "kernel_execute_time", "aic_cube_fops", "aiv_vector_fops")
+    "op_name", "call_count", "input_count", "input_dtype", "input_shape", "output_count", "output_dtype",
+    "output_shape", "host_setup_time", "host_execute_time", "kernel_execute_time", "aic_cube_fops", "aiv_vector_fops")
 ModelOpField = namedtuple("ModelOpField", MODEL_OP_FIELD)
 BATCH_SIZE = "batch_size"
 MAX_SEQ_LEN = "max_seq_len"
 
 MODEL_STRUCT_FIELD = (
-"total_param_num", "total_param_size", "embed_tokens_param_size_rate", "self_attn_param_size_rate",
-"mlp_param_size_rate", "input_layernorm_param_size_rate", "post_attention_layernorm_param_size_rate",
-"norm_param_size_rate",
-"lm_head_param_size_rate")
+    "total_param_num", "total_param_size", "embed_tokens_param_size_rate", "self_attn_param_size_rate",
+    "mlp_param_size_rate", "input_layernorm_param_size_rate", "post_attention_layernorm_param_size_rate",
+    "norm_param_size_rate",
+    "lm_head_param_size_rate")
 ModelStruct = namedtuple("ModelStruct", MODEL_STRUCT_FIELD, defaults=[0 for i in range(len(MODEL_STRUCT_FIELD))])
 
 QUESTION_FIELD = ("question", "answer")
@@ -113,8 +113,8 @@ class ModelFilePaths:
         if self.model_prefill_op_path is None:
             self.model_prefill_op_path = self.base_path.joinpath("model_prefill_op.csv")
         for path in [self.hardware_path, self.env_path, self.mindie_config_path, self.config_path, self.batch_path,
-                    self.request_path,
-                    self.model_struct_path, self.model_decode_op_path, self.model_prefill_op_path]:
+                     self.request_path,
+                     self.model_struct_path, self.model_decode_op_path, self.model_prefill_op_path]:
             if not path.exists():
                 raise FileNotFoundError(path)
 
@@ -159,7 +159,7 @@ class ConvertModelFileToCsv:
             data = json.load(f)
         assert data
         if "max_seq_len" in data:
-            data["mindie__max_seq_len"] = int(data["max_seq_len"])
+            data["mindie__max_seq_len"] = data["max_seq_len"]
         return MindieConfig(**{k: v for k, v in data.items() if k in MINDIE_FIELD})
 
     @staticmethod
@@ -171,7 +171,7 @@ class ConvertModelFileToCsv:
 
     @staticmethod
     def load_model_struct(model_struct_path: Path) -> ModelStruct:
-        with open(model_struct_path, "r", encoding="utf-8") as f:
+        with open(model_struct_path, "r", encoding="utf-8", newline="") as f:
             model_struct_reader = csv.reader(f)
             model_struct = None
             for i, row in enumerate(model_struct_reader):
@@ -187,7 +187,7 @@ class ConvertModelFileToCsv:
 
     @staticmethod
     def load_op_data(op_path: Path) -> Dict[int, List]:
-        return FileHandler.load_op_data(op_path)
+        return FileHanlder.load_op_data(op_path)
 
     @staticmethod
     def load_all_req_info(request_need_csv: Path, req_queue: Optional[Queue] = None):
@@ -208,7 +208,7 @@ class ConvertModelFileToCsv:
         return res
 
     @staticmethod
-    def get_num_of_prefill_and_decode(cur_batch_info: BatchFileField, tmp_prefill_req_id: List[int], cur_batch_size: int, 
+    def get_num_of_prefill_and_decode(cur_batch_info: BatchField, tmp_prefill_req_id: List[int], cur_batch_size: int, 
                                       all_prefill_req: List[int], all_relation_req: List[int]):
         _prefill_num, _decode_num = 0, 0
 
@@ -238,8 +238,8 @@ class ConvertModelFileToCsv:
         self.prefill_op_data = self.load_op_data(self.model_file_paths.model_prefill_op_path)
         self.decode_op_data = self.load_op_data(self.model_file_paths.model_decode_op_path)
 
-    def get_op_field(self, batch_stage: str, batch_size: int, max_seq_len: int = 0) -> Tuple[ModelField]:
-        return FileHandler.get_op_field(batch_stage, batch_size, max_seq_len, self.prefill_op_data, self.decode_op_data)
+    def get_op_field(self, batch_stage: str, batch_size: int, max_seq_len: int = 0) -> Tuple[ModelOpField]:
+        return FileHanlder.get_op_field(batch_stage, batch_size, max_seq_len, self.prefill_op_data, self.decode_op_data)
 
     def load_batch_info(self) -> Tuple[BatchField, List[RequestField], List[ModelOpField], ModelStruct, ModelConfig,
                                        MindieConfig, EnvField, HardWare]:
@@ -258,7 +258,7 @@ class ConvertModelFileToCsv:
         _prefill_sum = 0
         _decode_sum = 0
         _all_prefill_req = []
-        with opne(self.model_file_paths.batch_path, newline='') as batch_files:
+        with open(self.model_file_paths.batch_path, newline='') as batch_files:
             batch_reader = csv.reader(batch_files)
             for i, row in enumerate(batch_reader):
                 if i == 0:
@@ -321,7 +321,7 @@ class ConvertModelFileToCsv:
 
     def convert_to_csv(self):
         res = self.load_batch_info()
-        with open(self.out, "w", newline='') as f:
+        with open(self.out, "w", newline="") as f:
             batch_writer = csv.writer(f)
             batch_writer.writerow(
                 [BATCH_FIELD, REQUEST_FIELD, MODEL_OP_FIELD, MODEL_STRUCT_FIELD, MODEL_CONFIG_FIELD, MINDIE_FIELD,
@@ -339,7 +339,7 @@ class ConvertModelFileToCsv:
         req_decode_nums = []
         for req_id, max_execute_id in self.only_req_num.items():
             req_decode_nums.append(max_execute_id)
-            req_input_lens.append(self.all_request_info[(req_id, max_execute_id)].output_length)
+            req_input_lens.append(self.all_request_info[(req_id, max_execute_id)].input_length)
         sns.scatterplot(x=req_input_lens, y=req_decode_nums, )
         plt.xlabel("input length")
         plt.ylabel("decode num")
@@ -462,12 +462,12 @@ class ConvertRequestFileToCsv:
 if __name__ == "__main__":
     base_path = Path(r"D:\PyProject\ModelEvalState\data\v1.0.0\llama3-8b-2")
     analysis_feature = base_path.joinpath("analysis_feature")
-    analysis_feature.mkdir(parents, exist_ok=True)
+    analysis_feature.mkdir(parents=True, exist_ok=True)
     model_file_paths = ModelFilePaths(base_path=base_path)
     convert_model_file_to_csv = ConvertModelFileToCsv(model_file_paths=model_file_paths,
                                                           output=base_path.joinpath("feature.csv"),
                                                           req_warm_up=20)
-    convert_model_file_to_csv.convert_to_scv()
+    convert_model_file_to_csv.convert_to_csv()
     convert_model_file_to_csv.plot_feature(analysis_feature)
     convert_model_file_to_csv.save_only_req_num(save_path=analysis_feature)
 

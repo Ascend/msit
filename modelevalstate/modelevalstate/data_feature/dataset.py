@@ -33,9 +33,9 @@ class MyDataSet:
         self.test_size = test_size
         self.shuffle = shuffle
         if custom_encoder:
-        self.custom_encoder = custom_encoder
+            self.custom_encoder = custom_encoder
         else:
-        self.custom_encoder = CustomOneHotEncoder()
+            self.custom_encoder = CustomOneHotEncoder()
         self.features = None
         self.labels = None
         self.load_data = None
@@ -111,13 +111,13 @@ class MyDataSet:
         self.labels = pd.DataFrame(batch_df[self.predict_field], columns=[self.predict_field])
         batch_df = batch_df.drop(self.predict_field, axis=1)
         self.features = pd.concat([batch_df, request_df, model_op_df, model_struct_df, model_config_df, mindie_df,
-                                env_df, hardware_df], axis=1)
+                                   env_df, hardware_df], axis=1)
         # 使用sklearn 进行 one-hot
         self.features = self.custom_encoder.transformer(self.features)
         return self.features, self.labels
 
     def construct_data(self, lines_data: Optional[DataFrame] = None, plt_data: bool = True,
-                    middle_save_path: Optional[Path] = None):
+                       middle_save_path: Optional[Path] = None):
         features, labels = self.preprocess(lines_data)
         self.train_x, self.test_x, self.train_y, self.test_y = train_test_split(features, labels,
                                                                                 test_size=self.test_size,
@@ -136,7 +136,7 @@ class MyDataSet:
         self.train_y.to_csv(save_path.joinpath("train_y.csv"), index=False)
 
     def plot_custom_pairplot(self, df: DataFrame, middle_save_path: Optional[Path] = None,
-                            file_name: str = "pairplot.png"):
+                             file_name: str = "pairplot.png"):
         col_num = df.shape[1]
         fig, axs = plt.subplots(col_num, col_num, figsize=(4 * col_num, 4 * col_num))
         for i in range(col_num):
@@ -163,7 +163,7 @@ class MyDataSet:
         custom_label_encoder.fit()
         cur_batch_df = custom_label_encoder.transformer(cur_batch_df)
         self.plot_custom_pairplot(cur_batch_df, middle_save_path,
-                                "batch_pairplot.png")
+                                  "batch_pairplot.png")
 
     def plt_data(self, line_data: DataFrame, middle_save_path: Optional[Path] = None):
         self.analysis_batch_feature(middle_save_path)
@@ -221,12 +221,30 @@ class DecodeDataSet:
         self.shuffle = shuffle
 
     @staticmethod
-    def count_punctuation_marks(lines: str):
+    def count_punctuation_marks(line: str):
         # 定义一个包含所有标点符号的正则表达式模式
-        punctuation_pattern = r'[.,!?;:"\(\)\{\}\[\]\#\$\%\&\*\<\>\\\/\@]'
+        punctuation_pattern = (r'[.,!?;:"(){}[]#$%&*<>\/@\u3000\u3001\u3002\u300A\u300B\uFF01'
+                               r'\uFF03\uFF0E\u2018\u2019\u201C\u201D\u201F\u201E\u2032\u2036'
+                               r'\u2039\u203B\u2045\u205F\u301F\uFE50\uFF5E\uFF5F\uFF61\uFF62'
+                               r'\uFF64\uFF65\uFF66\uFF67\uFF68\uFF69\uFF6A\uFF6B\uFF6C\uFF6D'
+                               r'\uFF6E\uFF6F\uFF70\uFF71\uFF72\uFF73\uFF74\uFF75\uFF76\uFF77'
+                               r'\uFF78\uFF79\uFF7A\uFF7B\uFF7C\uFF7D\uFF7E\uFF7F\uFF80\uFF81'
+                               r'\uFF82\uFF83\uFF84\uFF85\uFF86\uFF87\uFF88\uFF89\uFF8A\uFF8B'
+                               r'\uFF8C\uFF8D\uFF8E\uFF8F\uFF90\uFF91\uFF92\uFF93\uFF94\uFF95'
+                               r'\uFF96\uFF97\uFF98\uFF99\uFF9A\uFF9B\uFF9C\uFF9D\uFF9E\uFF9F'
+                               r'\uFFA0\uFFA1\uFFA2\uFFA3\uFFA4\uFFA5\uFFA6\uFFA7\uFFA8\uFFA9'
+                               r'\uFFAA\uFFAB\uFFAC\uFFAD\uFFAE\uFFAF\uFFB0\uFFB1\uFFB2\uFFB3'
+                               r'\uFFB4\uFFB5\uFFB6\uFFB7\uFFB8\uFFB9\uFFBA\uFFBB\uFFBC\uFFBD'
+                               r'\uFFBE\uFFBF\uFFC0\uFFC1\uFFC2\uFFC3\uFFC4\uFFC5\uFFC6\uFFC7'
+                               r'\uFFC8\uFFC9\uFFCA\uFFCB\uFFCC\uFFCD\uFFCE\uFFCF\uFFD0\uFFD1'
+                               r'\uFFD2\uFFD3\uFFD4\uFFD5\uFFD6\uFFD7\uFFD8\uFFD9\uFFDA\uFFDB'
+                               r'\uFFDC\uFFDD\uFFDE\uFFDF\uFFE0\uFFE1\uFFE2\uFFE3\uFFE4\uFFE5'
+                               r'\uFFE6\uFFE7\uFFE8\uFFE9\uFFEA\uFFEB\uFFEC\uFFED\uFFEE\uFFEF'
+                               r'\uFFF0\uFFF1\uFFF2\uFFF3\uFFF4\uFFF5\uFFF6\uFFF7\uFFF8\uFFF9'
+                               r'\uFFFA\uFFFB\uFFFC\uFFFD\uFFFE\uFFFF]')
 
         # 使用正则表达式查找所有标点符号
-        matches = re.findall(punctuation_pattern, lines)
+        matches = re.findall(punctuation_pattern, line)
 
         # 返回匹配的标点符号个数
         return len(matches)
@@ -249,7 +267,7 @@ class DecodeDataSet:
     def preprocess(self, lines_data: Optional[DataFrame] = None):
         # 提取标点个数
         lines_data["punctuation"] = lines_data["question"].apply(DecodeDataSet.count_punctuation_marks)
-        lines_data["en_chart_count", "zh_chart_count", "other_chart_count"] = lines_data["question"].apply(
+        lines_data[["en_chart_count", "zh_chart_count", "other_chart_count"]] = lines_data["question"].apply(
             DecodeDataSet.count_chars).apply(pd.Series)
         self.load_data = lines_data.drop(["question", "answer"], axis=1)
         self.labels = self.load_data[self.predict_field]
@@ -295,7 +313,7 @@ if __name__ == "__main__":
     my_data_set.save(base_path)
     my_data_set.plt_data(df, middle_save_path=base_path.joinpath("analysis_feature"))
 
-    # 提取request df实例
+    # 提取request df示例
     df = pd.read_csv(r"D:\PyProject\state_eval\data\v1\llama3-8b-12-13\decode_num.csv")
     dd = DecodeDataSet()
     dd.construct_data(df, plt_data=True, middle_save_path=Path(r"D:\PyProject\state_eval\data\v1\llama3-8b-12-13\analysis_feature"))
