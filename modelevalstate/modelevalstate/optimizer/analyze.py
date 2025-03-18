@@ -7,11 +7,12 @@ import json
 import logging
 import pandas as pd
 
+has_orjson = False
 try:
     import orjson
     has_orjson = True
 except ImportError:
-    has_orjson = False
+    pass
 
 req_map = {}
 
