@@ -82,7 +82,7 @@ def deep_compare_dict(dicts, names, parent_key="", skip_keys=None):
     has_diff = False
     types = [type(ii) for ii in dicts]
     if not same(types):
-        print_diff([f"type<{t.__name__}> : {str(x)[0:30]}" for t, x in zip(types, dicts)], names, parent_key)
+        print_diff([f"type <{t.__name__}> : {str(x)[0:30]}" for t, x in zip(types, dicts)], names, parent_key)
         return True
     all_keys = set()
     if isinstance(dicts[0], dict):
@@ -207,6 +207,6 @@ def parse_mindie_server_config(mindie_service_path=None):
 
     mindie_service_config = read_csv_or_json(os.path.join(mindie_service_path, "conf", "config.json"))
     logger.debug(
-        f"mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}"
+        "mindie_service_config: %s", get_next_dict_item(mindie_service_config) if mindie_service_config else None
     )
     return mindie_service_config

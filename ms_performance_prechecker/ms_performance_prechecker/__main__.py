@@ -214,27 +214,27 @@ def sub_parser_distribute_compare(subparsers):
         "-ip",
         "--master_ip",
         default=None,
-        help="master ip, should set it when not have a correct RANKTABLEFILE",
+        help="master ip, required if RANKTABLEFILE not available or using different value",
     )
     parser.add_argument(
         "-port",
         "--master_port",
         default=None,
-        help="master port, should set it when not have a correct RANKTABLEFILE",
+        help="master port, required if MIES_INSTALL_PATH not available or master_port already occupied by others",
     )
     parser.add_argument(
         "-rank",
         "--local_rank",
         type=int,
         default=None,
-        help="local rank, should set it when not have a correct RANKTABLEFILE",
+        help="local rank, required if RANKTABLEFILE not available or using different value",
     )
     parser.add_argument(
         "-size",
         "--world_size",
         type=int,
         default=None,
-        help="world size, should set it when not have a correct RANKTABLEFILE",
+        help="world size, required if RANKTABLEFILE not available or using different value",
     )
     parser.set_defaults(func=run_distribute_compare)
 
