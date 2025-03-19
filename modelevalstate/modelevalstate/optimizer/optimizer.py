@@ -406,6 +406,20 @@ class PSOOptimizer:
         if self.load_history_data:
             self.init_pos = self.custom_init_pos()
 
+    @staticmethod
+    def visualization(self, optimizer: SwarmOptimizer):
+        plot_cost_history(cost_history=optimizer.cost_history)
+        plt.savefig(settings.output.joinpath(f"cost_history_{RUN_TIME}.png"))
+        plt.close()
+        m = Mesher(func=fx.sphere)
+        animation = plot_contour(pos_history=optimizer.pos_history, mesher=m, mark=(0, 0))
+        animation.save(settings.output.joinpath(f"pos_history_{RUN_TIME}.gif"), writer="pillow")
+        pos_history_3d = m.compute_history_3d(optimizer.pos_history)
+        d = Designer(limits=[(-1, 1), (-1, 1), (-0.1, 1)], label=['x-axis', 'y-axis', 'z-axis'])
+        animation_3d = plot_surface(pos_history=pos_history_3d, mesher=m, designer=d, mark=(0, 0, 0))
+        animation_3d.save(str(settings.output.joinpath(f"pos_history_3d_{RUN_TIME}.gif").resolve()),
+                          writer="pillow", )
+
     def custom_init_pos(self) -> Optional[np.ndarray]:
         best_init_pos = None
         _fitness = inf
@@ -471,20 +485,6 @@ class PSOOptimizer:
             _min.append(_field.min)
             _max.append(_field.max)
         return (tuple(_min), tuple(_max))
-
-    @staticmethod
-    def visualization(self, optimizer: SwarmOptimizer):
-        plot_cost_history(cost_history=optimizer.cost_history)
-        plt.savefig(settings.output.joinpath(f"cost_history_{RUN_TIME}.png"))
-        plt.close()
-        m = Mesher(func=fx.sphere)
-        animation = plot_contour(pos_history=optimizer.pos_history, mesher=m, mark=(0, 0))
-        animation.save(settings.output.joinpath(f"pos_history_{RUN_TIME}.gif"), writer="pillow")
-        pos_history_3d = m.compute_history_3d(optimizer.pos_history)
-        d = Designer(limits=[(-1, 1), (-1, 1), (-0.1, 1)], label=['x-axis', 'y-axis', 'z-axis'])
-        animation_3d = plot_surface(pos_history=pos_history_3d, mesher=m, designer=d, mark=(0, 0, 0))
-        animation_3d.save(str(settings.output.joinpath(f"pos_history_3d_{RUN_TIME}.gif").resolve()),
-                          writer="pillow", )
 
     def run(self):
         optimizer = ps.single.GlobalBestPSO(n_particles=self.n_particles, dimensions=len(self.target_field),
