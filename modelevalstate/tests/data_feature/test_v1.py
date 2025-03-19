@@ -7,8 +7,8 @@ from modelevalstate.data_feature.v1 import FileReader
 
 
 def test_file_reader():
-    file_paths = [Path(r"D:\PyProject\state_eval\tmp\test_x.csv"),
-                  Path(r"D:\PyProject\state_eval\tmp\train_x.csv")]
+    file_paths = [Path(r"..\state_eval\tmp\test_x.csv"),
+                  Path(r"..\state_eval\tmp\train_x.csv")]
     fr = FileReader(file_paths)
     res = fr.read_lines()
     assert res.shape[0] > 1977
