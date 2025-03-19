@@ -133,11 +133,12 @@ def run_distribute_compare(master_ip=None, master_port=None, local_rank=None, wo
 
 
 def sub_parser_precheck(subparsers):
-    parser = subparsers.add_parser(RUN_MODES.precheck, help='precheck evns')
+    parser = subparsers.add_parser(
+        RUN_MODES.precheck, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help='precheck evns'
+    )
     parser.add_argument(
         "-t",
         "--check_type",
-        "--check-type",
         type=str_ignore_case,
         default=CHECK_TYPES.deepseek,
         choices=CHECK_TYPES,
@@ -146,7 +147,6 @@ def sub_parser_precheck(subparsers):
     parser.add_argument(
         "-s",
         "--save_env",
-        "--save-env",
         default="ms_performance_prechecker_env.sh",
         help="Save env changes as a file which could be applied directly.",
     )
@@ -154,12 +154,13 @@ def sub_parser_precheck(subparsers):
 
 
 def sub_parser_envdump(subparsers):
-    parser = subparsers.add_parser(RUN_MODES.envdump, help='dump env')
+    parser = subparsers.add_parser(
+        RUN_MODES.envdump, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help='dump env'
+    )
     
     parser.add_argument(
         "-d",
         "--dump_file_path",
-        "--dump-file-path",
         nargs="?",
         default=DEFAULT_DUMP_PATH,
         help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
@@ -169,11 +170,12 @@ def sub_parser_envdump(subparsers):
     
     
 def sub_parser_compare(subparsers):
-    parser = subparsers.add_parser(RUN_MODES.compare, help='compare dump envs')
+    parser = subparsers.add_parser(
+        RUN_MODES.compare, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help='compare dump envs'
+    )
     parser.add_argument(
         "-d",
         "--dump_file_paths",
-        "--dump-file-paths",
         nargs="+",
         help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
     )
@@ -185,7 +187,11 @@ def sub_parser_distribute_compare(subparsers):
     ranktable_file = os.getenv(RANKTABLEFILE, None)
     mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
 
-    parser = subparsers.add_parser(RUN_MODES.distribute_compare, help='compare distribute envs')
+    parser = subparsers.add_parser(
+        RUN_MODES.distribute_compare,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help='compare distribute envs'
+    )
     parser.add_argument(
         "-s", "--service_config_path", type=str, default=mindie_service_path, help="service config json path"
     )
@@ -194,28 +200,24 @@ def sub_parser_distribute_compare(subparsers):
     parser.add_argument(
         "-ip",
         "--master_ip",
-        "--master-ip",
         default=None,
         help="master ip, should set it when not have a correct RANKTABLEFILE",
     )
     parser.add_argument(
         "-port",
         "--master_port",
-        "--master-port",
         default=None,
         help="master port, should set it when not have a correct RANKTABLEFILE",
     )
     parser.add_argument(
         "-rank",
         "--local_rank",
-        "--local-rank",
         default=None,
         help="local rank, should set it when not have a correct RANKTABLEFILE",
     )
     parser.add_argument(
         "-size",
         "--world_size",
-        "--world-size",
         default=None,
         help="world size, should set it when not have a correct RANKTABLEFILE",
     )
