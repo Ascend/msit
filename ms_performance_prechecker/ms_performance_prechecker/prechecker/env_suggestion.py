@@ -103,7 +103,8 @@ ENV_SUGGESTIONS = [
             {
                 "VALUE": "AIV",
                 "SUGGESTION": {
-                    "REASON": "配置通信算法的编排展开位置，代表通信算法的编排展开位置在 Device侧的 AI Vector Core 计算单元。（但是在 '2.0.T3', '2.0.T3.1', '2.0.T6' 版本中，使能 AIV 会有崩溃风险，请不要设置它"
+                    "REASON": "配置通信算法的编排展开位置，代表通信算法的编排展开位置在 Device侧的 AI Vector Core 计算单元。"
+                        "（但是在 '2.0.T3', '2.0.T3.1', '2.0.T6' 版本中，使能 AIV 会有崩溃风险，请不要设置它"
                 },
                 "NOT_SUGGESTION": {
                     "VERSION_LIST": {"Ascend-mindie": ["2.0.T3", "2.0.T3.1", "2.0.T6"]},
@@ -115,7 +116,8 @@ ENV_SUGGESTIONS = [
     {
         "ENV": "HCCL_DETERMINISTIC",
         "SUGGESTION_VALUE": ["false", None],
-        "REASON": "关闭确定性计算，一般情况下无需开启确定性计算，当模型多次执行结果不同或者精度调优时，可通过此环境变量开启确定性计算进行辅助调试调优，但开启确定性计算后，算子执行时间会变慢，导致性能下降。",
+        "REASON": "关闭确定性计算，一般情况下无需开启确定性计算，当模型多次执行结果不同或者精度调优时，"
+            "可通过此环境变量开启确定性计算进行辅助调试调优，但开启确定性计算后，算子执行时间会变慢，导致性能下降。",
     },
     {
         "ENV": "HCCL_RDMA_PCIE_DIRECT_POST_NOSTRICT",

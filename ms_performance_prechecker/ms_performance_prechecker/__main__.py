@@ -22,13 +22,12 @@ from glob import glob
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, RUN_MODES
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
 from ms_performance_prechecker.prechecker.utils import logger, set_log_level
-from ms_performance_prechecker.prechecker.utils import str_ignore_case, deep_compare_dict, read_csv_or_json
-from ms_performance_prechecker.prechecker.utils import get_next_dict_item
+from ms_performance_prechecker.prechecker.utils import str_ignore_case, deep_compare_dict, get_next_dict_item
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
 
 DEFAULT_DUMP_PATH = os.path.join(
-    tempfile.gettempdir(), f"ms_performance_prechecker_dump_{ datetime.datetime.now().strftime('%Y%m%d_%H%M%S') }.json"
+    tempfile.gettempdir(), f"ms_performance_prechecker_dump_{time.strftime('%Y%m%d_%H%M%S')}.json"
 )
 DAFAULT_ENV_SAVE_PATH = "ms_performance_prechecker_env.sh"
 RANKTABLEFILE = "RANKTABLEFILE"
@@ -77,7 +76,7 @@ def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **k
 def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
     if dump_file_paths is None or len(dump_file_paths) < 2:
         logger.error("Please provide dump file path")
-        return
+        return False
 
     env_infos = []
     env_names = []
@@ -138,7 +137,8 @@ def run_distribute_compare(
     for ip, dump_env_json_str in dump_env_json_str_dict.items():
         env_ips.append(ip)
         env_infos.append(json.loads(dump_env_json_str))
-    has_diff = deep_compare_dict(env_infos, env_ips, skip_keys=[".Env.MIES_CONTAINER_IP"])
+    skip_keys = [".Env.MIES_CONTAINER_IP", ".Env.ASCEND_CUSTOM_OPP_PATH"]
+    has_diff = deep_compare_dict(env_infos, env_ips, skip_keys=skip_keys)
     if not has_diff:
         logger.info("No difference found")
     logger.info("== compare end ==")
@@ -165,9 +165,9 @@ def sub_parser_precheck(subparsers):
     parser.set_defaults(func=run_precheck)
 
 
-def sub_parser_envdump(subparsers):
+def sub_parser_dump(subparsers):
     parser = subparsers.add_parser(
-        RUN_MODES.envdump, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="dump env"
+        RUN_MODES.dump, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="dump env"
     )
 
     parser.add_argument(
@@ -244,7 +244,7 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers(help="sub-command help")
     sub_parser_precheck(subparsers)
-    sub_parser_envdump(subparsers)
+    sub_parser_dump(subparsers)
     sub_parser_compare(subparsers)
     sub_parser_distribute_compare(subparsers)
     parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")

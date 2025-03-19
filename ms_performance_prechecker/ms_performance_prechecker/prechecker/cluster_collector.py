@@ -1,7 +1,21 @@
+# Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import socket
-import torch
 from collections import namedtuple
+
+import torch
 from ms_performance_prechecker.prechecker.utils import parse_mindie_server_config, read_csv_or_json, logger
 
 _DISTIBUT_ENVS = ["ranktable_map", "master_ip", "master_port", "local_ip", "rank", "interface", "world_size"]
@@ -52,9 +66,7 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None):
         )
         return
     ranktable = read_csv_or_json(ranktable_file)
-    ranktable_map = {
-        server.get("server_id", None): rank_id for rank_id, server in enumerate(ranktable.get("server_list"))
-    }
+    ranktable_map = {serv.get("server_id", None): rank for rank, serv in enumerate(ranktable.get("server_list", []))}
     if not ranktable_map:
         logger.error(f"ranktable_file={ranktable_file} is empty or not correctly set.")
         return
@@ -92,10 +104,10 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None):
 
 class DistributeCollector:
     def __init__(self, master_ip=None, master_port=None, rank=None, world_size=None, backend="gloo"):
-        self.master_ip = self.may_use_global_value(DISTIBUT_ENVS.master_ip, master_ip)
-        self.master_port = self.may_use_global_value(DISTIBUT_ENVS.master_port, master_port)
-        self.rank = self.may_use_global_value(DISTIBUT_ENVS.rank, rank)
-        self.world_size = self.may_use_global_value(DISTIBUT_ENVS.world_size, world_size)
+        self.master_ip = self._may_use_global_value(DISTIBUT_ENVS.master_ip, master_ip)
+        self.master_port = self._may_use_global_value(DISTIBUT_ENVS.master_port, master_port)
+        self.rank = self._may_use_global_value(DISTIBUT_ENVS.rank, rank)
+        self.world_size = self._may_use_global_value(DISTIBUT_ENVS.world_size, world_size)
 
         self.backend = backend
         self.local_ip = GLOBAL_DISTRIBUTE_ENV.get(DISTIBUT_ENVS.local_ip, "127.0.0.1")
@@ -105,7 +117,8 @@ class DistributeCollector:
             "world_size={self.world_size}"
         )
 
-    def may_use_global_value(self, key, value=None):
+    @staticmethod
+    def _may_use_global_value(key, value=None):
         return GLOBAL_DISTRIBUTE_ENV[key] if not value and key in GLOBAL_DISTRIBUTE_ENV else value
 
     def gather(self, contents):
@@ -123,7 +136,7 @@ class DistributeCollector:
             bytes_contents = contents
         else:
             logger.error(f"contents of type {type(contents).__name__} not supported in DistributeCollector")
-            return
+            return None
 
         combined_str = f"{contents}@{self.local_ip}"
         byte_data = combined_str.encode()[:MAX_SENDING_LEN].ljust(MAX_SENDING_LEN, b"\x00")  # padding
