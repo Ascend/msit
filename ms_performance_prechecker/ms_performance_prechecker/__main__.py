@@ -122,7 +122,9 @@ def run_distribute_compare(
     dump_env = run_env_dump(None)
     dump_env_json_str = json.dumps(dump_env)
 
-    cluster_collector.init_global_distribute_env(ranktable_file=ranktable_file, service_config_path=service_config_path)
+    cluster_collector.init_global_distribute_env(
+        ranktable_file=ranktable_file, service_config_path=service_config_path, master_ip=master_ip
+    )
     dump_env_json_str_dict = cluster_collector.distribute_collector(
         dump_env_json_str, master_ip=master_ip, master_port=master_port, rank=local_rank, world_size=world_size
     )
