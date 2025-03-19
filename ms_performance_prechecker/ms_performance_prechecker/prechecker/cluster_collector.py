@@ -148,4 +148,4 @@ def distribute_collector(contents, master_ip=None, master_port=None, rank=None, 
         GLOBAL_DISTRIBUTE_COLLECTOR = DistributeCollector(
             master_ip=master_ip, master_port=master_port, rank=rank, world_size=world_size
         )
-    GLOBAL_DISTRIBUTE_COLLECTOR.gather(contents)
+    return GLOBAL_DISTRIBUTE_COLLECTOR.gather(contents)
