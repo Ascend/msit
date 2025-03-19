@@ -106,17 +106,24 @@ def run_precheck(
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
 
-def distribute_collector(*args):
-    # [TODO]
-    return {
-        "xxx": json.dumps(dict(xx=1234, yy=5678)),
-        "xxx2": json.dumps(dict(xx=12343, yy=5678)),
-    }
+def run_distribute_compare(
+    ranktable_file=None,
+    service_config_path=None,
+    master_ip=None,
+    master_port=None,
+    local_rank=None,
+    world_size=None,
+    **kwargs,
+):
+    from ms_performance_prechecker.prechecker import cluster_collector
 
-def run_distribute_compare(master_ip=None, master_port=None, local_rank=None, word_size=None, **kwargs):
     dump_env = run_env_dump(None)
     dump_env_json_str = json.dumps(dump_env)
-    dump_env_json_str_dict = distribute_collector(dump_env_json_str, master_ip, master_port, local_rank, word_size)
+
+    cluster_collector.init_global_distribute_env(ranktable_file=ranktable_file, service_config_path=service_config_path)
+    dump_env_json_str_dict = cluster_collector.distribute_collector(dump_env_json_str)
+
+    dump_env_json_str_dict = distribute_collector(dump_env_json_str, master_ip, master_port, local_rank, world_size)
     if dump_env_json_str_dict is None:
         logger.info("Not master node, skip comparing")
         return 
