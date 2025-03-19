@@ -138,7 +138,7 @@ def run_distribute_compare(
     for ip, dump_env_json_str in dump_env_json_str_dict.items():
         env_ips.append(ip)
         env_infos.append(json.loads(dump_env_json_str))
-    has_diff = deep_compare_dict(env_infos, env_ips)
+    has_diff = deep_compare_dict(env_infos, env_ips, skip_keys=[".Env.MIES_CONTAINER_IP"])
     if not has_diff:
         logger.info("No difference found")
     logger.info("== compare end ==")
