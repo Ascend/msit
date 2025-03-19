@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Huawei Technologies Co., Ltd. 2024-2025. All rights reserved.
 import sys
-sys.path.append(r"D:\PyProject\state_eval\inference")
+sys.path.append(r"..\state_eval\inference")
 from copy import deepcopy
 from pathlib import Path
 from multiprocessing import Pool
