@@ -41,6 +41,10 @@ class MyDataSet:
         self.load_data = None
         self.op_algorithm = op_algorithm
         self.sub_columns = []
+        self.train_x = None
+        self.test_x = None
+        self.train_y = None
+        self.test_y = None
 
     @staticmethod
     def convert_batch_info(row: str, index: str) -> Series:
@@ -82,7 +86,16 @@ class MyDataSet:
     @staticmethod
     def convert_hardware_info(row: str, index: str) -> Series:
         return PreprocessTool.generate_series(eval(row), eval(index))
-
+    
+     @staticmethod
+    def get_all_request_info(row: str, index: str) -> DataFrame:
+        # 获取所有request原始数据特征，用来分析原始数据
+        origin_index = eval(index)
+        origin_row = eval(row)
+        _row_request_info = []
+        for _row in origin_row:
+            _row_request_info.append([int(float(i)) for i in _row])
+        return pd.DataFrame(_row_request_info, columns=origin_index)
 
     def preprocess(self, lines_data: Optional[DataFrame] = None):
         # 数据预处理
@@ -127,14 +140,6 @@ class MyDataSet:
         if plt_data:
             self.plt_data(lines_data, middle_save_path)
 
-    def save(self, save_path: Path):
-        self.features.to_csv(save_path.joinpath("features_preprocess.csv"), index=False)
-        self.load_data.to_csv(save_path.joinpath("load_data.csv"), index=False)
-        self.test_x.to_csv(save_path.joinpath("test_x.csv"), index=False)
-        self.test_y.to_csv(save_path.joinpath("test_y.csv"), index=False)
-        self.train_x.to_csv(save_path.joinpath("train_x.csv"), index=False)
-        self.train_y.to_csv(save_path.joinpath("train_y.csv"), index=False)
-
     def plot_custom_pairplot(self, df: DataFrame, middle_save_path: Optional[Path] = None,
                              file_name: str = "pairplot.png"):
         col_num = df.shape[1]
@@ -168,16 +173,14 @@ class MyDataSet:
     def plt_data(self, line_data: DataFrame, middle_save_path: Optional[Path] = None):
         self.analysis_batch_feature(middle_save_path)
         self.analysis_origin_request_hist(line_data, middle_save_path)
-
-    @staticmethod
-    def get_all_request_info(row: str, index: str) -> DataFrame:
-        # 获取所有request原始数据特征，用来分析原始数据
-        origin_index = eval(index)
-        origin_row = eval(row)
-        _row_request_info = []
-        for _row in origin_row:
-            _row_request_info.append([int(float(i)) for i in _row])
-        return pd.DataFrame(_row_request_info, columns=origin_index)
+    
+    def save(self, save_path: Path):
+        self.features.to_csv(save_path.joinpath("features_preprocess.csv"), index=False)
+        self.load_data.to_csv(save_path.joinpath("load_data.csv"), index=False)
+        self.test_x.to_csv(save_path.joinpath("test_x.csv"), index=False)
+        self.test_y.to_csv(save_path.joinpath("test_y.csv"), index=False)
+        self.train_x.to_csv(save_path.joinpath("train_x.csv"), index=False)
+        self.train_y.to_csv(save_path.joinpath("train_y.csv"), index=False)
 
     def analysis_origin_request_hist(self, df: DataFrame, middle_save_path: Optional[Path] = None):
         request_series = df.iloc[:, 1].apply(self.get_all_request_info, args=(df.columns[1],))
@@ -219,6 +222,13 @@ class DecodeDataSet:
         self.predict_field = predict_field
         self.test_size = test_size
         self.shuffle = shuffle
+        self.load_data = None
+        self.features = None
+        self.labels = None
+        self.train_x = None 
+        self.test_x = None 
+        self.train_y = None
+        self.test_y = None
 
     @staticmethod
     def count_punctuation_marks(line: str):
