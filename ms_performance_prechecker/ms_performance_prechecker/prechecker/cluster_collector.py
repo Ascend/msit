@@ -6,7 +6,8 @@ from ms_performance_prechecker.prechecker.utils import parse_mindie_server_confi
 
 _DISTIBUT_ENVS = ["ranktable_map", "master_ip", "master_port", "local_ip", "rank", "interface", "world_size"]
 DISTIBUT_ENVS = namedtuple("DISTIBUT_ENVS", _DISTIBUT_ENVS)(*_DISTIBUT_ENVS)
-GLOBAL_DISTRIBUTE_COLLECTOR = {}
+GLOBAL_DISTRIBUTE_COLLECTOR = None
+GLOBAL_DISTRIBUTE_ENV = {}
 DAFAULT_MASTER_PORT = 29400
 MAX_SENDING_LEN = 40960
 
@@ -37,8 +38,8 @@ def get_rank_id_in_ranktable_by_ip(local_ip, rank_table):
     return None
 
 def init_global_distribute_env(ranktable_file=None, service_config_path=None):
-    global GLOBAL_DISTRIBUTE_COLLECTOR
-    if GLOBAL_DISTRIBUTE_COLLECTOR:
+    global GLOBAL_DISTRIBUTE_ENV
+    if GLOBAL_DISTRIBUTE_ENV:
         return
 
     if not ranktable_file or not os.path.exists(ranktable_file):
@@ -74,15 +75,15 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None):
         )
         master_port = DAFAULT_MASTER_PORT
 
-    GLOBAL_DISTRIBUTE_COLLECTOR[DISTIBUT_ENVS.ranktable_map] = ranktable_map
-    GLOBAL_DISTRIBUTE_COLLECTOR[DISTIBUT_ENVS.master_ip] = master_ip
-    GLOBAL_DISTRIBUTE_COLLECTOR[DISTIBUT_ENVS.master_port] = master_port
-    GLOBAL_DISTRIBUTE_COLLECTOR[DISTIBUT_ENVS.local_ip] = local_ip
-    GLOBAL_DISTRIBUTE_COLLECTOR[DISTIBUT_ENVS.interface] = interface
-    GLOBAL_DISTRIBUTE_COLLECTOR[DISTIBUT_ENVS.rank] = ranktable_map.get(local_ip, -1)
-    GLOBAL_DISTRIBUTE_COLLECTOR[DISTIBUT_ENVS.world_size] = len(ranktable_map)
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.ranktable_map] = ranktable_map
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.master_ip] = master_ip
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.master_port] = master_port
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.local_ip] = local_ip
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.interface] = interface
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.rank] = ranktable_map.get(local_ip, -1)
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.world_size] = len(ranktable_map)
 
-    logger.info(f"GLOBAL_DISTRIBUTE_COLLECTOR: {GLOBAL_DISTRIBUTE_COLLECTOR}")
+    logger.info(f"GLOBAL_DISTRIBUTE_ENV: {GLOBAL_DISTRIBUTE_ENV}")
     os.environ["GLOO_SOCKET_IFNAME"] = str(interface)
 
 
