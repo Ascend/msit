@@ -56,7 +56,7 @@ def get_cpu_info():
 
 class SystemInfoCollect(RrecheckerBase):
     __checker_name__ = "SystemInfo"
-    
+
     def collect_env(self, **kwargs):
         cpu_info = get_cpu_info()
         cpu_num = cpu_info.get("CPU(s)", None)
@@ -89,8 +89,8 @@ class SystemInfoCollect(RrecheckerBase):
                         break
             record(f"0200 MINDIE 版本：{mindie_version}", part=CONTENT_PARTS.sys)
         return dict(
-            cpu_model_name=cpu_model_name, 
-            cpu_num=cpu_num, 
+            cpu_model_name=cpu_model_name,
+            cpu_num=cpu_num,
             page_size=page_size,
             ascend_toolkit_version=ascend_toolkit_version,
             mindie_version=mindie_version,
@@ -127,7 +127,7 @@ class KernelReleaseChecker(RrecheckerBase):
 
         answer_kwargs = dict(
             domain="system",
-            checker="内核版本", 
+            checker="内核版本",
             result=CheckResult.ERROR,
             action=f"升级到 {target_version} 以上",
             reason="建议升级到 5.10 以上，cpu下发加快，减少 host bound",
@@ -181,7 +181,7 @@ class DriverVersionChecker(RrecheckerBase):
 
         answer_kwargs = dict(
             domain="system",
-            checker="驱动版本", 
+            checker="驱动版本",
             result=CheckResult.ERROR,
             action=f"升级到 {target_version} 以上",
             reason="建议升级到最新的版本的驱动，性能会有提升",
@@ -222,9 +222,14 @@ class VirtualMachineChecker(RrecheckerBase):
         if is_virtual_machine is None:
             return
         if is_virtual_machine:
-            vmware_action = "启用 CPU/MMU Virtualization（ESXi 高级设置）、禁用 CPU 限制（cpuid.coresPerSocket 配置为物理核心数）"
+            vmware_action = (
+                "启用 CPU/MMU Virtualization（ESXi 高级设置）、禁用 CPU 限制（cpuid.coresPerSocket 配置为物理核心数）"
+            )
             kvm_action = "配置 host-passthrough 模式（暴露完整 CPU 指令集）、启用多队列 virtio-net（减少网络延迟）"
-            show_check_result("system", "可能是虚拟机", CheckResult.ERROR, 
+            show_check_result(
+                "system",
+                "可能是虚拟机",
+                CheckResult.ERROR,
                 action=f"确定分配的 cpu 是完全体，如 VMware 中 {vmware_action}；KVM 中 {kvm_action}",
                 reason="虚拟机和物理机的 cpu 核数、频率有差异会导致性能下降，如果是虚拟机环境，建议检查 cpu 情况",
             )
@@ -252,7 +257,10 @@ class TransparentHugepageChecker(RrecheckerBase):
         if is_transparent_hugepage_enable is None:
             return
         if not is_transparent_hugepage_enable:
-            show_check_result("system", "透明大页", CheckResult.ERROR,
+            show_check_result(
+                "system",
+                "透明大页",
+                CheckResult.ERROR,
                 action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}",
                 reason="开启透明大页，吞吐率结果会更稳定",
             )
@@ -260,7 +268,7 @@ class TransparentHugepageChecker(RrecheckerBase):
 
 class CpuHighPerformanceChecker(RrecheckerBase):
     __checker_name__ = "CpuHighPerformance"
-    
+
     def collect_env(self, **kwargs):
         cpu_count = os.cpu_count()
         is_performances = []
@@ -283,32 +291,35 @@ class CpuHighPerformanceChecker(RrecheckerBase):
             return
         cpu_count = cpu_info.get("cpu_count")
         performance_count = cpu_info.get("performance_count")
-        
+
         if performance_count != cpu_count:
             yum_cmd = "EulerOS/CentOS: yum install kernel-tools"
             apt_cmd = "Ubuntu：apt install cpufrequtils"
             run_cmd = "cpupower -c all frequency-set -g performance"
             fail_info = "如果失败可能需要在 BIOS 中开启"
             undo_cmd = "cpupower -c all frequency-set -g powersave"
-            show_check_result("system", "CPU高性能模式", CheckResult.ERROR,
+            show_check_result(
+                "system",
+                "CPU高性能模式",
+                CheckResult.ERROR,
                 action=f"开启 CPU 高性能模式：{run_cmd}；\n        "
-                        f"如果没有 cpupower 命令可以通过 {yum_cmd} 或 {apt_cmd} 安装；\n        "
-                        f"{fail_info}\n        "
-                        f"如果需要回退，可以使用命令：{undo_cmd}",
+                f"如果没有 cpupower 命令可以通过 {yum_cmd} 或 {apt_cmd} 安装；\n        "
+                f"{fail_info}\n        "
+                f"如果需要回退，可以使用命令：{undo_cmd}",
                 reason="使 CPU 运行在最大频率下，可以提升CPU性能，但是会提高能耗",
             )
 
 
 class SystemChecker(GroupRrechecker):
     __checker_name__ = "System"
-    
+
     def init_sub_checkers(self):
         return [
             SystemInfoCollect(),
-            KernelReleaseChecker(), 
-            DriverVersionChecker(), 
-            VirtualMachineChecker(), 
-            TransparentHugepageChecker(), 
+            KernelReleaseChecker(),
+            DriverVersionChecker(),
+            VirtualMachineChecker(),
+            TransparentHugepageChecker(),
             CpuHighPerformanceChecker(),
         ]
 

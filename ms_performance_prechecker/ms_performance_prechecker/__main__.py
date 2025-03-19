@@ -42,11 +42,13 @@ def get_next_dict_item(dict_value):
 
 def get_all_register_perchecker():
     from ms_performance_prechecker.prechecker import checkers
+
     return checkers
 
 
 def print_contents():
     from ms_performance_prechecker.prechecker.register import CONTENTS, CONTENT_PARTS
+
     logger.info(f"")
 
     if CONTENTS.get(CONTENT_PARTS.sys, None):
@@ -61,9 +63,9 @@ def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **k
     for perchecker in percheckers:
         name = perchecker.name()
         envs = perchecker.collect_env(dump_file_path=dump_file_path, mindie_service_path=mindie_service_path, **kwargs)
-        
+
         all_envs[name] = envs
-    
+
     if dump_file_path is not None:
         with open(dump_file_path, "w") as f:
             json.dump(all_envs, f, indent=2)
@@ -83,7 +85,7 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
         with open(dump_file_path, "r") as f:
             env_infos.append(json.load(f))
             env_names.append(dump_file_path)
-        
+
     # 递归逐层比对
     logger.info("== compare start ==")
     has_diff = deep_compare_dict(env_infos, env_names)
@@ -99,8 +101,9 @@ def run_precheck(
     percheckers = get_all_register_perchecker()
 
     for perchecker in percheckers:
-        perchecker.precheck(check_type=check_type, env_save_path=save_env,
-            mindie_service_path=mindie_service_path, **kwargs)
+        perchecker.precheck(
+            check_type=check_type, env_save_path=save_env, mindie_service_path=mindie_service_path, **kwargs
+        )
 
     print_contents()
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
@@ -117,16 +120,20 @@ def run_distribute_compare(
 ):
     from ms_performance_prechecker.prechecker import cluster_collector
 
+    logger.info(f"master_ip={master_ip}, master_port={master_port}, rank={local_rank}, world_size={world_size}")
+
     dump_env = run_env_dump(None)
     dump_env_json_str = json.dumps(dump_env)
 
     cluster_collector.init_global_distribute_env(ranktable_file=ranktable_file, service_config_path=service_config_path)
-    dump_env_json_str_dict = cluster_collector.distribute_collector(dump_env_json_str)
+    dump_env_json_str_dict = cluster_collector.distribute_collector(
+        dump_env_json_str, master_ip=master_ip, master_port=master_port, rank=local_rank, world_size=world_size
+    )
+    logger.info(dump_env_json_str_dict)
 
-    dump_env_json_str_dict = distribute_collector(dump_env_json_str, master_ip, master_port, local_rank, world_size)
     if dump_env_json_str_dict is None:
         logger.info("Not master node, skip comparing")
-        return 
+        return
 
     env_ips = []
     env_infos = []
@@ -141,7 +148,7 @@ def run_distribute_compare(
 
 def sub_parser_precheck(subparsers):
     parser = subparsers.add_parser(
-        RUN_MODES.precheck, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help='precheck evns'
+        RUN_MODES.precheck, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="precheck evns"
     )
     parser.add_argument(
         "-t",
@@ -162,9 +169,9 @@ def sub_parser_precheck(subparsers):
 
 def sub_parser_envdump(subparsers):
     parser = subparsers.add_parser(
-        RUN_MODES.envdump, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help='dump env'
+        RUN_MODES.envdump, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="dump env"
     )
-    
+
     parser.add_argument(
         "-d",
         "--dump_file_path",
@@ -172,13 +179,13 @@ def sub_parser_envdump(subparsers):
         default=DEFAULT_DUMP_PATH,
         help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
     )
-    
+
     parser.set_defaults(func=run_env_dump)
-    
-    
+
+
 def sub_parser_compare(subparsers):
     parser = subparsers.add_parser(
-        RUN_MODES.compare, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help='compare dump envs'
+        RUN_MODES.compare, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="compare dump envs"
     )
     parser.add_argument(
         "-d",
@@ -188,16 +195,17 @@ def sub_parser_compare(subparsers):
     )
     parser.set_defaults(func=run_compare)
 
+
 def sub_parser_distribute_compare(subparsers):
     # Multi-machine
-    
+
     ranktable_file = os.getenv(RANKTABLEFILE, None)
     mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
 
     parser = subparsers.add_parser(
         RUN_MODES.distribute_compare,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help='compare distribute envs'
+        help="compare distribute envs",
     )
     parser.add_argument(
         "-s", "--service_config_path", type=str, default=mindie_service_path, help="service config json path"
@@ -219,36 +227,40 @@ def sub_parser_distribute_compare(subparsers):
     parser.add_argument(
         "-rank",
         "--local_rank",
+        type=int,
         default=None,
         help="local rank, should set it when not have a correct RANKTABLEFILE",
     )
     parser.add_argument(
         "-size",
         "--world_size",
+        type=int,
         default=None,
         help="world size, should set it when not have a correct RANKTABLEFILE",
     )
     parser.set_defaults(func=run_distribute_compare)
 
+
 def main():
     # args
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    subparsers = parser.add_subparsers(help='sub-command help')
+    subparsers = parser.add_subparsers(help="sub-command help")
     sub_parser_precheck(subparsers)
     sub_parser_envdump(subparsers)
     sub_parser_compare(subparsers)
     sub_parser_distribute_compare(subparsers)
     parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
-    args, _ =  parser.parse_known_args()
+    args, _ = parser.parse_known_args()
 
     # init
     set_log_level(args.log_level)
-    
+
     # run
-    if hasattr(args, 'func'):
+    if hasattr(args, "func"):
         args.func(args=args, **vars(args))
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     import argparse

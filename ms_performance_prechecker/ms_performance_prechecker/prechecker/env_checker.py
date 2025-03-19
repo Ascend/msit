@@ -28,9 +28,9 @@ def save_env_contents(fix_pair, save_path):
         ff.write('echo "ENABLE=$ENABLE"\n\n')
         ff.write('if [ "$ENABLE" = "1" ]; then\n')
         ff.write(indent + f"\n{indent}".join((x[0] for x in fix_pair)) + "\n")
-        ff.write('else\n')
+        ff.write("else\n")
         ff.write(indent + f"\n{indent}".join((x[1] for x in fix_pair)) + "\n")
-        ff.write('fi\n')
+        ff.write("fi\n")
     return save_path
 
 
@@ -52,11 +52,12 @@ def env_rule_checker(envs, env_rule, version_info):
     if "SUGGESTIONS" in env_rule:
         suggestions = env_rule["SUGGESTIONS"]
     if "SUGGESTION_VALUE" in env_rule:
-        suggestions.append(dict(VALUE=env_rule.get("SUGGESTION_VALUE", None),
-            SUGGESTION=dict(REASON=env_rule.get("REASON", ""))))
+        suggestions.append(
+            dict(VALUE=env_rule.get("SUGGESTION_VALUE", None), SUGGESTION=dict(REASON=env_rule.get("REASON", "")))
+        )
 
-    suggest_value_list = [] # (value, reason) 优先级从前到后，在前面的优先级高
-    not_suggest_value_dict = {} # value： reason
+    suggest_value_list = []  # (value, reason) 优先级从前到后，在前面的优先级高
+    not_suggest_value_dict = {}  # value： reason
 
     for suggestion in suggestions:
         suggestion_value = suggestion.get("VALUE", None)
@@ -74,8 +75,9 @@ def env_rule_checker(envs, env_rule, version_info):
             if suggestion_version_list is None or version_in_list(version_info, suggestion_version_list):
                 suggest_value_list.append((value_list, suggestion_reason))
         if "NOT_SUGGESTION" in suggestion:
-            not_suggestion_version_list = suggestion.get("NOT_SUGGESTION").get("VERSION_LIST",
-                not_suggestion_version_list)
+            not_suggestion_version_list = suggestion.get("NOT_SUGGESTION").get(
+                "VERSION_LIST", not_suggestion_version_list
+            )
             not_suggestion_reason = suggestion.get("NOT_SUGGESTION").get("REASON", not_suggestion_reason)
             if not_suggestion_version_list is None or version_in_list(version_info, not_suggestion_version_list):
                 not_suggest_value_dict.update({x: not_suggestion_reason for x in suggestion_value})
@@ -92,7 +94,10 @@ def env_rule_checker(envs, env_rule, version_info):
             suggestion_value = not_in_unsuggest_values[0]
             env_cmd = f"export {env_item}={suggestion_value}" if suggestion_value else f"unset {env_item}"
             undo_env_cmd = f"export {env_item}={env_value}" if env_value else f"unset {env_item}"
-            show_check_result("env", env_item, CheckResult.ERROR,
+            show_check_result(
+                "env",
+                env_item,
+                CheckResult.ERROR,
                 action=env_cmd,
                 reason=reason,
             )
@@ -116,8 +121,20 @@ class EnvChecker(RrecheckerBase):
 
         for key, value in env_vars.items():
             key_word_list = [
-                "ASCEND", "MINDIE", "ATB_", "HCCL_", "MIES", "RANKTABLE", "GE_", "TORCH", "ACL_", "NPU_", "LCCL_",
-                "LCAL_", "OPS", "INF_"
+                "ASCEND",
+                "MINDIE",
+                "ATB_",
+                "HCCL_",
+                "MIES",
+                "RANKTABLE",
+                "GE_",
+                "TORCH",
+                "ACL_",
+                "NPU_",
+                "LCCL_",
+                "LCAL_",
+                "OPS",
+                "INF_",
             ]
             for key_word in key_word_list:
                 if key_word in key:
@@ -140,23 +157,35 @@ class EnvChecker(RrecheckerBase):
 
         if not env_save_path:
             show_check_result(
-                "env", "ENV FILE", CheckResult.UNFINISH, reason="save_env setting to None/Empty",
+                "env",
+                "ENV FILE",
+                CheckResult.UNFINISH,
+                reason="save_env setting to None/Empty",
             )
             return
 
         if len(fix_pair) == 0:
             show_check_result(
-                "env", "ENV FILE", CheckResult.VIP, action=f"None env related needs to save",
+                "env",
+                "ENV FILE",
+                CheckResult.VIP,
+                action=f"None env related needs to save",
             )
             return
 
         save_path = save_env_contents(fix_pair, env_save_path)
 
         show_check_result(
-            "env", "", CheckResult.VIP, action=f"使能环境变量配置：source {save_path}",
+            "env",
+            "",
+            CheckResult.VIP,
+            action=f"使能环境变量配置：source {save_path}",
         )
         show_check_result(
-            "env", "", CheckResult.VIP, action=f"恢复环境变量配置：source {save_path} 0",
+            "env",
+            "",
+            CheckResult.VIP,
+            action=f"恢复环境变量配置：source {save_path} 0",
         )
 
 

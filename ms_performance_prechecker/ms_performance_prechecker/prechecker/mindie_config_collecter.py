@@ -26,4 +26,5 @@ class MindieConfigCollecter(RrecheckerBase):
         mindie_service_path = kwargs.get("mindie_service_path")
         return parse_mindie_server_config(mindie_service_path)
 
+
 mindie_config_collecter = MindieConfigCollecter()

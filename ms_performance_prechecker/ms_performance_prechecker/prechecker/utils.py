@@ -75,7 +75,6 @@ def print_diff(diffs, names, key=""):
         print(f"        {diffs[index]}")
 
 
-
 def deep_compare_dict(dicts, names, parent_key=""):
     has_diff = False
     types = [type(ii) for ii in dicts]
@@ -88,9 +87,10 @@ def deep_compare_dict(dicts, names, parent_key=""):
             all_keys.update(dict_item.keys())
 
         for key in all_keys:
-            has_diff = deep_compare_dict(
-                [dict_item.get(key) for dict_item in dicts], names, parent_key + "." + key
-            ) or has_diff
+            has_diff = (
+                deep_compare_dict([dict_item.get(key) for dict_item in dicts], names, parent_key + "." + key)
+                or has_diff
+            )
     elif isinstance(dicts[0], list):
         lens = [len(x) for x in dicts]
         if not same(lens):

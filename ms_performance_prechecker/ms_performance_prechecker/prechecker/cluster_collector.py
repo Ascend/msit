@@ -11,6 +11,7 @@ GLOBAL_DISTRIBUTE_ENV = {}
 DAFAULT_MASTER_PORT = 29400
 MAX_SENDING_LEN = 40960
 
+
 def get_local_to_master_ip(test_ip="8.8.8.8"):
     local_ip = "127.0.0.1"
     try:
@@ -31,11 +32,13 @@ def get_interface_by_ip(local_ip):
                 return interface
     return None
 
+
 def get_rank_id_in_ranktable_by_ip(local_ip, rank_table):
     for rank_id, server_config in enumerate(rank_table.get("server_list", [])):
         if local_ip == server_config.get("server_id", None):
             return rank_id
     return None
+
 
 def init_global_distribute_env(ranktable_file=None, service_config_path=None):
     global GLOBAL_DISTRIBUTE_ENV
@@ -96,7 +99,10 @@ class DistributeCollector:
 
         self.backend = backend
         self.local_ip = GLOBAL_DISTRIBUTE_ENV.get(DISTIBUT_ENVS.local_ip, "127.0.0.1")
-        self.init_method, self.is_dist_group_inited = f'tcp://{self.master_ip}:{self.master_port}', False
+        self.init_method, self.is_dist_group_inited = f"tcp://{self.master_ip}:{self.master_port}", False
+        logger.info(
+            f"master_ip={self.master_ip}, master_port={self.master_port}, rank={self.rank}, world_size={self.world_size}"
+        )
 
     def may_use_global_value(self, key, value=None):
         return GLOBAL_DISTRIBUTE_ENV[key] if not value and key in GLOBAL_DISTRIBUTE_ENV else value
@@ -119,7 +125,7 @@ class DistributeCollector:
             return
 
         combined_str = f"{contents}@{self.local_ip}"
-        byte_data = combined_str.encode()[:MAX_SENDING_LEN].ljust(MAX_SENDING_LEN, b'\x00')  # padding
+        byte_data = combined_str.encode()[:MAX_SENDING_LEN].ljust(MAX_SENDING_LEN, b"\x00")  # padding
         tensor_data = torch.tensor(list(byte_data), dtype=torch.uint8)
 
         if self.rank == 0:
@@ -132,15 +138,16 @@ class DistributeCollector:
         if self.rank == 0:
             for idx, tensor in enumerate(gather_list):
                 byte_result = bytes(tensor.numpy().tobytes())
-                decoded_str = byte_result.decode().split('\x00', 1)[0]
-                if '@' in decoded_str:
-                    content, ip = decoded_str.rsplit('@', 1)
+                decoded_str = byte_result.decode().split("\x00", 1)[0]
+                if "@" in decoded_str:
+                    content, ip = decoded_str.rsplit("@", 1)
                     result[ip] = content
                 else:
                     result[f"unknown_{idx}"] = decoded_str
 
         torch.distributed.destroy_process_group()
         return result if self.rank == 0 else None
+
 
 def distribute_collector(contents, master_ip=None, master_port=None, rank=None, world_size=None):
     global GLOBAL_DISTRIBUTE_COLLECTOR
