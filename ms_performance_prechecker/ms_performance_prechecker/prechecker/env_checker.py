@@ -139,24 +139,24 @@ class EnvChecker(RrecheckerBase):
                 fix_pair.append((env_cmd, undo_env_cmd))
 
         if not env_save_path:
-            show_check_result("env", "SAVE ENV FILE", CheckResult.UNFINISH,
-                reason="save_env setting to None/Empty",
+            show_check_result(
+                "env", "ENV FILE", CheckResult.UNFINISH, reason="save_env setting to None/Empty",
             )
             return
 
         if len(fix_pair) == 0:
-            show_check_result("env", "SAVE ENV FILE", CheckResult.VIP,
-                action=f"None env related needs to save",
+            show_check_result(
+                "env", "ENV FILE", CheckResult.VIP, action=f"None env related needs to save",
             )
             return
 
         save_path = save_env_contents(fix_pair, env_save_path)
 
-        show_check_result("env", "", CheckResult.VIP,
-            action=f"使能环境变量配置：source {save_path}",
+        show_check_result(
+            "env", "", CheckResult.VIP, action=f"使能环境变量配置：source {save_path}",
         )
-        show_check_result("env", "", CheckResult.VIP,
-            action=f"恢复环境变量配置：source {save_path} 0",
+        show_check_result(
+            "env", "", CheckResult.VIP, action=f"恢复环境变量配置：source {save_path} 0",
         )
 
 

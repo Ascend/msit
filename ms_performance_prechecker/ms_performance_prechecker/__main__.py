@@ -27,7 +27,6 @@ from ms_performance_prechecker.prechecker.utils import get_next_dict_item
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
 
-
 DEFAULT_DUMP_PATH = os.path.join(
     tempfile.gettempdir(), f"ms_performance_prechecker_dump_{ datetime.datetime.now().strftime('%Y%m%d_%H%M%S') }.json"
 )
@@ -62,14 +61,14 @@ def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **k
     for perchecker in percheckers:
         name = perchecker.name()
         envs = perchecker.collect_env(dump_file_path=dump_file_path, mindie_service_path=mindie_service_path, **kwargs)
-
+        
         all_envs[name] = envs
+    
+    if dump_file_path is not None:
+        with open(dump_file_path, "w") as f:
+            json.dump(all_envs, f, indent=2)
 
-    with open(dump_file_path, "w") as f:
-        json.dump(all_envs, f, indent=2)
-
-    print_contents()
-    logger.info(f"dump file saved: {dump_file_path}")
+        logger.info(f"dump file saved to: {dump_file_path}")
     return all_envs
 
 
@@ -84,45 +83,60 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
         with open(dump_file_path, "r") as f:
             env_infos.append(json.load(f))
             env_names.append(dump_file_path)
-
+        
     # 递归逐层比对
-    logger.info("compare start")
-    deep_compare_dict(env_infos, env_names)
-    logger.info("")
-    logger.info("compare end")
+    logger.info("== compare start ==")
+    has_diff = deep_compare_dict(env_infos, env_names)
+    if not has_diff:
+        logger.info("No difference found")
+    logger.info("== compare end ==")
+    return has_diff
 
 
 def run_precheck(
-    check_type=CHECK_TYPES.deepseek, env_save_path=DAFAULT_ENV_SAVE_PATH, mindie_service_path=None, **kwargs
+    check_type=CHECK_TYPES.deepseek, save_env="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs
 ):
     percheckers = get_all_register_perchecker()
 
     for perchecker in percheckers:
-        perchecker.precheck(check_type=check_type, env_save_path=env_save_path,
+        perchecker.precheck(check_type=check_type, env_save_path=save_env,
             mindie_service_path=mindie_service_path, **kwargs)
 
     print_contents()
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
 
-def arg_parse():
-    import argparse
+def distribute_collector(*args):
+    return {
+        "xxx": json.dumps(dict(xx=1234, yy=5678)),
+        "xxx2": json.dumps(dict(xx=12343, yy=5678)),
+    }
 
-    ranktable_file = os.getenv(RANKTABLEFILE, None)
-    mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+def run_distribute_compare(master_ip=None, master_port=None, local_rank=None, word_size=None, **kwargs):
+    dump_env = run_env_dump(None)
+    dump_env_json_str = json.dumps(dump_env)
+    dump_env_json_str_dict = distribute_collector(dump_env_json_str, master_ip, master_port, local_rank, word_size)
+    if dump_env_json_str_dict is None:
+        logger.info("I'm not master")
+        return 
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        "mode",
-        type=str_ignore_case,
-        default=RUN_MODES.precheck,
-        choices=RUN_MODES,
-        nargs='?',
-        help="run mode",
-    )
+    env_ips = []
+    env_infos = []
+    for ip, dump_env_json_str in dump_env_json_str_dict.items():
+        env_ips.append(ip)
+        env_infos.append(json.loads(dump_env_json_str))
+    has_diff = deep_compare_dict(env_infos, env_ips)
+    if not has_diff:
+        logger.info("No difference found")
+    logger.info("== compare end ==")
+
+
+def sub_parser_precheck(subparsers):
+    parser = subparsers.add_parser(RUN_MODES.precheck, help='precheck evns')
     parser.add_argument(
         "-t",
         "--check_type",
+        "--check-type",
         type=str_ignore_case,
         default=CHECK_TYPES.deepseek,
         choices=CHECK_TYPES,
@@ -131,53 +145,102 @@ def arg_parse():
     parser.add_argument(
         "-s",
         "--save_env",
-        default=DAFAULT_ENV_SAVE_PATH,
+        "--save-env",
+        default="ms_performance_prechecker_env.sh",
         help="Save env changes as a file which could be applied directly.",
     )
+    parser.set_defaults(func=run_precheck)
+
+
+def sub_parser_envdump(subparsers):
+    parser = subparsers.add_parser(RUN_MODES.envdump, help='dump env')
+    
     parser.add_argument(
         "-d",
         "--dump_file_path",
-        nargs="*",
-        default=[DEFAULT_DUMP_PATH],
+        "--dump-file-path",
+        nargs="?",
+        default=DEFAULT_DUMP_PATH,
         help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
     )
+    
+    parser.set_defaults(func=run_env_dump)
+    
+    
+def sub_parser_compare(subparsers):
+    parser = subparsers.add_parser(RUN_MODES.compare, help='compare dump envs')
+    parser.add_argument(
+        "-d",
+        "--dump_file_paths",
+        "--dump-file-paths",
+        nargs="+",
+        help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
+    )
+    parser.set_defaults(func=run_compare)
+
+def sub_parser_distribute_compare(subparsers):
+    # Multi-machine
+    
+    ranktable_file = os.getenv(RANKTABLEFILE, None)
+    mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+
+    parser = subparsers.add_parser(RUN_MODES.distribute_compare, help='compare distribute envs')
     parser.add_argument(
         "-s", "--service_config_path", type=str, default=mindie_service_path, help="service config json path"
     )
+    parser.add_argument("-r", "--ranktable_file", default=ranktable_file, help="HCCL rank table file path.")
+
     parser.add_argument(
-        "-r",
-        "--ranktable_file",
-        default=ranktable_file,
-        help="HCCL rank table file path.",
+        "-ip",
+        "--master_ip",
+        "--master-ip",
+        default=None,
+        help="master ip, should set it when not have a correct RANKTABLEFILE",
     )
-    parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
-    args = parser.parse_known_args()[0]
-
-    if not args.ranktable_file or not os.path.exists(args.ranktable_file):
-        logger.error(
-            f"ranktable_file: {args.ranktable_file} is empty or not exists."
-            "Provide by env RANKTABLEFILE or argument --ranktable_file."
-        )
-    return args
-
+    parser.add_argument(
+        "-port",
+        "--master_port",
+        "--master-port",
+        default=None,
+        help="master port, should set it when not have a correct RANKTABLEFILE",
+    )
+    parser.add_argument(
+        "-rank",
+        "--local_rank",
+        "--local-rank",
+        default=None,
+        help="local rank, should set it when not have a correct RANKTABLEFILE",
+    )
+    parser.add_argument(
+        "-size",
+        "--world_size",
+        "--world-size",
+        default=None,
+        help="world size, should set it when not have a correct RANKTABLEFILE",
+    )
+    parser.set_defaults(func=run_distribute_compare)
 
 def main():
     # args
-    args = arg_parse()
+    import argparse
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    subparsers = parser.add_subparsers(help='sub-command help')
+    sub_parser_precheck(subparsers)
+    sub_parser_envdump(subparsers)
+    sub_parser_compare(subparsers)
+    sub_parser_distribute_compare(subparsers)
+    parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
+    args, _ =  parser.parse_known_args()
 
     # init
     set_log_level(args.log_level)
-
+    
     # run
-    if args.mode == RUN_MODES.precheck:
-        run_precheck(check_type=args.check_type, env_save_path=args.save_env, args=args)
-    elif args.mode == RUN_MODES.envdump:
-        dump_file_path = args.dump_file_path[0]
-        _ = run_env_dump(dump_file_path, args=args)
-    elif args.mode == RUN_MODES.compare:
-        run_compare(args.dump_file_path, args=args)
+    if hasattr(args, 'func'):
+        args.func(args=args, **vars(args))
     else:
-        logger.error("Unknown mode")
+        parser.print_help()
 
 if __name__ == "__main__":
     main()

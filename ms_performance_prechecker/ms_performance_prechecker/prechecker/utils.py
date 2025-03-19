@@ -19,7 +19,8 @@ import logging
 from collections import namedtuple
 
 CHECK_TYPES = namedtuple("CHECK_TYPES", ["basic", "deepseek"])("basic", "deepseek")
-RUN_MODES = namedtuple("RUN_MODES", ["precheck", "envdump", "compare"])("precheck", "envdump", "compare")
+_RUN_MODES = ["precheck", "envdump", "compare", "distribute"]
+RUN_MODES = namedtuple("RUN_MODES", _RUN_MODES)(*_RUN_MODES)
 _SUGGESTION_TYPES = ["env", "system", "config"]
 SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTION_TYPES)
 
@@ -76,29 +77,33 @@ def print_diff(diffs, names, key=""):
 
 
 def deep_compare_dict(dicts, names, parent_key=""):
+    has_diff = False
     types = [type(ii) for ii in dicts]
     if not same(types):
-        print_diff([f"type: {x}" for x in types], names, parent_key)
-        return
+        print_diff([f"type<{t.__name__}> : {str(x)[0:30]}" for t, x in zip(types, dicts)], names, parent_key)
+        return True
     all_keys = set()
     if isinstance(dicts[0], dict):
         for dict_item in dicts:
             all_keys.update(dict_item.keys())
 
         for key in all_keys:
-            deep_compare_dict([dict_item.get(key) for dict_item in dicts], names, parent_key + "." + key)
+            has_diff = deep_compare_dict(
+                [dict_item.get(key) for dict_item in dicts], names, parent_key + "." + key
+            ) or has_diff
     elif isinstance(dicts[0], list):
         lens = [len(x) for x in dicts]
         if not same(lens):
             print_diff([f"len: {x}" for x in lens], names, parent_key)
-            return
+            return True
         else:
             for index in range(len(dicts[0])):
-                deep_compare_dict([x[index] for x in dicts], names, parent_key + f"[{index}]")
+                has_diff = deep_compare_dict([x[index] for x in dicts], names, parent_key + f"[{index}]") or has_diff
     else:
         if not same([str(x) for x in dicts]):
             print_diff([str(x) for x in dicts], names, parent_key)
-            return
+            return True
+    return has_diff
 
 
 def get_dict_value_by_pos(dict_value, target_pos):
