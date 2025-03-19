@@ -3,6 +3,7 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
 # 使用多个模型进行预测，并比较不同模型的预测结果
 
+import logging
 from copy import deepcopy
 from pathlib import Path
 from typing import Optional, List, Type
@@ -37,6 +38,7 @@ def get_direction(origin_value_list, predict_value_list):
         elif origin < origin_value_list[i - 1] and predict < predict_value_list[i - 1]:
             directions += 1
     return directions
+
 
 def predict_with_model(lines_data: DataFrame,
                        xgb_model_path: Optional[Path] = None,
@@ -82,8 +84,10 @@ def predict_with_model(lines_data: DataFrame,
         AnalysisState.computer_mean_sigma(origin_up, BATCH_PREFILL)
     _x4, _real_ud_mean, _real_ud_positive_sigma, _real_ud_negative_sigma = \
         AnalysisState.computer_mean_sigma(origin_ud, BATCH_DECODE)
-    assert _x1 == _x3
-    assert _x2 == _x4
+    if _x1 != _x3:
+        raise AssertionError("_x1 is not equal to _x3")
+    if _x2 != _x4:
+        raise AssertionError("_x2 is not equal to _x4")
     up_df = DataFrame({
         BATCH_PREFILL: _x1,
         "real_up_mean": _real_up_mean,
@@ -135,13 +139,13 @@ def manager():
                                               train_field=train_field, dataset_type=SimpleDataset)
     simple_up = simple_up.rename(columns=rename_column("simple", simple_up.columns))
     simple_ud = simple_ud.rename(columns=rename_column("simple", simple_ud.columns))
-    print('simple metric', metric)
+    logging.info('simple metric: %s', metric)
     base_path = Path(r"PyProject\state_eval\tmp\pd_content\train\118")
     xgb_model_path = base_path.joinpath("bak/base/xgb_model.ubj")
     ohe_path = base_path.joinpath("ohe")
     data_up, data_ud, metric = predict_with_model(test_input, xgb_model_path=xgb_model_path, ohe_path=ohe_path,
                                           train_field=train_field, dataset_type=MyDataSet)
-    print('data metric', metric)
+    logging.info('data metric', metric)
     data_up = data_up.rename(columns=rename_column("batch_2_op", data_up.columns))
     data_ud = data_ud.rename(columns=rename_column("batch_2_op", data_ud.columns))
 
@@ -150,15 +154,19 @@ def manager():
     ohe_path = base_path.joinpath("ohe")
     seq_data_up, seq_data_ud, metric = predict_with_model(test_input, xgb_model_path=xgb_model_path, ohe_path=ohe_path,
                                           train_field=train_field, dataset_type=MyDataSet)
-    print('max seq len data metric', metric)
+    logging.info('max seq len data metric', metric)
     seq_data_up = seq_data_up.rename(columns=rename_column("batch_seq_2_op", seq_data_up.columns))
     seq_data_ud = seq_data_ud.rename(columns=rename_column("batch_seq_2_op", seq_data_ud.columns))
 
-    up = pd.merge(simple_up, data_up[[BATCH_PREFILL, *[k for k in data_up.columns if "predict" in k]]], on=BATCH_PREFILL, how="left", )
-    up = pd.merge(up, seq_data_up[[BATCH_PREFILL, *[k for k in seq_data_up.columns if "predict" in k]]], on=BATCH_PREFILL, how="left", )
-    ud = pd.merge(simple_ud, data_ud[[BATCH_DECODE, *[k for k in data_ud.columns if "predict" in k]]], on=BATCH_DECODE,how="left", )
-    ud = pd.merge(ud, seq_data_ud[[BATCH_DECODE, *[k for k in seq_data_ud.columns if "predict" in k]]], on=BATCH_DECODE,how="left", )
-    up_dfl = pd.melt(up, id_vars=[BATCH_PREFILL],  value_name=train_field)
+    up = pd.merge(simple_up, data_up[[BATCH_PREFILL, *[k for k in data_up.columns if "predict" in k]]], \
+        on=BATCH_PREFILL, how="left", )
+    up = pd.merge(up, seq_data_up[[BATCH_PREFILL, *[k for k in seq_data_up.columns if "predict" in k]]], \
+        on=BATCH_PREFILL, how="left", )
+    ud = pd.merge(simple_ud, data_ud[[BATCH_DECODE, *[k for k in data_ud.columns if "predict" in k]]], \
+        on=BATCH_DECODE,how="left", )
+    ud = pd.merge(ud, seq_data_ud[[BATCH_DECODE, *[k for k in seq_data_ud.columns if "predict" in k]]], \
+        on=BATCH_DECODE,how="left", )
+    up_dfl = pd.melt(up, id_vars=[BATCH_PREFILL], value_name=train_field)
     sns.lineplot(up_dfl, x=BATCH_PREFILL, y=train_field, hue="variable", legend="brief")
     plt.savefig(base_path.joinpath("train_125_up.png"))
     plt.close()

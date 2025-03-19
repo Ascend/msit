@@ -6,6 +6,7 @@
 2. 用基础模型拟合概率
 3. 用新增加数据继续训练模型
 """
+import logging
 import shutil
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -44,7 +45,6 @@ class NodeInfo:
 
 
 class PreTrainModel:
-
     def __init__(self, state_param: Optional[StateParam] = None, dataset: Optional[MyDataSet] = None,
                  model: Optional[StateXgbModel] = None, plt_data: bool = False):
         self.state_param = state_param
@@ -177,13 +177,13 @@ class PreTrainModel:
         return self.predict_and_plot(self.dataset.features, self.dataset.labels, self.state_param.predict_field,
                                      save_path=save_path)
 
-    def plot_velocity_std(self, origin_up, all_Up, origin_ud, all_Ud, save_path: Optional[Path] = None):
+    def plot_velocity_std(self, origin_up, all_Up, origin_ud, all_ud, save_path: Optional[Path] = None):
         # 对比Up,Ud的分布
         AnalysisState.plot_input_velocity_with_predict(origin_up, all_Up, "batch_prefill",
                                                        f"origin and predict Up {self.state_param.predict_field} std",
                                                        "batch_prefill",
                                                        "velocity", save_path=save_path)
-        AnalysisState.plot_input_velocity_with_predict(origin_ud, all_Ud, "batch_decode",
+        AnalysisState.plot_input_velocity_with_predict(origin_ud, all_ud, "batch_decode",
                                                        f"origin and predict Ud {self.state_param.predict_field} std",
                                                        "batch_decode",
                                                        "velocity", save_path=save_path)
@@ -238,7 +238,7 @@ class ReqDecodePretrainModel(PretrainModel):
     def get_nodes_with_model_predict(self, features: DataFrame):
         # 使用模型进行预测
         target_data = []
-        for ind, row in features.iterrows():
+        for _, row in features.iterrows():
             _predict = ceil(self.model.predict((row,))[0])
             target_data.append(_predict)
         return tuple(target_data)
@@ -270,6 +270,7 @@ class ReqDecodePretrainModel(PretrainModel):
             for k, v in asdict(self.state_param).items():
                 f.write(f"  {k}:{v}\n")
 
+
 class TrainVersion1:
     @staticmethod
     def train_xgbmodel():
@@ -278,7 +279,7 @@ class TrainVersion1:
             Path(r"PyProject\ModelEvalState\data\v1\batch_max_seq_2_op\llama3-8b1226-12\feature.csv"),
                       ]
         base_dir = get_train_sub_path()
-        print('base_dir', base_dir)
+        logging.info('base_dir', base_dir)
         sp = StateParam(
             base_path=base_dir,
             predict_field="model_execute_time",
@@ -288,7 +289,7 @@ class TrainVersion1:
             plot_data_feature=True,
             start_num_lines=4000,
             op_algorithm=OpAlgorithm.EXPECTED,
-            title = "MixModel without warmup with batch max seq 2 op info"
+            title = f"MixModel without warmup with batch max seq 2 op info"
         )
         model = StateXgbModel(
             train_param=sp.xgb_model_train_param,
@@ -314,15 +315,16 @@ class TrainVersion1:
         fl = FileReader(file_paths)
         line_data = fl.read_lines()
         train_data, test_data = train_test_split(line_data, test_size=0.1, shuffle=True)
-        print(train_data.shape)
+        logging.info(train_data.shape)
         save_path = sp.step_dir.joinpath("base")
         save_path.mkdir(parents=True, exist_ok=True)
         pm.train(train_data.reset_index(drop=True), middle_save_path=save_path)
         pm.dataset.save(save_path)
-        print('feature shape', pm.dataset.features.shape)
-        sp.comments = f"data shuffle: True, \n train case: {pm.dataset.train_x.shape}, validate case: {pm.dataset.test_x.shape}, predict case: {test_data.shape}"
+        logging.info('feature shape', pm.dataset.features.shape)
+        sp.comments = f"data shuffle: True, \n train case: {pm.dataset.train_x.shape}, \
+            validate case: {pm.dataset.test_x.shape}, predict case: {test_data.shape}"
         pm.bak_model()
-        print(test_data.shape)
+        logging.info(test_data.shape)
         save_path = sp.step_dir.joinpath("1")
         save_path.mkdir(parents=True, exist_ok=True)
         pm.predict(test_data.reset_index(drop=True), save_path)
@@ -338,7 +340,7 @@ class TrainVersion1:
             Path(r"/data/v1/llama3-8b1226-12/feature.csv"),
                       ]
         base_dir = get_train_sub_path()
-        print('base_dir', base_dir)
+        logging.info('base_dir', base_dir)
         sp = StateParam(
             base_path=base_dir,
             predict_field="model_execute_time",
@@ -348,7 +350,7 @@ class TrainVersion1:
             plot_data_feature=True,
             start_num_lines=4000,
             op_algorithm=OpAlgorithm.EXPECTED,
-            title=f"{model_type} without warm up."
+            title = f"{model_type} without warm up."
         )
         model = StateXgbModel(
             train_param=sp.xgb_model_train_param,
@@ -369,15 +371,16 @@ class TrainVersion1:
         line_data = line_data[line_data[line_data.columns[0]].str.contains(model_type)]
         train_data, test_data = train_test_split(line_data, test_size=0.1, shuffle=True)
 
-        print(train_data.shape)
+        logging.info(train_data.shape)
         save_path = sp.step_dir.joinpath("base")
         save_path.mkdir(parents=True, exist_ok=True)
         pm.train(train_data.reset_index(drop=True), middle_save_path=save_path)
         pm.dataset.save(save_path)
-        print('feature shape', pm.dataset.features.shape)
-        sp.comments = f"data shuffle: True, train case: {pm.dataset.train_x.shape}, validate case: {pm.dataset.test_x.shape}, predict case: {test_data.shape}"
+        logging.info('feature shape', pm.dataset.features.shape)
+        sp.comments = f"data shuffle: True, train case: {pm.dataset.train_x.shape}, validate case: \
+            {pm.dataset.test_x.shape}, predict case: {test_data.shape}"
         pm.bak_model()
-        print(test_data.shape)
+        logging.info(test_data.shape)
         save_path = sp.step_dir.joinpath("1")
         save_path.mkdir(parents=True, exist_ok=True)
         pm.predict(test_data.reset_index(drop=True), save_path)
@@ -416,7 +419,7 @@ class TrainVersion1:
     def train_req_xgb_model():
         file_paths = [Path(r"PyProject\state_eval\data\v1\llama3-8b-12-13\decode_num.csv")]
         base_dir = get_train_sub_path()
-        print('base_dir', base_dir)
+        logging.info('base_dir', base_dir)
         sp = StateParam(
             base_path=base_dir,
             predict_field="output_length",
