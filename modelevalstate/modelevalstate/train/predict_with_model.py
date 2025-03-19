@@ -17,7 +17,7 @@ from scipy import stats
 
 from modelevalstate.data_feature.v1 import FileReader
 from modelevalstate.inference.dataset import CustomLabelEncoder, preset_category_data
-from modelevalstate.data_feature.dataset import  MyDataSet, SimpleDataset
+from modelevalstate.data_feature.dataset import MyDataSet, SimpleDataset
 from modelevalstate.train.pretrain import NodeInfo, PretrainModel
 from modelevalstate.analysis import AnalysisState
 from modelevalstate.model.xgb_state_model import StateXgbModel
@@ -29,12 +29,12 @@ BATCH_DECODE = "batch_decode"
 
 def get_direction(origin_value_list, predict_value_list):
     directions = 0
-    for i in range(len(origin_value_list)):
+    for i, (origin, predict) in enumerate(zip(origin_value_list, predict_value_list)):
         if i == 0:
             continue
-        if origin_value_list[i] > origin_value_list[i - 1] and predict_value_list[i] > predict_value_list[i - 1]:
+        if origin > origin_value_list[i - 1] and predict > predict_value_list[i - 1]:
             directions += 1
-        elif origin_value_list[i] < origin_value_list[i-1] and predict_value_list[i] < predict_value_list[i-1]:
+        elif origin < origin_value_list[i - 1] and predict < predict_value_list[i - 1]:
             directions += 1
     return directions
 
@@ -49,10 +49,16 @@ def predict_with_model(lines_data: DataFrame,
     custom_encoder.fit()
     data_processor = dataset_type(custom_encoder, predict_field=train_field)
     data_processor.construct_data(lines_data, plt_data=False)
-    model = StateXgbModel(save_model_path=xgb_model_path, load_model_path=xgb_model_path,save_model=False)
+    model = StateXgbModel(save_model_path=xgb_model_path, load_model_path=xgb_model_path, save_model=False)
     res = model.predict(data_processor.features)
-    batch_stage_encoder = [custom_encoder.category_encoders[i] for i, v in enumerate(custom_encoder.category_info) if v.name == "batch_stage"][0]
-    data_processor.features["batch_stage"] = batch_stage_encoder.inverse_transform(data_processor.features["batch_stage"])
+    batch_stage_encoder = [
+        custom_encoder.category_encoders[i] 
+        for i, v in enumerate(custom_encoder.category_info) 
+        if v.name == "batch_stage"
+    ][0]
+    data_processor.features["batch_stage"] = batch_stage_encoder.inverse_transform(
+        data_processor.features["batch_stage"]
+    )
     _origin_value_list = []
     _predict_value_list = []
     for ind, row in data_processor.features.iterrows():
@@ -66,16 +72,16 @@ def predict_with_model(lines_data: DataFrame,
         predict_data.append(_cur_node)
 
     # 绘制结果图
-    all_Up, all_Ud = PretrainModel.get_decode_and_prefill_time(tuple(predict_data), train_field)
-    origin_Up, origin_Ud = PretrainModel.get_decode_and_prefill_time(tuple(origin_data), train_field)
+    all_up, all_ud = PretrainModel.get_decode_and_prefill_time(tuple(predict_data), train_field)
+    origin_up, origin_ud = PretrainModel.get_decode_and_prefill_time(tuple(origin_data), train_field)
     _x1, _predict_up_mean, _predict_up_positive_sigma, _predict_up_negative_sigma = AnalysisState.computer_mean_sigma(
-        all_Up, BATCH_PREFILL)
+        all_up, BATCH_PREFILL)
     _x2, _predict_ud_mean, _predict_ud_positive_sigma, _predict_ud_negative_sigma = AnalysisState.computer_mean_sigma(
-        all_Ud, BATCH_DECODE)
-    _x3, _real_up_mean, _real_up_positive_sigma, _real_up_negative_sigma = AnalysisState.computer_mean_sigma(origin_Up,
-                                                                                                             BATCH_PREFILL)
-    _x4, _real_ud_mean, _real_ud_positive_sigma, _real_ud_negative_sigma = AnalysisState.computer_mean_sigma(origin_Ud,
-                                                                                                             BATCH_DECODE)
+        all_ud, BATCH_DECODE)
+    _x3, _real_up_mean, _real_up_positive_sigma, _real_up_negative_sigma = \
+        AnalysisState.computer_mean_sigma(origin_up, BATCH_PREFILL)
+    _x4, _real_ud_mean, _real_ud_positive_sigma, _real_ud_negative_sigma = \
+        AnalysisState.computer_mean_sigma(origin_ud, BATCH_DECODE)
     assert _x1 == _x3
     assert _x2 == _x4
     up_df = DataFrame({

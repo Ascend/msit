@@ -21,9 +21,21 @@ from sklearn.metrics import r2_score, mean_absolute_percentage_error
 
 from modelevalstate.train.common import computer_speed_with_second, get_train_sub_path, update_gloabal_coefficient
 from modelevalstate.train.xgb_state_model import StateXgbModel
-from modelevalstate.data_feature.dataset import MyDataSet, CustomOneHotEncoder, CustomLabelEncoder, preset_category_data, DecodeDataSet
+from modelevalstate.data_feature.dataset import (
+    MyDataSet, 
+    CustomOneHotEncoder, 
+    CustomLabelEncoder, 
+    preset_category_data, 
+    DecodeDataSet
+)
 from modelevalstate.inference.constant import OpAlgorithm
-from modelevalstate.inference.common import HistInfo, model_op_size, OP_EXPECTED_FIELD_MAPPING, OP_SACLE_FIELD_MAPPING
+from modelevalstate.inference.common import (
+    HistInfo, 
+    model_op_size, 
+    OP_EXPECTED_FIELD_MAPPING, 
+    OP_SACLE_FIELD_MAPPING
+)
+
 
 @dataclass
 class NodeInfo:
@@ -95,7 +107,7 @@ class PreTrainModel:
     def get_stage_after_preprocess(row: pd.Series, encoder: Union[CustomOneHotEncoder, CustomLabelEncoder]):
         # 根据预处理后的数据识别该行数据是decode还是prefill
 
-        if type(encoder) == CustomOneHotEncoder:
+        if isinstance(encoder, CustomOneHotEncoder):
             batch_stage_encoder = \
             [encoder.one_hot_encoders[i] for i, v in enumerate(encoder.one_hots) if v.name == "batch_stage"][0]
             _batch_index = [i for i in row.index if "batch_stage" in i]
@@ -111,7 +123,7 @@ class PreTrainModel:
     def get_nodes_with_model_predict(self, features: DataFrame):
         # 使用模型进行预测
         target_data = []
-        for ind, row in features.iterrows():
+        for _, row in features.iterrows():
             _predict = self.model.predict((row,))[0]
             stage = self.get_stage_after_preprocess(row, self.dataset.custom_encoder)
             _cur_node = NodeInfo(stage, row.batch_size)
@@ -139,11 +151,11 @@ class PreTrainModel:
         mape = mean_absolute_percentage_error([getattr(k, predict_field) for k in origin_data],
                                               [getattr(k, predict_field) for k in data])
         self.mape.append(mape)
-        _all_Up, _all_Ud = self.get_up_ud(data, predict_field)
-        origin_Up, origin_Ud = self.get_up_ud(tuple(origin_data), predict_field)
+        _all_up, _all_ud = self.get_up_ud(data, predict_field)
+        origin_up, origin_ud = self.get_up_ud(tuple(origin_data), predict_field)
 
         if self.state_param.plot_velocity_std:
-            self.plot_velocity_std(origin_Up, _all_Up, origin_Ud, _all_Ud, save_path=save_path)
+            self.plot_velocity_std(origin_up, _all_up, origin_ud, _all_ud, save_path=save_path)
         if self.state_param.plot_input_time_with_predict:
             # 绘制时间
             _all_prefill_time, _all_decode_time = self.get_decode_and_prefill_time(data, predict_field)
@@ -157,7 +169,7 @@ class PreTrainModel:
                                                            f"origin and predict decode time {predict_field} std",
                                                            "batch_decode",
                                                            "time us", save_path=save_path)
-        return _all_Up, _all_Ud
+        return _all_up, _all_ud
 
     def predict(self, lines_data: DataFrame,
                 save_path: Optional[Path] = None):
@@ -165,20 +177,20 @@ class PreTrainModel:
         return self.predict_and_plot(self.dataset.features, self.dataset.labels, self.state_param.predict_field,
                                      save_path=save_path)
 
-    def plot_velocity_std(self, origin_Up, all_Up, origin_Ud, all_Ud, save_path: Optional[Path] = None):
+    def plot_velocity_std(self, origin_up, all_Up, origin_ud, all_Ud, save_path: Optional[Path] = None):
         # 对比Up,Ud的分布
-        AnalysisState.plot_input_velocity_with_predict(origin_Up, all_Up, "batch_prefill",
+        AnalysisState.plot_input_velocity_with_predict(origin_up, all_Up, "batch_prefill",
                                                        f"origin and predict Up {self.state_param.predict_field} std",
                                                        "batch_prefill",
                                                        "velocity", save_path=save_path)
-        AnalysisState.plot_input_velocity_with_predict(origin_Ud, all_Ud, "batch_decode",
+        AnalysisState.plot_input_velocity_with_predict(origin_ud, all_Ud, "batch_decode",
                                                        f"origin and predict Ud {self.state_param.predict_field} std",
                                                        "batch_decode",
                                                        "velocity", save_path=save_path)
-        AnalysisState.plot_input_velocity(origin_Up, "batch_prefill", f"Up {self.state_param.predict_field} std",
+        AnalysisState.plot_input_velocity(origin_up, "batch_prefill", f"Up {self.state_param.predict_field} std",
                                           "batch_prefill",
                                           "velocity", save_path=save_path)
-        AnalysisState.plot_input_velocity(origin_Ud, "batch_decode", f"Ud {self.state_param.predict_field} std",
+        AnalysisState.plot_input_velocity(origin_ud, "batch_decode", f"Ud {self.state_param.predict_field} std",
                                           "batch_decode",
                                           "velocity", save_path=save_path)
 
