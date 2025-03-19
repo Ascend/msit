@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ms-performance-prechecker"
-version = "0.0.1a12"
+version = "0.0.1a14"
 description = "MindStudio Performance Prechecker"
 readme = "README.md"
 license = {text = "Apache-2.0"}
