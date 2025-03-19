@@ -225,8 +225,6 @@ def sub_parser_distribute_compare(subparsers):
 
 def main():
     # args
-    import argparse
-
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers(help='sub-command help')
     sub_parser_precheck(subparsers)
@@ -246,4 +244,6 @@ def main():
         parser.print_help()
 
 if __name__ == "__main__":
+    import argparse
+
     main()
