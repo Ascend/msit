@@ -82,7 +82,8 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None):
     GLOBAL_DISTRIBUTE_COLLECTOR[DISTIBUT_ENVS.rank] = ranktable_map.get(local_ip, -1)
     GLOBAL_DISTRIBUTE_COLLECTOR[DISTIBUT_ENVS.world_size] = len(ranktable_map)
 
-    # TODO: set GLOO_SOCKET_IFNAME
+    logger.info(f"GLOBAL_DISTRIBUTE_COLLECTOR: {GLOBAL_DISTRIBUTE_COLLECTOR}")
+    os.environ["GLOO_SOCKET_IFNAME"] = str(interface)
 
 
 class DistributeCollector:
