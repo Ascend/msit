@@ -6,15 +6,16 @@ import atexit
 import csv
 import json
 import os
-import shlex, subprocess
+import shlex
+import subprocess
 import shutil
 import time
-import psutil
 from copy import deepcopy
 from typing import List, Tuple, Optional
 from pathlib import Path
 from math import exp, inf
 
+import psutil
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -224,7 +225,10 @@ class CustomBenchMark(BenchMark):
             if not file.is_dir():
                 continue
             try:
-                throughput, first_prefill_latency, decode_latency = analyze(self.benchmark_config.custom_analysis_output_path, file)
+                throughput, first_prefill_latency, decode_latency = analyze(
+                    self.benchmark_config.custom_analysis_output_path, 
+                    file
+                )
             except Exception as e:
                 logger.error(f"Failed in analyze. {e}")
                 continue
@@ -248,6 +252,7 @@ class Simulator:
         if not self.mindie_config.config_bak_path.exists():
             with open(self.mindie_config.config_bak_path, "w") as f:
                 json.dump(self.default_config, f, indent=4)
+        self.process = None
 
     @staticmethod
     def get_new_config(origin_config, params: Tuple[OptimizerConfigField], upper_key: str = ""):
@@ -467,6 +472,7 @@ class PSOOptimizer:
             _max.append(_field.max)
         return (tuple(_min), tuple(_max))
 
+    @staticmethod
     def visualization(self, optimizer: SwarmOptimizer):
         plot_cost_history(cost_history=optimizer.cost_history)
         plt.savefig(settings.output.joinpath(f"cost_history_{RUN_TIME}.png"))
@@ -486,7 +492,9 @@ class PSOOptimizer:
                                             init_pos=self.init_pos)
         cost, joint_vars = optimizer.optimize(self.op_func, iters=self.iters)
         logger.info(
-            f"best cost {cost}, best joint_vars: {[self.target_field[i].format_func(k) for i, k in enumerate(joint_vars)]}")
+            f"best cost {cost}, best joint_vars: "
+            f"{[self.target_field[i].format_func(k) for i, k in enumerate(joint_vars)]}"
+        )
         self.visualization(optimizer)
 
 
@@ -501,15 +509,23 @@ def main(benchmark_policy: str, load_history: bool = False):
     _load_history_data = None
     if load_history:
         _load_history_data = data_storage.load_history_position(settings.data_storage.store_dir)
-    pso = PSOOptimizer(scheduler, n_particles=settings.n_particles, iters=settings.iters, prefill_lam=settings.prefill_lam,
-                       decode_lam=settings.decode_lam, decode_constrain=settings.decode_constrain,
-                       prefill_constrain=settings.prefill_constrain, load_history_data=_load_history_data)
+    pso = PSOOptimizer(
+                        scheduler, 
+                        n_particles=settings.n_particles, 
+                        iters=settings.iters, 
+                        prefill_lam=settings.prefill_lam,
+                        decode_lam=settings.decode_lam, 
+                        decode_constrain=settings.decode_constrain,
+                        prefill_constrain=settings.prefill_constrain, 
+                        load_history_data=_load_history_data
+                      )
     pso.run()
 
 
 parser = argparse.ArgumentParser(prog='optimizer')
 parser.add_argument("benchmark_policy", default=BenchMarkPolicy.benchmark,
-                    help="Whether to use custom performance indicators or mindie performance indicators. Benchmark and custom_benchmark are supported.")
+                    help="Whether to use custom performance indicators or mindie performance indicators. "
+                         "Benchmark and custom_benchmark are supported.")
 parser.add_argument("-lh", "--load_history", default=False, action="store_true",
                     help="Indicates whether to customize the initial location based on historical records.")
 
