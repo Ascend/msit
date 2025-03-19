@@ -142,7 +142,7 @@ class DistributeCollector:
         torch.distributed.destroy_process_group()
         return result if self.rank == 0 else None
 
-def distribute_collector(contents, master_ip=None, master_port=None, rank=None, word_size=None):
+def distribute_collector(contents, master_ip=None, master_port=None, rank=None, world_size=None):
     global GLOBAL_DISTRIBUTE_COLLECTOR
     if GLOBAL_DISTRIBUTE_COLLECTOR is None:
         GLOBAL_DISTRIBUTE_COLLECTOR = DistributeCollector(
