@@ -54,7 +54,10 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None):
     if not ranktable_map:
         logger.error(f"ranktable_file={ranktable_file} is empty or not correctly set.")
         return
-    master_ip = ranktable.["server_list"][0]["server_id"]  # already checked keys exists
+    if len(ranktable_map) < 2:
+        logger.info(f"Only one server found in ranktable_file={ranktable_file}, skip distributed check")
+        return
+    master_ip = ranktable["server_list"][0]["server_id"]  # already checked keys exists
     local_ip = get_local_to_master_ip(master_ip)
     if local_ip not in ranktable_map:
         logger.error(f"local_ip={local_ip } not exists in ranktable_file: {ranktable_file}.")
