@@ -95,11 +95,11 @@ class DistributeCollector:
         self.world_size = self.may_use_global_value(DISTIBUT_ENVS.world_size, world_size)
 
         self.backend = backend
-        self.local_ip = GLOBAL_DISTRIBUTE_COLLECTOR.get(DISTIBUT_ENVS.local_ip, "127.0.0.1")
+        self.local_ip = GLOBAL_DISTRIBUTE_ENV.get(DISTIBUT_ENVS.local_ip, "127.0.0.1")
         self.init_method, self.is_dist_group_inited = f'tcp://{self.master_ip}:{self.master_port}', False
 
     def may_use_global_value(self, key, value=None):
-        return GLOBAL_DISTRIBUTE_COLLECTOR[key] if not value and key in GLOBAL_DISTRIBUTE_COLLECTOR else value
+        return GLOBAL_DISTRIBUTE_ENV[key] if not value and key in GLOBAL_DISTRIBUTE_ENV else value
 
     def gather(self, contents):
         if not self.is_dist_group_inited:
