@@ -79,7 +79,8 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None, ma
     GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.master_ip] = master_ip
     GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.local_ip] = local_ip
     GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.interface] = interface
-    os.environ["GLOO_SOCKET_IFNAME"] = interface
+    if "GLOO_SOCKET_IFNAME" not in os.environ:
+        os.environ["GLOO_SOCKET_IFNAME"] = interface
     logger.info(f"local_ip: {local_ip}, interface: {interface}")
 
     # Init rank and world_size by ranktable_file

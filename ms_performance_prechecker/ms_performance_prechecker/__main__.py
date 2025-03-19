@@ -15,6 +15,7 @@
 import os
 import json
 import time
+import argparse
 import tempfile
 from collections import namedtuple
 from glob import glob
@@ -263,6 +264,4 @@ def main():
 
 
 if __name__ == "__main__":
-    import argparse
-
     main()
