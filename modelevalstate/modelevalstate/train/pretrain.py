@@ -177,9 +177,9 @@ class PreTrainModel:
         return self.predict_and_plot(self.dataset.features, self.dataset.labels, self.state_param.predict_field,
                                      save_path=save_path)
 
-    def plot_velocity_std(self, origin_up, all_Up, origin_ud, all_ud, save_path: Optional[Path] = None):
+    def plot_velocity_std(self, origin_up, all_up, origin_ud, all_ud, save_path: Optional[Path] = None):
         # 对比Up,Ud的分布
-        AnalysisState.plot_input_velocity_with_predict(origin_up, all_Up, "batch_prefill",
+        AnalysisState.plot_input_velocity_with_predict(origin_up, all_up, "batch_prefill",
                                                        f"origin and predict Up {self.state_param.predict_field} std",
                                                        "batch_prefill",
                                                        "velocity", save_path=save_path)
