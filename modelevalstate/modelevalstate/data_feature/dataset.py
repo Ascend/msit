@@ -307,7 +307,7 @@ class DecodeDataSet:
     
 
 if __name__ == "__main__":
-    base_path = Path(r"D:\PyProject\ModelEvalState\data\v1.0.0\llama3-8b-8")
+    base_path = Path(r"./PyProject/ModelEvalState/data/v1.0.0/llama3-8b-8")
     df = pd.read_csv(base_path.joinpath("feature.csv"))
     custom_one_hot_encoder = CustomOneHotEncoder(preset_category_data)
     custom_one_hot_encoder.fit()
@@ -320,7 +320,7 @@ if __name__ == "__main__":
     my_data_set.plt_data(df, middle_save_path=base_path.joinpath("analysis_feature"))
 
     # 提取request df示例
-    df = pd.read_csv(r"D:\PyProject\state_eval\data\v1\llama3-8b-12-13\decode_num.csv")
+    df = pd.read_csv(r"./PyProject/state_eval/data/v1/llama3-8b-12-13/decode_num.csv")
     dd = DecodeDataSet()
-    dd.construct_data(df, plt_data=True, middle_save_path=Path(r"D:\PyProject\state_eval\data\v1\llama3-8b-12-13\analysis_feature"))
-    dd.save(Path(r"D:\PyProject\state_eval\data\v1\llama3-8b-12-13\analysis_feature"))
+    dd.construct_data(df, plt_data=True, middle_save_path=Path(r"./PyProject/state_eval/data/v1/llama3-8b-12-13/analysis_feature"))
+    dd.save(Path(r"./PyProject/state_eval/data/v1/llama3-8b-12-13/analysis_feature"))

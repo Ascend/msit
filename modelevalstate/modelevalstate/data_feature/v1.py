@@ -460,7 +460,7 @@ class ConvertRequestFileToCsv:
 
 
 if __name__ == "__main__":
-    base_path = Path(r"D:\PyProject\ModelEvalState\data\v1.0.0\llama3-8b-2")
+    base_path = Path(r"./PyProject/ModelEvalState/data/v1.0.0/llama3-8b-2")
     analysis_feature = base_path.joinpath("analysis_feature")
     analysis_feature.mkdir(parents=True, exist_ok=True)
     model_file_paths = ModelFilePaths(base_path=base_path)
