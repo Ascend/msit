@@ -64,7 +64,7 @@ def my_std(nums):
     return (sum(map(lambda e: (e - avg) * (e - avg), nums)) / n) ** 0.5
 
 
-def get_train_sub_path(base_path: Path = Path(r"D:\PyProject\state_eval\tmp\pd_content\train")):
+def get_train_sub_path(base_path: Path = Path("state_eval/tmp/pd_content/train")):
     # 给训练输出目录生成新的目录
     if not base_path.exists():
         base_path.mkdir(parents=True, exist_ok=True)
