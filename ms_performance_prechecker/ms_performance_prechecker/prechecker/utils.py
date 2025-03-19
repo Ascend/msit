@@ -19,7 +19,8 @@ import logging
 from collections import namedtuple
 
 CHECK_TYPES = namedtuple("CHECK_TYPES", ["basic", "deepseek"])("basic", "deepseek")
-RUN_MODES = namedtuple("RUN_MODES", ["precheck", "envdump", "compare"])("precheck", "envdump", "compare")
+_RUN_MODES = ["precheck", "dump", "compare", "distribute_compare"]
+RUN_MODES = namedtuple("RUN_MODES", _RUN_MODES)(*_RUN_MODES)
 _SUGGESTION_TYPES = ["env", "system", "config"]
 SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTION_TYPES)
 
@@ -72,33 +73,41 @@ def print_diff(diffs, names, key=""):
     for index, name in enumerate(names):
         print(f"    * {name}:")
         print(f"        {diffs[index]}")
-    
 
 
-def deep_compare_dict(dicts, names, parent_key=""):
+def deep_compare_dict(dicts, names, parent_key="", skip_keys=None):
+    if skip_keys and parent_key in skip_keys:
+        return False
+
+    has_diff = False
     types = [type(ii) for ii in dicts]
     if not same(types):
-        print_diff([f"type: {x}" for x in types], names, parent_key)
-        return
+        print_diff([f"type <{t.__name__}> : {str(x)[0:30]}" for t, x in zip(types, dicts)], names, parent_key)
+        return True
     all_keys = set()
     if isinstance(dicts[0], dict):
         for dict_item in dicts:
             all_keys.update(dict_item.keys())
-    
+
         for key in all_keys:
-            deep_compare_dict([dict_item.get(key) for dict_item in dicts], names, parent_key + "." + key)
+            cur_has_diff = deep_compare_dict(
+                [dict_item.get(key) for dict_item in dicts], names, parent_key + "." + key, skip_keys=skip_keys
+            )
+            has_diff = cur_has_diff or has_diff
     elif isinstance(dicts[0], list):
         lens = [len(x) for x in dicts]
         if not same(lens):
             print_diff([f"len: {x}" for x in lens], names, parent_key)
-            return
+            return True
         else:
             for index in range(len(dicts[0])):
-                deep_compare_dict([x[index] for x in dicts], names, parent_key + f"[{index}]")
+                cur_has_diff = deep_compare_dict([x[index] for x in dicts], names, parent_key + f"[{index}]")
+                has_diff = cur_has_diff or has_diff
     else:
         if not same([str(x) for x in dicts]):
             print_diff([str(x) for x in dicts], names, parent_key)
-            return
+            return True
+    return has_diff
 
 
 def get_dict_value_by_pos(dict_value, target_pos):
@@ -140,9 +149,9 @@ def get_version_info(mindie_service_path):
 
     version_path = os.path.join(mindie_service_path, "version.info")
 
-    if not os.path.exists(version_path): 
+    if not os.path.exists(version_path):
         return {}
-    
+
     version_info = {}
     with open(version_path) as f:
         for line in f:
@@ -172,7 +181,7 @@ def read_json(file_path):
     return result
 
 
-def read_csv_or_json(file_path):    
+def read_csv_or_json(file_path):
     logger.debug("file_path = %s", file_path)
 
     if not file_path or not os.path.exists(file_path):
@@ -186,3 +195,18 @@ def read_csv_or_json(file_path):
 
 def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))])
+
+
+def parse_mindie_server_config(mindie_service_path=None):
+    logger.debug("mindie_service_config:")
+    if mindie_service_path is None:
+        mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+    if not os.path.exists(mindie_service_path):
+        logger.warning(f"mindie config.json: {mindie_service_path} not exists, will skip related checkers")
+        return None
+
+    mindie_service_config = read_csv_or_json(os.path.join(mindie_service_path, "conf", "config.json"))
+    logger.debug(
+        "mindie_service_config: %s", get_next_dict_item(mindie_service_config) if mindie_service_config else None
+    )
+    return mindie_service_config

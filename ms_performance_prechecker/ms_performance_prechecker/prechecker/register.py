@@ -60,20 +60,22 @@ def record(content, part=CONTENT_PARTS.after):
     CONTENTS.setdefault(part, []).append(content)
 
 
-CheckResult = Enum('CheckResult', ['OK', 'UNFINISH', 'WARN', 'ERROR', "VIP"])
+CheckResult = Enum("CheckResult", ["OK", "UNFINISH", "WARN", "ERROR", "VIP"])
 
 
 def show_check_result(domain, checker, result=None, action=None, reason=None):
-    color_and_text = {CheckResult.OK: ('\033[92m', "OK"),
-                       CheckResult.UNFINISH: ('\033[93m', "UNFINISH"),
-                       CheckResult.WARN: ('\033[93m', "WARN"),
-                       CheckResult.ERROR: ('\033[91m', "NOK"),
-                       CheckResult.VIP: ('\033[94m', action)}
+    color_and_text = {
+        CheckResult.OK: ("\033[92m", "OK"),
+        CheckResult.UNFINISH: ("\033[93m", "UNFINISH"),
+        CheckResult.WARN: ("\033[93m", "WARN"),
+        CheckResult.ERROR: ("\033[91m", "NOK"),
+        CheckResult.VIP: ("\033[94m", action),
+    }
 
     if result is None:
-        color, text = '\033[97m', ""
+        color, text = "\033[97m", ""
     else:
-        color, text = color_and_text.get(result, ('\033[97m', ""))
+        color, text = color_and_text.get(result, ("\033[97m", ""))
     print(f"- {domain} {color}[{text}]\033[0m {checker} ")
     if action is not None and result != CheckResult.VIP:
         print(f"    * {action}")
@@ -81,7 +83,7 @@ def show_check_result(domain, checker, result=None, action=None, reason=None):
         print(f"    * {reason}")
 
 
-class RrecheckerBase():
+class RrecheckerBase:
     __checker_name__ = "undefined"
 
     def __init__(self):
@@ -100,16 +102,15 @@ class RrecheckerBase():
     def precheck(self, **kwargs):
         envs = self.collect_env(**kwargs)
         self.do_precheck(envs, **kwargs)
-        
+
     def show_check_result(self, checker, result=None, action=None, reason=None):
         show_check_result(self.name(), checker, result, action, reason)
-
 
 
 class GroupRrechecker(RrecheckerBase):
     __checker_name__ = "undefined"
 
-    def __init__(self, *sub):        
+    def __init__(self, *sub):
         super().__init__()
         self.sub_checkers = self.init_sub_checkers()
 
@@ -125,4 +126,3 @@ class GroupRrechecker(RrecheckerBase):
     def do_precheck(self, group_envs, **kwargs):
         for sub in self.sub_checkers:
             sub.do_precheck(group_envs.get(sub.name()))
-        
