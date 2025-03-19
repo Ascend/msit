@@ -54,18 +54,41 @@ def get_rank_id_in_ranktable_by_ip(local_ip, rank_table):
     return None
 
 
-def init_global_distribute_env(ranktable_file=None, service_config_path=None):
+def init_global_distribute_env(ranktable_file=None, service_config_path=None, master_ip=None):
     global GLOBAL_DISTRIBUTE_ENV
+    global GLOBAL_LOCAL_IP
+    global GLOBAL_LOCAL_INTERFACE
     if GLOBAL_DISTRIBUTE_ENV:
         return
+    is_ranktable_file_available = ranktable_file and os.path.exists(ranktable_file)
 
-    if not ranktable_file or not os.path.exists(ranktable_file):
+    # Init master_ip firstly
+    if not master_ip and not is_ranktable_file_available:
+        logger.error("Neither master_ip nor ranktable_file provided. Will skip init_global_distribute_env")
+        return
+
+    ranktable = {} if not is_ranktable_file_available else read_csv_or_json(ranktable_file)
+    master_ip = master_ip or ranktable.get("server_list", [{}])[0].get("server_id", None)
+    if not master_ip:
+        logger.error(f"Provided master_ip={master_ip} or parsed value from ranktable_file={ranktable_file} not valid")
+        return
+
+    # Init local_ip and interface after getting master_ip
+    local_ip = get_local_to_master_ip(master_ip)
+    interface = get_interface_by_ip(local_ip)
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.master_ip] = master_ip
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.local_ip] = local_ip
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.interface] = interface
+    os.environ["GLOO_SOCKET_IFNAME"] = interface
+    logger.info(f"local_ip: {local_ip}, interface: {interface}")
+
+    # Init rank and world_size by ranktable_file
+    if not is_ranktable_file_available:
         logger.error(
             f"ranktable_file={ranktable_file} is empty or not exists."
             "Provide by env RANKTABLEFILE or argument --ranktable_file."
         )
         return
-    ranktable = read_csv_or_json(ranktable_file)
     ranktable_map = {serv.get("server_id", None): rank for rank, serv in enumerate(ranktable.get("server_list", []))}
     if not ranktable_map:
         logger.error(f"ranktable_file={ranktable_file} is empty or not correctly set.")
@@ -73,13 +96,11 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None):
     if len(ranktable_map) < 2:
         logger.info(f"Only one server found in ranktable_file={ranktable_file}, skip distributed check")
         return
-    master_ip = ranktable["server_list"][0]["server_id"]  # already checked keys exists
-    local_ip = get_local_to_master_ip(master_ip)
     if local_ip not in ranktable_map:
         logger.error(f"local_ip={local_ip } not exists in ranktable_file: {ranktable_file}.")
         return
-    interface = get_interface_by_ip(local_ip)
 
+    # Init master port by service_config_path
     master_port = None
     if service_config_path and os.path.exists(service_config_path):
         mindie_service_config = parse_mindie_server_config(service_config_path)
@@ -90,16 +111,12 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None):
         )
         master_port = DAFAULT_MASTER_PORT
 
-    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.ranktable_map] = ranktable_map
-    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.master_ip] = master_ip
     GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.master_port] = master_port
-    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.local_ip] = local_ip
-    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.interface] = interface
-    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.rank] = ranktable_map.get(local_ip, -1)
     GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.world_size] = len(ranktable_map)
+    GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.rank] = ranktable_map.get(local_ip, -1)
 
     logger.info(f"GLOBAL_DISTRIBUTE_ENV: {GLOBAL_DISTRIBUTE_ENV}")
-    os.environ["GLOO_SOCKET_IFNAME"] = str(interface)
+    
 
 
 class DistributeCollector:

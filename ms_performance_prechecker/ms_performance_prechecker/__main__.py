@@ -108,7 +108,15 @@ def run_precheck(
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
 
-def run_distribute_compare(ranktable_file=None, service_config_path=None, **kwargs):
+def run_distribute_compare(
+    ranktable_file=None,
+    service_config_path=None,
+    master_ip=None,
+    master_port=None,
+    local_rank=None,
+    world_size=None,
+    **kwargs,
+):
     from ms_performance_prechecker.prechecker import cluster_collector
 
     dump_env = run_env_dump(None)
