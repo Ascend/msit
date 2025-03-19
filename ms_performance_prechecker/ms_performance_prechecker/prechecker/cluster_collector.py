@@ -101,7 +101,8 @@ class DistributeCollector:
         self.local_ip = GLOBAL_DISTRIBUTE_ENV.get(DISTIBUT_ENVS.local_ip, "127.0.0.1")
         self.init_method, self.is_dist_group_inited = f"tcp://{self.master_ip}:{self.master_port}", False
         logger.info(
-            f"master_ip={self.master_ip}, master_port={self.master_port}, rank={self.rank}, world_size={self.world_size}"
+            f"DistributeCollector: master_ip={self.master_ip}, master_port={self.master_port}, rank={self.rank}, "
+            "world_size={self.world_size}"
         )
 
     def may_use_global_value(self, key, value=None):

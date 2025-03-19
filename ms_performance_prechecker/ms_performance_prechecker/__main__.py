@@ -120,8 +120,6 @@ def run_distribute_compare(
 ):
     from ms_performance_prechecker.prechecker import cluster_collector
 
-    logger.info(f"master_ip={master_ip}, master_port={master_port}, rank={local_rank}, world_size={world_size}")
-
     dump_env = run_env_dump(None)
     dump_env_json_str = json.dumps(dump_env)
 
@@ -129,7 +127,7 @@ def run_distribute_compare(
     dump_env_json_str_dict = cluster_collector.distribute_collector(
         dump_env_json_str, master_ip=master_ip, master_port=master_port, rank=local_rank, world_size=world_size
     )
-    logger.info(dump_env_json_str_dict)
+    logger.debug(dump_env_json_str_dict)
 
     if dump_env_json_str_dict is None:
         logger.info("Not master node, skip comparing")
