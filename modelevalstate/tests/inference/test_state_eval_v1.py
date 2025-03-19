@@ -26,6 +26,7 @@ class PredictConfig:
     train_field: str = "model_execute_time"
     dataset_type: SimpleDataProcessor = SimpleDataProcessor
 
+
 def predict_with_model(config: PredictConfig):
     # 转换格式为接口需要格式
     origin_data: List[NodeInfo] = []
@@ -36,7 +37,7 @@ def predict_with_model(config: PredictConfig):
     xgb_state_eval = XGBStateEvaluate(
         xgb_model_path=Path(config.xgb_model_path),
         dataprocessor=data_processor)
-    for ind, row in config.lines_data.iterrows():
+    for _, row in config.lines_data.iterrows():
         # 获取真实结果
         batch_data = eval(row[0])
         batch_field = BatchField(*batch_data[:-1])
