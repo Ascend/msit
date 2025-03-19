@@ -107,6 +107,7 @@ def run_precheck(
 
 
 def distribute_collector(*args):
+    # [TODO]
     return {
         "xxx": json.dumps(dict(xx=1234, yy=5678)),
         "xxx2": json.dumps(dict(xx=12343, yy=5678)),
@@ -117,7 +118,7 @@ def run_distribute_compare(master_ip=None, master_port=None, local_rank=None, wo
     dump_env_json_str = json.dumps(dump_env)
     dump_env_json_str_dict = distribute_collector(dump_env_json_str, master_ip, master_port, local_rank, word_size)
     if dump_env_json_str_dict is None:
-        logger.info("I'm not master")
+        logger.info("Not master node, skip comparing")
         return 
 
     env_ips = []
