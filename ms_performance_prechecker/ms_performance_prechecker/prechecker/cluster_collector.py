@@ -65,8 +65,8 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None):
     interface = get_interface_by_ip(local_ip)
 
     master_port = None
-    if mindie_service_path and os.path.exists(mindie_service_path):
-        mindie_service_config = parse_mindie_server_config(mindie_service_path)
+    if service_config_path and os.path.exists(service_config_path):
+        mindie_service_config = parse_mindie_server_config(service_config_path)
         master_port = mindie_service_config.get("ServerConfig", {}).get("port", None)
     if master_port is None:
         logger.warning(
