@@ -71,7 +71,7 @@ class NodeInfo:
     model_time: float  # 这个model （prefill、decode）执行完成的时间
     batch_execute_delta: float  # 组batch的时间
     total_time: float  # 从开始处理到现在的时间
-    end_count: int  = 0 # batch中执行完成后有多少个请求结束
+    end_count: int = 0 # batch中执行完成后有多少个请求结束
     request_info: List = field(default_factory=list)  # 当前batch处理包含的请求信息
 
 
