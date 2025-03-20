@@ -323,7 +323,7 @@ class OSReleaseChecker(RrecheckerBase):
 
     def do_precheck(self, os_release, **kwargs):
         os_release_lower = os_release.replace(" ", "").replace("-", "").replace("_", "").lower()
-        if any(release in os_release_lower for release in OS_SUGGESTIONS_LOWER):
+        if not any(release in os_release_lower for release in OS_SUGGESTIONS_LOWER):
             show_check_result(
                 "system",
                 "os 发行版本",

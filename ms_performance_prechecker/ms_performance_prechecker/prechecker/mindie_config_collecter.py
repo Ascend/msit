@@ -59,9 +59,9 @@ class RankTableCollecter(RrecheckerBase):
 
             for device_id, device in enumerate(server.get("device", [])):
                 cur_prefix += f"device.{device_id}."
-                self.key_checker(source_dict=server, target_key="device_id", prefix=cur_prefix)
-                self.key_checker(source_dict=server, target_key="device_ip", prefix=cur_prefix)
-                self.key_checker(source_dict=server, target_key="rank_id", prefix=cur_prefix)
+                self.key_checker(source_dict=device, target_key="device_id", prefix=cur_prefix)
+                self.key_checker(source_dict=device, target_key="device_ip", prefix=cur_prefix)
+                self.key_checker(source_dict=device, target_key="rank_id", prefix=cur_prefix)
 
 mindie_config_collecter = MindieConfigCollecter()
 ranktable_collecter = RankTableCollecter()

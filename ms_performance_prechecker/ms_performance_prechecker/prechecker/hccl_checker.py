@@ -129,7 +129,7 @@ class HcclPingChecker(RrecheckerBase):
     __checker_name__ = "HcclPing"
 
     def collect_env(self, ranktable_file=None, **kwargs):
-        logger.debug(f"Starting HcclPingChecker")
+        logger.info(f"Starting HcclPingChecker. This may take some time.")
         logger.info(f"ranktable_file={ranktable_file}")
         ranktable = parse_ranktable_file(ranktable_file)
         if not ranktable:
@@ -141,6 +141,7 @@ class HcclPingChecker(RrecheckerBase):
             server_id = server.get("server_id", None)
             device_ips = [ii.get("device_ip", None) for ii in server.get("device", [])]
             ranktable_ips[server_id] = device_ips
+        logger.debug(f"ranktable_ips={ranktable_ips}")
 
         _, local_ip = get_interface_by_ip(list(ranktable_ips.keys()))
         if local_ip is None:
@@ -148,13 +149,13 @@ class HcclPingChecker(RrecheckerBase):
             return None
 
         multi_server_results = {}
-        for server_id, device_ips in ranktable.items():
+        for server_id, device_ips in ranktable_ips.items():
             if server_id == local_ip or server_id is None:
                 continue
             for device_ip in device_ips:
                 if device_ip is None:
                     continue
-                logger.debug(f"HcclPingChecker device_id={device_id}, device_ip={device_ip}")
+                logger.debug(f"HcclPingChecker server_id={server_id}, device_ip={device_ip}")
                 results = run_hccl_command("hccn_tool -i {device_id} -ping -g address " + device_ip)
                 bool_results = [any("0.00% packet loss" in ii for ii in result) for result in results]
                 multi_server_results.setdefault(server_id, {}).update({device_ip: bool_results})
