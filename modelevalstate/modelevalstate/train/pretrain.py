@@ -89,20 +89,6 @@ class PreTrainModel:
                 update_global_coefficient(_inner_ud, _cur_state, computer_speed_with_second(line, field))
         return _inner_up, _inner_ud
 
-    def train(self, lines_data: Optional[DataFrame] = None,
-              middle_save_path: Optional[Path] = None):
-        self.dataset.construct_data(lines_data, plt_data=self.plt_data, middle_save_path=middle_save_path)
-        self.dataset.custom_encoder.save()
-        rmse = self.model.train(self.dataset, middle_save_path=middle_save_path)
-        self.rmse.append(rmse)
-
-    def partial_train(self, lines_data: Optional[DataFrame] = None,
-                      middle_save_path: Optional[Path] = None):
-        self.dataset.custom_encoder.fit(load=True)
-        self.dataset.construct_data(lines_data, plt_data=self.plt_data, middle_save_path=middle_save_path)
-        rmse = self.model.train(self.dataset, train_type="partial_fit", middle_save_path=middle_save_path)
-        self.rmse.append(rmse)
-
     @staticmethod
     def get_stage_after_preprocess(row: pd.Series, encoder: Union[CustomOneHotEncoder, CustomLabelEncoder]):
         # 根据预处理后的数据识别该行数据是decode还是prefill
@@ -120,17 +106,6 @@ class PreTrainModel:
 
         return stage
 
-    def get_nodes_with_model_predict(self, features: DataFrame):
-        # 使用模型进行预测
-        target_data = []
-        for _, row in features.iterrows():
-            _predict = self.model.predict((row,))[0]
-            stage = self.get_stage_after_preprocess(row, self.dataset.custom_encoder)
-            _cur_node = NodeInfo(stage, row.batch_size)
-            setattr(_cur_node, self.state_param.predict_field, _predict)
-            target_data.append(_cur_node)
-        return tuple(target_data)
-
     @staticmethod
     def get_nodes_with_origin_data(features: DataFrame, labels: DataFrame, predict_field: str,
                                    encoder: Union[CustomOneHotEncoder, CustomLabelEncoder]):
@@ -140,6 +115,31 @@ class PreTrainModel:
             stage = PretrainModel.get_stage_after_preprocess(row, encoder)
             _cur_node = NodeInfo(stage, row.batch_size)
             setattr(_cur_node, predict_field, labels.iloc[ind, 0])
+            target_data.append(_cur_node)
+        return tuple(target_data)
+
+    def train(self, lines_data: Optional[DataFrame] = None,
+              middle_save_path: Optional[Path] = None):
+        self.dataset.construct_data(lines_data, plt_data=self.plt_data, middle_save_path=middle_save_path)
+        self.dataset.custom_encoder.save()
+        rmse = self.model.train(self.dataset, middle_save_path=middle_save_path)
+        self.rmse.append(rmse)
+
+    def partial_train(self, lines_data: Optional[DataFrame] = None,
+                      middle_save_path: Optional[Path] = None):
+        self.dataset.custom_encoder.fit(load=True)
+        self.dataset.construct_data(lines_data, plt_data=self.plt_data, middle_save_path=middle_save_path)
+        rmse = self.model.train(self.dataset, train_type="partial_fit", middle_save_path=middle_save_path)
+        self.rmse.append(rmse)
+
+    def get_nodes_with_model_predict(self, features: DataFrame):
+        # 使用模型进行预测
+        target_data = []
+        for _, row in features.iterrows():
+            _predict = self.model.predict((row,))[0]
+            stage = self.get_stage_after_preprocess(row, self.dataset.custom_encoder)
+            _cur_node = NodeInfo(stage, row.batch_size)
+            setattr(_cur_node, self.state_param.predict_field, _predict)
             target_data.append(_cur_node)
         return tuple(target_data)
 
