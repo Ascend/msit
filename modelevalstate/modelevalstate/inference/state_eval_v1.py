@@ -151,9 +151,9 @@ def demo_predict_v1():
                      RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
                      RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
                      RequestField(29.0, 1, 2), RequestField(29.0, 1, 2))
-    config_path = ConfigPath(Path(r".\PyProject\state_eval\tmp\pd_content\train\90\bak\base\xgb_model.ubj"),
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\90\ohe"),
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\90\llama3-8b")
+    config_path = ConfigPath(Path(r".\PyProject\state_eval\tmp\pd_content\train\151\bak\base\xgb_model.ubj"),
+                             Path(r".\PyProject\state_eval\tmp\pd_content\train\151\ohe"),
+                             Path(r".\PyProject\state_eval\tmp\pd_content\train\151\deepseek_r1")
                              )
     batch_field = BatchField('prefill', 20, 20.0, 580.0, 29.0)
 
@@ -193,9 +193,9 @@ def demo_predict_v1_with_cache_with_simple_data_processor():
                      RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
                      RequestField(29.0, 1, 2), RequestField(29.0, 1, 2))
     config_path = ConfigPath(
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\132\bak\base\xgb_model.ubj"),
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\132\ohe"),
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\132\llama3-8b")
+                             Path(r".\PyProject\state_eval\tmp\pd_content\train\155\bak\base\xgb_model.ubj"),
+                             Path(r".\PyProject\state_eval\tmp\pd_content\train\155\ohe"),
+                             Path(r".\PyProject\ModelEvalState\data\v1.0.0\deepseek_r1_forward_0")
                              )
     static_file = StaticFile(base_path=config_path.static_file_dir)
     fh = FileHanlder(static_file)

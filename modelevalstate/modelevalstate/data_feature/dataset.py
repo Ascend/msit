@@ -1,7 +1,17 @@
-# !/usr/bin/python3.7
 # -*- coding: utf-8 -*-
-# Copyright (c) Huawei Technologies Co., Ltd. 2024-2025. All rights reserved.
-
+# Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 训练预测每个状态速度的线性模型
 """
@@ -11,6 +21,7 @@ from typing import Optional, Union
 from collections import namedtuple
 
 from sklearn.model_selection import train_test_split
+from loguru import logger
 
 import pandas as pd
 import seaborn as sns
@@ -21,6 +32,7 @@ from pandas import DataFrame, Series
 from matplotlib import pyplot as plt
 
 from modelevalstate.inference.constant import OpAlgorithm
+from modelevalstate.inference.data_format_v1 import MODEL_OP_FIELD, MODEL_STRUCT_FIELD, MODEL_CONFIG_FIELD, MINDIE_FIELD, ENV_FIELD, HARDWARE_FIELD
 from modelevalstate.inference.dataset import CustomOneHotEncoder, CustomLabelEncoder, preset_category_data
 from modelevalstate.inference.dataset import PreprocessTool, TOTAL_OUTPUT_LENGTH, TOTAL_SEQ_LENGTH, TOTAL_PREFILL_TOKEN
 
@@ -87,7 +99,7 @@ class MyDataSet:
     def convert_hardware_info(row: str, index: str) -> Series:
         return PreprocessTool.generate_series(eval(row), eval(index))
     
-     @staticmethod
+    @staticmethod
     def get_all_request_info(row: str, index: str) -> DataFrame:
         # 获取所有request原始数据特征，用来分析原始数据
         origin_index = eval(index)
@@ -105,26 +117,41 @@ class MyDataSet:
         batch_df[TOTAL_OUTPUT_LENGTH] = request_df[TOTAL_OUTPUT_LENGTH]
         batch_df[TOTAL_SEQ_LENGTH] = batch_df[TOTAL_OUTPUT_LENGTH] + batch_df[TOTAL_PREFILL_TOKEN]
         request_df = request_df.drop(TOTAL_OUTPUT_LENGTH, axis=1)
-        model_struct_df = lines_data.iloc[:, 3].apply(self.convert_struct_info, args=(lines_data.columns[3],))
-        if self.op_algorithm == OpAlgorithm.EXPECTED:
-            model_op_df = lines_data.iloc[:, 2].apply(self.convert_op_info, args=(lines_data.columns[2],))
-        else:
-            model_op_df = lines_data.iloc[:, 2].apply(self.convert_op_info_with_ratio, args=(lines_data.columns[2],))
-        model_config_df = lines_data.iloc[:, 4].apply(self.convert_config_info, args=(lines_data.columns[4],))
-        mindie_df = lines_data.iloc[:, 5].apply(self.convert_mindie_info, args=(lines_data.columns[5],))
-        env_df = lines_data.iloc[:, 6].apply(self.convert_env_info, args=(lines_data.columns[6],))
-        hardware_df = lines_data.iloc[:, 7].apply(self.convert_hardware_info, args=(lines_data.columns[7],))
-        self.sub_columns = [batch_df.columns.tolist(), request_df.columns.tolist(), model_op_df.columns.tolist(),
-                            model_struct_df.columns.tolist(), model_config_df.columns.tolist(),
-                            mindie_df.columns.tolist(),
-                            env_df.columns.tolist(), hardware_df.columns.tolist()]
+        self.sub_columns = [batch_df.columns.tolist(), request_df.columns.tolist()]
+        _load_data = [batch_df, request_df]
+        for i, _cur_columns in enumerate(lines_data.columns[2:]):
+            if eval(_cur_columns) == MODEL_OP_FIELD:
+                if self.op_algorithm == OpAlgorithm.EXPECTED:
+                    model_op_df = lines_data.iloc[:, i+2].apply(self.convert_op_info, args=(_cur_columns,))
+                else:
+                    model_op_df = lines_data.iloc[:, i+2].apply(self.convert_op_info_with_ratio, args=(_cur_columns,))
+                self.sub_columns.append(model_op_df.columns.tolist())
+                _load_data.append(model_op_df)
+            elif eval(_cur_columns) == MODEL_STRUCT_FIELD:
+                model_struct_df = lines_data.iloc[:, i+2].apply(self.convert_struct_info, args=(_cur_columns,))
+                self.sub_columns.append(model_struct_df.columns.tolist())
+                _load_data.append(model_struct_df)
+            elif eval(_cur_columns) == MODEL_CONFIG_FIELD:
+                model_config_df = lines_data.iloc[:, i+2].apply(self.convert_config_info, args=(_cur_columns,))
+                self.sub_columns.append(model_config_df.columns.tolist())
+                _load_data.append(model_config_df)
+            elif eval(_cur_columns) == MINDIE_FIELD:
+                mindie_df = lines_data.iloc[:, i+2].apply(self.convert_mindie_info, args=(_cur_columns,))
+                self.sub_columns.append(mindie_df.columns.tolist())
+                _load_data.append(mindie_df)
+            elif eval(_cur_columns) == ENV_FIELD:
+                env_df = lines_data.iloc[:, i+2].apply(self.convert_env_info, args=(_cur_columns,))
+                self.sub_columns.append(env_df.columns.tolist())
+                _load_data.append(env_df)
+            elif eval(_cur_columns) == HARDWARE_FIELD:
+                hardware_df = lines_data.iloc[:, i+2].apply(self.convert_hardware_info, args=(_cur_columns,))
+                self.sub_columns.append(hardware_df.columns.tolist())
+                _load_data.append(hardware_df)
         # 提取 features 和labels
-        self.load_data = pd.concat([batch_df, request_df, model_op_df, model_struct_df, model_config_df, mindie_df,
-                                    env_df, hardware_df], axis=1)
+        self.load_data = pd.concat(_load_data, axis=1)
         self.labels = pd.DataFrame(batch_df[self.predict_field], columns=[self.predict_field])
         batch_df = batch_df.drop(self.predict_field, axis=1)
-        self.features = pd.concat([batch_df, request_df, model_op_df, model_struct_df, model_config_df, mindie_df,
-                                   env_df, hardware_df], axis=1)
+        self.features = pd.concat([batch_df, *_load_data[1:]], axis=1)
         # 使用sklearn 进行 one-hot
         self.features = self.custom_encoder.transformer(self.features)
         return self.features, self.labels

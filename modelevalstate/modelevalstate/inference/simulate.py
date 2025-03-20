@@ -17,14 +17,14 @@ import time
 import json
 from pathlib import Path
 
+import torch
 import numpy as np
 
 from modelevalstate.inference.data_format_v1 import BatchField, RequestField, ConfigPath
 from modelevalstate.inference.state_eval_v1 import predict_v1_with_cache
 from modelevalstate.inference.file_reader import FileHanlder, StaticFile
-from modelevalstate.inference.constant import IS_SLEEP_FLAG, BatchStage, DataProcessType
-from modelevalstate.inference.dataset import CustomLabelEncoder, preset_category_data, SimpleDataProcessor, \
-    DataProcessor
+from modelevalstate.inference.constant import IS_SLEEP_FLAG, BatchStage
+from modelevalstate.inference.dataset import CustomLabelEncoder, preset_category_data, DataProcessor
 
 
 class ServiceField:
@@ -40,11 +40,10 @@ class ServiceField:
 class Simulate:
     @staticmethod
     def init(plugin_object):
-        self = plugin_object
-        if isinstance(self.input_manager.cache_config.eos_token_id, int):
-            self.eos_token_id = self.input_manager.cache_config.eos_token_id
+        if isinstance(plugin_object.input_manager.cache_config.eos_token_id, int):
+            plugin_object.eos_token_id = plugin_object.input_manager.cache_config.eos_token_id
         else:
-            self.eos_token_id = self.input_manager.cache_config.eos_token_id[0]
+            plugin_object.eos_token_id = plugin_object.input_manager.cache_config.eos_token_id[0]
 
     @staticmethod
     def generate_random_token(plugin_object, shape, max_value=32000):
@@ -55,11 +54,27 @@ class Simulate:
         return array
 
     @staticmethod
-    def generate_token(plugin_object, input_metadata, cached_idx):
-        self = plugin_object
-        next_tokens = Simulate.generate_random_token(plugin_object, (input_metadata.batch_size,))
+    def generate_logits(batch_size, vocab_size: int = 129280, device="npu:0", dtype="float16"):
+        dtype_map = {
+            torch.float16: "float16",
+            torch.bfloat16: "bfloat16",
+            torch.float: "float",
+            torch.int8: "int8"
+        }
+        _cur_dtype= torch.float16
+        for k, v in dtype_map.items():
+            if v == dtype:
+                _cur_dtype = k
+                break
+        tensor = torch.randn((batch_size, vocab_size), dtype=_cur_dtype, device=device)
+        return tensor
 
-        output_len_count = self.input_manager.cache.output_len_count[cached_idx]
+    @staticmethod
+    def generate_token(plugin_object, input_metadata, cached_idx):
+        next_tokens = Simulate.generate_random_token(plugin_object, (input_metadata.batch_size,),
+                                                     plugin_object.model_wrapper.config.vocab_size)
+
+        output_len_count = plugin_object.input_manager.cache.output_len_count[cached_idx]
         if input_metadata.is_prefill:
             batch_stage = BatchStage.PREFILL
         else:
@@ -88,7 +103,7 @@ class Simulate:
                 continue
             _max_out_len = ServiceField.req_id_and_max_decode_length[input_metadata.batch_request_ids[i]]
             if _cur_out_len > _max_out_len:
-                new_next_tokens[i] = self.eos_token_id
+                new_next_tokens[i] = plugin_object.eos_token_id
         ServiceField.next_tokens = new_next_tokens
 
     @staticmethod
@@ -105,13 +120,13 @@ class Simulate:
             if _pre_v == -1:
                 continue
             if time_sleep:
-                time.sleep(_pre_v / 10 ** 6)
+                time.sleep(_pre_v)
                 return 0
             else:
                 return _pre_v
 
 
-def init(req_and_decode_file: Path, data_processor_type: DataProcessType = DataProcessType.DATA_PROCESS):
+def init(req_and_decode_file: Path):
     with open(req_and_decode_file, 'r') as f:
         ServiceField.req_id_and_max_decode_length = {int(k): int(v) for k, v in json.load(f).items()}
     static_file = StaticFile(base_path=ServiceField.config_path.static_file_dir)
@@ -119,14 +134,11 @@ def init(req_and_decode_file: Path, data_processor_type: DataProcessType = DataP
     ServiceField.fh.load_static_data()
     custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=ServiceField.config_path.ohe_path)
     custom_encoder.fit(load=True)
-    if data_processor_type == DataProcessType.DATA_PROCESS:
-        ServiceField.data_processor = DataProcessor(custom_encoder)
-    else:
-        ServiceField.data_processor = SimpleDataProcessor(custom_encoder)
+    ServiceField.data_processor = DataProcessor(custom_encoder)
 
 
-ServiceField.config_path = ConfigPath(Path(r"./predict_model/bak/base/xgb_model.ubj"),
-                                      Path(r"./predict_model/ohe"),
-                                      Path(r"./predict_model/llama3-8b"))
+ServiceField.config_path = ConfigPath(Path(r"/data/deepseek/simulate/model/bak/base/xgb_model.ubj"),
+                                      Path(r"/data/deepseek/simulate/model/ohe"),
+                                      Path(r"/data/deepseek/simulate/model/deepseek_r1"))
 
-init(Path(r"./predict_model/req_id_and_decode_num.json"))
+init(Path(r"/data/deepseek/simulate/model/req_id_and_decode_num.json"))
