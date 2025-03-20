@@ -21,7 +21,7 @@ from collections import namedtuple
 from glob import glob
 
 from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, RUN_MODES
-from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
+from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH, RANKTABLEFILE
 from ms_performance_prechecker.prechecker.utils import logger, set_log_level
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, deep_compare_dict, get_next_dict_item
 
@@ -31,9 +31,6 @@ DEFAULT_DUMP_PATH = os.path.join(
     tempfile.gettempdir(), f"ms_performance_prechecker_dump_{time.strftime('%Y%m%d_%H%M%S')}.json"
 )
 DAFAULT_ENV_SAVE_PATH = "ms_performance_prechecker_env.sh"
-RANKTABLEFILE = "RANKTABLEFILE"
-MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
-MINDIE_SERVICE_DEFAULT_PATH = "/usr/local/Ascend/mindie/latest/mindie-service"
 
 
 def get_next_dict_item(dict_value):
@@ -149,7 +146,7 @@ def run_distribute_compare(
 
 def sub_parser_precheck(subparsers):
     parser = subparsers.add_parser(
-        RUN_MODES.precheck, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="precheck evns"
+        RUN_MODES.precheck, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="precheck configuration"
     )
     parser.add_argument(
         "-t",
@@ -165,12 +162,13 @@ def sub_parser_precheck(subparsers):
         default="ms_performance_prechecker_env.sh",
         help="Save env changes as a file which could be applied directly.",
     )
+    parser.add_argument("-ranktable", "--ranktable_file", default=ranktable_file, help="HCCL rank table file path.")
     parser.set_defaults(func=run_precheck)
 
 
 def sub_parser_dump(subparsers):
     parser = subparsers.add_parser(
-        RUN_MODES.dump, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="dump env"
+        RUN_MODES.dump, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="dump configuration"
     )
 
     parser.add_argument(
@@ -186,13 +184,13 @@ def sub_parser_dump(subparsers):
 
 def sub_parser_compare(subparsers):
     parser = subparsers.add_parser(
-        RUN_MODES.compare, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="compare dump envs"
+        RUN_MODES.compare, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="compare dumped configuration"
     )
     parser.add_argument(
         "-d",
         "--dump_file_paths",
         nargs="+",
-        help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
+        help="Saved configuration path. It could be a list of path when you want to compare envs of multiple path.",
     )
     parser.set_defaults(func=run_compare)
 
@@ -209,9 +207,9 @@ def sub_parser_distribute_compare(subparsers):
         help="compare distribute envs",
     )
     parser.add_argument(
-        "-s", "--service_config_path", type=str, default=mindie_service_path, help="service config json path"
+        "-service", "--service_config_path", type=str, default=mindie_service_path, help="service config json path"
     )
-    parser.add_argument("-r", "--ranktable_file", default=ranktable_file, help="HCCL rank table file path.")
+    parser.add_argument("-ranktable", "--ranktable_file", default=ranktable_file, help="HCCL rank table file path.")
 
     parser.add_argument(
         "-ip",

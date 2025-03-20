@@ -15,6 +15,7 @@
 import csv
 import os
 import json
+import socket
 import logging
 from collections import namedtuple
 
@@ -26,6 +27,7 @@ SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTIO
 
 MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
 MINDIE_SERVICE_DEFAULT_PATH = "/usr/local/Ascend/mindie/latest/mindie-service"
+RANKTABLEFILE = "RANKTABLEFILE"
 
 LOG_LEVELS = {
     "debug": logging.DEBUG,
@@ -198,9 +200,9 @@ def get_next_dict_item(dict_value):
 
 
 def parse_mindie_server_config(mindie_service_path=None):
-    logger.debug("mindie_service_config:")
     if mindie_service_path is None:
         mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+    logger.debug(f"mindie_service_path: {mindie_service_path}")
     if not os.path.exists(mindie_service_path):
         logger.warning(f"mindie config.json: {mindie_service_path} not exists, will skip related checkers")
         return None
@@ -210,3 +212,60 @@ def parse_mindie_server_config(mindie_service_path=None):
         "mindie_service_config: %s", get_next_dict_item(mindie_service_config) if mindie_service_config else None
     )
     return mindie_service_config
+
+
+def parse_ranktable_file(ranktable_file=None):
+    if ranktable_file is None:
+        ranktable_file = os.getenv(RANKTABLEFILE, None)
+    logger.debug(f"ranktable_file: {ranktable_file}")
+    if not ranktable_file or not os.path.exists(mindie_service_path):
+        logger.warning(f"ranktable_file: {ranktable_file} not exists, will skip related checkers")
+        return None
+
+    ranktable = read_csv_or_json(ranktable_file)
+    logger.debug(
+        "ranktable: %s", get_next_dict_item(ranktable) if ranktable else None
+    )
+    return ranktable
+
+
+def get_local_to_master_ip(test_ip="8.8.8.8"):
+    local_ip = "127.0.0.1"
+    try:
+        ss = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        ss.connect((test_ip, 80))
+        local_ip = ss.getsockname()[0]
+    finally:
+        ss.close()
+    return local_ip
+
+
+def get_interface_by_ip(local_ip):
+    import psutil
+
+    local_ip_list = local_ip if isinstance(local_ip, (list, tuple)) else [local_ip]
+    for interface, addrs in psutil.net_if_addrs().items():
+        for addr in addrs:
+            if addr.family == socket.AF_INET and addr.address in local_ip_list:
+                return interface, addr.address
+    return None, None
+
+
+def run_shell_command(command, fail_msg=""):
+    import subprocess
+    from shutil import which
+
+    command_split = command.split()
+    base_command = command_split[0]
+    base_command_path = which(base_command)
+    if not base_command_path:
+        logger.error(f"{base_command} command not exists" + fail_msg)
+        return {}
+
+    command_split = [base_command_path] + command_split[1:]
+    try:
+        result = subprocess.run(command_split, capture_output=True, text=True, check=True, shell=False)
+    except Exception as err:
+        logger.error(f"Failed calling {base_command}" + fail_msg)
+        return {}
+    return result

@@ -16,12 +16,15 @@ __all__ = [
     "checkers",
 ]
 
-from ms_performance_prechecker.prechecker.mindie_config_collecter import mindie_config_collecter
+from ms_performance_prechecker.prechecker.mindie_config_collecter import mindie_config_collecter, ranktable_collecter
 from ms_performance_prechecker.prechecker.env_checker import env_checker
 from ms_performance_prechecker.prechecker.system_checker import system_checker
+from ms_performance_prechecker.prechecker.hccl_checker import hccl_checker
 
 checkers = [
     mindie_config_collecter,
+    ranktable_collecter,
     env_checker,
     system_checker,
+    hccl_checker,
 ]
