@@ -35,16 +35,16 @@ class CustomGlobalBestPSO(GlobalBestPSO):
         if (len(self.breakpoint_pos) % self.n_particles) != 0:
             _iter_num += 1
         for i in range(_iter_num):
-            _current_pos = np.array(self.breakpoint_pos[i * self.n_particles:(i+1) * self.n_particles])
+            _current_pos = np.array(self.breakpoint_pos[i * self.n_particles:(i + 1) * self.n_particles])
             if _current_pos.shape[0] < self.n_particles:
                 _current_pos = np.append(_current_pos, self.swarm.position[_current_pos.shape[0]:], axis=0)
-            _current_cost = np.array(self.breakpoint_cost[i * self.n_particles:(i+1) * self.n_particles])
+            _current_cost = np.array(self.breakpoint_cost[i * self.n_particles:(i + 1) * self.n_particles])
+            self.swarm.position = _current_pos
             if _current_cost.shape[0] < self.n_particles:
                 _current_cost = np.append(_current_cost, self.swarm.current_cost[_current_cost.shape[0]:], axis=0)
-            self.swarm.position = _current_pos
-            self.swarm.current_cost = _current_cost
             self.swarm.pbest_pos, self.swarm.pbest_cost = compute_pbest(self.swarm)
             self.swarm.best_pos, self.swarm.best_cost = self.top.compute_gbest(self.swarm)
+            self.swarm.current_cost = _current_cost
             hist = self.ToHistory(
                 best_cost=self.swarm.best_cost,
                 mean_pbest_cost=np.mean(self.swarm.pbest_cost),

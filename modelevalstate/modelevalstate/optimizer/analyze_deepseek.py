@@ -137,7 +137,7 @@ def analyze(input_path_1, input_path_2, input_path_3):
 
             if val > success_req:
                 break
-            during_time = filtered_df.iloc[val-1]['first_chunk_latency'] 
+            during_time = filtered_df.iloc[val - 1]['first_chunk_latency'] 
             arrive_time = row['start_time'] - during_time
             filtered_df1 = df1[df1['start_time'] > arrive_time]
 
@@ -156,4 +156,4 @@ def analyze(input_path_1, input_path_2, input_path_3):
     total_decode_time = filtered_df['latency'].sum() - filtered_df['first_chunk_latency'].sum() 
     average_decode_latency = total_decode_time / filtered_df['n_chunks'].sum()
     success_precent = success_req / total_req
-    return  throughput, avg_prefill_latency, average_decode_latency, success_precent
+    return throughput, avg_prefill_latency, average_decode_latency, success_precent

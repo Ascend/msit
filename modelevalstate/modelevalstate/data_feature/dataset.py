@@ -289,7 +289,7 @@ class DecodeDataSet:
         return len(matches)
     
     @staticmethod
-    def count_chars(line : str):
+    def count_chars(line: str):
         # 匹配中文字符
         chinese_pattern = r'[^\x00-\xff]'
         chinese_matches = re.findall(chinese_pattern, line)
