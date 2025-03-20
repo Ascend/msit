@@ -218,7 +218,7 @@ def parse_ranktable_file(ranktable_file=None):
     if ranktable_file is None:
         ranktable_file = os.getenv(RANKTABLEFILE, None)
     logger.debug(f"ranktable_file: {ranktable_file}")
-    if not ranktable_file or not os.path.exists(mindie_service_path):
+    if not ranktable_file or not os.path.exists(ranktable_file):
         logger.warning(f"ranktable_file: {ranktable_file} not exists, will skip related checkers")
         return None
 
