@@ -46,22 +46,22 @@ class RankTableCollecter(RrecheckerBase):
         if not ranktable:
             return
 
-        key_checker(source_dict=ranktable, target_key="server_count")
-        key_checker(source_dict=ranktable, target_key="server_list")
-        key_checker(source_dict=ranktable, target_key="version")
-        key_checker(source_dict=ranktable, target_key="status")
+        self.key_checker(source_dict=ranktable, target_key="server_count")
+        self.key_checker(source_dict=ranktable, target_key="server_list")
+        self.key_checker(source_dict=ranktable, target_key="version")
+        self.key_checker(source_dict=ranktable, target_key="status")
 
         for server_id, server in enumerate(ranktable.get("server_list", [])):
             cur_prefix = f"server_list.{server_id}."
-            key_checker(source_dict=server, target_key="server_id", prefix=cur_prefix)
-            key_checker(source_dict=server, target_key="container_ip", prefix=cur_prefix)
-            key_checker(source_dict=server, target_key="device", prefix=cur_prefix)
+            self.key_checker(source_dict=server, target_key="server_id", prefix=cur_prefix)
+            self.key_checker(source_dict=server, target_key="container_ip", prefix=cur_prefix)
+            self.key_checker(source_dict=server, target_key="device", prefix=cur_prefix)
 
             for device_id, device in enumerate(server.get("device", [])):
                 cur_prefix += f"device.{device_id}."
-                key_checker(source_dict=server, target_key="device_id", prefix=cur_prefix)
-                key_checker(source_dict=server, target_key="device_ip", prefix=cur_prefix)
-                key_checker(source_dict=server, target_key="rank_id", prefix=cur_prefix)
+                self.key_checker(source_dict=server, target_key="device_id", prefix=cur_prefix)
+                self.key_checker(source_dict=server, target_key="device_ip", prefix=cur_prefix)
+                self.key_checker(source_dict=server, target_key="rank_id", prefix=cur_prefix)
 
 mindie_config_collecter = MindieConfigCollecter()
 ranktable_collecter = RankTableCollecter()
