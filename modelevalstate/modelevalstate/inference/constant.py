@@ -61,7 +61,7 @@ SIZE_CATEGORY_HANDLER = {
 }
 
 UNDEFINED = "undefined"
-ALL_QUANTIZE = ("w8a8", "w8a8s", "w8a8sc", "w8a16", UNDEFINED)
+ALL_QUANTIZE = ("w8a8", "w8a8s", "w8a8sc", "w8a16", "w8a8_dynamic", UNDEFINED)
 ALL_KV_QUANT_TYPE = ("c8", UNDEFINED)
 ALL_GROUP_SIZE = ("0", "64", "128", UNDEFINED)
 ALL_REDUCE_QUANT_TYPE = ("per_channel", UNDEFINED)
@@ -126,11 +126,6 @@ for op in ALL_OP:
 class OpAlgorithm:
     EXPECTED = "expected"
     SCALE = "scale"
-
-
-class DataProcessType:
-    DATA_PROCESS = "data_process"
-    SIMPLE_PROCESS = "simple_process"
 
 
 class BatchStage:

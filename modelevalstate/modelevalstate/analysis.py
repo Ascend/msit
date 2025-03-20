@@ -116,13 +116,13 @@ class AnalysisState:
         """
         # 合并只有decode, prefill
         _x, _mean, _positive_sigma, _negative_sigma = AnalysisState.computer_mean_sigma(params.data, params.x_field)
-        _x, _predict, _predict_positive_sigma, _predict_negative_sigma = AnalysisState.computer_mean_sigma(
-            params.predict_data, params.x_field)
         plt.figure()
         plt.plot(_x, _mean, label="mean")
         plt.plot(_x, _positive_sigma, label="positive std")
         plt.plot(_x, _negative_sigma, label="negative std")
         plt.plot(_x, _predict, label="predict")
+        _x, _predict, _predict_positive_sigma, _predict_negative_sigma = AnalysisState.computer_mean_sigma(
+            params.predict_data, params.x_field)
         plt.plot(_x, _predict_positive_sigma, label="predict positive std")
         plt.plot(_x, _predict_negative_sigma, label="predict negative std")
         plt.title(params.title)

@@ -1,28 +1,42 @@
-# !/usr/bin/python3.7
 # -*- coding: utf-8 -*-
-# Copyright (c) Huawei Technologies Co., Ltd. 2024-2025. All rights reserved.
-
-"""
-训练预测每个状态速度的线性模型
-"""
+# Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import re
 from pathlib import Path
 from typing import Optional, Union
 from collections import namedtuple
 
 from sklearn.model_selection import train_test_split
+from loguru import logger
 
 import pandas as pd
+from pandas import DataFrame, Series
 import seaborn as sns
 import matplotlib
-matplotlib.use('Agg')
-
-from pandas import DataFrame, Series
 from matplotlib import pyplot as plt
-
 from modelevalstate.inference.constant import OpAlgorithm
+from modelevalstate.inference.data_format_v1 import (
+    MODEL_OP_FIELD, 
+    MODEL_STRUCT_FIELD, 
+    MODEL_CONFIG_FIELD, 
+    MINDIE_FIELD, 
+    ENV_FIELD, 
+    HARDWARE_FIELD
+)
 from modelevalstate.inference.dataset import CustomOneHotEncoder, CustomLabelEncoder, preset_category_data
 from modelevalstate.inference.dataset import PreprocessTool, TOTAL_OUTPUT_LENGTH, TOTAL_SEQ_LENGTH, TOTAL_PREFILL_TOKEN
+matplotlib.use('Agg')
 
 
 class MyDataSet:
@@ -55,8 +69,8 @@ class MyDataSet:
     def convert_request_info(row: str, index: str) -> Series:
         origin_index = eval(index)
         origin_row = eval(row)
-        RequestInfo = namedtuple("RequestInfo", origin_index)
-        _row_request_info = [RequestInfo(*[int(float(i)) for i in _row]) for _row in origin_row]
+        request_info = namedtuple("request_info", origin_index)
+        _row_request_info = [request_info(*[int(float(i)) for i in _row]) for _row in origin_row]
         return PreprocessTool.generate_series_with_request_info(_row_request_info, origin_index)
 
     @staticmethod
@@ -87,7 +101,7 @@ class MyDataSet:
     def convert_hardware_info(row: str, index: str) -> Series:
         return PreprocessTool.generate_series(eval(row), eval(index))
     
-     @staticmethod
+    @staticmethod
     def get_all_request_info(row: str, index: str) -> DataFrame:
         # 获取所有request原始数据特征，用来分析原始数据
         origin_index = eval(index)
@@ -97,50 +111,8 @@ class MyDataSet:
             _row_request_info.append([int(float(i)) for i in _row])
         return pd.DataFrame(_row_request_info, columns=origin_index)
 
-    def preprocess(self, lines_data: Optional[DataFrame] = None):
-        # 数据预处理
-        # 将各个特征数据转换为列数据
-        batch_df = lines_data.iloc[:, 0].apply(self.convert_batch_info, args=(lines_data.columns[0],))
-        request_df = lines_data.iloc[:, 1].apply(self.convert_request_info, args=(lines_data.columns[1],))
-        batch_df[TOTAL_OUTPUT_LENGTH] = request_df[TOTAL_OUTPUT_LENGTH]
-        batch_df[TOTAL_SEQ_LENGTH] = batch_df[TOTAL_OUTPUT_LENGTH] + batch_df[TOTAL_PREFILL_TOKEN]
-        request_df = request_df.drop(TOTAL_OUTPUT_LENGTH, axis=1)
-        model_struct_df = lines_data.iloc[:, 3].apply(self.convert_struct_info, args=(lines_data.columns[3],))
-        if self.op_algorithm == OpAlgorithm.EXPECTED:
-            model_op_df = lines_data.iloc[:, 2].apply(self.convert_op_info, args=(lines_data.columns[2],))
-        else:
-            model_op_df = lines_data.iloc[:, 2].apply(self.convert_op_info_with_ratio, args=(lines_data.columns[2],))
-        model_config_df = lines_data.iloc[:, 4].apply(self.convert_config_info, args=(lines_data.columns[4],))
-        mindie_df = lines_data.iloc[:, 5].apply(self.convert_mindie_info, args=(lines_data.columns[5],))
-        env_df = lines_data.iloc[:, 6].apply(self.convert_env_info, args=(lines_data.columns[6],))
-        hardware_df = lines_data.iloc[:, 7].apply(self.convert_hardware_info, args=(lines_data.columns[7],))
-        self.sub_columns = [batch_df.columns.tolist(), request_df.columns.tolist(), model_op_df.columns.tolist(),
-                            model_struct_df.columns.tolist(), model_config_df.columns.tolist(),
-                            mindie_df.columns.tolist(),
-                            env_df.columns.tolist(), hardware_df.columns.tolist()]
-        # 提取 features 和labels
-        self.load_data = pd.concat([batch_df, request_df, model_op_df, model_struct_df, model_config_df, mindie_df,
-                                    env_df, hardware_df], axis=1)
-        self.labels = pd.DataFrame(batch_df[self.predict_field], columns=[self.predict_field])
-        batch_df = batch_df.drop(self.predict_field, axis=1)
-        self.features = pd.concat([batch_df, request_df, model_op_df, model_struct_df, model_config_df, mindie_df,
-                                   env_df, hardware_df], axis=1)
-        # 使用sklearn 进行 one-hot
-        self.features = self.custom_encoder.transformer(self.features)
-        return self.features, self.labels
-
-    def construct_data(self, lines_data: Optional[DataFrame] = None, plt_data: bool = True,
-                       middle_save_path: Optional[Path] = None):
-        features, labels = self.preprocess(lines_data)
-        self.train_x, self.test_x, self.train_y, self.test_y = train_test_split(features, labels,
-                                                                                test_size=self.test_size,
-                                                                                shuffle=self.shuffle)
-        # 检查处理的数据是否有重复的column name
-        assert len(self.features.columns) == len(self.features.columns.unique())
-        if plt_data:
-            self.plt_data(lines_data, middle_save_path)
-
-    def plot_custom_pairplot(self, df: DataFrame, middle_save_path: Optional[Path] = None,
+    @classmethod
+    def plot_custom_pairplot(cls, df: DataFrame, middle_save_path: Optional[Path] = None,
                              file_name: str = "pairplot.png"):
         col_num = df.shape[1]
         fig, axs = plt.subplots(col_num, col_num, figsize=(4 * col_num, 4 * col_num))
@@ -161,6 +133,67 @@ class MyDataSet:
         else:
             plt.show()
         plt.close()
+        
+    def preprocess(self, lines_data: Optional[DataFrame] = None):
+        # 数据预处理
+        # 将各个特征数据转换为列数据
+        batch_df = lines_data.iloc[:, 0].apply(self.convert_batch_info, args=(lines_data.columns[0],))
+        request_df = lines_data.iloc[:, 1].apply(self.convert_request_info, args=(lines_data.columns[1],))
+        batch_df[TOTAL_OUTPUT_LENGTH] = request_df[TOTAL_OUTPUT_LENGTH]
+        batch_df[TOTAL_SEQ_LENGTH] = batch_df[TOTAL_OUTPUT_LENGTH] + batch_df[TOTAL_PREFILL_TOKEN]
+        request_df = request_df.drop(TOTAL_OUTPUT_LENGTH, axis=1)
+        self.sub_columns = [batch_df.columns.tolist(), request_df.columns.tolist()]
+        _load_data = [batch_df, request_df]
+        for i, _cur_columns in enumerate(lines_data.columns[2:]):
+            if eval(_cur_columns) == MODEL_OP_FIELD:
+                if self.op_algorithm == OpAlgorithm.EXPECTED:
+                    model_op_df = lines_data.iloc[:, i + 2].apply(self.convert_op_info, args=(_cur_columns,))
+                else:
+                    model_op_df = lines_data.iloc[:, i + 2].apply(self.convert_op_info_with_ratio, args=(_cur_columns,))
+                self.sub_columns.append(model_op_df.columns.tolist())
+                _load_data.append(model_op_df)
+            elif eval(_cur_columns) == MODEL_STRUCT_FIELD:
+                model_struct_df = lines_data.iloc[:, i + 2].apply(self.convert_struct_info, args=(_cur_columns,))
+                self.sub_columns.append(model_struct_df.columns.tolist())
+                _load_data.append(model_struct_df)
+            elif eval(_cur_columns) == MODEL_CONFIG_FIELD:
+                model_config_df = lines_data.iloc[:, i + 2].apply(self.convert_config_info, args=(_cur_columns,))
+                self.sub_columns.append(model_config_df.columns.tolist())
+                _load_data.append(model_config_df)
+            elif eval(_cur_columns) == MINDIE_FIELD:
+                mindie_df = lines_data.iloc[:, i + 2].apply(self.convert_mindie_info, args=(_cur_columns,))
+                self.sub_columns.append(mindie_df.columns.tolist())
+                _load_data.append(mindie_df)
+            elif eval(_cur_columns) == ENV_FIELD:
+                env_df = lines_data.iloc[:, i + 2].apply(self.convert_env_info, args=(_cur_columns,))
+                self.sub_columns.append(env_df.columns.tolist())
+                _load_data.append(env_df)
+            elif eval(_cur_columns) == HARDWARE_FIELD:
+                hardware_df = lines_data.iloc[:, i + 2].apply(self.convert_hardware_info, args=(_cur_columns,))
+                self.sub_columns.append(hardware_df.columns.tolist())
+                _load_data.append(hardware_df)
+        # 提取 features 和labels
+        self.load_data = pd.concat(_load_data, axis=1)
+        self.labels = pd.DataFrame(batch_df[self.predict_field], columns=[self.predict_field])
+        batch_df = batch_df.drop(self.predict_field, axis=1)
+        self.features = pd.concat([batch_df, *_load_data[1:]], axis=1)
+        # 使用sklearn 进行 one-hot
+        self.features = self.custom_encoder.transformer(self.features)
+        return self.features, self.labels
+
+    def construct_data(self, lines_data: Optional[DataFrame] = None, plt_data: bool = True,
+                       middle_save_path: Optional[Path] = None):
+        features, labels = self.preprocess(lines_data)
+        self.train_x, self.test_x, self.train_y, self.test_y = train_test_split(features, labels,
+                                                                                test_size=self.test_size,
+                                                                                shuffle=self.shuffle)
+        # 检查处理的数据是否有重复的column name
+        if len(self.features.columns) != len(self.features.columns.unique()):
+            raise ValueError("Duplicate column names found in the features.")
+        if plt_data:
+            self.plt_data(lines_data, middle_save_path)
+
+    
 
     def analysis_batch_feature(self, middle_save_path: Optional[Path] = None):
         cur_batch_df = self.load_data.iloc[:, 0:len(self.sub_columns[0])]
@@ -256,7 +289,7 @@ class DecodeDataSet:
         return len(matches)
     
     @staticmethod
-    def count_chars(line:str):
+    def count_chars(line: str):
         # 匹配中文字符
         chinese_pattern = r'[^\x00-\xff]'
         chinese_matches = re.findall(chinese_pattern, line)

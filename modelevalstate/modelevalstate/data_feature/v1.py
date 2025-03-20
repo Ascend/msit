@@ -1,6 +1,18 @@
-# !/usr/bin/python3.7
 # -*- coding: utf-8 -*-
-# Copyright (c) Huawei Technologies Co., Ltd. 2024-2025. All rights reserved.
+# Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import csv
 import math
 import threading
@@ -16,8 +28,9 @@ from warnings import warn
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
+from loguru import logger
 
-from modelevalstate.inference.file_reader import FileHanlder
+from modelevalstate.inference.file_reader import FileHanlder, StaticFile
 from modelevalstate.inference.common import get_bins_and_label
 
 HARDWARE_FIELD = ("cpu_count", "cpu_mem", "soc_name", "npu_mem")
@@ -42,8 +55,15 @@ MODEL_CONFIG_FIELD = (
 
 ModelConfig = namedtuple("ModelConfig", MODEL_CONFIG_FIELD)
 
+
 BATCH_FIELD = (
-    "batch_stage", "batch_size", "total_need_blocks", "total_prefill_token", "max_seq_len", "model_execute_time")
+    "batch_stage", 
+    "batch_size", 
+    "total_need_blocks", 
+    "total_prefill_token", 
+    "max_seq_len", 
+    "model_execute_time"
+)
 BATCH_FILE_FIELD = ("ibis_batchid", *BATCH_FIELD, "req_info")
 BatchField = namedtuple("BatchField", BATCH_FIELD)
 BatchFileField = namedtuple("BatchFileField", BATCH_FILE_FIELD)
@@ -75,119 +95,39 @@ class HistInfo:
     input_length = get_bins_and_label("input_length", interval=80)
     need_blocks = get_bins_and_label("need_blocks", interval=1)
     need_slots = get_bins_and_label("need_slots", interval=128)
-    output_length = get_bins_and_label("output_length", interval=10)
+    output_length = get_bins_and_label("output_length", interval=10, )
 
 
 @dataclass
-class ModelFilePaths:
+class ModelFilePaths(StaticFile):
     base_path: Path = Path("data/model")
-    hardware_path: Optional[Path] = None
-    env_path: Optional[Path] = None
-    mindie_config_path: Optional[Path] = None
-    config_path: Optional[Path] = None
     batch_path: Optional[Path] = None
     request_path: Optional[Path] = None
-    model_struct_path: Optional[Path] = None
-    model_decode_op_path: Optional[Path] = None
-    model_prefill_op_path: Optional[Path] = None
 
     def __post_init__(self):
-        if not self.base_path.exists():
-            raise FileNotFoundError(self.base_path)
-        if self.hardware_path is None:
-            self.hardware_path = self.base_path.joinpath("hardware.json")
-        if self.env_path is None:
-            self.env_path = self.base_path.joinpath("env.json")
-        if self.mindie_config_path is None:
-            self.mindie_config_path = self.base_path.joinpath("mindie_config.json")
-        if self.config_path is None:
-            self.config_path = self.base_path.joinpath("model_config.json")
+        super().__post_init__()
         if self.batch_path is None:
             self.batch_path = self.base_path.joinpath("batch_need.csv")
         if self.request_path is None:
             self.request_path = self.base_path.joinpath("request_need.csv")
-        if self.model_struct_path is None:
-            self.model_struct_path = self.base_path.joinpath("model_struct.csv")
-        if self.model_decode_op_path is None:
-            self.model_decode_op_path = self.base_path.joinpath("model_decode_op.csv")
-        if self.model_prefill_op_path is None:
-            self.model_prefill_op_path = self.base_path.joinpath("model_prefill_op.csv")
-        for path in [self.hardware_path, self.env_path, self.mindie_config_path, self.config_path, self.batch_path,
-                     self.request_path,
-                     self.model_struct_path, self.model_decode_op_path, self.model_prefill_op_path]:
-            if not path.exists():
-                raise FileNotFoundError(path)
+        for file in [self.batch_path, self.request_path]:
+            if not file.exists():
+                raise FileNotFoundError(file)
 
 
-class ConvertModelFileToCsv:
+class ConvertModelFileToCsv(FileHanlder):
     """
     转换model数据为一行数据
     """
 
-    def __init__(self, model_file_paths: ModelFilePaths, output: Path = Path("feature.csv"),
+    def __init__(self, data_file_paths: ModelFilePaths, output: Path = Path("feature.csv"),
                  req_warm_up=0):
-        self.model_file_paths = model_file_paths
+        super().__init__(data_file_paths)
         self.req_warm_up = req_warm_up
         self.out = output
-        self.hardware: Optional[HardWare] = None
-        self.env_info: Optional[EnvField] = None
-        self.mindie_info: Optional[MindieConfig] = None
-        self.model_config_info: Optional[ModelConfig] = None
-        self.model_struct_info: Optional[ModelStruct] = None
-        self.prefill_op_data: Optional[Dict[int, List[ModelOpField]]] = None
-        self.decode_op_data: Optional[Dict[int, List[ModelOpField]]] = None
         self.only_req_num: Dict = {}  # 请求最大的decode
-        self.all_request_info = {}    # 所有request信息
-
-    @staticmethod
-    def load_hardware_data(hardware_path: Path) -> HardWare:
-        with open(hardware_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        assert data
-        return HardWare(**{k: v for k, v in data.items() if k in HARDWARE_FIELD})
-
-    @staticmethod
-    def load_env_data(env_path: Path) -> EnvField:
-        with open(env_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        assert data
-        return EnvField(**{k: v for k, v in data.items() if k in ENV_FIELD})
-
-    @staticmethod
-    def load_mindie_config(mindie_config_path: Path) -> MindieConfig:
-        with open(mindie_config_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        assert data
-        if "max_seq_len" in data:
-            data["mindie__max_seq_len"] = data["max_seq_len"]
-        return MindieConfig(**{k: v for k, v in data.items() if k in MINDIE_FIELD})
-
-    @staticmethod
-    def load_model_config(config_path: Path) -> ModelConfig:
-        with open(config_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        assert data
-        return ModelConfig(**{k: v for k, v in data.items() if k in MODEL_CONFIG_FIELD})
-
-    @staticmethod
-    def load_model_struct(model_struct_path: Path) -> ModelStruct:
-        with open(model_struct_path, "r", encoding="utf-8", newline="") as f:
-            model_struct_reader = csv.reader(f)
-            model_struct = None
-            for i, row in enumerate(model_struct_reader):
-                if i == 0:
-                    try:
-                        assert tuple(row) == MODEL_STRUCT_FIELD
-                    except AssertionError as e:
-                        raise AssertionError(f"get fields: {row}, expected fields: {MODEL_STRUCT_FIELD}") from e
-                    continue
-                model_struct = ModelStruct(*row)
-        assert model_struct
-        return model_struct 
-
-    @staticmethod
-    def load_op_data(op_path: Path) -> Dict[int, List]:
-        return FileHanlder.load_op_data(op_path)
+        self.all_request_info = {}  # 所有request 信息
+        self.columns = None
 
     @staticmethod
     def load_all_req_info(request_need_csv: Path, req_queue: Optional[Queue] = None):
@@ -196,10 +136,8 @@ class ConvertModelFileToCsv:
             request_reader = csv.reader(request_files)
             for i, row in enumerate(request_reader):
                 if i == 0:
-                    try:
-                        assert tuple(row) == REQUEST_FILE_FIELD
-                    except AssertionError as e:
-                        raise AssertionError(f"get fields: {row}, expected fields: {REQUEST_FILE_FIELD}") from e
+                    if tuple(row) != REQUEST_FILE_FIELD:
+                        raise AssertionError(f"get fields: {row}, expected fields: {REQUEST_FILE_FIELD}")
                     continue
                 cur_row_info = RequestFileField(*row)
                 res[(int(cur_row_info.ibis_reqid), int(cur_row_info.execute_id))] = RequestField(*cur_row_info[2:])
@@ -208,19 +146,19 @@ class ConvertModelFileToCsv:
         return res
 
     @staticmethod
-    def get_num_of_prefill_and_decode(cur_batch_info: BatchField, tmp_prefill_req_id: List[int], cur_batch_size: int, 
+    def get_num_of_prefill_and_decode(cur_batch_info: BatchField, tmp_prefill_req_id: List[int],
                                       all_prefill_req: List[int], all_relation_req: List[int]):
         _prefill_num, _decode_num = 0, 0
 
         if cur_batch_info.batch_stage == "prefill":
-            _prefill_num = cur_batch_size
+            _prefill_num = cur_batch_info.batch_size
             if set(tmp_prefill_req_id) & set(all_prefill_req):
                 ValueError(
                     f"Found duplicated prefill request. {set(tmp_prefill_req_id) & set(all_prefill_req)}")
             else:
                 all_prefill_req.extend(tmp_prefill_req_id)
         elif cur_batch_info.batch_stage == "decode":
-            _decode_num = cur_batch_size
+            _decode_num = cur_batch_info.batch_size
         else:
             for j in range(0, len(all_relation_req), 2):
                 if all_relation_req[j + 1] == 0:
@@ -229,82 +167,65 @@ class ConvertModelFileToCsv:
                     _decode_num += 1
         return _prefill_num, _decode_num
 
-    def load_static_data(self):
-        self.hardware = self.load_hardware_data(self.model_file_paths.hardware_path)
-        self.env_info = self.load_env_data(self.model_file_paths.env_path)
-        self.mindie_info = self.load_mindie_config(self.model_file_paths.mindie_config_path)
-        self.model_config_info = self.load_model_config(self.model_file_paths.config_path)
-        self.model_struct_info = self.load_model_struct(self.model_file_paths.model_struct_path)
-        self.prefill_op_data = self.load_op_data(self.model_file_paths.model_prefill_op_path)
-        self.decode_op_data = self.load_op_data(self.model_file_paths.model_decode_op_path)
-
-    def get_op_field(self, batch_stage: str, batch_size: int, max_seq_len: int = 0) -> Tuple[ModelOpField]:
-        return FileHanlder.get_op_field(batch_stage, batch_size, max_seq_len, self.prefill_op_data, self.decode_op_data)
-
-    def load_batch_info(self) -> Tuple[BatchField, List[RequestField], List[ModelOpField], ModelStruct, ModelConfig,
-                                       MindieConfig, EnvField, HardWare]:
-        # 读取整个model获取的所有特性信息，将其转换为csv
-        req_queue = Queue()
-        t = threading.Thread(target=self.load_all_req_info, args=(self.model_file_paths.request_path, req_queue))
-        t.start()
-        self.load_static_data()
-        t.join()
-        all_request_info = req_queue.get()
-        self.all_request_info = all_request_info
-        # 读取固定的json数据
-        target_csv = []
-        # 读取batch信息
-        # 将batch 信息和request信息对应起来
-        _prefill_sum = 0
-        _decode_sum = 0
-        _all_prefill_req = []
-        with open(self.model_file_paths.batch_path, newline='') as batch_files:
-            batch_reader = csv.reader(batch_files)
-            for i, row in enumerate(batch_reader):
-                if i == 0:
-                    try:
-                        assert tuple(row) == BATCH_FILE_FIELD
-                    except AssertionError as e:
-                        raise AssertionError(f"get fields: {row}, expected fields: {BATCH_FILE_FIELD}") from e
+    def filter_warm_up(self, all_relation_req, all_request_info, cur_batch_info):
+        _cur_batch_info_batch_size = int(cur_batch_info.batch_size)
+        relation_req = []
+        _tmp_prefill_req_id = []
+        _tmp_decode_in_prefill = 0
+        for j in range(0, len(all_relation_req), 2):
+            if tuple(all_relation_req[j:j + 2]) in all_request_info:
+                if int(all_relation_req[j]) < self.req_warm_up:
+                    # 去掉预热的
+                    break
+                if cur_batch_info.batch_stage == "prefill" and all_relation_req[j + 1] != 0:
+                    _cur_batch_info_batch_size -= 1
+                    _tmp_decode_in_prefill += 1
                     continue
-                cur_row_info = BatchFileField(*row)
-                cur_batch_info = BatchField(*cur_row_info[1:-1])
-                _cur_batch_info_batch_size = int(cur_batch_info.batch_size)
-                relation_req = []
-                _all_relation_req = eval(cur_row_info.req_info)
-                _tmp_prefill_req_id = []
-                _tmp_decode_in_prefill = 0
-                for j in range(0, len(_all_relation_req), 2):
-                    if tuple(_all_relation_req[j: j + 2]) in all_request_info:
-                        if int(_all_relation_req[j]) < self.req_warm_up:
-                            # 去掉预热
-                            break
-                        if cur_batch_info.batch_stage == "prefill" and _all_relation_req[j + 1] != 0:
-                            _cur_batch_info_batch_size -= 1
-                            _tmp_decode_in_prefill += 1
-                            continue
-                        _tmp_prefill_req_id.append(_all_relation_req[j])
-                        _cur_req_info = all_request_info[tuple(_all_relation_req[j: j + 2])]
-                        relation_req.append(tuple(_cur_req_info))
-                    else:
-                        raise ValueError("Not Found request info.")
-                # 预热的数据不分析
-                if not relation_req:
-                    continue
-                target_csv.append([tuple(cur_batch_info), tuple(relation_req), 
-                                   tuple(self.get_op_field(cur_batch_info.batch_stage, _cur_batch_info_batch_size,
-                                                           int(float(cur_batch_info.max_seq_len)))),
-                                   tuple(self.model_struct_info), 
-                                   tuple(self.model_config_info), tuple(self.mindie_info), tuple(self.env_info),
-                                   tuple(self.hardware)])
-                _tmp_prefill_num, _tmp_decode_num = self.get_num_of_prefill_and_decode(cur_batch_info, 
-                                                                                       _tmp_prefill_req_id,
-                                                                                       _cur_batch_info_batch_size,
-                                                                                       _all_prefill_req,
-                                                                                       _all_relation_req)
-                _prefill_sum += _tmp_prefill_num
-                _decode_sum += _tmp_decode_num + _tmp_decode_in_prefill
-        
+                _tmp_prefill_req_id.append(all_relation_req[j])
+                _cur_req_info = all_request_info[tuple(all_relation_req[j:j + 2])]
+                relation_req.append(tuple(_cur_req_info))
+            else:
+                raise ValueError("Not Found request info.")
+        cur_batch_info = cur_batch_info._replace(batch_size=_cur_batch_info_batch_size)
+        return relation_req, _tmp_prefill_req_id, _tmp_decode_in_prefill, cur_batch_info
+
+    def target_data(self, relation_req, cur_batch_info) -> [Tuple[BatchField], Tuple[RequestField],
+                                                            Optional[Tuple[ModelOpField]], Optional[ModelStruct],
+                                                            Optional[ModelConfig],
+                                                            Optional[MindieConfig], Optional[EnvField],
+                                                            Optional[HardWare]]:
+        _default = []
+        _columns = []
+        if cur_batch_info:
+            _default.append(tuple(cur_batch_info))
+            _columns.append(BATCH_FIELD)
+        if relation_req:
+            _default.append(tuple(relation_req))
+            _columns.append(REQUEST_FIELD)
+        if self.prefill_op_data and self.decode_op_data:
+            _default.append(tuple(self.get_op_field(cur_batch_info.batch_stage, cur_batch_info.batch_size,
+                                                    int(float(cur_batch_info.max_seq_len)), self.prefill_op_data,
+                                                    self.decode_op_data)))
+            _columns.append(MODEL_OP_FIELD)
+        if self.model_struct_info:
+            _default.append(tuple(self.model_struct_info))
+            _columns.append(MODEL_STRUCT_FIELD)
+        if self.model_config_info:
+            _default.append(tuple(self.model_config_info))
+            _columns.append(MODEL_CONFIG_FIELD)
+        if self.mindie_info:
+            _default.append(tuple(self.mindie_info))
+            _columns.append(MINDIE_FIELD)
+        if self.env_info:
+            _default.append(tuple(self.env_info))
+            _columns.append(ENV_FIELD)
+        if self.hardware:
+            _default.append(tuple(self.hardware))
+            _columns.append(HARDWARE_FIELD)
+        self.columns = _columns
+        return _default
+
+    def check_data(self, all_request_info, prefill_sum, decode_sum):
         self.only_req_num = {}
         for _req_id, _req_execute_num in all_request_info.keys():
             if _req_id < self.req_warm_up:
@@ -313,28 +234,70 @@ class ConvertModelFileToCsv:
                 self.only_req_num[_req_id] = max(self.only_req_num[_req_id], int(_req_execute_num))
             else:
                 self.only_req_num[_req_id] = int(_req_execute_num)
-        
-        assert len(self.only_req_num.keys()) == _prefill_sum
-        assert sum(self.only_req_num.values()) == _decode_sum
+        if len(self.only_req_num.keys()) != prefill_sum:
+            logger.error(f"req num: {len(self.only_req_num.keys())}, prefill sum: {prefill_sum}")
+            raise ValueError
+        if sum(self.only_req_num.values()) != decode_sum:
+            logger.error(
+                f"sum(self.only_req_num.values()): {sum(self.only_req_num.values())}, decode sum: {decode_sum}")
+            raise ValueError
 
+    def load_batch_info(self) -> Tuple:
+        # 读取整个model获取的所有特性信息，然后将其转换为csv
+        req_queue = Queue()
+        t = threading.Thread(target=self.load_all_req_info, args=(self.data_file_paths.request_path, req_queue))
+        t.start()
+        self.load_static_data()
+        t.join()
+        all_request_info = req_queue.get()
+        self.all_request_info = all_request_info
+        # 读取固定的json类数据
+        target_csv = []
+        # 读取batch信息
+        # 将batch 信息和request 信息对应起来
+        _prefill_sum = 0
+        _decode_sum = 0
+        _all_prefill_req = []
+        with open(self.data_file_paths.batch_path, newline='') as batch_files:
+            batch_reader = csv.reader(batch_files)
+            for i, row in enumerate(batch_reader):
+                if i == 0:
+                    if tuple(row) != BATCH_FILE_FIELD:
+                        raise AssertionError(f"get fields: {row}, expected fields: {BATCH_FILE_FIELD}")
+                    continue
+                cur_row_info = BatchFileField(*row)
+                cur_batch_info = BatchField(*cur_row_info[1:-1])
+                _all_relation_req = eval(cur_row_info.req_info)
+                relation_req, _tmp_prefill_req_id, _tmp_decode_in_prefill, cur_batch_info = self.filter_warm_up(
+                    _all_relation_req,
+                    all_request_info,
+                    cur_batch_info)
+                # 如果是预热的数据，就不进行分析了
+                if not relation_req:
+                    continue
+                target_csv.append(self.target_data(relation_req, cur_batch_info))
+                _tmp_prefill_num, _tmp_decode_num = self.get_num_of_prefill_and_decode(cur_batch_info,
+                                                                                       _tmp_prefill_req_id,
+                                                                                       _all_prefill_req,
+                                                                                       _all_relation_req)
+                _prefill_sum += _tmp_prefill_num
+                _decode_sum += _tmp_decode_num + _tmp_decode_in_prefill
+        self.check_data(all_request_info, _prefill_sum, _decode_sum)
         return tuple(target_csv)
 
     def convert_to_csv(self):
         res = self.load_batch_info()
         with open(self.out, "w", newline="") as f:
             batch_writer = csv.writer(f)
-            batch_writer.writerow(
-                [BATCH_FIELD, REQUEST_FIELD, MODEL_OP_FIELD, MODEL_STRUCT_FIELD, MODEL_CONFIG_FIELD, MINDIE_FIELD,
-                 ENV_FIELD, HARDWARE_FIELD])
-
+            batch_writer.writerow(self.columns)
             batch_writer.writerows(res)
-    
+
     def plot_feature(self, save_path: Optional[Path]):
         p = sns.displot(list(self.only_req_num.values()), kde=True)
         _mean = int(mean(self.only_req_num.values()))
         p.savefig(save_path.joinpath(f"request_decode_num_hist_mean_{_mean}.png"))
         plt.close()
-
+        # 描述请求 input len和decode num的关系
         req_input_lens = []
         req_decode_nums = []
         for req_id, max_execute_id in self.only_req_num.items():
@@ -345,7 +308,7 @@ class ConvertModelFileToCsv:
         plt.ylabel("decode num")
         plt.savefig(save_path.joinpath(f"request_input_len_and_decode_num_scatter_{_mean}.png"))
         plt.close()
-    
+
     def save_only_req_num(self, save_path: Optional[Path]):
         with open(save_path.joinpath("req_id_and_decode_num.json"), "w") as f:
             json.dump(self.only_req_num, f)
@@ -380,7 +343,7 @@ class FileReader:
                     # 读取完所有文件结束
                     break
                 file_path = self.file_paths[self.current_file_index]
-                if self.num_lines == math.inf:
+                if math.isclose(self.num_lines, math.inf, rel_tol=1e-15):
                     df = pd.read_csv(file_path, skiprows=self.current_line_index)
                     lines.append(df)
                     # 继续读取下一个文件
@@ -415,7 +378,7 @@ class FileReader:
 
 
 class ConvertRequestFileToCsv:
-"""提取prompt信息 request信息等转换为预测decode num的基本数据"""
+    """提取prompt信息 request信息等转换为预测decode num的基本数据"""
 
     def __init__(self, request_path: Path, question_path: Path, output: Path = Path("decode_num.csv"),
                  req_warm_up: int = 0):
@@ -442,7 +405,7 @@ class ConvertRequestFileToCsv:
         # 关联req和question
         # 处理req信息，只留req id信息
         req_info = {}
-        for k, v in all_req_info.items():
+        for k, _ in all_req_info.items():
             _req_id, _execute_id = k
             if _req_id in req_info:
                 req_info[_req_id] = max(req_info[_req_id], int(_execute_id))
@@ -453,25 +416,32 @@ class ConvertRequestFileToCsv:
             if _req_id < self.req_warm_up:
                 continue
             _target_info.append({**all_req_info[(_req_id, _max_execute_id)]._asdict(),
-                                **question[_req_id - self.req_warm_up]._asdict()})
+                                 **question[_req_id - self.req_warm_up]._asdict()})
         df = pd.DataFrame(_target_info)
         # 保存特征到csv中
         df.to_csv(self.out, index=False)
 
 
-if __name__ == "__main__":
-    base_path = Path(r"./PyProject/ModelEvalState/data/v1.0.0/llama3-8b-2")
+def main(base_path):
     analysis_feature = base_path.joinpath("analysis_feature")
     analysis_feature.mkdir(parents=True, exist_ok=True)
     model_file_paths = ModelFilePaths(base_path=base_path)
-    convert_model_file_to_csv = ConvertModelFileToCsv(model_file_paths=model_file_paths,
-                                                          output=base_path.joinpath("feature.csv"),
-                                                          req_warm_up=20)
+    convert_model_file_to_csv = ConvertModelFileToCsv(data_file_paths=model_file_paths,
+                                                      output=base_path.joinpath("feature.csv"),
+                                                      req_warm_up=1)
     convert_model_file_to_csv.convert_to_csv()
     convert_model_file_to_csv.plot_feature(analysis_feature)
     convert_model_file_to_csv.save_only_req_num(save_path=analysis_feature)
 
-    crf = ConvertRequestFileToCsv(base_path.joinpath("request_need.csv"), base_path.joinpath("medium1_dataset3.jsonl"),
-                                  req_warm_up=20, output=base_path.joinpath("decode_num.csv"))
-    crf.convert_to_csv()
-    print("finished")
+
+if __name__ == '__main__':
+    root = Path(r"D:\PyProject\ModelEvalState\data\v1.0.0")
+    paths = [
+        root.joinpath(f"deepseek_r1_forward_{i}")
+        for i in range(24)
+    ]
+    for p in paths:
+        logger.info(f"file{p}")
+        main(p)
+
+    logger.info("finished")
