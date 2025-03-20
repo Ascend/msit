@@ -24,6 +24,10 @@ _DAVINCI_DEVICES = sorted(glob('/dev/davinci*'))
 NPU_DEVICES = [int(ii.split("davinci")[-1]) for ii in _DAVINCI_DEVICES if str.isdigit(ii.split("davinci")[-1])]
 
 def run_hccl_command(command_formatter):
+    from shutil import which
+    if not which("hccn_tool"):
+        return []  # Just return if hccn_tool command not exists. It's common if in docker.
+
     results = []
     for device_id in NPU_DEVICES:
         result = run_shell_command(command_formatter.format(device_id=device_id))
@@ -113,7 +117,7 @@ class HcclTlsSwitchChecker(RrecheckerBase):
                 "hccl",
                 "tls switch",
                 CheckResult.ERROR,
-                action=f"检查服务器上 HCCL tls 状态，推荐关闭：for i in {0..7}; do hccn_tool -i $i -tls -s enable 0; done",
+                action=f"检查服务器上 HCCL tls 状态，推荐关闭：for i in {{0..7}}; do hccn_tool -i $i -tls -s enable 0; done",
                 reason=f"HCCL tls 打开可能影响多机连接",
             )
 
@@ -176,7 +180,6 @@ class HCCLChecker(GroupRrechecker):
             HcclLinkChecker(),
             HcclTlsSwitchChecker(),
             HcclPingChecker(),
-            HCCLChecker(),
         ]
 
 

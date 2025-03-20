@@ -145,6 +145,8 @@ def run_distribute_compare(
 
 
 def sub_parser_precheck(subparsers):
+    ranktable_file = os.getenv(RANKTABLEFILE, None)
+
     parser = subparsers.add_parser(
         RUN_MODES.precheck, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="precheck configuration"
     )

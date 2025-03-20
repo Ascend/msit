@@ -248,6 +248,7 @@ class TransparentHugepageChecker(RrecheckerBase):
                 else:
                     additional_msg = "；当前配置未知"
         record(f"0900 是否开启透明大页：{'是' if is_transparent_hugepage_enable else '否'}", part=CONTENT_PARTS.sys)
+        self.additional_msg = additional_msg
         return is_transparent_hugepage_enable
 
     def do_precheck(self, is_transparent_hugepage_enable, **kwargs):
@@ -258,7 +259,7 @@ class TransparentHugepageChecker(RrecheckerBase):
                 "system",
                 "透明大页",
                 CheckResult.ERROR,
-                action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}{additional_msg}",
+                action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}{self.additional_msg}",
                 reason="开启透明大页，吞吐率结果会更稳定",
             )
 
@@ -327,7 +328,7 @@ class OSReleaseChecker(RrecheckerBase):
                 "system",
                 "os 发行版本",
                 CheckResult.ERROR,
-                action=f"当前版本 {} 不在推荐系统版本中 {OS_SUGGESTIONS_LOWER}，可以考虑更换"
+                action=f"当前版本 {os_release} 不在推荐系统版本中 {OS_SUGGESTIONS_LOWER}，可以考虑更换",
                 reason="推荐系统性能适配更好",
             )
 
