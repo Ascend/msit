@@ -39,6 +39,7 @@ class HcclIfnameChecker(RrecheckerBase):
     __checker_name__ = "HcclIfname"
 
     def collect_env(self, **kwargs):
+        logger.debug(f"Starting HcclIfnameChecker")
         results = run_hccl_command("hccn_tool -i {device_id} -lldp -g")
         ifnames = []
         for result in results:
@@ -68,6 +69,7 @@ class HcclLinkChecker(RrecheckerBase):
     __checker_name__ = "HcclLink"
 
     def collect_env(self, **kwargs):
+        logger.debug(f"Starting HcclLinkChecker")
         results = run_hccl_command("hccn_tool -i {device_id} -link -g")
         link_status = []
         for result in results:
@@ -97,6 +99,7 @@ class HcclTlsSwitchChecker(RrecheckerBase):
     __checker_name__ = "HcclTlsSwitch"
 
     def collect_env(self, **kwargs):
+        logger.debug(f"Starting HcclTlsSwitchChecker")
         results = run_hccl_command("hccn_tool -i {device_id} -tls -g")
         tls_switch = []
         for result in results:
@@ -126,6 +129,7 @@ class HcclPingChecker(RrecheckerBase):
     __checker_name__ = "HcclPing"
 
     def collect_env(self, ranktable_file=None, **kwargs):
+        logger.debug(f"Starting HcclPingChecker")
         logger.info(f"ranktable_file={ranktable_file}")
         ranktable = parse_ranktable_file(ranktable_file)
         if not ranktable:
@@ -150,6 +154,7 @@ class HcclPingChecker(RrecheckerBase):
             for device_ip in device_ips:
                 if device_ip is None:
                     continue
+                logger.debug(f"HcclPingChecker device_id={device_id}, device_ip={device_ip}")
                 results = run_hccl_command("hccn_tool -i {device_id} -ping -g address " + device_ip)
                 bool_results = [any("0.00% packet loss" in ii for ii in result) for result in results]
                 multi_server_results.setdefault(server_id, {}).update({device_ip: bool_results})
