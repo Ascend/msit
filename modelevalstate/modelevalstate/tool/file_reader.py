@@ -35,11 +35,17 @@ batch_need_fields = (
 
 BatchNeed = namedtuple("BatchNeed", batch_need_fields)
 
-request_need_fields = "ibis_reqid", "http_reqid", "req_token_size", "res_token_size", "ts_RecvHttpReq", "ts_ReturnHttpRes", "HttpReq_delta", "P_count", "P_queue_latency", "P_batch_execute_delta", "P_e2e_latency", "P_model_execute_delta", "D_count", "D_queue_latency_mean", "D_queue_latency_min", "D_queue_latency_max", "D_batch_execute_delta_mean", "D_batch_execute_delta_min", "D_batch_execute_delta_max", "D_e2e_latency_mean", "D_e2e_latency_min", "D_e2e_latency_max", "D_model_execute_delta_mean", "D_model_execute_delta_min", "D_model_execute_delta_max"
+request_need_fields = "ibis_reqid", "http_reqid", "req_token_size", "res_token_size", "ts_RecvHttpReq", \
+    "ts_ReturnHttpRes", "HttpReq_delta", "P_count", "P_queue_latency", "P_batch_execute_delta", "P_e2e_latency", \
+        "P_model_execute_delta", "D_count", "D_queue_latency_mean", "D_queue_latency_min", "D_queue_latency_max", \
+            "D_batch_execute_delta_mean", "D_batch_execute_delta_min", "D_batch_execute_delta_max", "D_e2e_latency_mean", \
+                "D_e2e_latency_min", "D_e2e_latency_max", "D_model_execute_delta_mean", "D_model_execute_delta_min", "D_model_execute_delta_max"
 
 RequestNeed = namedtuple("RequestNeed", request_need_fields)
 
-batch2req_need_fields = "ibis_reqid", "execute_id", "stage", "ts_AddToQueue", "ts_RemoveFromQueue", "ts_batch_execute_begin", "ts_batch_execute_end", "ts_StateChangeToStart", "ts_StateChangeToEnd", "ts_model_execute_begin", "ts_model_execute_end", "reqInfo"
+batch2req_need_fields = "ibis_reqid", "execute_id", "stage", "ts_AddToQueue", "ts_RemoveFromQueue", \
+    "ts_batch_execute_begin", "ts_batch_execute_end", "ts_StateChangeToStart", "ts_StateChangeToEnd", \
+        "ts_model_execute_begin", "ts_model_execute_end", "reqInfo"
 
 Batch2RequestNeed = namedtuple("Batch2RequestNeed", batch2req_need_fields)
 
@@ -47,12 +53,13 @@ train_batch_data_fields = (
     "stage", "batch_num", "model_time", "batch_execute_delta", "total_time", "end_count", "request_info")
 TrainBatchData = namedtuple("TrainBatchData", train_batch_data_fields)
 
-train_request_info_fields = ("id", "execute_id", "input_len",  "output_len",  "httpreq_delta",
-                             "p_queue_latency", "p_batch_execute_delta", "d_count", "d_queue_latency_mean",
-                             "d_queue_latency_min", "d_queue_latency_max", "d_batch_execute_delta_mean",
-                             "d_batch_execute_delta_min", "d_batch_execute_delta_max",
-                             "state_change_delta", "queue_wait_time",)
-TrainRequestInfo = namedtuple("TrainRequestInfo", train_request_info_fields, defaults=[0 for _ in range(len(train_request_info_fields))])
+train_request_info_fields = ("id", "execute_id", "input_len",  "output_len", "httpreq_delta", 
+                             "p_queue_latency", "p_batch_execute_delta", "d_count", "d_queue_latency_mean", 
+                             "d_queue_latency_min", "d_queue_latency_max", "d_batch_execute_delta_mean", 
+                             "d_batch_execute_delta_min", "d_batch_execute_delta_max", 
+                             "state_change_delta", "queue_wait_time")
+TrainRequestInfo = namedtuple("TrainRequestInfo", train_request_info_fields, \
+                              defaults=[0 for _ in range(len(train_request_info_fields))])
 
 
 
@@ -67,7 +74,7 @@ class NodeInfo:
     request_info: List = field(default_factory=list)  # 当前batch处理包含的请求信息
 
 
-def load_line_data(line, version = 2):
+def load_line_data(line, version=2):
     cur_row = [row for row in csv.reader([line])][0]
     _req_info = []
     for _req_row in eval(cur_row[-1]):
@@ -86,7 +93,7 @@ def load_line_data(line, version = 2):
                           model_time=float(cur_row[2]),
                           batch_execute_delta=float(cur_row[3]),
                           total_time=float(cur_row[4]),
-                          end_count = float(cur_row[5]),
+                          end_count=int(cur_row[5]),
                           request_info=_req_info)
     return _node_info
 
@@ -142,12 +149,7 @@ def get_all_batch2req_info(bahtch2req_final: Path, batch2req_queue: Optional[Que
     res = {}
     with open(bahtch2req_final, newline='') as batch2req_files:
         batch2req_reader = csv.reader(batch2req_files)
-        for i, row in enumerate(batch2req_reader):
-            if i == 0:
-                assert tuple(row[:2]) == batch2req_need_fields[:2]
-                assert row[2] == "P/D"
-                assert tuple(row[3:]) == batch2req_need_fields[3:]
-                continue
+        for _, row in enumerate(batch2req_reader):
             cur_row_info = Batch2RequestNeed(*row)
             res[(cur_row_info.ibis_reqid, cur_row_info.execute_id)] = (int(cur_row_info.ts_RemoveFromQueue) - int(
                 cur_row_info.ts_AddToQueue), int(cur_row_info.ts_StateChangeToEnd) - int(
@@ -188,12 +190,7 @@ def convert_to_all_info_with_optim(request_need_csv: Path, batch_need_csv: Path,
 
     with open(batch_need_csv, newline='') as batch_files:
         batch_reader = csv.reader(batch_files)
-        for i, row in enumerate(batch_reader):
-            # ['Prefill', 1, 23.072021484375, 23.9736328125, 1211.145751953125, [[0, 64, 70, 27.040719985961914, 570]]]
-            if i == 0:
-                assert row[0] == "index"
-                assert tuple(row[1:]) == batch_need_fields[1:]
-                continue
+        for _, row in enumerate(batch_reader):
             cur_row_info = BatchNeed(*row)
             _batch_num = int(cur_row_info.p_count) + int(cur_row_info.d_count)
             if eval(cur_row_info.d_vector):

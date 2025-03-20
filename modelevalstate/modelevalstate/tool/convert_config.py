@@ -16,6 +16,7 @@
 import json
 from pathlib import Path
 
+
 def convert(config_path: Path, output_path: Path):
     with open(config_path, 'r') as f:
         data = json.load(f)
@@ -49,14 +50,15 @@ def convert_mindie_config_to_v1_config(mindie_origin_config, v1_config):
     with open(v1_config, 'w') as f:
         json.dump(new_dict, f)
 
+
 def convert_model_config_to_v1_config(model_origin_config, v1_config):
     with open(model_origin_config, 'r') as f:
         data = json.load(f)
     new_dict = {
         "architectures": data["architectures"],
         "hidden_act": data["hidden_act"],
-        "initializer_range": data.get("initializer_range",0.02),
-        "intermediate_size":data.get("intermediate_size", 1),
+        "initializer_range": data.get("initializer_range", 0.02),
+        "intermediate_size": data.get("intermediate_size", 1),
         "max_position_embeddings": data.get("max_position_embeddings", 0),
         "model_type": data["model_type"],
         "num_attention_heads": data.get("num_attention_heads", 32),
@@ -66,7 +68,7 @@ def convert_model_config_to_v1_config(model_origin_config, v1_config):
         "use_cache": data.get("use_cache", 0),
         "vocab_size": data.get("vocab_size", 0),
         "inference_mode": data.get("inference_mode", 1),
-        "is_flash_causal_lm": data.get("is_flash_causal_lm",1),
+        "is_flash_causal_lm": data.get("is_flash_causal_lm", 1),
         "quantize": data.get("quantize", ""),
         "quantization_config": data.get("quantization_config", "")
     }

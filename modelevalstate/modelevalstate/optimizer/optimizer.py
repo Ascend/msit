@@ -16,17 +16,18 @@ import argparse
 import atexit
 import json
 import os
-import shlex, subprocess
+import shlex
+import subprocess
 import shutil
 import time
 import tempfile
-import psutil
+
 import xmlrpc.client
 from typing import List, Tuple, Optional
 from pathlib import Path
 from math import exp, inf
 from xmlrpc.client import ServerProxy
-
+import psutil
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -589,6 +590,7 @@ class PSOOptimizer:
             _max.append(_field.max)
         return (tuple(_min), tuple(_max))
 
+    @classmethod
     def visualization(self, optimizer: SwarmOptimizer):
         plot_cost_history(cost_history=optimizer.cost_history)
         plt.savefig(settings.output.joinpath(f"cost_history_{RUN_TIME}.png"))
@@ -609,7 +611,8 @@ class PSOOptimizer:
                                         breakpoint_cost=self.history_cost)
         cost, joint_vars = optimizer.optimize(self.op_func, iters=self.iters)
         logger.info(
-            f"best cost {cost}, best joint_vars: {[self.target_field[i].format_func(k) for i, k in enumerate(joint_vars)]}")
+            f"best cost {cost}, best joint_vars: \
+                {[self.target_field[i].format_func(k) for i, k in enumerate(joint_vars)]}")
         self.visualization(optimizer)
 
 
@@ -626,9 +629,11 @@ def main(args: argparse.Namespace):
             rpc = xmlrpc.client.ServerProxy(server_address, allow_none=True)
             logger.info(f"{server_address} support method {rpc.system.listMethods()}")
             rpc_clients.append(rpc)
-    if args.benchmark_policy == BenchMarkPolicy.benchmark.value and args.deploy_policy == DeployPolicy.single.value:
+    if args.benchmark_policy == BenchMarkPolicy.benchmark.value and \
+        args.deploy_policy == DeployPolicy.single.value:
         benchmark = BenchMark(settings.benchmark, bak_path=bak_path)
-    elif args.benchmark_policy == BenchMarkPolicy.custom_benchmark.value and args.deploy_policy == DeployPolicy.multiple.value:
+    elif args.benchmark_policy == BenchMarkPolicy.custom_benchmark.value \
+        and args.deploy_policy == DeployPolicy.multiple.value:
         benchmark = RPCCustomBenchMark(rpc_clients, settings.benchmark, bak_path=bak_path, analyze_tool=args.analyze_tool)
     else:
         benchmark = CustomBenchMark(settings.benchmark, bak_path=bak_path, analyze_tool=args.analyze_tool)
