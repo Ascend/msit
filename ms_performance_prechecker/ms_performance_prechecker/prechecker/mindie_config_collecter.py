@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import os
-from ms_performance_prechecker.prechecker.register import RrecheckerBase
+from ms_performance_prechecker.prechecker.register import RrecheckerBase, show_check_result
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level, deep_compare_dict
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
 from ms_performance_prechecker.prechecker.utils import parse_mindie_server_config, parse_ranktable_file
