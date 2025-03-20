@@ -1,6 +1,12 @@
 # !/usr/bin/python3.7
 # -*- coding: utf-8 -*-
-# Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
+# Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
+"""
+1. 训练基础模型
+2. 用基础模型拟合概率
+3. 用新增加数据继续训练模型
+"""
+import logging
 import shutil
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -14,28 +20,31 @@ from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_absolute_percentage_error
 
-from modelevalstate.common import computer_speed_with_second, get_train_sub_path, update_global_coefficient
-from modelevalstate.train.state_param import StateParam
-from modelevalstate.data_feature.v1 import FileReader
-from modelevalstate.analysis import AnalysisState
-
-from modelevalstate.common import _DECODE, _PREFILL, State
-from modelevalstate.model.xgb_state_model import StateXgbModel
-from modelevalstate.data_feature.dataset import MyDataSet, CustomOneHotEncoder, CustomLabelEncoder, \
-    preset_category_data, DecodeDataSet
+from modelevalstate.train.common import computer_speed_with_second, get_train_sub_path, update_gloabal_coefficient
+from modelevalstate.train.xgb_state_model import StateXgbModel
+from modelevalstate.data_feature.dataset import (
+    MyDataSet, 
+    CustomOneHotEncoder, 
+    CustomLabelEncoder, 
+    preset_category_data, 
+    DecodeDataSet
+)
 from modelevalstate.inference.constant import OpAlgorithm
-from modelevalstate.inference.common import HistInfo, model_op_size, OP_EXPECTED_FIELD_MAPPING, \
-    OP_SCALE_HIST_FIELD_MAPPING
+from modelevalstate.inference.common import (
+    HistInfo, 
+    model_op_size, 
+    OP_EXPECTED_FIELD_MAPPING, 
+    OP_SACLE_FIELD_MAPPING
+)
 
 
 @dataclass
 class NodeInfo:
-    stage: str  # 当前模型状态的类型 Prefill/Decode
-    batch_size: int  # 当前状态处理的请求个数
+    stage: str # 当前模型状态的类型 P/D
+    batch_size: int # 当前模型状态处理的请求个数
 
 
-class PretrainModel:
-
+class PreTrainModel:
     def __init__(self, state_param: Optional[StateParam] = None, dataset: Optional[MyDataSet] = None,
                  model: Optional[StateXgbModel] = None, plt_data: bool = False):
         self.state_param = state_param
@@ -80,6 +89,35 @@ class PretrainModel:
                 update_global_coefficient(_inner_ud, _cur_state, computer_speed_with_second(line, field))
         return _inner_up, _inner_ud
 
+    @staticmethod
+    def get_stage_after_preprocess(row: pd.Series, encoder: Union[CustomOneHotEncoder, CustomLabelEncoder]):
+        # 根据预处理后的数据识别该行数据是decode还是prefill
+
+        if isinstance(encoder, CustomOneHotEncoder):
+            batch_stage_encoder = \
+            [encoder.one_hot_encoders[i] for i, v in enumerate(encoder.one_hots) if v.name == "batch_stage"][0]
+            _batch_index = [i for i in row.index if "batch_stage" in i]
+            stage = batch_stage_encoder.inverse_transform([[int(row[i]) for i in _batch_index]])
+
+        else:
+            batch_stage_encoder = \
+            [encoder.category_encoders[i] for i, v in enumerate(encoder.category_info) if v.name == "batch_stage"][0]
+            stage = batch_stage_encoder.inverse_transform([int(row.batch_stage)])[0]
+
+        return stage
+
+    @staticmethod
+    def get_nodes_with_origin_data(features: DataFrame, labels: DataFrame, predict_field: str,
+                                   encoder: Union[CustomOneHotEncoder, CustomLabelEncoder]):
+        # 获取原来的node信息
+        target_data = []
+        for ind, row in features.iterrows():
+            stage = PretrainModel.get_stage_after_preprocess(row, encoder)
+            _cur_node = NodeInfo(stage, row.batch_size)
+            setattr(_cur_node, predict_field, labels.iloc[ind, 0])
+            target_data.append(_cur_node)
+        return tuple(target_data)
+
     def train(self, lines_data: Optional[DataFrame] = None,
               middle_save_path: Optional[Path] = None):
         self.dataset.construct_data(lines_data, plt_data=self.plt_data, middle_save_path=middle_save_path)
@@ -94,44 +132,14 @@ class PretrainModel:
         rmse = self.model.train(self.dataset, train_type="partial_fit", middle_save_path=middle_save_path)
         self.rmse.append(rmse)
 
-    @staticmethod
-    def get_stage_after_preprocess(row: pd.Series, encoder: Union[CustomOneHotEncoder, CustomLabelEncoder]):
-        # 根据预处理后的数据识别该行数据是decode 还是prefill
-
-        if type(encoder) == CustomOneHotEncoder:
-            batch_stage_encoder = \
-                [encoder.one_hot_encoders[i] for i, v in enumerate(encoder.one_hots) if v.name == "batch_stage"][0]
-            _batch_index = [i for i in row.index if "batch_stage" in i]
-            stage = batch_stage_encoder.inverse_transform([[int(row[i]) for i in _batch_index]])
-
-        else:
-            batch_stage_encoder = \
-                [encoder.category_encoders[i] for i, v in enumerate(encoder.category_info) if v.name == "batch_stage"][
-                    0]
-            stage = batch_stage_encoder.inverse_transform([int(row.batch_stage)])[0]
-
-        return stage
-
     def get_nodes_with_model_predict(self, features: DataFrame):
         # 使用模型进行预测
         target_data = []
-        for ind, row in features.iterrows():
+        for _, row in features.iterrows():
             _predict = self.model.predict((row,))[0]
             stage = self.get_stage_after_preprocess(row, self.dataset.custom_encoder)
             _cur_node = NodeInfo(stage, row.batch_size)
             setattr(_cur_node, self.state_param.predict_field, _predict)
-            target_data.append(_cur_node)
-        return tuple(target_data)
-
-    @staticmethod
-    def get_nodes_with_origin_data(features: DataFrame, labels: DataFrame, predict_field: str,
-                                   encoder: Union[CustomOneHotEncoder, CustomLabelEncoder]):
-        # 获取原来的node信息
-        target_data = []
-        for ind, row in features.iterrows():
-            stage = PretrainModel.get_stage_after_preprocess(row, encoder)
-            _cur_node = NodeInfo(stage, row.batch_size)
-            setattr(_cur_node, predict_field, labels.iloc[ind, 0])
             target_data.append(_cur_node)
         return tuple(target_data)
 
@@ -143,11 +151,11 @@ class PretrainModel:
         mape = mean_absolute_percentage_error([getattr(k, predict_field) for k in origin_data],
                                               [getattr(k, predict_field) for k in data])
         self.mape.append(mape)
-        _all_Up, _all_Ud = self.get_up_ud(data, predict_field)
-        origin_Up, origin_Ud = self.get_up_ud(tuple(origin_data), predict_field)
+        _all_up, _all_ud = self.get_up_ud(data, predict_field)
+        origin_up, origin_ud = self.get_up_ud(tuple(origin_data), predict_field)
 
         if self.state_param.plot_velocity_std:
-            self.plot_velocity_std(origin_Up, _all_Up, origin_Ud, _all_Ud, save_path=save_path)
+            self.plot_velocity_std(origin_up, _all_up, origin_ud, _all_ud, save_path=save_path)
         if self.state_param.plot_input_time_with_predict:
             # 绘制时间
             _all_prefill_time, _all_decode_time = self.get_decode_and_prefill_time(data, predict_field)
@@ -161,7 +169,7 @@ class PretrainModel:
                                                            f"origin and predict decode time {predict_field} std",
                                                            "batch_decode",
                                                            "time us", save_path=save_path)
-        return _all_Up, _all_Ud
+        return _all_up, _all_ud
 
     def predict(self, lines_data: DataFrame,
                 save_path: Optional[Path] = None):
@@ -169,20 +177,20 @@ class PretrainModel:
         return self.predict_and_plot(self.dataset.features, self.dataset.labels, self.state_param.predict_field,
                                      save_path=save_path)
 
-    def plot_velocity_std(self, origin_Up, all_Up, origin_Ud, all_Ud, save_path: Optional[Path] = None):
+    def plot_velocity_std(self, origin_up, all_up, origin_ud, all_ud, save_path: Optional[Path] = None):
         # 对比Up,Ud的分布
-        AnalysisState.plot_input_velocity_with_predict(origin_Up, all_Up, "batch_prefill",
+        AnalysisState.plot_input_velocity_with_predict(origin_up, all_up, "batch_prefill",
                                                        f"origin and predict Up {self.state_param.predict_field} std",
                                                        "batch_prefill",
                                                        "velocity", save_path=save_path)
-        AnalysisState.plot_input_velocity_with_predict(origin_Ud, all_Ud, "batch_decode",
+        AnalysisState.plot_input_velocity_with_predict(origin_ud, all_ud, "batch_decode",
                                                        f"origin and predict Ud {self.state_param.predict_field} std",
                                                        "batch_decode",
                                                        "velocity", save_path=save_path)
-        AnalysisState.plot_input_velocity(origin_Up, "batch_prefill", f"Up {self.state_param.predict_field} std",
+        AnalysisState.plot_input_velocity(origin_up, "batch_prefill", f"Up {self.state_param.predict_field} std",
                                           "batch_prefill",
                                           "velocity", save_path=save_path)
-        AnalysisState.plot_input_velocity(origin_Ud, "batch_decode", f"Ud {self.state_param.predict_field} std",
+        AnalysisState.plot_input_velocity(origin_ud, "batch_decode", f"Ud {self.state_param.predict_field} std",
                                           "batch_decode",
                                           "velocity", save_path=save_path)
 
@@ -208,6 +216,7 @@ class PretrainModel:
             f.write(f"OP_EXPECTED_FIELD_MAPPING: {OP_EXPECTED_FIELD_MAPPING}\n")
             f.write(f"OP_SCALE_HIST_FIELD_MAPPING: {OP_SCALE_HIST_FIELD_MAPPING}\n")
 
+
     def plot_metric(self, save_path: Optional[Path] = None):
         data = {"rmse": self.rmse, "r2": self.r2, "mape": self.mape}
         df = pd.DataFrame(data)
@@ -229,7 +238,7 @@ class ReqDecodePretrainModel(PretrainModel):
     def get_nodes_with_model_predict(self, features: DataFrame):
         # 使用模型进行预测
         target_data = []
-        for ind, row in features.iterrows():
+        for _, row in features.iterrows():
             _predict = ceil(self.model.predict((row,))[0])
             target_data.append(_predict)
         return tuple(target_data)
@@ -265,13 +274,12 @@ class ReqDecodePretrainModel(PretrainModel):
 class TrainVersion1:
     @staticmethod
     def train_xgbmodel():
-        root_dir = Path(r"D:\PyProject\ModelEvalState\data\v1.0.0")
         file_paths = [
-            root_dir.joinpath(f"deepseek_r1_yunneng_forward_{i}\\feature.csv")
-            for i in range(16)
-        ]
+            Path(r"PyProject\ModelEvalState\data\v1\batch_max_seq_2_op\llama3-8b\feature.csv"),
+            Path(r"PyProject\ModelEvalState\data\v1\batch_max_seq_2_op\llama3-8b1226-12\feature.csv"),
+                      ]
         base_dir = get_train_sub_path()
-        print('base_dir', base_dir)
+        logging.info('base_dir', base_dir)
         sp = StateParam(
             base_path=base_dir,
             predict_field="model_execute_time",
@@ -281,7 +289,7 @@ class TrainVersion1:
             plot_data_feature=True,
             start_num_lines=4000,
             op_algorithm=OpAlgorithm.EXPECTED,
-            title="MixModel without warmup with batch max seq 2 op info"
+            title=f"MixModel without warmup with batch max seq 2 op info"
         )
         model = StateXgbModel(
             train_param=sp.xgb_model_train_param,
@@ -297,7 +305,6 @@ class TrainVersion1:
                             shuffle=sp.shuffle, op_algorithm=sp.op_algorithm)
 
         pm = PretrainModel(state_param=sp, dataset=dataset, model=model, plt_data=sp.plot_data_feature)
-
         # 自定义训练数据
         TrainVersion1.custom_train(file_paths, sp, pm)
         pm.plot_metric(sp.step_dir)
@@ -308,16 +315,16 @@ class TrainVersion1:
         fl = FileReader(file_paths)
         line_data = fl.read_lines()
         train_data, test_data = train_test_split(line_data, test_size=0.1, shuffle=True)
-        print(train_data.shape)
-        sp.comments = f"input files: {file_paths} \n"
+        logging.info(train_data.shape)
         save_path = sp.step_dir.joinpath("base")
         save_path.mkdir(parents=True, exist_ok=True)
         pm.train(train_data.reset_index(drop=True), middle_save_path=save_path)
         pm.dataset.save(save_path)
-        sp.comments += f'feature shape {pm.dataset.features.shape}\n'
-        sp.comments += f"data shuffle: True, \n train case: {pm.dataset.train_x.shape}, validate case: {pm.dataset.test_x.shape}, predict case: {test_data.shape} \n"
+        logging.info('feature shape', pm.dataset.features.shape)
+        sp.comments = f"data shuffle: True, \n train case: {pm.dataset.train_x.shape}, \
+            validate case: {pm.dataset.test_x.shape}, predict case: {test_data.shape}"
         pm.bak_model()
-        print(test_data.shape)
+        logging.info(test_data.shape)
         save_path = sp.step_dir.joinpath("1")
         save_path.mkdir(parents=True, exist_ok=True)
         pm.predict(test_data.reset_index(drop=True), save_path)
@@ -331,9 +338,9 @@ class TrainVersion1:
         file_paths = [
             Path(r"/data/v1/llama3-8b/feature.csv"),
             Path(r"/data/v1/llama3-8b1226-12/feature.csv"),
-        ]
+                      ]
         base_dir = get_train_sub_path()
-        print('base_dir', base_dir)
+        logging.info('base_dir', base_dir)
         sp = StateParam(
             base_path=base_dir,
             predict_field="model_execute_time",
@@ -364,15 +371,16 @@ class TrainVersion1:
         line_data = line_data[line_data[line_data.columns[0]].str.contains(model_type)]
         train_data, test_data = train_test_split(line_data, test_size=0.1, shuffle=True)
 
-        print(train_data.shape)
+        logging.info(train_data.shape)
         save_path = sp.step_dir.joinpath("base")
         save_path.mkdir(parents=True, exist_ok=True)
         pm.train(train_data.reset_index(drop=True), middle_save_path=save_path)
         pm.dataset.save(save_path)
-        print('feature shape', pm.dataset.features.shape)
-        sp.comments = f"data shuffle: True, train case: {pm.dataset.train_x.shape}, validate case: {pm.dataset.test_x.shape}, predict case: {test_data.shape}"
+        logging.info('feature shape', pm.dataset.features.shape)
+        sp.comments = f"data shuffle: True, train case: {pm.dataset.train_x.shape}, validate case: \
+            {pm.dataset.test_x.shape}, predict case: {test_data.shape}"
         pm.bak_model()
-        print(test_data.shape)
+        logging.info(test_data.shape)
         save_path = sp.step_dir.joinpath("1")
         save_path.mkdir(parents=True, exist_ok=True)
         pm.predict(test_data.reset_index(drop=True), save_path)
@@ -409,9 +417,9 @@ class TrainVersion1:
 
     @staticmethod
     def train_req_xgb_model():
-        file_paths = [Path(r"D:\PyProject\state_eval\data\v1\llama3-8b-12-13\decode_num.csv")]
+        file_paths = [Path(r"PyProject\state_eval\data\v1\llama3-8b-12-13\decode_num.csv")]
         base_dir = get_train_sub_path()
-        print('base_dir', base_dir)
+        logging.info('base_dir', base_dir)
         sp = StateParam(
             base_path=base_dir,
             predict_field="output_length",
@@ -421,7 +429,7 @@ class TrainVersion1:
             plot_data_feature=True,
             start_num_lines=2000,
             op_algorithm=OpAlgorithm.EXPECTED,
-            title="DecodeNumOfREQModel without warmup"
+            title=f"DecodeNumOfREQModel without warmup"
         )
         model = StateXgbModel(
             train_param=sp.xgb_model_train_param,
@@ -433,7 +441,7 @@ class TrainVersion1:
         )
 
         dataset = DecodeDataSet(predict_field=sp.predict_field,
-                                shuffle=sp.shuffle)
+                            shuffle=sp.shuffle)
 
         pm = ReqDecodePretrainModel(state_param=sp, dataset=dataset, model=model, plt_data=sp.plot_data_feature)
         fl = FileReader(file_paths, num_lines=sp.start_num_lines)
