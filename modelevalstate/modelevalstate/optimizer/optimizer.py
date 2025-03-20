@@ -280,6 +280,7 @@ class Simulator:
         self.mindie_log = None
         self.mindie_log_offset = 0
         self.bak_path = bak_path
+        self.process = None
 
     @staticmethod
     def get_new_config(origin_config, params: Tuple[OptimizerConfigField], upper_key: str = ""):
@@ -493,6 +494,21 @@ class PSOOptimizer:
         elif self.load_history_data:
             self.init_pos = self.custom_init_pos()
 
+    @classmethod
+    def visualization(cls, optimizer: SwarmOptimizer):
+        plot_cost_history(cost_history=optimizer.cost_history)
+        plt.savefig(settings.output.joinpath(f"cost_history_{RUN_TIME}.png"))
+        plt.close()
+        m = Mesher(func=fx.sphere)
+        animation = plot_contour(pos_history=optimizer.pos_history, mesher=m, mark=(0, 0))
+        animation.save(settings.output.joinpath(f"pos_history_{RUN_TIME}.gif"), writer="pillow")
+        pos_history_3d = m.compute_history_3d(optimizer.pos_history)
+        d = Designer(limits=[(-1, 1), (-1, 1), (-0.1, 1)], label=['x-axis', 'y-axis', 'z-axis'])
+        animation_3d = plot_surface(pos_history=pos_history_3d, mesher=m, designer=d, mark=(0, 0, 0))
+        animation_3d.save(str(settings.output.joinpath(f"pos_history_3d_{RUN_TIME}.gif").resolve()),
+                          writer="pillow", )
+        
+        
     def custom_init_pos(self) -> Optional[np.ndarray]:
         _all_pos, _all_cost = self.computer_fitness()
         if not _all_pos or not _all_cost:
@@ -590,19 +606,6 @@ class PSOOptimizer:
             _max.append(_field.max)
         return (tuple(_min), tuple(_max))
 
-    @classmethod
-    def visualization(self, optimizer: SwarmOptimizer):
-        plot_cost_history(cost_history=optimizer.cost_history)
-        plt.savefig(settings.output.joinpath(f"cost_history_{RUN_TIME}.png"))
-        plt.close()
-        m = Mesher(func=fx.sphere)
-        animation = plot_contour(pos_history=optimizer.pos_history, mesher=m, mark=(0, 0))
-        animation.save(settings.output.joinpath(f"pos_history_{RUN_TIME}.gif"), writer="pillow")
-        pos_history_3d = m.compute_history_3d(optimizer.pos_history)
-        d = Designer(limits=[(-1, 1), (-1, 1), (-0.1, 1)], label=['x-axis', 'y-axis', 'z-axis'])
-        animation_3d = plot_surface(pos_history=pos_history_3d, mesher=m, designer=d, mark=(0, 0, 0))
-        animation_3d.save(str(settings.output.joinpath(f"pos_history_3d_{RUN_TIME}.gif").resolve()),
-                          writer="pillow", )
 
     def run(self):
         optimizer = CustomGlobalBestPSO(n_particles=self.n_particles, dimensions=len(self.target_field),
@@ -634,7 +637,8 @@ def main(args: argparse.Namespace):
         benchmark = BenchMark(settings.benchmark, bak_path=bak_path)
     elif args.benchmark_policy == BenchMarkPolicy.custom_benchmark.value \
         and args.deploy_policy == DeployPolicy.multiple.value:
-        benchmark = RPCCustomBenchMark(rpc_clients, settings.benchmark, bak_path=bak_path, analyze_tool=args.analyze_tool)
+        benchmark = RPCCustomBenchMark(rpc_clients, settings.benchmark, \
+                                       bak_path=bak_path, analyze_tool=args.analyze_tool)
     else:
         benchmark = CustomBenchMark(settings.benchmark, bak_path=bak_path, analyze_tool=args.analyze_tool)
     data_storage = DataStorage(settings.data_storage)
@@ -657,7 +661,8 @@ def main(args: argparse.Namespace):
 parser = argparse.ArgumentParser(prog='optimizer')
 parser.add_argument("-b", "--benchmark_policy", default=BenchMarkPolicy.custom_benchmark.value,
                     choices=[k.value for k in list(BenchMarkPolicy)],
-                    help="Whether to use custom performance indicators or mindie performance indicators. Benchmark and custom_benchmark are supported.")
+                    help="Whether to use custom performance indicators or mindie performance indicators. \
+                        Benchmark and custom_benchmark are supported.")
 parser.add_argument("-lh", "--load_history", default=False, action="store_true",
                     help="Indicates whether to customize the initial location based on historical records.")
 parser.add_argument("-lb", "--load_breakpoint", default=False, action="store_true",

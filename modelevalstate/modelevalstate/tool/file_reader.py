@@ -38,8 +38,9 @@ BatchNeed = namedtuple("BatchNeed", batch_need_fields)
 request_need_fields = "ibis_reqid", "http_reqid", "req_token_size", "res_token_size", "ts_RecvHttpReq", \
     "ts_ReturnHttpRes", "HttpReq_delta", "P_count", "P_queue_latency", "P_batch_execute_delta", "P_e2e_latency", \
         "P_model_execute_delta", "D_count", "D_queue_latency_mean", "D_queue_latency_min", "D_queue_latency_max", \
-            "D_batch_execute_delta_mean", "D_batch_execute_delta_min", "D_batch_execute_delta_max", "D_e2e_latency_mean", \
-                "D_e2e_latency_min", "D_e2e_latency_max", "D_model_execute_delta_mean", "D_model_execute_delta_min", "D_model_execute_delta_max"
+            "D_batch_execute_delta_mean", "D_batch_execute_delta_min", "D_batch_execute_delta_max", \
+                "D_e2e_latency_mean", "D_e2e_latency_min", "D_e2e_latency_max", \
+                    "D_model_execute_delta_mean", "D_model_execute_delta_min", "D_model_execute_delta_max"
 
 RequestNeed = namedtuple("RequestNeed", request_need_fields)
 
@@ -53,7 +54,7 @@ train_batch_data_fields = (
     "stage", "batch_num", "model_time", "batch_execute_delta", "total_time", "end_count", "request_info")
 TrainBatchData = namedtuple("TrainBatchData", train_batch_data_fields)
 
-train_request_info_fields = ("id", "execute_id", "input_len",  "output_len", "httpreq_delta", 
+train_request_info_fields = ("id", "execute_id", "input_len", "output_len", "httpreq_delta", 
                              "p_queue_latency", "p_batch_execute_delta", "d_count", "d_queue_latency_mean", 
                              "d_queue_latency_min", "d_queue_latency_max", "d_batch_execute_delta_mean", 
                              "d_batch_execute_delta_min", "d_batch_execute_delta_max", 
@@ -70,7 +71,7 @@ class NodeInfo:
     model_time: float  # 这个model （prefill、decode）执行完成的时间
     batch_execute_delta: float  # 组batch的时间
     total_time: float  # 从开始处理到现在的时间
-    end_count: float  = 0 # batch中执行完成后有多少个请求结束
+    end_count: int  = 0 # batch中执行完成后有多少个请求结束
     request_info: List = field(default_factory=list)  # 当前batch处理包含的请求信息
 
 
@@ -128,10 +129,7 @@ def get_all_req_info(request_need_csv: Path, req_queue: Optional[Queue] = None):
     res = {}
     with open(request_need_csv, newline='') as request_files:
         request_reader = csv.reader(request_files)
-        for i, row in enumerate(request_reader):
-            if i == 0:
-                assert tuple(row) == request_need_fields
-                continue
+        for _, row in enumerate(request_reader):
             cur_row_info = RequestNeed(*row)
             res[cur_row_info.ibis_reqid] = (
                 cur_row_info.req_token_size, cur_row_info.res_token_size, cur_row_info.HttpReq_delta,
