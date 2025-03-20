@@ -91,7 +91,11 @@ class PerformanceIndex(BaseModel):
 
 class BenchMarkConfig(BaseModel):
     name: str = "benchmark"
-    command: str = r"benchmark --DatasetPath ./data/gsm8k --DatasetType gsm8k --ModelName llama3-8b --ModelPath /data/LLM/llama3-8b --TestType client --MaxOutputLen 256 --Http http://127.0.0.1:7425 --ManagementHttp http://127.0.0.2:7426 --Concurrency 300 --RequestRate 20 --WarmupSize 20 --Tokenizer True --SaveTokensPath /data/xjt/output/gsm8k.csv"
+    command: str = r"benchmark --DatasetPath ./data/gsm8k \
+        --DatasetType gsm8k --ModelName llama3-8b --ModelPath /data/LLM/llama3-8b \
+            --TestType client --MaxOutputLen 256 --Http http://127.0.0.1:7425 \
+                --ManagementHttp http://127.0.0.2:7426 --Concurrency 300 --RequestRate 20 \
+                    --WarmupSize 20 --Tokenizer True --SaveTokensPath /data/xjt/output/gsm8k.csv"
     output_path: str = r"./Ascend-mindie-server_1.0.RC3_linux-aarch64/instance"
     custom_collect_output_path: str = r"./Ascend-mindie-server_1.0.RC3_linux-aarch64/simulate_logs"
     custom_analysis_output_path: str = r"./model_forward.csv"

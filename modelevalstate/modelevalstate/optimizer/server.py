@@ -76,7 +76,7 @@ class RemoteScheduler:
         self.simulator.run(tuple(_simulate_run_info))
 
     def check_success(self):
-        for i in range(10):
+        for _ in range(10):
             if self.simulator.check_success():
                 return True
             time.sleep(10)
@@ -106,7 +106,6 @@ def main(host, port):
         try:
             server.serve_forever()
         except KeyboardInterrupt:
-            print("\nKeyboard interrupt received, exiting.")
             sys.exit(0)
 
 

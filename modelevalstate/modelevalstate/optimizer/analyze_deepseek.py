@@ -15,11 +15,12 @@
 
 import os
 import json
-import pandas as pd
-import time
+import re
 from glob import glob
 import sqlite3
-import re
+import pandas as pd
+
+
 # 定义一个函数来处理文件
 def process_files(directory, out_path):
     # 获取所有的文件名
@@ -31,7 +32,8 @@ def process_files(directory, out_path):
             batch_df = pd.read_csv(os.path.join(directory, file), header=None)
             req_df = pd.read_csv(os.path.join(directory, req_file), header=None)
             column_names_1 = ['ibis_reqid', 'input_length', 'need_blocks', 'output_length']
-            column_names_2 = ['batch_stage', 'batch_size', 'total_need_blocks', 'total_prefill_token', 'max_seq_len', 'reqinfo', 'forward_time', 'execute_time', 'start_time']
+            column_names_2 = ['batch_stage', 'batch_size', 'total_need_blocks', 'total_prefill_token',\
+                               'max_seq_len', 'reqinfo', 'forward_time', 'execute_time', 'start_time']
             req_df.columns = column_names_1
             batch_df.columns = column_names_2
             req_df['execute_id'] = req_df['output_length']
@@ -64,13 +66,14 @@ def filter_max_values_in_csv_files(path):
 
 
 def find_first_file_starting_with(prefix, directory):
-    for root, dirs, files in os.walk(directory):
+    for root, _, files in os.walk(directory):
         for file in files:
             if file.startswith(prefix):
                 return os.path.join(root, file)
     return None
 
-def analyze(input_path_1,input_path_2,input_path_3):
+
+def analyze(input_path_1, input_path_2, input_path_3):
     process_files(input_path_1, input_path_2)
 
     db_path = glob(f"{input_path_3}/**/benchmark_data.db", recursive=True)[0]
@@ -120,7 +123,7 @@ def analyze(input_path_1,input_path_2,input_path_3):
     df1 = df1.loc[df1.index >= index_to_delete]
 
     df_prefill = df1[df1['batch_stage'] == 'prefill']
-    for index, row in df_prefill.iterrows():
+    for _, row in df_prefill.iterrows():
 
         digits = re.findall(r'\d+', row['reqinfo'])
 
@@ -132,7 +135,7 @@ def analyze(input_path_1,input_path_2,input_path_3):
             # 遍历这些值
         for val in non_zero_values: 
 
-            if val>success_req:
+            if val > success_req:
                 break
             during_time = filtered_df.iloc[val-1]['first_chunk_latency'] 
             arrive_time = row['start_time'] - during_time
@@ -153,5 +156,4 @@ def analyze(input_path_1,input_path_2,input_path_3):
     total_decode_time = filtered_df['latency'].sum() - filtered_df['first_chunk_latency'].sum() 
     average_decode_latency = total_decode_time / filtered_df['n_chunks'].sum()
     success_precent = success_req / total_req
-    print(throughput, avg_prefill_latency, average_decode_latency, success_precent)
     return  throughput, avg_prefill_latency, average_decode_latency, success_precent

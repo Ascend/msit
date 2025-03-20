@@ -94,12 +94,12 @@ class CustomOneHotEncoder:
     def transformer(self, x: DataFrame):
         for i, _one_hot_encoder in enumerate(self.one_hot_encoders):
             _one_hot_info = self.one_hots[i]
-            if _one_hot_info.name not in x.columns:
-                continue
             encode_value = _one_hot_encoder.transform(x[_one_hot_info.name].values.reshape(-1, 1)).toarray()
-            _encode_df = pd.DataFrame(encode_value,
-                                      columns=[f"{_one_hot_info.name}__{i}" for k in _one_hot_encoder.categories_ for i
-                                               in k])
+            column_names = []
+            for category in _one_hot_encoder.categories_:
+                for __ in category:
+                    column_names.append(f"{_one_hot_info.name}__{i}")
+            _encode_df = pd.DataFrame(encode_value, columns=column_names)
             x = pd.concat([_encode_df, x], axis=1)
             x = x.drop(_one_hot_info.name, axis=1)
         return x

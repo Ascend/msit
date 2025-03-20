@@ -61,7 +61,7 @@ class Simulate:
             torch.float: "float",
             torch.int8: "int8"
         }
-        _cur_dtype= torch.float16
+        _cur_dtype = torch.float16
         for k, v in dtype_map.items():
             if v == dtype:
                 _cur_dtype = k

@@ -80,21 +80,18 @@ class FileHanlder:
     def load_hardware_data(hardware_path: Path) -> HardWare:
         with open(hardware_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        assert data
         return HardWare(**{k: v for k, v in data.items() if k in HARDWARE_FIELD})
 
     @staticmethod
     def load_env_data(env_path: Path) -> EnvField:
         with open(env_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        assert data
         return EnvField(**{k: v for k, v in data.items() if k in ENV_FIELD})
 
     @staticmethod
     def load_mindie_config(mindie_config_path: Path) -> MindieConfig:
         with open(mindie_config_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        assert data
         if "max_seq_len" in data:
             data["mindie__max_seq_len"] = data["max_seq_len"]
         return MindieConfig(**{k: v for k, v in data.items() if k in MINDIE_FIELD})
@@ -103,7 +100,6 @@ class FileHanlder:
     def load_model_config(config_path: Path) -> ModelConfig:
         with open(config_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        assert data
         return ModelConfig(**{k: v for k, v in data.items() if k in MODEL_CONFIG_FIELD})
 
     @staticmethod
@@ -126,7 +122,6 @@ class FileHanlder:
                     continue
                 _row = [row[_load_field.index(k)] for k in MODEL_STRUCT_FIELD]
                 model_struct = ModelStruct(*_row)
-        assert model_struct
         return model_struct
 
     @staticmethod
@@ -137,18 +132,15 @@ class FileHanlder:
             op_reader = csv.reader(f)
             for i, row in enumerate(op_reader):
                 if i == 0:
-                    try:
-                        _tmp_row = row
-                        if BATCH_SIZE in row:
-                            _tmp_row.remove(BATCH_SIZE)
-                            op_type = BATCH_SIZE
-                        if MAX_SEQ_LEN in row:
-                            _tmp_row.remove(MAX_SEQ_LEN)
-                            op_type = MAX_SEQ_LEN
-                        assert tuple(_tmp_row) == MODEL_OP_FIELD
-                    except AssertionError as e:
-                        raise AssertionError(f"get fields: {row}, expected fields: {MODEL_OP_FIELD}") from e
-                    continue
+                    _tmp_row = row
+                    if BATCH_SIZE in row:
+                        _tmp_row.remove(BATCH_SIZE)
+                        op_type = BATCH_SIZE
+                    if MAX_SEQ_LEN in row:
+                        _tmp_row.remove(MAX_SEQ_LEN)
+                        op_type = MAX_SEQ_LEN
+                    if tuple(_tmp_row) != MODEL_OP_FIELD:
+                        raise AssertionError(f"get fields: {row}, expected fields: {MODEL_OP_FIELD}")
                 for _row in row:
                     if not _row:
                         raise ValueError(f"Empty data found in {op_path}. i: {i}, row: {row}")
@@ -162,7 +154,6 @@ class FileHanlder:
                     all_op_data[_relation_key] = [_relation_value]
                 else:
                     all_op_data[_relation_key].append(_relation_value)
-        assert all_op_data
         return all_op_data
 
     @staticmethod

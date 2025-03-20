@@ -28,13 +28,20 @@ import seaborn as sns
 import matplotlib
 matplotlib.use('Agg')
 
-from pandas import DataFrame, Series
-from matplotlib import pyplot as plt
-
 from modelevalstate.inference.constant import OpAlgorithm
-from modelevalstate.inference.data_format_v1 import MODEL_OP_FIELD, MODEL_STRUCT_FIELD, MODEL_CONFIG_FIELD, MINDIE_FIELD, ENV_FIELD, HARDWARE_FIELD
+from modelevalstate.inference.data_format_v1 import (
+    MODEL_OP_FIELD, 
+    MODEL_STRUCT_FIELD, 
+    MODEL_CONFIG_FIELD, 
+    MINDIE_FIELD, 
+    ENV_FIELD, 
+    HARDWARE_FIELD
+)
 from modelevalstate.inference.dataset import CustomOneHotEncoder, CustomLabelEncoder, preset_category_data
 from modelevalstate.inference.dataset import PreprocessTool, TOTAL_OUTPUT_LENGTH, TOTAL_SEQ_LENGTH, TOTAL_PREFILL_TOKEN
+
+from pandas import DataFrame, Series
+from matplotlib import pyplot as plt
 
 
 class MyDataSet:
@@ -122,29 +129,29 @@ class MyDataSet:
         for i, _cur_columns in enumerate(lines_data.columns[2:]):
             if eval(_cur_columns) == MODEL_OP_FIELD:
                 if self.op_algorithm == OpAlgorithm.EXPECTED:
-                    model_op_df = lines_data.iloc[:, i+2].apply(self.convert_op_info, args=(_cur_columns,))
+                    model_op_df = lines_data.iloc[:, i+2].apply(self.convert_op_info, args=(_cur_columns, ))
                 else:
-                    model_op_df = lines_data.iloc[:, i+2].apply(self.convert_op_info_with_ratio, args=(_cur_columns,))
+                    model_op_df = lines_data.iloc[:, i+2].apply(self.convert_op_info_with_ratio, args=(_cur_columns, ))
                 self.sub_columns.append(model_op_df.columns.tolist())
                 _load_data.append(model_op_df)
             elif eval(_cur_columns) == MODEL_STRUCT_FIELD:
-                model_struct_df = lines_data.iloc[:, i+2].apply(self.convert_struct_info, args=(_cur_columns,))
+                model_struct_df = lines_data.iloc[:, i+2].apply(self.convert_struct_info, args=(_cur_columns, ))
                 self.sub_columns.append(model_struct_df.columns.tolist())
                 _load_data.append(model_struct_df)
             elif eval(_cur_columns) == MODEL_CONFIG_FIELD:
-                model_config_df = lines_data.iloc[:, i+2].apply(self.convert_config_info, args=(_cur_columns,))
+                model_config_df = lines_data.iloc[:, i+2].apply(self.convert_config_info, args=(_cur_columns, ))
                 self.sub_columns.append(model_config_df.columns.tolist())
                 _load_data.append(model_config_df)
             elif eval(_cur_columns) == MINDIE_FIELD:
-                mindie_df = lines_data.iloc[:, i+2].apply(self.convert_mindie_info, args=(_cur_columns,))
+                mindie_df = lines_data.iloc[:, i+2].apply(self.convert_mindie_info, args=(_cur_columns, ))
                 self.sub_columns.append(mindie_df.columns.tolist())
                 _load_data.append(mindie_df)
             elif eval(_cur_columns) == ENV_FIELD:
-                env_df = lines_data.iloc[:, i+2].apply(self.convert_env_info, args=(_cur_columns,))
+                env_df = lines_data.iloc[:, i+2].apply(self.convert_env_info, args=(_cur_columns, ))
                 self.sub_columns.append(env_df.columns.tolist())
                 _load_data.append(env_df)
             elif eval(_cur_columns) == HARDWARE_FIELD:
-                hardware_df = lines_data.iloc[:, i+2].apply(self.convert_hardware_info, args=(_cur_columns,))
+                hardware_df = lines_data.iloc[:, i+2].apply(self.convert_hardware_info, args=(_cur_columns, ))
                 self.sub_columns.append(hardware_df.columns.tolist())
                 _load_data.append(hardware_df)
         # 提取 features 和labels
@@ -163,10 +170,12 @@ class MyDataSet:
                                                                                 test_size=self.test_size,
                                                                                 shuffle=self.shuffle)
         # 检查处理的数据是否有重复的column name
-        assert len(self.features.columns) == len(self.features.columns.unique())
+        if len(self.features.columns) != len(self.features.columns.unique()):
+            raise ValueError("Duplicate column names found in the features.")
         if plt_data:
             self.plt_data(lines_data, middle_save_path)
 
+    @classmethod
     def plot_custom_pairplot(self, df: DataFrame, middle_save_path: Optional[Path] = None,
                              file_name: str = "pairplot.png"):
         col_num = df.shape[1]
@@ -283,7 +292,7 @@ class DecodeDataSet:
         return len(matches)
     
     @staticmethod
-    def count_chars(line:str):
+    def count_chars(line : str):
         # 匹配中文字符
         chinese_pattern = r'[^\x00-\xff]'
         chinese_matches = re.findall(chinese_pattern, line)

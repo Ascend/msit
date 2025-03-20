@@ -20,7 +20,13 @@ from typing import Optional, List, Tuple
 import pandas as pd
 from loguru import logger
 
-from modelevalstate.optimizer.config import BenchMarkConfig, DataStorageConfig, RUN_TIME, PerformanceIndex, OptimizerConfigField
+from modelevalstate.optimizer.config import (
+    BenchMarkConfig, 
+    DataStorageConfig, 
+    RUN_TIME, 
+    PerformanceIndex, 
+    OptimizerConfigField
+)
 
 
 class DataStorage:

@@ -56,7 +56,14 @@ MODEL_CONFIG_FIELD = (
 ModelConfig = namedtuple("ModelConfig", MODEL_CONFIG_FIELD)
 
 
-BATCH_FIELD = ("batch_stage", "batch_size", "total_need_blocks", "total_prefill_token", "max_seq_len", "model_execute_time")
+BATCH_FIELD = (
+    "batch_stage", 
+    "batch_size", 
+    "total_need_blocks", 
+    "total_prefill_token", 
+    "max_seq_len", 
+    "model_execute_time"
+)
 BATCH_FILE_FIELD = ("ibis_batchid", *BATCH_FIELD, "req_info")
 BatchField = namedtuple("BatchField", BATCH_FIELD)
 BatchFileField = namedtuple("BatchFileField", BATCH_FILE_FIELD)
@@ -129,10 +136,8 @@ class ConvertModelFileToCsv(FileHanlder):
             request_reader = csv.reader(request_files)
             for i, row in enumerate(request_reader):
                 if i == 0:
-                    try:
-                        assert tuple(row) == REQUEST_FILE_FIELD
-                    except AssertionError as e:
-                        raise AssertionError(f"get fields: {row}, expected fields: {REQUEST_FILE_FIELD}") from e
+                    if tuple(row) != REQUEST_FILE_FIELD:
+                        raise AssertionError(f"get fields: {row}, expected fields: {REQUEST_FILE_FIELD}")
                     continue
                 cur_row_info = RequestFileField(*row)
                 res[(int(cur_row_info.ibis_reqid), int(cur_row_info.execute_id))] = RequestField(*cur_row_info[2:])
@@ -338,7 +343,7 @@ class FileReader:
                     # 读取完所有文件结束
                     break
                 file_path = self.file_paths[self.current_file_index]
-                if self.num_lines == math.inf:
+                if math.isclose(self.num_lines, math.inf, rel_tol=1e-15):
                     df = pd.read_csv(file_path, skiprows=self.current_line_index)
                     lines.append(df)
                     # 继续读取下一个文件
@@ -400,7 +405,7 @@ class ConvertRequestFileToCsv:
         # 关联req和question
         # 处理req信息，只留req id信息
         req_info = {}
-        for k, v in all_req_info.items():
+        for k, _ in all_req_info.items():
             _req_id, _execute_id = k
             if _req_id in req_info:
                 req_info[_req_id] = max(req_info[_req_id], int(_execute_id))
