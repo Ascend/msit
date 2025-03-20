@@ -289,7 +289,7 @@ class TrainVersion1:
             plot_data_feature=True,
             start_num_lines=4000,
             op_algorithm=OpAlgorithm.EXPECTED,
-            title = f"MixModel without warmup with batch max seq 2 op info"
+            title=f"MixModel without warmup with batch max seq 2 op info"
         )
         model = StateXgbModel(
             train_param=sp.xgb_model_train_param,
@@ -350,7 +350,7 @@ class TrainVersion1:
             plot_data_feature=True,
             start_num_lines=4000,
             op_algorithm=OpAlgorithm.EXPECTED,
-            title = f"{model_type} without warm up."
+            title=f"{model_type} without warm up."
         )
         model = StateXgbModel(
             train_param=sp.xgb_model_train_param,
@@ -429,7 +429,7 @@ class TrainVersion1:
             plot_data_feature=True,
             start_num_lines=2000,
             op_algorithm=OpAlgorithm.EXPECTED,
-            title = "DecodeNumOfREQModel without warmup"
+            title=f"DecodeNumOfREQModel without warmup"
         )
         model = StateXgbModel(
             train_param=sp.xgb_model_train_param,
