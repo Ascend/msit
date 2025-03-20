@@ -12,9 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-训练预测每个状态速度的线性模型
-"""
 import re
 from pathlib import Path
 from typing import Optional, Union
@@ -24,10 +21,9 @@ from sklearn.model_selection import train_test_split
 from loguru import logger
 
 import pandas as pd
+from pandas import DataFrame, Series
 import seaborn as sns
 import matplotlib
-matplotlib.use('Agg')
-from pandas import DataFrame, Series
 from matplotlib import pyplot as plt
 from modelevalstate.inference.constant import OpAlgorithm
 from modelevalstate.inference.data_format_v1 import (
@@ -40,6 +36,7 @@ from modelevalstate.inference.data_format_v1 import (
 )
 from modelevalstate.inference.dataset import CustomOneHotEncoder, CustomLabelEncoder, preset_category_data
 from modelevalstate.inference.dataset import PreprocessTool, TOTAL_OUTPUT_LENGTH, TOTAL_SEQ_LENGTH, TOTAL_PREFILL_TOKEN
+matplotlib.use('Agg')
 
 
 class MyDataSet:
@@ -114,6 +111,29 @@ class MyDataSet:
             _row_request_info.append([int(float(i)) for i in _row])
         return pd.DataFrame(_row_request_info, columns=origin_index)
 
+    @classmethod
+    def plot_custom_pairplot(cls, df: DataFrame, middle_save_path: Optional[Path] = None,
+                             file_name: str = "pairplot.png"):
+        col_num = df.shape[1]
+        fig, axs = plt.subplots(col_num, col_num, figsize=(4 * col_num, 4 * col_num))
+        for i in range(col_num):
+            for j in range(col_num):
+                if i == j:
+                    if df.columns[i].lower() in ["max_seq_len", "input_length", "total_prefill_token"]:
+                        sns.histplot(df.iloc[:, i], ax=axs[i, j], bins=100)
+                    else:
+                        sns.histplot(df.iloc[:, i], ax=axs[i, j])
+                elif j > i:
+                    continue
+                else:
+                    sns.regplot(x=df.iloc[:, i], y=df.iloc[:, j], ax=axs[i, j])
+        plt.tight_layout()
+        if middle_save_path:
+            plt.savefig(middle_save_path.joinpath(file_name))
+        else:
+            plt.show()
+        plt.close()
+        
     def preprocess(self, lines_data: Optional[DataFrame] = None):
         # 数据预处理
         # 将各个特征数据转换为列数据
@@ -127,29 +147,29 @@ class MyDataSet:
         for i, _cur_columns in enumerate(lines_data.columns[2:]):
             if eval(_cur_columns) == MODEL_OP_FIELD:
                 if self.op_algorithm == OpAlgorithm.EXPECTED:
-                    model_op_df = lines_data.iloc[:, i+2].apply(self.convert_op_info, args=(_cur_columns,))
+                    model_op_df = lines_data.iloc[:, i + 2].apply(self.convert_op_info, args=(_cur_columns,))
                 else:
-                    model_op_df = lines_data.iloc[:, i+2].apply(self.convert_op_info_with_ratio, args=(_cur_columns,))
+                    model_op_df = lines_data.iloc[:, i + 2].apply(self.convert_op_info_with_ratio, args=(_cur_columns,))
                 self.sub_columns.append(model_op_df.columns.tolist())
                 _load_data.append(model_op_df)
             elif eval(_cur_columns) == MODEL_STRUCT_FIELD:
-                model_struct_df = lines_data.iloc[:, i+2].apply(self.convert_struct_info, args=(_cur_columns,))
+                model_struct_df = lines_data.iloc[:, i + 2].apply(self.convert_struct_info, args=(_cur_columns,))
                 self.sub_columns.append(model_struct_df.columns.tolist())
                 _load_data.append(model_struct_df)
             elif eval(_cur_columns) == MODEL_CONFIG_FIELD:
-                model_config_df = lines_data.iloc[:, i+2].apply(self.convert_config_info, args=(_cur_columns,))
+                model_config_df = lines_data.iloc[:, i + 2].apply(self.convert_config_info, args=(_cur_columns,))
                 self.sub_columns.append(model_config_df.columns.tolist())
                 _load_data.append(model_config_df)
             elif eval(_cur_columns) == MINDIE_FIELD:
-                mindie_df = lines_data.iloc[:, i+2].apply(self.convert_mindie_info, args=(_cur_columns,))
+                mindie_df = lines_data.iloc[:, i + 2].apply(self.convert_mindie_info, args=(_cur_columns,))
                 self.sub_columns.append(mindie_df.columns.tolist())
                 _load_data.append(mindie_df)
             elif eval(_cur_columns) == ENV_FIELD:
-                env_df = lines_data.iloc[:, i+2].apply(self.convert_env_info, args=(_cur_columns,))
+                env_df = lines_data.iloc[:, i + 2].apply(self.convert_env_info, args=(_cur_columns,))
                 self.sub_columns.append(env_df.columns.tolist())
                 _load_data.append(env_df)
             elif eval(_cur_columns) == HARDWARE_FIELD:
-                hardware_df = lines_data.iloc[:, i+2].apply(self.convert_hardware_info, args=(_cur_columns,))
+                hardware_df = lines_data.iloc[:, i + 2].apply(self.convert_hardware_info, args=(_cur_columns,))
                 self.sub_columns.append(hardware_df.columns.tolist())
                 _load_data.append(hardware_df)
         # 提取 features 和labels
@@ -173,28 +193,7 @@ class MyDataSet:
         if plt_data:
             self.plt_data(lines_data, middle_save_path)
 
-    @classmethod
-    def plot_custom_pairplot(cls, df: DataFrame, middle_save_path: Optional[Path] = None,
-                             file_name: str = "pairplot.png"):
-        col_num = df.shape[1]
-        fig, axs = plt.subplots(col_num, col_num, figsize=(4 * col_num, 4 * col_num))
-        for i in range(col_num):
-            for j in range(col_num):
-                if i == j:
-                    if df.columns[i].lower() in ["max_seq_len", "input_length", "total_prefill_token"]:
-                        sns.histplot(df.iloc[:, i], ax=axs[i, j], bins=100)
-                    else:
-                        sns.histplot(df.iloc[:, i], ax=axs[i, j])
-                elif j > i:
-                    continue
-                else:
-                    sns.regplot(x=df.iloc[:, i], y=df.iloc[:, j], ax=axs[i, j])
-        plt.tight_layout()
-        if middle_save_path:
-            plt.savefig(middle_save_path.joinpath(file_name))
-        else:
-            plt.show()
-        plt.close()
+    
 
     def analysis_batch_feature(self, middle_save_path: Optional[Path] = None):
         cur_batch_df = self.load_data.iloc[:, 0:len(self.sub_columns[0])]
