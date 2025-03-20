@@ -316,7 +316,7 @@ class OSReleaseChecker(RrecheckerBase):
         with open(OS_RELEASE_FILE, "r") as ff:
             for line in ff.readlines():
                 if "PRETTY_NAME=" in line:
-                    os_release = line.split("PRETTY_NAME=")[-1][1:-1]  # get rid of ""
+                    os_release = line.split("PRETTY_NAME=")[-1].strip().replace('"', '')  # get rid of ""
                     break
         record(f"0410 OS 发行版本：{os_release}", part=CONTENT_PARTS.sys)
         return os_release
