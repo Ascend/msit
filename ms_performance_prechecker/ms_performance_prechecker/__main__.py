@@ -204,8 +204,7 @@ def sub_parser_compare(subparsers):
         RUN_MODES.compare, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="compare dumped configuration"
     )
     parser.add_argument(
-        "-ds",
-        "--dump_file_paths",
+        "dump_file_paths",
         nargs="+",
         help="Saved configuration path. It could be a list of path when you want to compare envs of multiple path.",
     )
