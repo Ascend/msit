@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
+
 import glob
 from pathlib import Path
 from typing import Optional
@@ -35,15 +38,15 @@ def main():
     fields = glob.glob(f"{train_sleep}/batch_need_*.csv")
     _train_sleep_nodes = []
     for f in fields:
-        df = pd.read_csv(f, header=None, names=['batch_stage', 'batch_size', 'total_need_blocks', 'total_prell_token', 'max_seq_len',
-                 'reqinfo', 'model_execute_time', 'execute_time', 'start_time', 'end_time'])
+        df = pd.read_csv(f, header=None, names=['batch_stage', 'batch_size', 'total_need_blocks', \
+            'total_prell_token', 'max_seq_len', 'reqinfo', 'model_execute_time', 'execute_time', 'start_time', 'end_time'])
         _tmp_nodes = get_nodes(df, field_name)
         _train_sleep_nodes.extend(_tmp_nodes)
     _train_sleep_up, train_sleep_ud = PreTrainModel.get_up_down(tuple(_train_sleep_nodes), field_name)
-    AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_predill", "up_of_real_and_train_sleep",
-          "batch_predill", "velocity", Path(train_sleep))
-    AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_decode", "up_of_real_and_train_sleep",
-          "batch_decode", "velocity", Path(train_sleep))
+    AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_predill", \
+        "up_of_real_and_train_sleep", "batch_predill", "velocity", Path(train_sleep))
+    AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_decode", \
+        "up_of_real_and_train_sleep", "batch_decode", "velocity", Path(train_sleep))
 
     train = r"D:\下载D\deepseek\train\41_3-6"
     field_name = "model_execute_time"
