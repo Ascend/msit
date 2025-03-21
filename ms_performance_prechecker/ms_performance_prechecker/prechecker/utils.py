@@ -19,7 +19,6 @@ import socket
 import logging
 from collections import namedtuple
 
-CHECK_TYPES = namedtuple("CHECK_TYPES", ["basic", "deepseek"])("basic", "deepseek")
 _RUN_MODES = ["precheck", "dump", "compare", "distribute_compare"]
 RUN_MODES = namedtuple("RUN_MODES", _RUN_MODES)(*_RUN_MODES)
 _CHECKER_TYPES = ["basic", "hccl", "model", "hardware", "all"]

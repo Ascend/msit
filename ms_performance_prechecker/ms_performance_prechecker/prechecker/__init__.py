@@ -13,18 +13,18 @@
 # limitations under the License.
 
 __all__ = [
-    "checkers",
+    "CHECKERS",
 ]
 
 from ms_performance_prechecker.prechecker.mindie_config_collecter import mindie_config_collecter, ranktable_collecter
 from ms_performance_prechecker.prechecker.env_checker import env_checker
 from ms_performance_prechecker.prechecker.system_checker import system_checker
 from ms_performance_prechecker.prechecker.hccl_checker import hccl_checker
+from ms_performance_prechecker.prechecker.utils import CHECKER_TYPES
 
-checkers = {
-    "": mindie_config_collecter,
-    ranktable_collecter,
-    env_checker,
-    system_checker,
-    hccl_checker,
+CHECKERS = {
+    CHECKER_TYPES.basic: [system_checker, env_checker, mindie_config_collecter, ranktable_collecter]
+    CHECKER_TYPES.hccl: [hccl_checker],
 }
+
+CHECKERS[CHECKER_TYPES.all] = [ii for key, checker in CHECKERS.items() for ii in checker if key != CHECKER_TYPES.all]

@@ -20,7 +20,7 @@ import tempfile
 from collections import namedtuple
 from glob import glob
 
-from ms_performance_prechecker.prechecker.utils import LOG_LEVELS, RUN_MODES, logger, set_log_level
+from ms_performance_prechecker.prechecker.utils import LOG_LEVELS, RUN_MODES, CHECKER_TYPES, logger, set_log_level
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH, RANKTABLEFILE
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, deep_compare_dict, get_next_dict_item
 
@@ -31,8 +31,6 @@ DEFAULT_DUMP_PATH = os.path.join(
 )
 DAFAULT_ENV_SAVE_PATH = "ms_performance_prechecker_env.sh"
 
-_CHECKER_TYPES = ["basic", "hccl", "model", "hardware", "all"]
-CHECKER_TYPES = namedtuple("CHECKER_TYPES", _CHECKER_TYPES)(*_CHECKER_TYPES)
 RANKTABLE_FILE = os.getenv(RANKTABLEFILE, None)
 MINDIE_SERVICE_PATH = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
 
@@ -61,10 +59,10 @@ def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))])
 
 
-def get_all_register_perchecker(checkers=("basic")):
-    from ms_performance_prechecker.prechecker import checkers
+def get_all_register_perchecker(checkers=(CHECKER_TYPES.basic,)):
+    from ms_performance_prechecker.prechecker import CHECKERS
 
-    return checkers
+    return [vv for kk in checkers for vv in CHECKERS[kk] if kk in CHECKERS]
 
 
 def print_contents():
@@ -78,8 +76,8 @@ def print_contents():
         logger.info(sys_info)
 
 
-def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **kwargs):
-    percheckers = get_all_register_perchecker()
+def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs):
+    percheckers = get_all_register_perchecker(checkers)
     all_envs = {}
     for perchecker in percheckers:
         name = perchecker.name()
@@ -116,8 +114,10 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
     return has_diff
 
 
-def run_precheck(save_env="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs):
-    percheckers = get_all_register_perchecker()
+def run_precheck(
+    save_env="ms_performance_prechecker_env.sh", mindie_service_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs
+):
+    percheckers = get_all_register_perchecker(checkers)
 
     for perchecker in percheckers:
         perchecker.precheck(env_save_path=save_env, mindie_service_path=mindie_service_path, **kwargs)
