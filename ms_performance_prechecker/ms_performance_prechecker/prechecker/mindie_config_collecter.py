@@ -25,6 +25,7 @@ class MindieConfigCollecter(RrecheckerBase):
     def collect_env(self, mindie_service_path=None, **kwargs):
         return parse_mindie_server_config(mindie_service_path)
 
+
 class RankTableCollecter(RrecheckerBase):
     __checker_name__ = "RankTable"
 
@@ -33,7 +34,7 @@ class RankTableCollecter(RrecheckerBase):
         return parse_ranktable_file(ranktable_file)
 
     def key_checker(self, source_dict, target_key, prefix=""):
-        if not target_key in source_dict:
+        if target_key not in source_dict:
             show_check_result(
                 "configuration",
                 "ranktable",
@@ -62,6 +63,7 @@ class RankTableCollecter(RrecheckerBase):
                 self.key_checker(source_dict=device, target_key="device_id", prefix=cur_prefix)
                 self.key_checker(source_dict=device, target_key="device_ip", prefix=cur_prefix)
                 self.key_checker(source_dict=device, target_key="rank_id", prefix=cur_prefix)
+
 
 mindie_config_collecter = MindieConfigCollecter()
 ranktable_collecter = RankTableCollecter()

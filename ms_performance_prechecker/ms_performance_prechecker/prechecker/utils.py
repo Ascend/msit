@@ -202,9 +202,9 @@ def get_next_dict_item(dict_value):
 def parse_mindie_server_config(mindie_service_path=None):
     if mindie_service_path is None:
         mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
-    logger.debug(f"mindie_service_path: {mindie_service_path}")
+    logger.debug("mindie_service_path=%s", mindie_service_path)
     if not os.path.exists(mindie_service_path):
-        logger.warning(f"mindie config.json: {mindie_service_path} not exists, will skip related checkers")
+        logger.warning(f"mindie config.json={mindie_service_path} not exists, will skip related checkers")
         return None
 
     mindie_service_config = read_csv_or_json(os.path.join(mindie_service_path, "conf", "config.json"))
@@ -217,9 +217,9 @@ def parse_mindie_server_config(mindie_service_path=None):
 def parse_ranktable_file(ranktable_file=None):
     if ranktable_file is None:
         ranktable_file = os.getenv(RANKTABLEFILE, None)
-    logger.debug(f"ranktable_file: {ranktable_file}")
+    logger.debug("ranktable_file=%s", ranktable_file)
     if not ranktable_file or not os.path.exists(ranktable_file):
-        logger.warning(f"ranktable_file: {ranktable_file} not exists, will skip related checkers")
+        logger.warning(f"ranktable_file={ranktable_file} not exists, will skip related checkers")
         return None
 
     ranktable = read_csv_or_json(ranktable_file)

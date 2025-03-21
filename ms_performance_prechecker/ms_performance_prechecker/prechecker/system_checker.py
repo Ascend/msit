@@ -33,6 +33,7 @@ GOVERNOR_PATH_FORMATTER = "/sys/devices/system/cpu/cpu{core}/cpufreq/scaling_gov
 OS_RELEASE_FILE = "/etc/os-release"
 OS_SUGGESTIONS_LOWER = ["ubuntu22.04", "centos7.6", "openeuler22.03", "kylinv10sp3"]
 
+
 def get_cpu_info():
     result = run_shell_command("lscpu", fail_msg=", will skip getting cpu info.")
     if not result:
@@ -332,6 +333,7 @@ class OSReleaseChecker(RrecheckerBase):
                 reason="推荐系统性能适配更好",
             )
 
+
 class SystemChecker(GroupRrechecker):
     __checker_name__ = "System"
 
@@ -345,5 +347,6 @@ class SystemChecker(GroupRrechecker):
             CpuHighPerformanceChecker(),
             OSReleaseChecker(),
         ]
+
 
 system_checker = SystemChecker()

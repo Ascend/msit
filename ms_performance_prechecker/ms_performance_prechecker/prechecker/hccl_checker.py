@@ -23,6 +23,7 @@ from ms_performance_prechecker.prechecker.utils import parse_ranktable_file, run
 _DAVINCI_DEVICES = sorted(glob('/dev/davinci*'))
 NPU_DEVICES = [int(ii.split("davinci")[-1]) for ii in _DAVINCI_DEVICES if str.isdigit(ii.split("davinci")[-1])]
 
+
 def run_hccl_command(command_formatter):
     from shutil import which
     if not which("hccn_tool"):
