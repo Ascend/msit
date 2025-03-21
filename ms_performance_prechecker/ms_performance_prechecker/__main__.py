@@ -32,12 +32,34 @@ DEFAULT_DUMP_PATH = os.path.join(
 )
 DAFAULT_ENV_SAVE_PATH = "ms_performance_prechecker_env.sh"
 
+_CHECKER_TYPES = ["basic", "hccl", "model", "hardware", "all"]
+CHECKER_TYPES = namedtuple("CHECKER_TYPES", _CHECKER_TYPES)(*_CHECKER_TYPES)
+COMMON_ARGS = [
+    dict(
+        args=["-l", "--log_level"], kwargs=dict(default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
+    ),
+]
+DUMP_COMMON_ARGS = [
+    dict(
+        args=["-ch", "--checkers"],
+        kwargs=dict(nargs="+", default=[CHECKER_TYPES.basic], choices=CHECKER_TYPES, help="specify checker types."),
+    ),
+    dict(
+        args=["-service", "--service_config_path"],
+        kwargs=dict(type=str, default=mindie_service_path, help="service config json path"),
+    ),
+    dict(
+        args=["-ranktable", "--ranktable_file"],
+        kwargs=dict(default=ranktable_file, help="HCCL rank table file path."),
+    ),
+]
+
 
 def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))])
 
 
-def get_all_register_perchecker():
+def get_all_register_perchecker(checkers=("basic")):
     from ms_performance_prechecker.prechecker import checkers
 
     return checkers
@@ -151,20 +173,14 @@ def sub_parser_precheck(subparsers):
         RUN_MODES.precheck, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="precheck configuration"
     )
     parser.add_argument(
-        "-t",
-        "--check_type",
-        type=str_ignore_case,
-        default=CHECK_TYPES.deepseek,
-        choices=CHECK_TYPES,
-        help="check type",
-    )
-    parser.add_argument(
         "-s",
         "--save_env",
         default="ms_performance_prechecker_env.sh",
         help="Save env changes as a file which could be applied directly.",
     )
     parser.add_argument("-ranktable", "--ranktable_file", default=ranktable_file, help="HCCL rank table file path.")
+    for ii in DUMP_COMMON_ARGS + COMMON_ARGS:
+        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
     parser.set_defaults(func=run_precheck)
 
 
@@ -180,7 +196,8 @@ def sub_parser_dump(subparsers):
         default=DEFAULT_DUMP_PATH,
         help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
     )
-
+    for ii in DUMP_COMMON_ARGS + COMMON_ARGS:
+        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
     parser.set_defaults(func=run_env_dump)
 
 
@@ -189,11 +206,13 @@ def sub_parser_compare(subparsers):
         RUN_MODES.compare, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="compare dumped configuration"
     )
     parser.add_argument(
-        "-d",
+        "-ds",
         "--dump_file_paths",
         nargs="+",
         help="Saved configuration path. It could be a list of path when you want to compare envs of multiple path.",
     )
+    for ii in COMMON_ARGS:
+        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
     parser.set_defaults(func=run_compare)
 
 
@@ -239,6 +258,8 @@ def sub_parser_distribute_compare(subparsers):
         default=None,
         help="world size, required if RANKTABLEFILE not available or using different value",
     )
+    for ii in DUMP_COMMON_ARGS + COMMON_ARGS:
+        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
     parser.set_defaults(func=run_distribute_compare)
 
 
@@ -250,11 +271,10 @@ def main():
     sub_parser_dump(subparsers)
     sub_parser_compare(subparsers)
     sub_parser_distribute_compare(subparsers)
-    parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
     args, _ = parser.parse_known_args()
 
     # init
-    set_log_level(args.log_level)
+    set_log_level(getattr(args, 'log_level', 'info'))
 
     # run
     if hasattr(args, "func"):
