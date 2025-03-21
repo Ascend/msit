@@ -39,7 +39,8 @@ def main():
     _train_sleep_nodes = []
     for f in fields:
         df = pd.read_csv(f, header=None, names=['batch_stage', 'batch_size', 'total_need_blocks', \
-            'total_prell_token', 'max_seq_len', 'reqinfo', 'model_execute_time', 'execute_time', 'start_time', 'end_time'])
+            'total_prell_token', 'max_seq_len', 'reqinfo', 'model_execute_time', 'execute_time', \
+            'start_time', 'end_time'])
         _tmp_nodes = get_nodes(df, field_name)
         _train_sleep_nodes.extend(_tmp_nodes)
     _train_sleep_up, train_sleep_ud = PreTrainModel.get_up_down(tuple(_train_sleep_nodes), field_name)
