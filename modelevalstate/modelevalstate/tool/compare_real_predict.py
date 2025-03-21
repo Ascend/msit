@@ -1,9 +1,9 @@
-# 比较所有真实采集的数据时延和预测数据时延
 import glob
 from pathlib import Path
+from typing import Optional
 import pandas as pd
 from pandas import DataFrame
-from typing import Optional
+
 
 from matplotlib import pyplot as plt
 
@@ -13,7 +13,7 @@ from modelevalstate.analysis import AnalysisState
 
 def get_nodes(df: DataFrame, field_name: str):
     target_data = []
-    for ind, row in df.iterrows():
+    for _, row in df.iterrows():
         _cur_node = NodeInfo(row.batch_stage, row.batch_size)
         setattr(_cur_node, field_name, row[field_name])
         target_data.append(_cur_node)
@@ -35,12 +35,15 @@ def main():
     fields = glob.glob(f"{train_sleep}/batch_need_*.csv")
     _train_sleep_nodes = []
     for f in fields:
-        df = pd.read_csv(f, header=None, names=['batch_stage', 'batch_size', 'total_need_blocks', 'total_prell_token', 'max_seq_len', 'reqinfo', 'model_execute_time', 'execute_time', 'start_time', 'end_time'])
+        df = pd.read_csv(f, header=None, names=['batch_stage', 'batch_size', 'total_need_blocks', 'total_prell_token', 'max_seq_len',
+                 'reqinfo', 'model_execute_time', 'execute_time', 'start_time', 'end_time'])
         _tmp_nodes = get_nodes(df, field_name)
         _train_sleep_nodes.extend(_tmp_nodes)
     _train_sleep_up, train_sleep_ud = PreTrainModel.get_up_down(tuple(_train_sleep_nodes), field_name)
-    AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_predill", "up_of_real_and_train_sleep",  "batch_predill", "velocity", Path(train_sleep))
-    AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_decode", "up_of_real_and_train_sleep",  "batch_decode", "velocity", Path(train_sleep))
+    AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_predill", "up_of_real_and_train_sleep",
+          "batch_predill", "velocity", Path(train_sleep))
+    AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_decode", "up_of_real_and_train_sleep",
+          "batch_decode", "velocity", Path(train_sleep))
 
     train = r"D:\下载D\deepseek\train\41_3-6"
     field_name = "model_execute_time"
@@ -58,9 +61,9 @@ def main():
         _train_sleep_nodes.extend(_tmp_nodes)
     _train_sleep_up, train_sleep_ud = PreTrainModel.get_up_down(tuple(_train_sleep_nodes), field_name)
     AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_predill",
-                                                    "up_of_real_and_train",  "batch_predill", "velocity", Path(train))
+                                                    "up_of_real_and_train", "batch_predill", "velocity", Path(train))
     AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_decode",
-                                                    "up_of_real_and_train",  "batch_decode", "velocity", Path(train))
+                                                    "up_of_real_and_train", "batch_decode", "velocity", Path(train))
     
 
 if __main__ == '__main__':
