@@ -201,12 +201,14 @@ def get_next_dict_item(dict_value):
 def parse_mindie_server_config(mindie_service_path=None):
     if mindie_service_path is None:
         mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+    if not mindie_service_path.endswith(".json"):
+        mindie_service_path = os.path.join(mindie_service_path, "conf", "config.json")
+
     logger.debug("mindie_service_path=%s", mindie_service_path)
     if not os.path.exists(mindie_service_path):
         logger.warning(f"mindie config.json={mindie_service_path} not exists, will skip related checkers")
         return None
-
-    mindie_service_config = read_csv_or_json(os.path.join(mindie_service_path, "conf", "config.json"))
+    mindie_service_config = read_csv_or_json(mindie_service_path)
     logger.debug(
         "mindie_service_config: %s", get_next_dict_item(mindie_service_config) if mindie_service_config else None
     )

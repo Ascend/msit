@@ -23,7 +23,7 @@ from ms_performance_prechecker.prechecker.hccl_checker import hccl_checker
 from ms_performance_prechecker.prechecker.utils import CHECKER_TYPES
 
 CHECKERS = {
-    CHECKER_TYPES.basic: [system_checker, env_checker, mindie_config_collecter, ranktable_collecter]
+    CHECKER_TYPES.basic: [system_checker, env_checker, mindie_config_collecter, ranktable_collecter],
     CHECKER_TYPES.hccl: [hccl_checker],
 }
 
