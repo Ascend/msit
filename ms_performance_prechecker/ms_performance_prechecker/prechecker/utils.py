@@ -22,8 +22,8 @@ from collections import namedtuple
 CHECK_TYPES = namedtuple("CHECK_TYPES", ["basic", "deepseek"])("basic", "deepseek")
 _RUN_MODES = ["precheck", "dump", "compare", "distribute_compare"]
 RUN_MODES = namedtuple("RUN_MODES", _RUN_MODES)(*_RUN_MODES)
-_SUGGESTION_TYPES = ["env", "system", "config"]
-SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTION_TYPES)
+_CHECKER_TYPES = ["basic", "hccl", "model", "hardware", "all"]
+CHECKER_TYPES = namedtuple("CHECKER_TYPES", _CHECKER_TYPES)(*_CHECKER_TYPES)
 
 MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
 MINDIE_SERVICE_DEFAULT_PATH = "/usr/local/Ascend/mindie/latest/mindie-service"

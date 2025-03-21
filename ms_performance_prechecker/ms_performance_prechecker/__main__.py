@@ -20,9 +20,8 @@ import tempfile
 from collections import namedtuple
 from glob import glob
 
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, RUN_MODES
+from ms_performance_prechecker.prechecker.utils import LOG_LEVELS, RUN_MODES, logger, set_log_level
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH, RANKTABLEFILE
-from ms_performance_prechecker.prechecker.utils import logger, set_log_level
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, deep_compare_dict, get_next_dict_item
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
@@ -34,6 +33,9 @@ DAFAULT_ENV_SAVE_PATH = "ms_performance_prechecker_env.sh"
 
 _CHECKER_TYPES = ["basic", "hccl", "model", "hardware", "all"]
 CHECKER_TYPES = namedtuple("CHECKER_TYPES", _CHECKER_TYPES)(*_CHECKER_TYPES)
+RANKTABLE_FILE = os.getenv(RANKTABLEFILE, None)
+MINDIE_SERVICE_PATH = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+
 COMMON_ARGS = [
     dict(
         args=["-l", "--log_level"], kwargs=dict(default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
@@ -46,11 +48,11 @@ DUMP_COMMON_ARGS = [
     ),
     dict(
         args=["-service", "--service_config_path"],
-        kwargs=dict(type=str, default=mindie_service_path, help="service config json path"),
+        kwargs=dict(type=str, default=MINDIE_SERVICE_PATH, help="service config json path"),
     ),
     dict(
         args=["-ranktable", "--ranktable_file"],
-        kwargs=dict(default=ranktable_file, help="HCCL rank table file path."),
+        kwargs=dict(default=RANKTABLE_FILE, help="HCCL rank table file path."),
     ),
 ]
 
@@ -114,15 +116,11 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
     return has_diff
 
 
-def run_precheck(
-    check_type=CHECK_TYPES.deepseek, save_env="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs
-):
+def run_precheck(save_env="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs):
     percheckers = get_all_register_perchecker()
 
     for perchecker in percheckers:
-        perchecker.precheck(
-            check_type=check_type, env_save_path=save_env, mindie_service_path=mindie_service_path, **kwargs
-        )
+        perchecker.precheck(env_save_path=save_env, mindie_service_path=mindie_service_path, **kwargs)
 
     print_contents()
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
@@ -159,6 +157,7 @@ def run_distribute_compare(
     for ip, dump_env_json_str in dump_env_json_str_dict.items():
         env_ips.append(ip)
         env_infos.append(json.loads(dump_env_json_str))
+
     skip_keys = [".Env.MIES_CONTAINER_IP", ".Env.ASCEND_CUSTOM_OPP_PATH"]
     has_diff = deep_compare_dict(env_infos, env_ips, skip_keys=skip_keys)
     if not has_diff:
@@ -178,7 +177,6 @@ def sub_parser_precheck(subparsers):
         default="ms_performance_prechecker_env.sh",
         help="Save env changes as a file which could be applied directly.",
     )
-    parser.add_argument("-ranktable", "--ranktable_file", default=ranktable_file, help="HCCL rank table file path.")
     for ii in DUMP_COMMON_ARGS + COMMON_ARGS:
         parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
     parser.set_defaults(func=run_precheck)
@@ -218,20 +216,11 @@ def sub_parser_compare(subparsers):
 
 def sub_parser_distribute_compare(subparsers):
     # Multi-machine
-
-    ranktable_file = os.getenv(RANKTABLEFILE, None)
-    mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
-
     parser = subparsers.add_parser(
         RUN_MODES.distribute_compare,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="compare distribute envs",
     )
-    parser.add_argument(
-        "-service", "--service_config_path", type=str, default=mindie_service_path, help="service config json path"
-    )
-    parser.add_argument("-ranktable", "--ranktable_file", default=ranktable_file, help="HCCL rank table file path.")
-
     parser.add_argument(
         "-ip",
         "--master_ip",

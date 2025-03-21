@@ -15,7 +15,7 @@
 import os
 from ms_performance_prechecker.prechecker.register import register_checker, cached, RrecheckerBase
 from ms_performance_prechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, logger, SUGGESTION_TYPES, get_version_info
+from ms_performance_prechecker.prechecker.utils import logger, get_version_info
 from ms_performance_prechecker.prechecker.env_suggestion import ENV_SUGGESTIONS
 
 

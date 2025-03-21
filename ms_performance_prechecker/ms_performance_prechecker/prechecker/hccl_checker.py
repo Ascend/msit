@@ -17,7 +17,7 @@ import platform
 from glob import glob
 from ms_performance_prechecker.prechecker.register import register_checker, GroupRrechecker, RrecheckerBase
 from ms_performance_prechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
-from ms_performance_prechecker.prechecker.utils import logger, CHECK_TYPES, SUGGESTION_TYPES
+from ms_performance_prechecker.prechecker.utils import logger
 from ms_performance_prechecker.prechecker.utils import parse_ranktable_file, run_shell_command, get_interface_by_ip
 
 _DAVINCI_DEVICES = sorted(glob('/dev/davinci*'))
@@ -149,31 +149,28 @@ class HcclPingChecker(RrecheckerBase):
             logger.error(f"Current server is not set in ranktable={ranktable_file}")
             return None
 
-        multi_server_results = {}
-        for server_id, device_ips in ranktable_ips.items():
-            if server_id == local_ip or server_id is None:
-                continue
-            for device_ip in device_ips:
+        for server_id, (server_ip, device_ips) in enumerate(ranktable_ips.items()):  # Will not skip ping local devices
+            for device_id, device_ip in enumerate(device_ips):
                 if device_ip is None:
                     continue
-                logger.debug(f"HcclPingChecker server_id={server_id}, device_ip={device_ip}")
+                logger.debug(f"HcclPingChecker server_ip={server_ip}, device_ip={device_ip}")
                 results = run_hccl_command("hccn_tool -i {device_id} -ping -g address " + device_ip)
                 bool_results = [any("0.00% packet loss" in ii for ii in result) for result in results]
-                multi_server_results.setdefault(server_id, {}).update({device_ip: bool_results})
+                multi_server_results.setdefault(server_ip, {}).update({device_ip: bool_results})
         logger.debug(f"multi_server_results = {multi_server_results}")
         return multi_server_results  # {other_server_ip: {other_server_device_ip: [cur device 0, cur device 1, ...]}}
 
     def do_precheck(self, multi_server_results, **kwargs):
         if not multi_server_results:
             return
-        for server_id, device_connect_result in multi_server_results.items():
+        for server_ip, device_connect_result in multi_server_results.items():
             for device_id, (device_ip, connect_result) in enumerate(device_connect_result.items()):
                 if not all(connect_result):
                     show_check_result(
                         "hccl",
                         "ping",
                         CheckResult.ERROR,
-                        action=f"检查本机到服务器 {server_id} {device_id} 卡的连接状态",
+                        action=f"检查本机到服务器 {server_ip} {device_id} 卡的连接状态",
                         reason=f"本机到对端卡的 ping 结果存在失败 {connect_result}",
                     )
 
