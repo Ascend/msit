@@ -15,7 +15,7 @@
 import os
 import platform
 from glob import glob
-from concurrent.futures import ThreadPoolExecutor
+from concurrent import futures
 from ms_performance_prechecker.prechecker.register import register_checker, GroupRrechecker, RrecheckerBase
 from ms_performance_prechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
 from ms_performance_prechecker.prechecker.utils import logger
@@ -33,14 +33,14 @@ def run_hccl_command(command_formatter):
         return []  # Just return if hccn_tool command not exists. It's common if in docker.
 
     results = []
-    with ThreadPoolExecutor() as executor:
-        futures = []
+    with futures.ThreadPoolExecutor() as executor:
+        future_threads = []
         for device_id in NPU_DEVICES:
             # result = run_shell_command(command_formatter.format(device_id=device_id))
             cur = executor.submit(run_shell_command, command_formatter.format(device_id=device_id))
-            futures.append(cur)
-        for future in enumerate(futures):
-            result = future.result()
+            future_threads.append(cur)
+        for future_thread in futures.as_completed(future_threads):
+            result = future_thread.result()
             results.append([ii.strip() for ii in result.stdout.split('\n')] if result else [])
     return results
 
