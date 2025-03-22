@@ -157,16 +157,20 @@ class HcclPingChecker(RrecheckerBase):
             ranktable_ips[server_id] = device_ips
         logger.debug(f"ranktable_ips={ranktable_ips}")
 
-        _, local_ip = get_interface_by_ip(list(ranktable_ips.keys()))
-        if local_ip is None:
+        _, self.local_ip = get_interface_by_ip(list(ranktable_ips.keys()))
+        if self.local_ip is None:
             logger.error(f"Current server is not set in ranktable={ranktable_file}")
             return None
 
-        multi_server_results = {}
+        multi_server_results, local_results = {}, [True] * len(NPU_DEVICES)  # Assume local all pass
         for server_id, (server_ip, device_ips) in enumerate(ranktable_ips.items()):  # Will not skip ping local devices
             for device_id, device_ip in enumerate(device_ips):
                 if device_ip is None:
                     continue
+                if server_ip == self.local_ip:
+                    multi_server_results.setdefault(server_ip, {}).update({device_ip: local_results})
+                    continue
+
                 logger.debug(f"HcclPingChecker server_ip={server_ip}, device_ip={device_ip}")
                 results = run_hccl_command("hccn_tool -i {device_id} -ping -g address " + device_ip)
                 bool_results = [any("0.00% packet loss" in ii for ii in result) for result in results]
@@ -190,7 +194,8 @@ class HcclPingChecker(RrecheckerBase):
                     )
                     is_connect_server_pass = False
             if is_connect_server_pass:
-                show_check_result("hccl", f"ping server {server_ip} all pass", CheckResult.OK)
+                server_ip_wo_local = [cur_ip for cur_ip in server_ip if cur_ip != self.local_ip]
+                show_check_result("hccl", f"ping server {server_ip_wo_local} all pass", CheckResult.OK)
 
             
 class HCCLChecker(GroupRrechecker):

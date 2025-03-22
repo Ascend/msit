@@ -120,6 +120,9 @@ class DistributeCollector:
 
     def gather(self, contents):
         if not self.is_dist_group_inited:
+            if not isinstance(self.world_size, int) or not isinstance(self.rank, int):
+                logger.error(f"world_size and rank not set. Got world_size={self.world_size}, rank={self.rank}")
+                return None
             torch.distributed.init_process_group(
                 backend=self.backend, init_method=self.init_method, world_size=self.world_size, rank=self.rank
             )
