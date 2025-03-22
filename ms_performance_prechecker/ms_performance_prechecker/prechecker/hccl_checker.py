@@ -15,6 +15,7 @@
 import os
 import platform
 from glob import glob
+from concurrent import futures
 from ms_performance_prechecker.prechecker.register import register_checker, GroupRrechecker, RrecheckerBase
 from ms_performance_prechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
 from ms_performance_prechecker.prechecker.utils import logger
@@ -26,13 +27,16 @@ NPU_DEVICES = [int(ii.split("davinci")[-1]) for ii in _DAVINCI_DEVICES if str.is
 
 def run_hccl_command(command_formatter):
     from shutil import which
+
+    multi_server_results = {}
     if not which("hccn_tool"):
         return []  # Just return if hccn_tool command not exists. It's common if in docker.
 
     results = []
-    for device_id in NPU_DEVICES:
-        result = run_shell_command(command_formatter.format(device_id=device_id))
-        results.append([ii.strip() for ii in result.stdout.split('\n')] if result else [])
+    with futures.ThreadPoolExecutor(max_workers=len(NPU_DEVICES)) as executor:
+        map_args = [command_formatter.format(device_id=device_id) for device_id in NPU_DEVICES]
+        for result in executor.map(run_shell_command, map_args):
+            results.append([ii.strip() for ii in result.stdout.split('\n')] if result else [])
     return results
 
 
@@ -47,7 +51,7 @@ class HcclIfnameChecker(RrecheckerBase):
             cur_ifname = ""
             for line in result:
                 if "Ifname:" in line:
-                    cur_ifname = line.split(":")[-1].strip()
+                    cur_ifname = line.split(":", 1)[-1].strip()
                     break
             ifnames.append(cur_ifname)
         logger.debug(f"ifnames = {ifnames}")
@@ -64,6 +68,8 @@ class HcclIfnameChecker(RrecheckerBase):
                 action=f"检查服务器上 NPU 对应的交换机光口连接",
                 reason=f"HCCL Ifname 存在空值 {ifnames}",
             )
+        else:
+            show_check_result("hccl", f"lldp Ifname: {ifnames}", CheckResult.OK)
 
 
 class HcclLinkChecker(RrecheckerBase):
@@ -94,6 +100,8 @@ class HcclLinkChecker(RrecheckerBase):
                 action=f"检查服务器上 NPU 连接情况",
                 reason=f"HCCL link 存在 down 值 {link_status}",
             )
+        else:
+            show_check_result("hccl", f"link: {link_status}", CheckResult.OK)
 
 
 class HcclTlsSwitchChecker(RrecheckerBase):
@@ -124,13 +132,15 @@ class HcclTlsSwitchChecker(RrecheckerBase):
                 action=f"检查服务器上 HCCL tls 状态，推荐关闭：for i in {{0..7}}; do hccn_tool -i $i -tls -s enable 0; done",
                 reason=f"HCCL tls 打开可能影响多机连接",
             )
+        else:
+            show_check_result("hccl", f"tls_switch: {tls_switch}", CheckResult.OK)
 
 
 class HcclPingChecker(RrecheckerBase):
     __checker_name__ = "HcclPing"
 
     def collect_env(self, ranktable_file=None, **kwargs):
-        logger.info(f"Starting HcclPingChecker. This may take some time.")
+        logger.debug(f"Starting HcclPingChecker.")
         logger.info(f"ranktable_file={ranktable_file}")
         ranktable = parse_ranktable_file(ranktable_file)
         if not ranktable:
@@ -144,12 +154,17 @@ class HcclPingChecker(RrecheckerBase):
             ranktable_ips[server_id] = device_ips
         logger.debug(f"ranktable_ips={ranktable_ips}")
 
-        _, local_ip = get_interface_by_ip(list(ranktable_ips.keys()))
-        if local_ip is None:
+        _, self.local_ip = get_interface_by_ip(list(ranktable_ips.keys()))
+        if self.local_ip is None:
             logger.error(f"Current server is not set in ranktable={ranktable_file}")
             return None
 
-        for server_id, (server_ip, device_ips) in enumerate(ranktable_ips.items()):  # Will not skip ping local devices
+        local_results = {device_ip: [True] * len(NPU_DEVICES) for device_ip in device_ips}  # Assume local all pass
+        multi_server_results = {self.local_ip: local_results}
+        for server_id, (server_ip, device_ips) in enumerate(ranktable_ips.items()):
+            if server_ip == self.local_ip:
+                continue
+            logger.info(f"HCCL Ping server_ip={server_ip}, devices={len(device_ips)} ...")
             for device_id, device_ip in enumerate(device_ips):
                 if device_ip is None:
                     continue
@@ -164,6 +179,9 @@ class HcclPingChecker(RrecheckerBase):
         if not multi_server_results:
             return
         for server_ip, device_connect_result in multi_server_results.items():
+            if server_ip == self.local_ip:
+                continue
+            is_connect_server_pass = True
             for device_id, (device_ip, connect_result) in enumerate(device_connect_result.items()):
                 if not all(connect_result):
                     show_check_result(
@@ -173,8 +191,11 @@ class HcclPingChecker(RrecheckerBase):
                         action=f"检查本机到服务器 {server_ip} {device_id} 卡的连接状态",
                         reason=f"本机到对端卡的 ping 结果存在失败 {connect_result}",
                     )
+                    is_connect_server_pass = False
+            if is_connect_server_pass:
+                show_check_result("hccl", f"ping server {server_ip} all pass", CheckResult.OK)
 
-
+            
 class HCCLChecker(GroupRrechecker):
     __checker_name__ = "HCCL"
 
