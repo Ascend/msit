@@ -14,12 +14,12 @@
 
 from enum import Enum
 from collections import namedtuple
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES, logger
+from ms_performance_prechecker.prechecker.utils import logger
 
 # 创建一个全局的注册表，注册为分析函数
 REGISTRY = {}
 
-ANSWERS = {ii: {} for ii in SUGGESTION_TYPES}
+ANSWERS = {}
 CONTENT_PARTS = namedtuple("CONTENT_PARTS", ["before", "after", "sys"])("before", "after", "sys")
 CONTENTS = {}  # Will save to file in the end
 

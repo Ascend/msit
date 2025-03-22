@@ -20,9 +20,8 @@ import tempfile
 from collections import namedtuple
 from glob import glob
 
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, LOG_LEVELS, RUN_MODES
-from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
-from ms_performance_prechecker.prechecker.utils import logger, set_log_level
+from ms_performance_prechecker.prechecker.utils import LOG_LEVELS, RUN_MODES, CHECKER_TYPES, logger, set_log_level
+from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH, RANKTABLEFILE
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, deep_compare_dict, get_next_dict_item
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
@@ -31,19 +30,39 @@ DEFAULT_DUMP_PATH = os.path.join(
     tempfile.gettempdir(), f"ms_performance_prechecker_dump_{time.strftime('%Y%m%d_%H%M%S')}.json"
 )
 DAFAULT_ENV_SAVE_PATH = "ms_performance_prechecker_env.sh"
-RANKTABLEFILE = "RANKTABLEFILE"
-MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
-MINDIE_SERVICE_DEFAULT_PATH = "/usr/local/Ascend/mindie/latest/mindie-service"
+
+RANKTABLE_FILE = os.getenv(RANKTABLEFILE, None)
+MINDIE_SERVICE_PATH = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+
+COMMON_ARGS = [
+    dict(
+        args=["-l", "--log_level"], kwargs=dict(default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
+    ),
+]
+DUMP_COMMON_ARGS = [
+    dict(
+        args=["-ch", "--checkers"],
+        kwargs=dict(nargs="+", default=[CHECKER_TYPES.basic], choices=CHECKER_TYPES, help="specify checker types."),
+    ),
+    dict(
+        args=["-service", "--service_config_path"],
+        kwargs=dict(type=str, default=MINDIE_SERVICE_PATH, help="service config json path"),
+    ),
+    dict(
+        args=["-ranktable", "--ranktable_file"],
+        kwargs=dict(default=RANKTABLE_FILE, help="HCCL rank table file path."),
+    ),
+]
 
 
 def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))])
 
 
-def get_all_register_perchecker():
-    from ms_performance_prechecker.prechecker import checkers
+def get_all_register_perchecker(checkers=(CHECKER_TYPES.basic,)):
+    from ms_performance_prechecker.prechecker import CHECKERS
 
-    return checkers
+    return [vv for kk in checkers for vv in CHECKERS[kk] if kk in CHECKERS]
 
 
 def print_contents():
@@ -57,8 +76,8 @@ def print_contents():
         logger.info(sys_info)
 
 
-def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, **kwargs):
-    percheckers = get_all_register_perchecker()
+def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs):
+    percheckers = get_all_register_perchecker(checkers)
     all_envs = {}
     for perchecker in percheckers:
         name = perchecker.name()
@@ -96,14 +115,12 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
 
 
 def run_precheck(
-    check_type=CHECK_TYPES.deepseek, save_env="ms_performance_prechecker_env.sh", mindie_service_path=None, **kwargs
+    save_env="ms_performance_prechecker_env.sh", mindie_service_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs
 ):
-    percheckers = get_all_register_perchecker()
+    percheckers = get_all_register_perchecker(checkers)
 
     for perchecker in percheckers:
-        perchecker.precheck(
-            check_type=check_type, env_save_path=save_env, mindie_service_path=mindie_service_path, **kwargs
-        )
+        perchecker.precheck(env_save_path=save_env, mindie_service_path=mindie_service_path, **kwargs)
 
     print_contents()
     logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
@@ -140,6 +157,7 @@ def run_distribute_compare(
     for ip, dump_env_json_str in dump_env_json_str_dict.items():
         env_ips.append(ip)
         env_infos.append(json.loads(dump_env_json_str))
+
     skip_keys = [".Env.MIES_CONTAINER_IP", ".Env.ASCEND_CUSTOM_OPP_PATH"]
     has_diff = deep_compare_dict(env_infos, env_ips, skip_keys=skip_keys)
     if not has_diff:
@@ -148,16 +166,10 @@ def run_distribute_compare(
 
 
 def sub_parser_precheck(subparsers):
+    ranktable_file = os.getenv(RANKTABLEFILE, None)
+
     parser = subparsers.add_parser(
-        RUN_MODES.precheck, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="precheck evns"
-    )
-    parser.add_argument(
-        "-t",
-        "--check_type",
-        type=str_ignore_case,
-        default=CHECK_TYPES.deepseek,
-        choices=CHECK_TYPES,
-        help="check type",
+        RUN_MODES.precheck, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="precheck configuration"
     )
     parser.add_argument(
         "-s",
@@ -165,12 +177,14 @@ def sub_parser_precheck(subparsers):
         default="ms_performance_prechecker_env.sh",
         help="Save env changes as a file which could be applied directly.",
     )
+    for ii in DUMP_COMMON_ARGS + COMMON_ARGS:
+        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
     parser.set_defaults(func=run_precheck)
 
 
 def sub_parser_dump(subparsers):
     parser = subparsers.add_parser(
-        RUN_MODES.dump, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="dump env"
+        RUN_MODES.dump, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="dump configuration"
     )
 
     parser.add_argument(
@@ -180,39 +194,32 @@ def sub_parser_dump(subparsers):
         default=DEFAULT_DUMP_PATH,
         help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
     )
-
+    for ii in DUMP_COMMON_ARGS + COMMON_ARGS:
+        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
     parser.set_defaults(func=run_env_dump)
 
 
 def sub_parser_compare(subparsers):
     parser = subparsers.add_parser(
-        RUN_MODES.compare, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="compare dump envs"
+        RUN_MODES.compare, formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="compare dumped configuration"
     )
     parser.add_argument(
-        "-d",
-        "--dump_file_paths",
+        "dump_file_paths",
         nargs="+",
-        help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
+        help="Saved configuration path. It could be a list of path when you want to compare envs of multiple path.",
     )
+    for ii in COMMON_ARGS:
+        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
     parser.set_defaults(func=run_compare)
 
 
 def sub_parser_distribute_compare(subparsers):
     # Multi-machine
-
-    ranktable_file = os.getenv(RANKTABLEFILE, None)
-    mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
-
     parser = subparsers.add_parser(
         RUN_MODES.distribute_compare,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="compare distribute envs",
     )
-    parser.add_argument(
-        "-s", "--service_config_path", type=str, default=mindie_service_path, help="service config json path"
-    )
-    parser.add_argument("-r", "--ranktable_file", default=ranktable_file, help="HCCL rank table file path.")
-
     parser.add_argument(
         "-ip",
         "--master_ip",
@@ -239,6 +246,8 @@ def sub_parser_distribute_compare(subparsers):
         default=None,
         help="world size, required if RANKTABLEFILE not available or using different value",
     )
+    for ii in DUMP_COMMON_ARGS + COMMON_ARGS:
+        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
     parser.set_defaults(func=run_distribute_compare)
 
 
@@ -250,11 +259,10 @@ def main():
     sub_parser_dump(subparsers)
     sub_parser_compare(subparsers)
     sub_parser_distribute_compare(subparsers)
-    parser.add_argument("-l", "--log_level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
     args, _ = parser.parse_known_args()
 
     # init
-    set_log_level(args.log_level)
+    set_log_level(getattr(args, 'log_level', 'info'))
 
     # run
     if hasattr(args, "func"):

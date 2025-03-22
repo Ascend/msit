@@ -16,8 +16,7 @@ import os
 import platform
 from ms_performance_prechecker.prechecker.register import register_checker, GroupRrechecker, RrecheckerBase
 from ms_performance_prechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
-from ms_performance_prechecker.prechecker.utils import CHECK_TYPES, SUGGESTION_TYPES
-from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger
+from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger, run_shell_command
 
 try:
     import acl
@@ -30,21 +29,14 @@ DRIVER_VERSION_PATH = "/usr/local/Ascend/driver/version.info"
 CPUINFO_PATH = "/proc/cpuinfo"
 TRANSPARENT_HUGEPAGE_PATH = "/sys/kernel/mm/transparent_hugepage/enabled"
 GOVERNOR_PATH_FORMATTER = "/sys/devices/system/cpu/cpu{core}/cpufreq/scaling_governor"
+OS_RELEASE_FILE = "/etc/os-release"
+OS_SUGGESTIONS_LOWER = ["ubuntu22.04", "centos7.6", "openeuler22.03", "kylinv10sp3"]
 
 
 def get_cpu_info():
-    import subprocess
-    from shutil import which
-
-    lscpu_path = which("lscpu")
-    if not lscpu_path:
-        logger.error("lscpu command not exists, will skip getting cpu info.")
+    result = run_shell_command("lscpu", fail_msg=", will skip getting cpu info.")
+    if not result:
         return {}
-
-    try:
-        result = subprocess.run([lscpu_path], capture_output=True, text=True, check=True, shell=False)
-    except Exception as err:
-        logger.error("Failed calling lscpu, will skip getting cpu info.")
 
     cpu_info = {}
     for line in result.stdout.splitlines():
@@ -243,14 +235,20 @@ class TransparentHugepageChecker(RrecheckerBase):
             logger.warning(f"{TRANSPARENT_HUGEPAGE_PATH} not accessible")
             return None
 
-        is_transparent_hugepage_enable = False
+        is_transparent_hugepage_enable, additional_msg = False, ""
         with open(TRANSPARENT_HUGEPAGE_PATH) as ff:
             for line in ff.readlines():
-                if "always" in line:
+                if "[always]" in line:
                     is_transparent_hugepage_enable = True
-                    logger.debug(f"Got 'always' from: {TRANSPARENT_HUGEPAGE_PATH}")
+                    logger.debug(f"Got '[always]' from: {TRANSPARENT_HUGEPAGE_PATH}")
                     break
+                elif "[" in line and "]" in line:
+                    cur_value = line.split('[')[-1].split(']')[0]
+                    additional_msg = f"；恢复配置使用：echo {cur_value} > {TRANSPARENT_HUGEPAGE_PATH}"
+                else:
+                    additional_msg = "；当前配置未知"
         record(f"0900 是否开启透明大页：{'是' if is_transparent_hugepage_enable else '否'}", part=CONTENT_PARTS.sys)
+        self.additional_msg = additional_msg
         return is_transparent_hugepage_enable
 
     def do_precheck(self, is_transparent_hugepage_enable, **kwargs):
@@ -261,7 +259,7 @@ class TransparentHugepageChecker(RrecheckerBase):
                 "system",
                 "透明大页",
                 CheckResult.ERROR,
-                action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}",
+                action=f"设置为 always：echo always > {TRANSPARENT_HUGEPAGE_PATH}{self.additional_msg}",
                 reason="开启透明大页，吞吐率结果会更稳定",
             )
 
@@ -310,6 +308,31 @@ class CpuHighPerformanceChecker(RrecheckerBase):
             )
 
 
+class OSReleaseChecker(RrecheckerBase):
+    __checker_name__ = "OSRelease"
+
+    def collect_env(self, **kwargs):
+        os_release = "Unknown"
+        with open(OS_RELEASE_FILE, "r") as ff:
+            for line in ff.readlines():
+                if "PRETTY_NAME=" in line:
+                    os_release = line.split("PRETTY_NAME=")[-1].strip().replace('"', '')  # get rid of ""
+                    break
+        record(f"0410 OS 发行版本：{os_release}", part=CONTENT_PARTS.sys)
+        return os_release
+
+    def do_precheck(self, os_release, **kwargs):
+        os_release_lower = os_release.replace(" ", "").replace("-", "").replace("_", "").lower()
+        if not any(release in os_release_lower for release in OS_SUGGESTIONS_LOWER):
+            show_check_result(
+                "system",
+                "os 发行版本",
+                CheckResult.ERROR,
+                action=f"当前版本 {os_release} 不在推荐系统版本中 {OS_SUGGESTIONS_LOWER}，可以考虑更换",
+                reason="推荐系统性能适配更好",
+            )
+
+
 class SystemChecker(GroupRrechecker):
     __checker_name__ = "System"
 
@@ -321,6 +344,7 @@ class SystemChecker(GroupRrechecker):
             VirtualMachineChecker(),
             TransparentHugepageChecker(),
             CpuHighPerformanceChecker(),
+            OSReleaseChecker(),
         ]
 
 
