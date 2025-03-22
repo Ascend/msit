@@ -130,6 +130,8 @@ class ModelConfigCollecter(RrecheckerBase):
                 action=action,
                 reason=f"当前配置 model_type={model_type} 不匹配 deepseek 模型",
             )
+        else:
+            show_check_result("configuration", "model", CheckResult.OK)
 
 
 mindie_config_collecter = MindieConfigCollecter()
