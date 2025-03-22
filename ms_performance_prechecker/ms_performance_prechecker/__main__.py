@@ -122,8 +122,8 @@ def run_precheck(
     for perchecker in percheckers:
         perchecker.precheck(env_save_path=save_env, mindie_service_path=mindie_service_path, **kwargs)
 
-    print_contents()
     if CHECKER_TYPES.basic in checkers or CHECKER_TYPES.all in checkers:
+        print_contents()
         logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
 
