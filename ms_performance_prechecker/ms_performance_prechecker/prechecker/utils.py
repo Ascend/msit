@@ -18,6 +18,7 @@ import json
 import csv
 import socket
 import logging
+import time
 from collections import namedtuple
 
 _RUN_MODES = ["precheck", "dump", "compare", "distribute_compare"]
