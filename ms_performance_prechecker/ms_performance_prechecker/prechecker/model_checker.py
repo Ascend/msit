@@ -87,7 +87,7 @@ class ModelSizeChecker(RrecheckerBase):
                 reason=f"FP8 权重大小应大约 {DEEPSEEK_R1_FP8_WEIGHT_SIZE}，FP16 权重大小应大约 {DEEPSEEK_R1_FP16_WEIGHT_SIZE}",
             )
         else:
-            show_check_result("Model", "size", CheckResult.OK)
+            show_check_result("Model", f"size: {total_weight_size}", CheckResult.OK)
 
 class ModelSha256Collecter(RrecheckerBase):
     __checker_name__ = "ModelSha256"
