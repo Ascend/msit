@@ -33,14 +33,9 @@ def run_hccl_command(command_formatter):
         return []  # Just return if hccn_tool command not exists. It's common if in docker.
 
     results = []
-    with futures.ThreadPoolExecutor() as executor:
-        future_threads = []
-        for device_id in NPU_DEVICES:
-            # result = run_shell_command(command_formatter.format(device_id=device_id))
-            cur = executor.submit(run_shell_command, command_formatter.format(device_id=device_id))
-            future_threads.append(cur)
-        for future_thread in futures.as_completed(future_threads):
-            result = future_thread.result()
+    with futures.ThreadPoolExecutor(max_workers=len(NPU_DEVICES)) as executor:
+        map_args = [command_formatter.format(dev_id=dev_id) for dev_id in NPU_DEVICES]
+        for result in executor.map(run_shell_command, map_args):
             results.append([ii.strip() for ii in result.stdout.split('\n')] if result else [])
     return results
 
