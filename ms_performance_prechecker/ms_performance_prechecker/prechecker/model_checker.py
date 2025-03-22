@@ -60,6 +60,7 @@ class ModelSizeChecker(RrecheckerBase):
 
         model_json_size = get_file_sizes(os.path.join(model_weight_path, "*.json"))
         model_weight_size = get_file_sizes(os.path.join(model_weight_path, "*.safetensors"))
+        logger.debug(f"ModelSizeChecker model_weight_size={model_weight_size}")
         return {"model_name": model_name, "model_json_size": model_json_size, "model_weight_size": model_weight_size}
 
     def do_precheck(self, model_config, **kwargs):
@@ -99,6 +100,7 @@ class ModelSha256Collecter(RrecheckerBase):
         logger.warning("Model checking sha256sum value could take ~30mins depending on model weights size")
         model_json_sha256 = get_file_sha256s(os.path.join(model_weight_path, "*.json"))
         model_weight_sha256 = get_file_sha256s(os.path.join(model_weight_path, "*.safetensors"))
+        logger.debug(f"ModelSha256Collecter model_weight_sha256={model_weight_sha256}")
         return {
             "model_name": model_name,
             "model_json_sha256": model_json_sha256,

@@ -52,10 +52,10 @@ class MindieConfigCollecter(RrecheckerBase):
         )
         self.key_checker(backend_config, target_key="interNodeTLSEnabled", target_value=False, prefix="BackendConfig.")
 
-        model_config = backend_config.get("ModelDeployConfig", {}).get("ModelConfig", {})
+        model_config = backend_config.get("ModelDeployConfig", {}).get("ModelConfig", [{}])
         cur_prefix = "BackendConfig.ModelDeployConfig.ModelConfig."
-        self.key_checker(model_config, target_key="modelName", prefix=cur_prefix)
-        self.key_checker(model_config, target_key="modelWeightPath", prefix=cur_prefix)
+        self.key_checker(model_config[0], target_key="modelName", prefix=cur_prefix)
+        self.key_checker(model_config[0], target_key="modelWeightPath", prefix=cur_prefix)
 
 
 class RankTableCollecter(RrecheckerBase):
@@ -110,13 +110,14 @@ class ModelConfigCollecter(RrecheckerBase):
         if os.path.exists(model_config_path):
             model_config = read_csv_or_json(model_config_path)
         self.model_config_path = model_config_path
+        logger.debug(f"ModelConfigCollecter model_name={model_name} model_config={model_config}")
         return {"model_name": model_name, "model_config": model_config}
 
     def do_precheck(self, model_info, **kwargs):
         if not model_info:
             return
         model_name, model_config = model_info.get("model_name", None), model_info.get("model_config", None)
-        if not model_name or not model_weight_path:
+        if not model_name or not model_config:
             return
 
         cur_model_type = model_config.get("model_type")
