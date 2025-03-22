@@ -31,7 +31,7 @@ def get_file_sizes(file_path_regex):
     for file_path in files:
         file_name = os.path.basename(file_path)
         file_size = os.path.getsize(file_path)
-        result_dict[file_name] = {"size": file_size}
+        result_dict[file_name] = {"size": file_size / 1024}
     return result_dict
 
 
