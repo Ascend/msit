@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import csv
 import os
+import sys
 import json
+import csv
 import socket
 import logging
 from collections import namedtuple
 
 _RUN_MODES = ["precheck", "dump", "compare", "distribute_compare"]
 RUN_MODES = namedtuple("RUN_MODES", _RUN_MODES)(*_RUN_MODES)
-_CHECKER_TYPES = ["basic", "hccl", "model", "hardware", "all"]
+_CHECKER_TYPES = ["basic", "hccl", "modelsha256", "hardware", "all"]
 CHECKER_TYPES = namedtuple("CHECKER_TYPES", _CHECKER_TYPES)(*_CHECKER_TYPES)
 
 MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
@@ -47,6 +48,9 @@ def str_to_digit(input_str, default_value=None):
         return default_value
     return float(input_str) if "." in input_str else int(input_str)
 
+
+def is_deepseek_model(model_name):
+    return "deepseek" in model_name.lower().replace(" ", "").replace("-", "").replace("_", "")
 
 def walk_dict(data, parent_key=""):
     if isinstance(data, dict):
@@ -230,8 +234,9 @@ def parse_ranktable_file(ranktable_file=None):
     return ranktable
 
 
-def get_model_weight_path_from_mindie_server_config(mindie_service_path=None):
-    mindie_service_config = parse_mindie_server_config(mindie_service_path)
+def get_model_path_from_mindie_config(mindie_service_config=None, mindie_service_path=None):
+    if not mindie_service_config:
+        mindie_service_config = parse_mindie_server_config(mindie_service_path)
     if not mindie_service_config:
         return None, None
     model_deploy_config = mindie_service_config.get("BackendConfig", {}).get("ModelDeployConfig", {})
@@ -281,3 +286,43 @@ def run_shell_command(command, fail_msg=""):
         logger.error(f"Failed calling {base_command}" + fail_msg)
         return {}
     return result
+
+
+class SimpleProgressBar:
+    def __init__(self, iterable, desc=None, total=None):
+        self.iterable = iterable
+        self.desc = desc or ""
+        self.total = total if total is not None else len(iterable)
+        self.current = 0
+        self.start_time = time.time()
+
+    def __iter__(self):
+        for item in self.iterable:
+            yield item
+            self.update(1)
+
+    def update(self, n=1):
+        self.current += n
+        self._print_progress()
+
+    def _print_progress(self):
+        progress = self.current / self.total
+        bar_length = 30
+        filled_length = int(bar_length * progress)
+        bar = '█' * filled_length + '-' * (bar_length - filled_length)
+        percent = progress * 100
+
+        # 计算剩余时间
+        elapsed_time = time.time() - self.start_time
+        if progress > 0:
+            remaining_time = (elapsed_time / progress) * (1 - progress)
+        else:
+            remaining_time = 0
+
+        sys.stdout.write(
+            f'\r{self.desc} |{bar}| {percent:.1f}% [{self.current}/{self.total}] ETA: {remaining_time:.1f}s')
+        sys.stdout.flush()
+
+    def close(self):
+        sys.stdout.write('\n')
+        sys.stdout.flush()

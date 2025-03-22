@@ -17,7 +17,8 @@ from ms_performance_prechecker.prechecker.register import RrecheckerBase, show_c
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level, deep_compare_dict
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
 from ms_performance_prechecker.prechecker.utils import parse_mindie_server_config, parse_ranktable_file
-from ms_performance_prechecker.prechecker.utils import get_model_weight_path_from_mindie_server_config
+from ms_performance_prechecker.prechecker.utils import get_model_path_from_mindie_config
+from ms_performance_prechecker.prechecker.utils import is_deepseek_model, read_csv_or_json
 
 
 class MindieConfigCollecter(RrecheckerBase):
@@ -33,7 +34,7 @@ class MindieConfigCollecter(RrecheckerBase):
                 "configuration",
                 "mindie_service_config",
                 CheckResult.ERROR,
-                action=f"mindie_service={self.mindie_service_path} congig 中添加 {prefix}{target_key} 字段",
+                action=f"mindie_service={self.mindie_service_path} config 中添加 {prefix}{target_key} 字段",
                 reason=f"{prefix}{target_key} 需设置为 {target_value}" if target_value else f"{prefix}{target_key} 为必需字段",
             )
 
@@ -41,15 +42,20 @@ class MindieConfigCollecter(RrecheckerBase):
         if not mindie_service_config:
             return
 
+        server_config = mindie_service_config.get("ServerConfig", {})
+        self.key_checker(server_config, target_key="httpsEnabled", target_value=false, prefix="ServerConfig.")
+        self.key_checker(server_config, target_key="interCommTLSEnabled", target_value=false, prefix="ServerConfig.")
+
         backend_config = mindie_service_config.get("BackendConfig", {})
         self.key_checker(
             backend_config, target_key="multiNodesInferEnabled", target_value=True, prefix="BackendConfig."
         )
         self.key_checker(backend_config, target_key="interNodeTLSEnabled", target_value=false, prefix="BackendConfig.")
 
-        server_config = mindie_service_config.get("ServerConfig", {})
-        self.key_checker(server_config, target_key="httpsEnabled", target_value=false, prefix="ServerConfig.")
-        self.key_checker(server_config, target_key="interCommTLSEnabled", target_value=false, prefix="ServerConfig.")
+        model_config = backend_config.get("ModelDeployConfig", {}).get("ModelConfig", {})
+        cur_prefix = "BackendConfig.ModelDeployConfig.ModelConfig."
+        self.key_checker(model_config, target_key="modelName", prefix=cur_prefix)
+        self.key_checker(model_config, target_key="modelWeightPath", prefix=cur_prefix)
 
 
 class RankTableCollecter(RrecheckerBase):
@@ -91,33 +97,40 @@ class RankTableCollecter(RrecheckerBase):
                 self.key_checker(source_dict=device, target_key="rank_id", prefix=cur_prefix)
 
 
-class MindieModelConfigCollecter(RrecheckerBase):
-    __checker_name__ = "MindieConfig"
+class ModelConfigCollecter(RrecheckerBase):
+    __checker_name__ = "ModelConfig"
 
     def collect_env(self, mindie_service_path=None, **kwargs):
-        self.mindie_service_path = mindie_service_path
-        model_name, model_weight_path = get_model_weight_path_from_mindie_server_config(mindie_service_path)
-        return {"modelName": model_name, "modelWeightPath": model_weight_path}
+        model_name, model_weight_path = get_model_path_from_mindie_config(mindie_service_path=mindie_service_path)
 
-    def do_precheck(self, model_config, **kwargs):
-        if not model_config:
+        if not model_name or not model_weight_path:
+            return None
+
+        model_config, model_config_path = {}, os.path.join(model_weight_path, "config.json")
+        if os.path.exists(model_config_path):
+            model_config = read_csv_or_json(model_config_path)
+        self.model_config_path = model_config_path
+        return {"model_name": model_name, "model_config": model_config}
+
+    def do_precheck(self, model_info, **kwargs):
+        if not model_info:
             return
-        model_name = model_config.get("modelName", None)
-        model_weight_path = model_config.get("modelWeightPath", None)
-        if not model_name:
-            key_path = "BackendConfig.ModelDeployConfig.ModelConfig.modelName"
-            action = f"mindie_service={self.mindie_service_path} congig 中添加 {key_path} 字段"
+        model_name, model_config = model_info.get("model_name", None), model_info.get("model_config", None)
+        if not model_name or not model_weight_path:
+            return
+
+        cur_model_type = model_config.get("model_type")
+        if is_deepseek_model(model_name) and cur_model_type != "deepseekv2":
+            action = f'MindIE配置 model_name={model_name}, 需在模型配置文件 {self.model_config_path} 中设置 model_type="deepseekv2"'
             show_check_result(
-                "configuration", "mindie_service_config", CheckResult.ERROR, action=action, reason=f"{key_path} 为必需字段",
-            )
-        if not model_weight_path:
-            key_path = "BackendConfig.ModelDeployConfig.ModelConfig.modelWeightPath"
-            action = f"mindie_service={self.mindie_service_path} congig 中添加 {key_path} 字段"
-            show_check_result(
-                "configuration", "mindie_service_config", CheckResult.ERROR, action=action, reason=f"{key_path} 为必需字段",
+                "configuration",
+                "model",
+                CheckResult.ERROR,
+                action=action,
+                reason=f"当前配置 model_type={model_type} 不匹配 deepseek 模型",
             )
 
 
 mindie_config_collecter = MindieConfigCollecter()
 ranktable_collecter = RankTableCollecter()
-mindie_model_config_collecter = MindieModelConfigCollecter()
+model_config_collecter = ModelConfigCollecter()
