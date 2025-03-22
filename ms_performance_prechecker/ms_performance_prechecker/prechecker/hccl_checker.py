@@ -103,6 +103,7 @@ class HcclLinkChecker(RrecheckerBase):
         else:
             show_check_result("hccl", f"link: {link_status}", CheckResult.OK)
 
+
 class HcclTlsSwitchChecker(RrecheckerBase):
     __checker_name__ = "HcclTlsSwitch"
 
@@ -133,6 +134,7 @@ class HcclTlsSwitchChecker(RrecheckerBase):
             )
         else:
             show_check_result("hccl", f"tls_switch: {tls_switch}", CheckResult.OK)
+
 
 class HcclPingChecker(RrecheckerBase):
     __checker_name__ = "HcclPing"
@@ -178,6 +180,8 @@ class HcclPingChecker(RrecheckerBase):
         if not multi_server_results:
             return
         for server_ip, device_connect_result in multi_server_results.items():
+            if server_ip == self.local_ip:
+                continue
             is_connect_server_pass = True
             for device_id, (device_ip, connect_result) in enumerate(device_connect_result.items()):
                 if not all(connect_result):
@@ -190,8 +194,7 @@ class HcclPingChecker(RrecheckerBase):
                     )
                     is_connect_server_pass = False
             if is_connect_server_pass:
-                server_ip_wo_local = [cur_ip for cur_ip in server_ip if cur_ip != self.local_ip]
-                show_check_result("hccl", f"ping server {server_ip_wo_local} all pass", CheckResult.OK)
+                show_check_result("hccl", f"ping server {server_ip} all pass", CheckResult.OK)
 
             
 class HCCLChecker(GroupRrechecker):
