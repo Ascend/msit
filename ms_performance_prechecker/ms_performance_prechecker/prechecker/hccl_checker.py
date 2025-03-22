@@ -34,7 +34,7 @@ def run_hccl_command(command_formatter):
 
     results = []
     with futures.ThreadPoolExecutor(max_workers=len(NPU_DEVICES)) as executor:
-        map_args = [command_formatter.format(dev_id=dev_id) for dev_id in NPU_DEVICES]
+        map_args = [command_formatter.format(device_id=device_id) for device_id in NPU_DEVICES]
         for result in executor.map(run_shell_command, map_args):
             results.append([ii.strip() for ii in result.stdout.split('\n')] if result else [])
     return results
