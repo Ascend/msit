@@ -53,7 +53,7 @@ class ModelSizeChecker(RrecheckerBase):
     __checker_name__ = "ModelSize"
 
     def collect_env(self, mindie_service_path=None, **kwargs):
-        model_name, model_weight_path = get_model_weight_path_from_mindie_server_config(mindie_service_path=mindie_service_path)
+        model_name, model_weight_path = get_model_path_from_mindie_config(mindie_service_path=mindie_service_path)
 
         if not model_name or not model_weight_path:
             return None

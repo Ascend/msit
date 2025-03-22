@@ -239,8 +239,10 @@ def get_model_path_from_mindie_config(mindie_service_config=None, mindie_service
         mindie_service_config = parse_mindie_server_config(mindie_service_path)
     if not mindie_service_config:
         return None, None
-    model_deploy_config = mindie_service_config.get("BackendConfig", {}).get("ModelDeployConfig", {})
-    model_config = model_deploy_config.get("ModelConfig", {})
+    model_deploy_config = mindie_service_config.get("BackendConfig", {}).get("ModelDeployConfig", [])
+    if model_deploy_config:
+        return None, None
+    model_config = model_deploy_config[0].get("ModelConfig", {})
     model_name = model_config.get("modelName", None)
     model_weight_path = model_config.get("modelWeightPath", None)
     return model_name, model_weight_path

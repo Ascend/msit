@@ -43,14 +43,14 @@ class MindieConfigCollecter(RrecheckerBase):
             return
 
         server_config = mindie_service_config.get("ServerConfig", {})
-        self.key_checker(server_config, target_key="httpsEnabled", target_value=false, prefix="ServerConfig.")
-        self.key_checker(server_config, target_key="interCommTLSEnabled", target_value=false, prefix="ServerConfig.")
+        self.key_checker(server_config, target_key="httpsEnabled", target_value=False, prefix="ServerConfig.")
+        self.key_checker(server_config, target_key="interCommTLSEnabled", target_value=False, prefix="ServerConfig.")
 
         backend_config = mindie_service_config.get("BackendConfig", {})
         self.key_checker(
             backend_config, target_key="multiNodesInferEnabled", target_value=True, prefix="BackendConfig."
         )
-        self.key_checker(backend_config, target_key="interNodeTLSEnabled", target_value=false, prefix="BackendConfig.")
+        self.key_checker(backend_config, target_key="interNodeTLSEnabled", target_value=False, prefix="BackendConfig.")
 
         model_config = backend_config.get("ModelDeployConfig", {}).get("ModelConfig", {})
         cur_prefix = "BackendConfig.ModelDeployConfig.ModelConfig."
