@@ -16,14 +16,24 @@ __all__ = [
     "CHECKERS",
 ]
 
-from ms_performance_prechecker.prechecker.mindie_config_collecter import mindie_config_collecter, ranktable_collecter
+from ms_performance_prechecker.prechecker.mindie_config_collecter import (
+    mindie_config_collecter,
+    ranktable_collecter,
+    mindie_model_config_collecter,
+)
 from ms_performance_prechecker.prechecker.env_checker import env_checker
 from ms_performance_prechecker.prechecker.system_checker import system_checker
 from ms_performance_prechecker.prechecker.hccl_checker import hccl_checker
 from ms_performance_prechecker.prechecker.utils import CHECKER_TYPES
 
 CHECKERS = {
-    CHECKER_TYPES.basic: [system_checker, env_checker, mindie_config_collecter, ranktable_collecter],
+    CHECKER_TYPES.basic: [
+        system_checker,
+        env_checker,
+        mindie_config_collecter,
+        ranktable_collecter,
+        mindie_model_config_collecter,
+    ],
     CHECKER_TYPES.hccl: [hccl_checker],
 }
 

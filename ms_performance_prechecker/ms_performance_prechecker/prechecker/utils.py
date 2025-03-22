@@ -230,6 +230,17 @@ def parse_ranktable_file(ranktable_file=None):
     return ranktable
 
 
+def get_model_weight_path_from_mindie_server_config(mindie_service_path=None):
+    mindie_service_config = parse_mindie_server_config(mindie_service_path)
+    if not mindie_service_config:
+        return None, None
+    model_deploy_config = mindie_service_config.get("BackendConfig", {}).get("ModelDeployConfig", {})
+    model_config = model_deploy_config.get("ModelConfig", {})
+    model_name = model_config.get("modelName", None)
+    model_weight_path = model_config.get("modelWeightPath", None)
+    return model_name, model_weight_path
+
+
 def get_local_to_master_ip(test_ip="8.8.8.8"):
     local_ip = "127.0.0.1"
     try:

@@ -17,13 +17,39 @@ from ms_performance_prechecker.prechecker.register import RrecheckerBase, show_c
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level, deep_compare_dict
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
 from ms_performance_prechecker.prechecker.utils import parse_mindie_server_config, parse_ranktable_file
+from ms_performance_prechecker.prechecker.utils import get_model_weight_path_from_mindie_server_config
 
 
 class MindieConfigCollecter(RrecheckerBase):
     __checker_name__ = "MindieConfig"
 
     def collect_env(self, mindie_service_path=None, **kwargs):
+        self.mindie_service_path = mindie_service_path
         return parse_mindie_server_config(mindie_service_path)
+
+    def key_checker(self, source_dict, target_key, target_value=None, prefix=""):
+        if target_key not in source_dict or (target_value is not None and source_dict[target_key] != target_value):
+            show_check_result(
+                "configuration",
+                "mindie_service_config",
+                CheckResult.ERROR,
+                action=f"mindie_service={self.mindie_service_path} congig 中添加 {prefix}{target_key} 字段",
+                reason=f"{prefix}{target_key} 需设置为 {target_value}" if target_value else f"{prefix}{target_key} 为必需字段",
+            )
+
+    def do_precheck(self, mindie_service_config, **kwargs):
+        if not mindie_service_config:
+            return
+
+        backend_config = mindie_service_config.get("BackendConfig", {})
+        self.key_checker(
+            backend_config, target_key="multiNodesInferEnabled", target_value=True, prefix="BackendConfig."
+        )
+        self.key_checker(backend_config, target_key="interNodeTLSEnabled", target_value=false, prefix="BackendConfig.")
+
+        server_config = mindie_service_config.get("ServerConfig", {})
+        self.key_checker(server_config, target_key="httpsEnabled", target_value=false, prefix="ServerConfig.")
+        self.key_checker(server_config, target_key="interCommTLSEnabled", target_value=false, prefix="ServerConfig.")
 
 
 class RankTableCollecter(RrecheckerBase):
@@ -42,7 +68,7 @@ class RankTableCollecter(RrecheckerBase):
                 action=f"ranktable={self.ranktable_file} 中添加 {prefix}{target_key} 字段",
                 reason=f"{prefix}{target_key} 为必需字段",
             )
-    
+
     def do_precheck(self, ranktable, **kwargs):
         if not ranktable:
             return
@@ -65,5 +91,33 @@ class RankTableCollecter(RrecheckerBase):
                 self.key_checker(source_dict=device, target_key="rank_id", prefix=cur_prefix)
 
 
+class MindieModelConfigCollecter(RrecheckerBase):
+    __checker_name__ = "MindieConfig"
+
+    def collect_env(self, mindie_service_path=None, **kwargs):
+        self.mindie_service_path = mindie_service_path
+        model_name, model_weight_path = get_model_weight_path_from_mindie_server_config(mindie_service_path)
+        return {"modelName": model_name, "modelWeightPath": model_weight_path}
+
+    def do_precheck(self, model_config, **kwargs):
+        if not model_config:
+            return
+        model_name = model_config.get("modelName", None)
+        model_weight_path = model_config.get("modelWeightPath", None)
+        if not model_name:
+            key_path = "BackendConfig.ModelDeployConfig.ModelConfig.modelName"
+            action = f"mindie_service={self.mindie_service_path} congig 中添加 {key_path} 字段"
+            show_check_result(
+                "configuration", "mindie_service_config", CheckResult.ERROR, action=action, reason=f"{key_path} 为必需字段",
+            )
+        if not model_weight_path:
+            key_path = "BackendConfig.ModelDeployConfig.ModelConfig.modelWeightPath"
+            action = f"mindie_service={self.mindie_service_path} congig 中添加 {key_path} 字段"
+            show_check_result(
+                "configuration", "mindie_service_config", CheckResult.ERROR, action=action, reason=f"{key_path} 为必需字段",
+            )
+
+
 mindie_config_collecter = MindieConfigCollecter()
 ranktable_collecter = RankTableCollecter()
+mindie_model_config_collecter = MindieModelConfigCollecter()
