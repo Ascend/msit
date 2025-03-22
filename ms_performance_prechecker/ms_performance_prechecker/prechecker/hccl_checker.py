@@ -159,16 +159,15 @@ class HcclPingChecker(RrecheckerBase):
             logger.error(f"Current server is not set in ranktable={ranktable_file}")
             return None
 
-        multi_server_results, local_results = {}, [True] * len(NPU_DEVICES)  # Assume local all pass
-        for server_id, (server_ip, device_ips) in enumerate(ranktable_ips.items()):  # Will not skip ping local devices
+        local_results = {device_ip: [True] * len(NPU_DEVICES) for device_ip in device_ips}  # Assume local all pass
+        multi_server_results = {self.local_ip: local_results}
+        for server_id, (server_ip, device_ips) in enumerate(ranktable_ips.items()):
+            if server_ip == self.local_ip:
+                continue
             logger.info(f"HCCL Pinging server_ip={server_ip}, devices={len(device_ips)}...")
             for device_id, device_ip in enumerate(device_ips):
                 if device_ip is None:
                     continue
-                if server_ip == self.local_ip:
-                    multi_server_results.setdefault(server_ip, {}).update({device_ip: local_results})
-                    continue
-
                 logger.debug(f"HcclPingChecker server_ip={server_ip}, device_ip={device_ip}")
                 results = run_hccl_command("hccn_tool -i {device_id} -ping -g address " + device_ip)
                 bool_results = [any("0.00% packet loss" in ii for ii in result) for result in results]
