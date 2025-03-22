@@ -164,7 +164,7 @@ class HcclPingChecker(RrecheckerBase):
         for server_id, (server_ip, device_ips) in enumerate(ranktable_ips.items()):
             if server_ip == self.local_ip:
                 continue
-            logger.info(f"HCCL Pinging server_ip={server_ip}, devices={len(device_ips)}...")
+            logger.info(f"HCCL Ping server_ip={server_ip}, devices={len(device_ips)} ...")
             for device_id, device_ip in enumerate(device_ips):
                 if device_ip is None:
                     continue
