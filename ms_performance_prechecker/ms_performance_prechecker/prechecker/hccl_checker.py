@@ -143,7 +143,7 @@ class HcclPingChecker(RrecheckerBase):
     __checker_name__ = "HcclPing"
 
     def collect_env(self, ranktable_file=None, **kwargs):
-        logger.info(f"Starting HcclPingChecker. This may take some time.")
+        logger.debug(f"Starting HcclPingChecker.")
         logger.info(f"ranktable_file={ranktable_file}")
         ranktable = parse_ranktable_file(ranktable_file)
         if not ranktable:
@@ -164,6 +164,7 @@ class HcclPingChecker(RrecheckerBase):
 
         multi_server_results, local_results = {}, [True] * len(NPU_DEVICES)  # Assume local all pass
         for server_id, (server_ip, device_ips) in enumerate(ranktable_ips.items()):  # Will not skip ping local devices
+            logger.info(f"HCCL Pinging server_ip={server_ip}, devices={len(device_ips)}...")
             for device_id, device_ip in enumerate(device_ips):
                 if device_ip is None:
                     continue
