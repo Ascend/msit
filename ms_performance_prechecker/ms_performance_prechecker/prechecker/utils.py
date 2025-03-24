@@ -315,7 +315,7 @@ class SimpleProgressBar:
         self.logger = self._init_logger()
 
     @staticmethod
-    def _init_logger()
+    def _init_logger():
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.INFO)
 
