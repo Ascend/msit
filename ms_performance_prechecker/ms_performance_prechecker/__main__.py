@@ -20,8 +20,9 @@ import tempfile
 from collections import namedtuple
 from glob import glob
 
+from ms_performance_prechecker.prechecker import CHECKERS, CHECKER_INFOS_STR
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level
-from ms_performance_prechecker.prechecker.utils import LOG_LEVELS, RUN_MODES, CHECKER_TYPES, CHECKER_INFOS_STR
+from ms_performance_prechecker.prechecker.utils import LOG_LEVELS, RUN_MODES, CHECKER_TYPES
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH, RANKTABLEFILE
 from ms_performance_prechecker.prechecker.utils import deep_compare_dict, get_next_dict_item
 
@@ -48,7 +49,7 @@ DUMP_COMMON_ARGS = [
             nargs="+",
             default=[CHECKER_TYPES.basic],
             choices=CHECKER_TYPES,
-            help="specify checker types. {CHECKER_INFOS_STR}",
+            help=f"specify checker types. {CHECKER_INFOS_STR}",
         ),
     ),
     dict(
@@ -72,9 +73,7 @@ def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))])
 
 
-def get_all_register_prechecker(checkers=(CHECKER_TYPES.basic,)):
-    from ms_performance_prechecker.prechecker import CHECKERS
-
+def get_all_register_prechecker(checkers=(CHECKER_TYPES.basic,)):   
     if CHECKER_TYPES.all in checkers:
         checkers = [CHECKER_TYPES.all]
 
@@ -138,10 +137,10 @@ def run_precheck(
 ):
     skip_checker_names = []
     for skip_item in SKIP_CHECKER_TYPES.get(RUN_MODES.precheck, []):
-        skip_checker_type in skip_item.get("type", None)
+        skip_checker_type = skip_item.get("type", None)
         if skip_checker_type in checkers:
             logger.warning(skip_item.get("reason", ""))
-        skip_checker_names += [ii.__checker_name__ for ii in CHECKERS.get(skip_checker_names, [])]
+        skip_checker_names += [ii.__checker_name__ for ii in CHECKERS.get(skip_checker_type, [])]
     logger.debug(f"run_precheck: skip_checker_names={skip_checker_names}")
 
     precheckers = get_all_register_prechecker(checkers)

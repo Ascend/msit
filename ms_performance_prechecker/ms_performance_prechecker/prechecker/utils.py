@@ -203,7 +203,7 @@ def read_csv_or_json(file_path):
 
 
 def get_next_dict_item(dict_value):
-    return dict([next(iter(dict_value.items()))])
+    return dict([next(iter(dict_value.items()))]) if dict_value else None
 
 
 def parse_mindie_server_config(mindie_service_path=None):

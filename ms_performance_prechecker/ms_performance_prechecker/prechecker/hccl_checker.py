@@ -168,6 +168,7 @@ class HcclPingChecker(RrecheckerBase):
             logger.error(f"Current server is not set in ranktable={ranktable_file}")
             return None
 
+        multi_server_results = {}
         for server_id, (server_ip, device_ips) in enumerate(ranktable_ips.items()):
             if server_ip == self.local_ip:
                 continue

@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from ms_performance_prechecker.prechecker.register import RrecheckerBase, show_check_result, CheckResult
 from ms_performance_prechecker.prechecker.utils import logger, get_model_path_from_mindie_config
 from ms_performance_prechecker.prechecker.utils import SimpleProgressBar, is_deepseek_model
+from ms_performance_prechecker.prechecker.utils import SimpleProgressBar, is_deepseek_model, get_next_dict_item
 
 DEEPSEEK_R1_FP8_WEIGHT_SIZE = 658944092
 DEEPSEEK_R1_FP16_WEIGHT_SIZE = 1336912980
@@ -60,7 +61,7 @@ class ModelSizeChecker(RrecheckerBase):
 
         model_json_size = get_file_sizes(os.path.join(model_weight_path, "*.json"))
         model_weight_size = get_file_sizes(os.path.join(model_weight_path, "*.safetensors"))
-        logger.debug(f"ModelSizeChecker model_weight_size={model_weight_size}")
+        logger.debug(f"ModelSizeChecker model_weight_size={get_next_dict_item(model_weight_size)}")
         return {"model_name": model_name, "model_json_size": model_json_size, "model_weight_size": model_weight_size}
 
     def do_precheck(self, model_config, **kwargs):
