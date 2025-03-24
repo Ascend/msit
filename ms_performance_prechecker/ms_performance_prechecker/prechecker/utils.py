@@ -53,6 +53,7 @@ def str_to_digit(input_str, default_value=None):
 def is_deepseek_model(model_name):
     return "deepseek" in model_name.lower().replace(" ", "").replace("-", "").replace("_", "")
 
+
 def walk_dict(data, parent_key=""):
     if isinstance(data, dict):
         for key, value in data.items():
@@ -286,11 +287,22 @@ def run_shell_command(command, fail_msg=""):
 
     command_split = [base_command_path] + command_split[1:]
     try:
-        result = subprocess.run(command_split, capture_output=True, text=True, check=True, shell=False)
+        result = subprocess.run(command_split, capture_output=True, text=True, check=False, shell=False)
     except Exception as err:
         logger.error(f"Failed calling {base_command}" + fail_msg)
         return {}
     return result
+
+
+class ProcessBarStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            stream = self.stream
+            stream.write(msg + "\r")  # 用 \r 代替默认的 \n
+            self.flush()
+        except Exception:
+            self.handleError(record)
 
 
 class SimpleProgressBar:
@@ -300,6 +312,17 @@ class SimpleProgressBar:
         self.total = total if total is not None else len(iterable)
         self.current = 0
         self.start_time = time.time()
+        self.logger = self._init_logger()
+
+    @staticmethod
+    def _init_logger()
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
+
+        handler = ProcessBarStreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter('%(message)s'))
+        logger.addHandler(handler)
+        return logger
 
     def __iter__(self):
         for item in self.iterable:
@@ -309,6 +332,10 @@ class SimpleProgressBar:
     def update(self, n=1):
         self.current += n
         self._print_progress()
+
+    @staticmethod
+    def close():
+        self.logger.info('\n')
 
     def _print_progress(self):
         progress = self.current / self.total
@@ -324,10 +351,6 @@ class SimpleProgressBar:
         else:
             remaining_time = 0
 
-        sys.stdout.write(
-            f'\r{self.desc} |{bar}| {percent:.1f}% [{self.current}/{self.total}] ETA: {remaining_time:.1f}s')
-        sys.stdout.flush()
-
-    def close(self):
-        sys.stdout.write('\n')
-        sys.stdout.flush()
+        self.logger.info(
+            f'\r{self.desc} |{bar}| {percent:.1f}% [{self.current}/{self.total}] ETA: {remaining_time:.1f}s'
+        )

@@ -89,6 +89,7 @@ class ModelSizeChecker(RrecheckerBase):
         else:
             show_check_result("Model", f"size: {int(total_weight_size)}", CheckResult.OK)
 
+
 class ModelSha256Collecter(RrecheckerBase):
     __checker_name__ = "ModelSha256"
 

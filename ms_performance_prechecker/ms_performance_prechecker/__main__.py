@@ -77,7 +77,11 @@ def get_all_register_prechecker(checkers=(CHECKER_TYPES.basic,)):
 
     if CHECKER_TYPES.all in checkers:
         checkers = [CHECKER_TYPES.all]
-    return [vv for kk in checkers for vv in CHECKERS[kk] if kk in CHECKERS]
+
+    res = []
+    for checker_type in checkers:
+        res += CHECKERS.get(checker_type, [])
+    return res
 
 
 def print_contents():
@@ -149,7 +153,7 @@ def run_precheck(
 
     if CHECKER_TYPES.basic in checkers or CHECKER_TYPES.all in checkers:
         print_contents()
-        logger.info("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
+        logger.warning("本工具提供的为经验建议，实际效果与具体的环境/场景有关，建议以实测为准")
 
 
 def run_distribute_compare(
