@@ -314,21 +314,21 @@ class SimpleProgressBar:
         self.start_time = time.time()
         self.logger = self._init_logger()
 
-    @staticmethod
-    def _init_logger():
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.INFO)
-
-        handler = ProcessBarStreamHandler(sys.stdout)
-        handler.setFormatter(logging.Formatter('%(message)s'))
-        logger.addHandler(handler)
-        return logger
-
     def __iter__(self):
         for item in self.iterable:
             yield item
             self.update(1)
         self.logger.info('\n')
+
+    @staticmethod
+    def _init_logger():
+        local_logger = logging.getLogger(__name__)
+        local_logger.setLevel(logging.INFO)
+
+        handler = ProcessBarStreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter('%(message)s'))
+        local_logger.addHandler(handler)
+        return local_logger
 
     def update(self, n=1):
         self.current += n
