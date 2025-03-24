@@ -196,6 +196,8 @@ def read_csv_or_json(file_path):
         return read_json(file_path)
     if file_path.endswith(".csv"):
         return read_csv(file_path)
+    else:
+        logger.error(f"Neither a csv or json: {file_path}")
     return None
 
 

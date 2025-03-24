@@ -41,3 +41,13 @@ CHECKERS = {
 }
 
 CHECKERS[CHECKER_TYPES.all] = [ii for key, checker in CHECKERS.items() for ii in checker if key != CHECKER_TYPES.all]
+
+CHECKER_INFOS = {
+    CHECKER_TYPES.basic: "checking env / system / model size info",
+    CHECKER_TYPES.hccl: "checking hccl connection status",
+    CHECKER_TYPES.modelsha256: "comparing model sha256sum value",
+    CHECKER_TYPES.hardware: "checking CPU/NPU hardware computing capacity",
+    CHECKER_TYPES.all: "checking all",
+}
+
+CHECKER_INFOS_STR = "; ".join([f"{kk} for {vv}" for kk, vv in CHECKER_INFOS.items()])

@@ -20,9 +20,11 @@ import tempfile
 from collections import namedtuple
 from glob import glob
 
-from ms_performance_prechecker.prechecker.utils import LOG_LEVELS, RUN_MODES, CHECKER_TYPES, logger, set_log_level
+from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level
+from ms_performance_prechecker.prechecker.utils import LOG_LEVELS, RUN_MODES, CHECKER_TYPES, CHECKER_INFOS_STR
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH, RANKTABLEFILE
-from ms_performance_prechecker.prechecker.utils import str_ignore_case, deep_compare_dict, get_next_dict_item
+from ms_performance_prechecker.prechecker.utils import deep_compare_dict, get_next_dict_item
+
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
 
@@ -42,11 +44,16 @@ COMMON_ARGS = [
 DUMP_COMMON_ARGS = [
     dict(
         args=["-ch", "--checkers"],
-        kwargs=dict(nargs="+", default=[CHECKER_TYPES.basic], choices=CHECKER_TYPES, help="specify checker types."),
+        kwargs=dict(
+            nargs="+",
+            default=[CHECKER_TYPES.basic],
+            choices=CHECKER_TYPES,
+            help="specify checker types. {CHECKER_INFOS_STR}",
+        ),
     ),
     dict(
         args=["-service", "--service_config_path"],
-        kwargs=dict(type=str, default=MINDIE_SERVICE_PATH, help="service config json path"),
+        kwargs=dict(type=str, default=MINDIE_SERVICE_PATH, help="MINDIE service or config json path"),
     ),
     dict(
         args=["-ranktable", "--ranktable_file"],
@@ -54,14 +61,22 @@ DUMP_COMMON_ARGS = [
     ),
 ]
 
+SKIP_CHECKER_TYPES = {
+    RUN_MODES.precheck: [{
+        "type": CHECKER_TYPES.modelsha256, "reason": "Precheck with modelsha256 checker is meaningless. Will skip it"
+    }],
+}
+
 
 def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))])
 
 
-def get_all_register_perchecker(checkers=(CHECKER_TYPES.basic,)):
+def get_all_register_prechecker(checkers=(CHECKER_TYPES.basic,)):
     from ms_performance_prechecker.prechecker import CHECKERS
 
+    if CHECKER_TYPES.all in checkers:
+        checkers = [CHECKER_TYPES.all]
     return [vv for kk in checkers for vv in CHECKERS[kk] if kk in CHECKERS]
 
 
@@ -76,12 +91,12 @@ def print_contents():
         logger.info(sys_info)
 
 
-def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs):
-    percheckers = get_all_register_perchecker(checkers)
+def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, service_config_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs):
+    precheckers = get_all_register_prechecker(checkers)
     all_envs = {}
-    for perchecker in percheckers:
-        name = perchecker.name()
-        envs = perchecker.collect_env(dump_file_path=dump_file_path, mindie_service_path=mindie_service_path, **kwargs)
+    for prechecker in precheckers:
+        name = prechecker.name()
+        envs = prechecker.collect_env(dump_file_path=dump_file_path, mindie_service_path=service_config_path, **kwargs)
 
         all_envs[name] = envs
 
@@ -93,7 +108,7 @@ def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, mindie_service_path=None, che
     return all_envs
 
 
-def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
+def run_compare(dump_file_paths=None, **kwargs):
     if dump_file_paths is None or len(dump_file_paths) < 2:
         logger.error("Please provide dump file path")
         return False
@@ -115,12 +130,22 @@ def run_compare(dump_file_paths=None, mindie_service_path=None, **kwargs):
 
 
 def run_precheck(
-    save_env="ms_performance_prechecker_env.sh", mindie_service_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs
+    save_env="ms_performance_prechecker_env.sh", service_config_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs
 ):
-    percheckers = get_all_register_perchecker(checkers)
+    skip_checker_names = []
+    for skip_item in SKIP_CHECKER_TYPES.get(RUN_MODES.precheck, []):
+        skip_checker_type in skip_item.get("type", None)
+        if skip_checker_type in checkers:
+            logger.warning(skip_item.get("reason", ""))
+        skip_checker_names += [ii.__checker_name__ for ii in CHECKERS.get(skip_checker_names, [])]
+    logger.debug(f"run_precheck: skip_checker_names={skip_checker_names}")
 
-    for perchecker in percheckers:
-        perchecker.precheck(env_save_path=save_env, mindie_service_path=mindie_service_path, **kwargs)
+    precheckers = get_all_register_prechecker(checkers)
+    for prechecker in precheckers:
+        if prechecker.__checker_name__ in skip_checker_names:
+            logger.debug(f"run_precheck: skip {prechecker.__checker_name__}")
+            continue
+        prechecker.precheck(env_save_path=save_env, mindie_service_path=service_config_path, **kwargs)
 
     if CHECKER_TYPES.basic in checkers or CHECKER_TYPES.all in checkers:
         print_contents()
@@ -134,11 +159,12 @@ def run_distribute_compare(
     master_port=None,
     local_rank=None,
     world_size=None,
+    checkers=(CHECKER_TYPES.basic,),
     **kwargs,
 ):
     from ms_performance_prechecker.prechecker import cluster_collector
 
-    dump_env = run_env_dump(None)
+    dump_env = run_env_dump(dump_file_path=None, service_config_path=service_config_path, checkers=checkers)
     dump_env_json_str = json.dumps(dump_env)
 
     cluster_collector.init_global_distribute_env(
