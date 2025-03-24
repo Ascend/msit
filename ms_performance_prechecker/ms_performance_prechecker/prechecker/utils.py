@@ -328,14 +328,11 @@ class SimpleProgressBar:
         for item in self.iterable:
             yield item
             self.update(1)
+        self.logger.info('\n')
 
     def update(self, n=1):
         self.current += n
         self._print_progress()
-
-    @staticmethod
-    def close():
-        self.logger.info('\n')
 
     def _print_progress(self):
         progress = self.current / self.total
