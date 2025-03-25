@@ -119,6 +119,11 @@ msit llm dump <options>
 
 [tensor-view快速入门指南](./docs/tensor_view/README.md)
 
+#### 9. Loadbalance
+提供Deepseek模型在静态场景下负载均衡亲和专家寻优策略。
+
+[负载均衡算法快速入门指南](./docs/expert_load_balancing/工具-负载均衡亲和专家寻优.md)
+
 ## FAQ
 
 * [msit使用以及安装常见问题](https://gitee.com/ascend/msit/wikis/Home)
