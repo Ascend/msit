@@ -308,31 +308,6 @@ class CpuHighPerformanceChecker(RrecheckerBase):
             )
 
 
-class OSReleaseChecker(RrecheckerBase):
-    __checker_name__ = "OSRelease"
-
-    def collect_env(self, **kwargs):
-        os_release = "Unknown"
-        with open(OS_RELEASE_FILE, "r") as ff:
-            for line in ff.readlines():
-                if "PRETTY_NAME=" in line:
-                    os_release = line.split("PRETTY_NAME=")[-1].strip().replace('"', '')  # get rid of ""
-                    break
-        record(f"0410 OS 发行版本：{os_release}", part=CONTENT_PARTS.sys)
-        return os_release
-
-    def do_precheck(self, os_release, **kwargs):
-        os_release_lower = os_release.replace(" ", "").replace("-", "").replace("_", "").lower()
-        if not any(release in os_release_lower for release in OS_SUGGESTIONS_LOWER):
-            show_check_result(
-                "system",
-                "os 发行版本",
-                CheckResult.ERROR,
-                action=f"当前版本 {os_release} 不在推荐系统版本中 {OS_SUGGESTIONS_LOWER}，可以考虑更换",
-                reason="推荐系统性能适配更好",
-            )
-
-
 class SystemChecker(GroupRrechecker):
     __checker_name__ = "System"
 
@@ -344,7 +319,6 @@ class SystemChecker(GroupRrechecker):
             VirtualMachineChecker(),
             TransparentHugepageChecker(),
             CpuHighPerformanceChecker(),
-            OSReleaseChecker(),
         ]
 
 

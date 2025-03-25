@@ -17,7 +17,7 @@ from ms_performance_prechecker.prechecker.register import RrecheckerBase, show_c
 from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level, deep_compare_dict
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
 from ms_performance_prechecker.prechecker.utils import parse_mindie_server_config, parse_ranktable_file
-from ms_performance_prechecker.prechecker.utils import get_model_path_from_mindie_config
+from ms_performance_prechecker.prechecker.utils import get_model_path_from_mindie_config, get_mindie_server_config
 from ms_performance_prechecker.prechecker.utils import is_deepseek_model, read_csv_or_json
 
 
@@ -25,17 +25,28 @@ class MindieConfigCollecter(RrecheckerBase):
     __checker_name__ = "MindieConfig"
 
     def collect_env(self, mindie_service_path=None, **kwargs):
-        self.mindie_service_path = mindie_service_path
+        self.mindie_service_path = get_mindie_server_config(mindie_service_path)
         return parse_mindie_server_config(mindie_service_path)
 
-    def key_checker(self, source_dict, target_key, target_value=None, prefix=""):
+    def key_checker_with_value(self, source_dict, target_key, target_value, prefix="", add_msg=""):
         if target_key not in source_dict or (target_value is not None and source_dict[target_key] != target_value):
+            msg = f"{prefix}{target_key} {add_msg}" if add_msg else f"{prefix}{target_key} 需设置为 {target_value}"
+            show_check_result(
+                "configuration",
+                "mindie_service_config",
+                CheckResult.WARN,
+                action=f"mindie_service={self.mindie_service_path} config 中修改 {prefix}{target_key} 字段",
+                reason=f"{msg}",
+            )
+
+    def key_checker_without_value(self, source_dict, target_key, prefix=""):
+        if target_key not in source_dict:
             show_check_result(
                 "configuration",
                 "mindie_service_config",
                 CheckResult.ERROR,
                 action=f"mindie_service={self.mindie_service_path} config 中添加 {prefix}{target_key} 字段",
-                reason=f"{prefix}{target_key} 需设置为 {target_value}" if target_value else f"{prefix}{target_key} 为必需字段",
+                reason=f"{prefix}{target_key} 为必需字段",
             )
 
     def do_precheck(self, mindie_service_config, **kwargs):
@@ -43,19 +54,41 @@ class MindieConfigCollecter(RrecheckerBase):
             return
 
         server_config = mindie_service_config.get("ServerConfig", {})
-        self.key_checker(server_config, target_key="httpsEnabled", target_value=False, prefix="ServerConfig.")
-        self.key_checker(server_config, target_key="interCommTLSEnabled", target_value=False, prefix="ServerConfig.")
+        self.key_checker_with_value(
+            server_config,
+            target_key="httpsEnabled",
+            target_value=False,
+            prefix="ServerConfig.",
+            add_msg="建议设置为 false，若开启，需要保证 tlsCrlFiles 指定的证书文件存在，否则可能启动失败",
+        )
+        self.key_checker_with_value(
+            server_config,
+            target_key="interCommTLSEnabled",
+            target_value=False,
+            prefix="ServerConfig.",
+            add_msg="若不需要安全认证，则设置为 false",
+        )
 
         backend_config = mindie_service_config.get("BackendConfig", {})
-        self.key_checker(
-            backend_config, target_key="multiNodesInferEnabled", target_value=True, prefix="BackendConfig."
+        self.key_checker_with_value(
+            backend_config,
+            target_key="multiNodesInferEnabled",
+            target_value=True,
+            prefix="BackendConfig.",
+            add_msg="多机环境下需要为 True",
         )
-        self.key_checker(backend_config, target_key="interNodeTLSEnabled", target_value=False, prefix="BackendConfig.")
+        self.key_checker_with_value(
+            backend_config,
+            target_key="interNodeTLSEnabled",
+            target_value=False,
+            prefix="BackendConfig.",
+            add_msg="若不需要安全认证，则设置为 false",
+        )
 
         model_config = backend_config.get("ModelDeployConfig", {}).get("ModelConfig", [{}])
         cur_prefix = "BackendConfig.ModelDeployConfig.ModelConfig."
-        self.key_checker(model_config[0], target_key="modelName", prefix=cur_prefix)
-        self.key_checker(model_config[0], target_key="modelWeightPath", prefix=cur_prefix)
+        self.key_checker_without_value(model_config[0], target_key="modelName", prefix=cur_prefix)
+        self.key_checker_without_value(model_config[0], target_key="modelWeightPath", prefix=cur_prefix)
 
 
 class RankTableCollecter(RrecheckerBase):
