@@ -33,6 +33,7 @@ from components.utils.file_open_check import (
     MAX_SIZE_LIMITE_CONFIG_FILE, 
     MAX_SIZE_LIMITE_NORMAL_FILE,
 )
+from components.utils.constants import MAX_DEPTH_LIMIT
 
 
 class GraphSummary:
@@ -157,12 +158,16 @@ class GraphAnalyze:
 
         op_stat = Counter()
         
-        def process_node(node):
+        def process_node(node, depth=0):
+            if depth > MAX_DEPTH_LIMIT:
+                raise RecursionError(
+                    f"Exceeded maximum recursion depth {MAX_DEPTH_LIMIT} when process node"
+                )
             op_stat[node.op_type] += 1
             for attr in node.attribute:
                 if attr.HasField('g'):  # Check if the attribute has a subgraph
                     for subnode in attr.g.node:
-                        process_node(subnode)
+                        process_node(subnode, depth=depth + 1)
         
         for node in graph_def.node:
             process_node(node)
