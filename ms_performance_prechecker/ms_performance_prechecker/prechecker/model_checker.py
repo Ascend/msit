@@ -23,7 +23,7 @@ from ms_performance_prechecker.prechecker.utils import SimpleProgressBar, is_dee
 from ms_performance_prechecker.prechecker.utils import SimpleProgressBar, is_deepseek_model, get_next_dict_item
 
 DEEPSEEK_R1_FP8_WEIGHT_SIZE = 674720176952
-DEEPSEEK_R1_FP16_WEIGHT_SIZE = 1336912980
+DEEPSEEK_R1_FP16_WEIGHT_SIZE = 1368985513488
 
 
 def get_file_sizes(file_path_regex):
@@ -32,7 +32,7 @@ def get_file_sizes(file_path_regex):
     for file_path in files:
         file_name = os.path.basename(file_path)
         file_size = os.path.getsize(file_path)
-        result_dict[file_name] = {"size": file_size / 1024}
+        result_dict[file_name] = {"size": file_size}
     return result_dict
 
 
@@ -64,6 +64,10 @@ class ModelSizeChecker(RrecheckerBase):
         logger.debug(f"ModelSizeChecker model_weight_size={get_next_dict_item(model_weight_size)}")
         return {"model_name": model_name, "model_json_size": model_json_size, "model_weight_size": model_weight_size}
 
+    @staticmethod
+    def to_g_size(src_size):
+        return "{:.2f}G".format(src_size / 1024 / 1024 / 1024)
+
     def do_precheck(self, model_config, **kwargs):
         if not model_config:
             return
@@ -74,21 +78,24 @@ class ModelSizeChecker(RrecheckerBase):
             return
 
         total_weight_size = sum([vv.get("size", 0) for vv in model_weight_size.values()])
+        total_weight_size_str = self.to_g_size(total_weight_size)
 
         min_fp8_size, max_fp8_size = DEEPSEEK_R1_FP8_WEIGHT_SIZE * 0.9, DEEPSEEK_R1_FP8_WEIGHT_SIZE * 1.1
         min_fp16_size, max_fp16_size = DEEPSEEK_R1_FP16_WEIGHT_SIZE * 0.9, DEEPSEEK_R1_FP16_WEIGHT_SIZE * 1.1
         is_valid_fp8_deepseek_size = min_fp8_size < total_weight_size < max_fp8_size
         is_valid_fp16_deepseek_size = min_fp16_size < total_weight_size < max_fp16_size
         if not is_valid_fp8_deepseek_size and not is_valid_fp16_deepseek_size:
+            fp8_weight_size_str = self.to_g_size(DEEPSEEK_R1_FP8_WEIGHT_SIZE)
+            fp16_weight_size_str = self.to_g_size(DEEPSEEK_R1_FP16_WEIGHT_SIZE)
             show_check_result(
                 "Model",
                 "size",
                 CheckResult.ERROR,
-                action="检查当前权重大小：{total_weight_size}",
-                reason=f"FP8 权重大小应大约 {DEEPSEEK_R1_FP8_WEIGHT_SIZE}，FP16 权重大小应大约 {DEEPSEEK_R1_FP16_WEIGHT_SIZE}",
+                action="检查当前权重大小：{total_weight_size_str}",
+                reason=f"FP8 权重大小应大约 {fp8_weight_size_str}，FP16 权重大小应大约 {fp16_weight_size_str}",
             )
         else:
-            show_check_result("Model", f"size: {int(total_weight_size)}", CheckResult.OK)
+            show_check_result("Model", f"size: {total_weight_size_str}", CheckResult.OK)
 
 
 class ModelSha256Collecter(RrecheckerBase):
