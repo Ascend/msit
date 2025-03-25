@@ -32,10 +32,10 @@ class MindieConfigCollecter(RrecheckerBase):
         if target_key not in source_dict or (target_value is not None and source_dict[target_key] != target_value):
             if target_value is None:
                 msg = f"{prefix}{target_key} 为必需字段"
+            elif add_msg:
+                msg = f"{prefix}{target_key} {add_msg}"
             else:
                 msg = f"{prefix}{target_key} 需设置为 {target_value}"
-            if add_msg:
-                msg += ", " + add_msg
 
             show_check_result(
                 "configuration",
