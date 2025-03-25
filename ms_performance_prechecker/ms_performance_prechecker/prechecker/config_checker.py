@@ -28,22 +28,25 @@ class MindieConfigCollecter(RrecheckerBase):
         self.mindie_service_path = get_mindie_server_config(mindie_service_path)
         return parse_mindie_server_config(mindie_service_path)
 
-    def key_checker(self, source_dict, target_key, target_value=None, prefix="", add_msg=""):
+    def key_checker_with_value(self, source_dict, target_key, target_value, prefix="", add_msg=""):
         if target_key not in source_dict or (target_value is not None and source_dict[target_key] != target_value):
-            if target_value is None:
-                msg = f"{prefix}{target_key} 为必需字段"
-            elif add_msg:
-                msg = f"{prefix}{target_key} {add_msg}"
-            else:
-                msg = f"{prefix}{target_key} 需设置为 {target_value}"
+            msg = f"{prefix}{target_key} {add_msg}" if add_msg else f"{prefix}{target_key} 需设置为 {target_value}"
+            show_check_result(
+                "configuration",
+                "mindie_service_config",
+                CheckResult.WARN,
+                action=f"mindie_service={self.mindie_service_path} config 中修改 {prefix}{target_key} 字段",
+                reason=f"{msg}",
+            )
 
-            act = "添加" if target_value is None else "修改"
+    def key_checker_without_value(self, source_dict, target_key, prefix=""):
+        if target_key not in source_dict:
             show_check_result(
                 "configuration",
                 "mindie_service_config",
                 CheckResult.ERROR,
-                action=f"mindie_service={self.mindie_service_path} config 中{act} {prefix}{target_key} 字段",
-                reason=f"{msg}",
+                action=f"mindie_service={self.mindie_service_path} config 中添加 {prefix}{target_key} 字段",
+                reason=f"{prefix}{target_key} 为必需字段",
             )
 
     def do_precheck(self, mindie_service_config, **kwargs):
@@ -51,8 +54,14 @@ class MindieConfigCollecter(RrecheckerBase):
             return
 
         server_config = mindie_service_config.get("ServerConfig", {})
-        self.key_checker(server_config, target_key="httpsEnabled", target_value=False, prefix="ServerConfig.")
-        self.key_checker(
+        self.key_checker_with_value(
+            server_config,
+            target_key="httpsEnabled",
+            target_value=False,
+            prefix="ServerConfig.",
+            add_msg="建议设置为 false，若开启，需要保证 tlsCrlFiles 指定的证书文件存在，否则可能启动失败",
+        )
+        self.key_checker_with_value(
             server_config,
             target_key="interCommTLSEnabled",
             target_value=False,
@@ -61,14 +70,14 @@ class MindieConfigCollecter(RrecheckerBase):
         )
 
         backend_config = mindie_service_config.get("BackendConfig", {})
-        self.key_checker(
+        self.key_checker_with_value(
             backend_config,
             target_key="multiNodesInferEnabled",
             target_value=True,
             prefix="BackendConfig.",
             add_msg="多机环境下需要为 True",
         )
-        self.key_checker(
+        self.key_checker_with_value(
             backend_config,
             target_key="interNodeTLSEnabled",
             target_value=False,
@@ -78,8 +87,8 @@ class MindieConfigCollecter(RrecheckerBase):
 
         model_config = backend_config.get("ModelDeployConfig", {}).get("ModelConfig", [{}])
         cur_prefix = "BackendConfig.ModelDeployConfig.ModelConfig."
-        self.key_checker(model_config[0], target_key="modelName", prefix=cur_prefix)
-        self.key_checker(model_config[0], target_key="modelWeightPath", prefix=cur_prefix)
+        self.key_checker_without_value(model_config[0], target_key="modelName", prefix=cur_prefix)
+        self.key_checker_without_value(model_config[0], target_key="modelWeightPath", prefix=cur_prefix)
 
 
 class RankTableCollecter(RrecheckerBase):
