@@ -23,7 +23,7 @@ from collections import namedtuple
 
 _RUN_MODES = ["precheck", "dump", "compare", "distribute_compare"]
 RUN_MODES = namedtuple("RUN_MODES", _RUN_MODES)(*_RUN_MODES)
-_CHECKER_TYPES = ["basic", "hccl", "modelsha256", "hardware", "all"]
+_CHECKER_TYPES = ["basic", "hccl", "model", "hardware", "all"]
 CHECKER_TYPES = namedtuple("CHECKER_TYPES", _CHECKER_TYPES)(*_CHECKER_TYPES)
 
 MIES_INSTALL_PATH = "MIES_INSTALL_PATH"
@@ -206,12 +206,15 @@ def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))]) if dict_value else None
 
 
-def parse_mindie_server_config(mindie_service_path=None):
+def get_mindie_server_config(mindie_service_path=None):
     if mindie_service_path is None:
         mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
     if not mindie_service_path.endswith(".json"):
         mindie_service_path = os.path.join(mindie_service_path, "conf", "config.json")
+    return mindie_service_path
 
+def parse_mindie_server_config(mindie_service_path=None):
+    mindie_service_path = get_mindie_server_config(mindie_service_path)
     logger.debug("mindie_service_path=%s", mindie_service_path)
     if not os.path.exists(mindie_service_path):
         logger.warning(f"mindie config.json={mindie_service_path} not exists, will skip related checkers")
