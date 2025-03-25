@@ -22,7 +22,7 @@ from ms_performance_prechecker.prechecker.utils import logger, get_model_path_fr
 from ms_performance_prechecker.prechecker.utils import SimpleProgressBar, is_deepseek_model
 from ms_performance_prechecker.prechecker.utils import SimpleProgressBar, is_deepseek_model, get_next_dict_item
 
-DEEPSEEK_R1_FP8_WEIGHT_SIZE = 658944092
+DEEPSEEK_R1_FP8_WEIGHT_SIZE = 674720176952
 DEEPSEEK_R1_FP16_WEIGHT_SIZE = 1336912980
 
 
@@ -109,6 +109,10 @@ class ModelSha256Collecter(RrecheckerBase):
             "model_json_sha256": model_json_sha256,
             "model_weight_sha256": model_weight_sha256,
         }
+
+    def do_precheck(self, model_config, **kwargs):
+        logger.warning("Precheck with modelsha256 checker is meaningless. Will skip it")
+        return
 
 model_size_checker = ModelSizeChecker()
 model_sha256_collecter = ModelSha256Collecter()

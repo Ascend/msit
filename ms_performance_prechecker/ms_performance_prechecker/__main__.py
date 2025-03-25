@@ -62,12 +62,6 @@ DUMP_COMMON_ARGS = [
     ),
 ]
 
-SKIP_CHECKER_TYPES = {
-    RUN_MODES.precheck: [{
-        "type": CHECKER_TYPES.modelsha256, "reason": "Precheck with modelsha256 checker is meaningless. Will skip it"
-    }],
-}
-
 
 def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))])
@@ -135,19 +129,8 @@ def run_compare(dump_file_paths=None, **kwargs):
 def run_precheck(
     save_env="ms_performance_prechecker_env.sh", service_config_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs
 ):
-    skip_checker_names = []
-    for skip_item in SKIP_CHECKER_TYPES.get(RUN_MODES.precheck, []):
-        skip_checker_type = skip_item.get("type", None)
-        if skip_checker_type in checkers:
-            logger.warning(skip_item.get("reason", ""))
-        skip_checker_names += [ii.__checker_name__ for ii in CHECKERS.get(skip_checker_type, [])]
-    logger.debug(f"run_precheck: skip_checker_names={skip_checker_names}")
-
     precheckers = get_all_register_prechecker(checkers)
     for prechecker in precheckers:
-        if prechecker.__checker_name__ in skip_checker_names:
-            logger.debug(f"run_precheck: skip {prechecker.__checker_name__}")
-            continue
         prechecker.precheck(env_save_path=save_env, mindie_service_path=service_config_path, **kwargs)
 
     if CHECKER_TYPES.basic in checkers or CHECKER_TYPES.all in checkers:
