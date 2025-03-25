@@ -41,6 +41,7 @@ msit llm bcanalyze -gp {golden_path} -mp {my_path}  [可选参数]
 | --golden-path   | -gp    | 标杆环境数据集精度测评结果文件地址    | 是      |
 | --my-path       | -mp    | 测试环境数据集精度测评结果文件地址    | 是      |
 | --help          | -h     | 命令行帮助信息                      | 否      |
+| --log-level     | -l     | 日志等级（默认值为info，可选值：debug, info, warning, error, fatal, critical）  | 否     |
 
 
 # 示例

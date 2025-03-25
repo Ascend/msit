@@ -25,7 +25,7 @@ def save_dym_op(data, path):
         f.write(",".join(["Graph_Name", "Node_Name", "Input", "Output"]) + "\n")
         for row in data:
             f.write(",".join(map(str, row)) + "\n")
-    logger.info(f"The list of dynamic shape operator saved in {path}.")
+    logger.info("The list of dynamic shape operator saved in %r." % path)
 
 
 class DynamicShape:
