@@ -15,6 +15,8 @@
 from ms_service_profiler import Profiler, Level
 from .vllm_hooker_base import VLLMHookerBase
 
+is_model_first_run = True
+
 
 class ModelRunnerExecuteHook(VLLMHookerBase):
     vllm_version = ("0.6.3", "0.6.3")
@@ -24,6 +26,11 @@ class ModelRunnerExecuteHook(VLLMHookerBase):
 
         def execute_model_maker(ori_func):
             def execute_model(this, model_input, kv_caches, *args, **kwargs):
+                global is_model_first_run
+                if is_model_first_run:
+                    is_model_first_run = False
+                    return ori_func(this, model_input, kv_caches, *args, **kwargs)
+
                 prof = Profiler(Level.INFO)
                 prof.span_start("modelExec")
                 ret = ori_func(this, model_input, kv_caches, *args, **kwargs)
@@ -53,6 +60,9 @@ class ModelRunnerExecuteHook(VLLMHookerBase):
         self.do_hook([ModelRunner.execute_model], execute_model_maker)
 
 
+is_forward_first_run = True
+
+
 class ModelForwardHook(VLLMHookerBase):
     vllm_version = ("0.6.3", "0.6.3")
 
@@ -61,7 +71,12 @@ class ModelForwardHook(VLLMHookerBase):
 
         def begin_forward_maker(ori_func):
             def begin_forward(this, model_input):
+                global is_forward_first_run
                 ret = ori_func(this, model_input)
+                if is_forward_first_run:
+                    is_forward_first_run = False
+                    return ret
+
                 request_id_list = []
 
                 for request_id, _ in model_input.request_ids_to_seq_ids.items():
