@@ -16,15 +16,38 @@ __all__ = [
     "CHECKERS",
 ]
 
-from ms_performance_prechecker.prechecker.mindie_config_collecter import mindie_config_collecter, ranktable_collecter
+from ms_performance_prechecker.prechecker.config_checker import (
+    mindie_config_collecter,
+    ranktable_collecter,
+    model_config_collecter,
+)
 from ms_performance_prechecker.prechecker.env_checker import env_checker
 from ms_performance_prechecker.prechecker.system_checker import system_checker
 from ms_performance_prechecker.prechecker.hccl_checker import hccl_checker
+from ms_performance_prechecker.prechecker.model_checker import model_size_checker, model_sha256_collecter
 from ms_performance_prechecker.prechecker.utils import CHECKER_TYPES
 
 CHECKERS = {
-    CHECKER_TYPES.basic: [system_checker, env_checker, mindie_config_collecter, ranktable_collecter],
+    CHECKER_TYPES.basic: [
+        system_checker,
+        env_checker,
+        mindie_config_collecter,
+        ranktable_collecter,
+        model_config_collecter,
+        model_size_checker,
+    ],
     CHECKER_TYPES.hccl: [hccl_checker],
+    CHECKER_TYPES.modelsha256: [model_sha256_collecter],
 }
 
 CHECKERS[CHECKER_TYPES.all] = [ii for key, checker in CHECKERS.items() for ii in checker if key != CHECKER_TYPES.all]
+
+CHECKER_INFOS = {
+    CHECKER_TYPES.basic: "checking env / system / model size info",
+    CHECKER_TYPES.hccl: "checking hccl connection status",
+    CHECKER_TYPES.modelsha256: "comparing model sha256sum value",
+    CHECKER_TYPES.hardware: "checking CPU/NPU hardware computing capacity",
+    CHECKER_TYPES.all: "checking all",
+}
+
+CHECKER_INFOS_STR = "; ".join([f"{kk} for {vv}" for kk, vv in CHECKER_INFOS.items()])
