@@ -37,11 +37,12 @@ class MindieConfigCollecter(RrecheckerBase):
             else:
                 msg = f"{prefix}{target_key} 需设置为 {target_value}"
 
+            act = "添加" if target_value is None else "修改"
             show_check_result(
                 "configuration",
                 "mindie_service_config",
                 CheckResult.ERROR,
-                action=f"mindie_service={self.mindie_service_path} config 中添加 {prefix}{target_key} 字段",
+                action=f"mindie_service={self.mindie_service_path} config 中{act} {prefix}{target_key} 字段",
                 reason=f"{msg}",
             )
 
