@@ -213,6 +213,7 @@ def get_mindie_server_config(mindie_service_path=None):
         mindie_service_path = os.path.join(mindie_service_path, "conf", "config.json")
     return mindie_service_path
 
+
 def parse_mindie_server_config(mindie_service_path=None):
     mindie_service_path = get_mindie_server_config(mindie_service_path)
     logger.debug("mindie_service_path=%s", mindie_service_path)
