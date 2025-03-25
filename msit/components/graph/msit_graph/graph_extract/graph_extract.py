@@ -147,7 +147,7 @@ class GraphAnalyze:
 
         # Save graph
         model_def = onnx.helper.make_model(out, producer_name='onnx-subgraph')
-        with open(output_path, 'w') as f:
+        with ms_open(output_path, 'w') as f:
             f.write(text_format.MessageToString(model_def))
 
     @staticmethod

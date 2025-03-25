@@ -14,6 +14,7 @@
 import os
 import tempfile
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 import pytest
 import pandas as pd
@@ -21,6 +22,7 @@ import pandas as pd
 from components.utils.file_open_check import ms_open, FileStat, OpenException, SanitizeErrorType,\
                                              sanitize_cell_for_dataframe, sanitize_csv_value
 from components.utils.file_open_check import PERMISSION_NORMAL, PERMISSION_KEY, RAW_INPUT_PATH
+from components.utils.log import logger
 
 
 
@@ -300,3 +302,41 @@ def test_dataframe_sanitize_malicious_detection():
         sanitize_cell_for_dataframe(df)
     
     assert "Malicious value" in str(excinfo.value)
+
+
+@pytest.fixture
+def mock_self():
+    """模拟包含 file_stat 的 self 对象"""
+    obj = MagicMock()
+    obj.file_stat = MagicMock(st_uid=1000)  # 默认文件所有者 UID=1000
+    return obj
+
+
+def test_owner_match(mock_self, caplog):
+    """测试当前用户是文件所有者的情况"""
+    with patch("os.getuid", return_value=1000):  # 模拟当前用户 UID=1000
+        result = FileStat.check_owner_or_root(mock_self)
+        
+    assert result is True
+    assert "operating this tool using the root" not in caplog.text
+    assert "file owner is not consistent" not in caplog.text
+
+
+def test_root_user(mock_self, caplog):
+    """测试 root 用户操作的情况"""
+    with patch("os.getuid", return_value=0):  # 模拟 root 用户
+        with patch.object(logger, "warning") as mock_warning:
+            result = FileStat.check_owner_or_root(mock_self)
+    
+    assert result is True
+    mock_warning.assert_called_once_with(
+        "You are currently operating this tool using the root user. Please be aware of the risk of privilege escalation."
+    )
+
+
+def test_unauthorized_user(mock_self, caplog):
+    """测试未授权用户的情况"""
+    with patch("os.getuid", return_value=1001):  # 模拟未授权用户
+        result = FileStat.check_owner_or_root(mock_self)
+    
+    assert result is False
