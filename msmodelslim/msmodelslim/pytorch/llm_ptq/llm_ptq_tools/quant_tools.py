@@ -25,7 +25,7 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.graph_utils import (
 )
 # KIA part
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_modules import (
-    Quantizer, LinearQuantizer, LinearNf4Quantizer, layer_wise_calib
+    Quantizer, LinearQuantizer, LinearNf4Quantizer, layer_wise_calib, GPTQLinearQuantizer
 )
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs import (
     fake_quantize_save, get_features, linear_quantization_params, fully_analyze_activation
@@ -769,7 +769,9 @@ class Calibrator(object):
     def run_datafree_after_calib(self):
         # 将稀疏模型校准集没有运行的部分切换成data-free模式
         for name, module in self.model.named_modules():
-            if isinstance(module, LinearQuantizer) and module.quant_weight.weight_scale is None:
+            if isinstance(module, GPTQLinearQuantizer):
+                module.compute_quant_param(name)
+            elif isinstance(module, LinearQuantizer) and module.quant_weight.weight_scale is None:
                 if module.quant_weight.w_hessian:
                     module.quant_weight.w_hessian = False
                     self.logger.info(f"run MIN-MAX quantization on linear layer: {name}")
@@ -777,6 +779,7 @@ class Calibrator(object):
             elif isinstance(module, LinearNf4Quantizer):
                 self.logger.info(f"Running in Data-Free mode, quantizing the layer into NF4 type: {name}")
                 module.quant_weight()
+
 
 
     def run_amp(self):
@@ -889,7 +892,10 @@ class Calibrator(object):
                 elif self.cfg.w_method in QuantType.NF4:
                     quant_mod = LinearNf4Quantizer(cfg=self.cfg, logger=self.logger)
                 elif self.cfg.model_quant_type is not QuantType.W8A8S:
-                    quant_mod = LinearQuantizer(cfg=self.cfg, logger=self.logger)
+                    if self.cfg.w_hessian:
+                        quant_mod = GPTQLinearQuantizer(cfg=self.cfg, logger=self.logger)
+                    else:
+                        quant_mod = LinearQuantizer(cfg=self.cfg, logger=self.logger)
                 else:
                     quant_mod = LinearSparseQuantizer(cfg=self.cfg, logger=self.logger)
                 quant_mod.set_param(mod)
