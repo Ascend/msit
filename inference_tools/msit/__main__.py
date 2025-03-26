@@ -13,17 +13,13 @@
 # limitations under the License.
 
 from msit.common.cli import MainCommand
-from msit.common.constants import CmdConst
 
 
 def main():
     msit_command = MainCommand()
-    msit_command.add_arguments()
+    msit_command.register()
     args = msit_command.parser.parse_args()
-    if hasattr(args, CmdConst.RUN):
-        args.run(args)
-    else:
-        msit_command.parser.print_help()
+    msit_command.execute(args)
 
 
 if __name__ == "__main__":

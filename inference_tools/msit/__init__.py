@@ -12,5 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit import core
-from msit.base import service
+from msit.base import Service

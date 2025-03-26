@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import wraps
 from abc import ABC, abstractmethod
 
-from msit.common.constants import MsgConst
-from msit.common.exceptions import MsitException
+from msit.utils.constants import MsgConst
+from msit.utils.exceptions import MsitException
+from msit.utils.toolkits import register
 
 
 class BaseComponent(object):
@@ -25,12 +25,14 @@ class BaseComponent(object):
         activate: Called when service.start() is invoked.
         deactivate: Called when service.stop() is invoked.
     """
-    def __init__(self):
-        self.activative = False
+
+    def __init__(self, priority=100):
+        self.activated = False
+        self.priority = priority
 
     @property
-    def is_activative(self):
-        return self.activative
+    def is_activated(self):
+        return self.activated
 
     def activate(self, *args, **kwargs):
         pass
@@ -38,33 +40,34 @@ class BaseComponent(object):
     def deactivate(self, *args, **kwargs):
         pass
 
-    def _activate(self):
-        if self.activative:
-            return 
+    def do_activate(self):
+        if self.activated:
+            return
         self.activate()
-        self.activative = True
+        self.activated = True
 
-    def _deactivate(self):
-        if not self.activative:
-            return 
+    def do_deactivate(self):
+        if not self.activated:
+            return
         self.deactivate()
-        self.activative = False
+        self.activated = False
 
 
 class ProducerComp(BaseComponent, ABC):
     """
     A ProducerComp can generate data.
         If the data is passively generated (e.g., when a consumer applies the data), implement "load_data".
-        If the data is actively generated (e.g., when an interest event occurs), 
+        If the data is actively generated (e.g., when an interest event occurs),
             call "publish" to send it to subscribers.
     """
-    def __init__(self):
-        super(ProducerComp, self).__init__()
+
+    def __init__(self, priority):
+        super(ProducerComp, self).__init__(priority)
         self.output_buffer = None
         self.subscribers = set()
 
     @property
-    def _is_ready(self):
+    def is_ready(self):
         return self.output_buffer is not None
 
     @abstractmethod
@@ -75,27 +78,27 @@ class ProducerComp(BaseComponent, ABC):
         """
         Wrap the data and pack it into the output buffer.
         """
-        self.output_buffer = [self, msg_id, data]
+        self.output_buffer = [self, data, msg_id]
         Scheduler().schedule([self])
 
-    def _on_subscribe(self, comp):
+    def on_subscribe(self, comp):
         if not isinstance(comp, ConsumerComp):
             raise MsitException(MsgConst.INVALID_DATA_TYPE, "Only ConsumerComp can subscribe to ProducerComp.")
         self.subscribers.add(comp)
 
-    def _retrieve(self):
+    def retrieve(self):
         ret = self.output_buffer
         self.output_buffer = None
         return ret
 
-    def _load_data(self):
+    def do_load_data(self):
         if self.output_buffer is not None:
-            return 
+            return
         data = self.load_data()
         if data:
             self.publish(data)
 
-    def _get_subscribers(self):
+    def get_subscribers(self):
         return self.subscribers
 
 
@@ -105,16 +108,19 @@ class ConsumerComp(BaseComponent, ABC):
     Call "subscribe" to subscribe data from a ProducerComp.
     Implement "consume" to process data.
     """
-    def __init__(self):
-        super(ConsumerComp, self).__init__()
+
+    def __init__(self, priority):
+        super(ConsumerComp, self).__init__(priority)
         self.dependencies = {}
 
     def subscribe(self, comp):
         if not isinstance(comp, ProducerComp):
             raise MsitException(MsgConst.INVALID_DATA_TYPE, "Only ProducerComp can subscribe to ConsumerComp.")
-        if self.is_activative:
-            raise MsitException(MsgConst.INVALID_DATA_TYPE, f"The component {comp} has been activated.")
-        comp._on_subscribe(self)
+        if self.is_activated:
+            raise MsitException(MsgConst.INVALID_DATA_TYPE, f"Component {comp} must be subscribed before activation.")
+        if self.is_cycle(comp):
+            raise MsitException(MsgConst.RISK_ALERT, "Cycle dependency detected! Subscription denied.")
+        comp.on_subscribe(self)
         if comp not in self.dependencies:
             self.dependencies[comp] = None
 
@@ -122,22 +128,46 @@ class ConsumerComp(BaseComponent, ABC):
     def consume(self, packages):
         pass
 
-    def _on_receive(self, package):
-        self.dependencies[package[0]] = package
+    def is_cycle(self, comp, visited=None, stack=None):
+        if visited is None:
+            visited = set()
+        if stack is None:
+            stack = set()
+        if comp in stack:
+            return True
+        if comp in visited:
+            return False
+        visited.add(comp)
+        stack.add(comp)
+        if isinstance(comp, ConsumerComp):
+            for producer in comp.dependencies:
+                if self.is_cycle(producer, visited, stack):
+                    return True
+        stack.remove(comp)
+        return False
 
-    def _get_empty_dependencies(self):
+    def on_receive(self, package):
+        try:
+            self.dependencies[package[0]] = package
+        except Exception as e:
+            raise MsitException(
+                MsgConst.PARSING_FAILED,
+                "The first element in the data (self.output_buffer) published by the producer must be itself.",
+            ) from e
+
+    def get_empty_dependencies(self):
         dependencies_list = []
         for k, v in self.dependencies.items():
             if v is None:
                 dependencies_list.append(k)
         return dependencies_list
 
-    def _consume(self):
+    def do_consume(self):
         """
         Encapsulate the data in "dependencies" and invoke it using "consume".
         """
-        if self._get_empty_dependencies():
-            return 
+        if self.get_empty_dependencies():
+            return
         packages = []
         for key in self.dependencies:
             packages.append(self.dependencies[key])
@@ -150,11 +180,7 @@ class Component:
 
     @classmethod
     def register(cls, name):
-        @wraps(name)
-        def wrapper(comp_type):
-            cls._component_type_map[name] = comp_type
-            return comp_type
-        return wrapper
+        return register(name, cls._component_type_map)
 
     @classmethod
     def get(cls, name):
@@ -162,19 +188,10 @@ class Component:
 
 
 class Scheduler(object):
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(Scheduler, cls).__new__(cls)
-        return cls._instance
-    
     def __init__(self):
-        if not hasattr(self, MsgConst.INITIALIZED):
-            self.comp_ref = {}
-            self.comps_to_schedule = set()
-            self.in_scheduling = False
-            self.initialized = True
+        self.comp_ref = {}
+        self.comps_to_schedule = set()
+        self.in_scheduling = False
 
     def add(self, components):
         for comp in components:
@@ -182,7 +199,7 @@ class Scheduler(object):
                 self.comp_ref[comp] += 1
             else:
                 self.comp_ref[comp] = 1
-                comp._activate()
+                comp.do_activate()
         self.schedule(components)
 
     def remove(self, components):
@@ -192,7 +209,7 @@ class Scheduler(object):
             if self.comp_ref[comp] > 1:
                 self.comp_ref[comp] -= 1
             else:
-                comp._deactivate()
+                comp.do_deactivate()
                 del self.comp_ref[comp]
 
     def schedule(self, comps_to_schedule=None):
@@ -200,7 +217,7 @@ class Scheduler(object):
             comps_to_schedule = set(self.comp_ref.keys())
         if self.in_scheduling:
             self.comps_to_schedule = self.comps_to_schedule.union(set(comps_to_schedule))
-            return 
+            return
         self.in_scheduling = True
         self.comps_to_schedule = set(comps_to_schedule)
         while self.comps_to_schedule:
@@ -214,23 +231,23 @@ class Scheduler(object):
         self.in_scheduling = False
 
     def _schedule_producter(self, comp: ProducerComp):
-        if not comp._is_ready:
-            return 
-        package = comp._retrieve()
-        subscribers = comp._get_subscribers()
+        if not comp.is_ready:
+            return
+        package = comp.retrieve()
+        subscribers = comp.get_subscribers()
         if not subscribers:
-            return 
+            return
         for subscriber in subscribers:
-            subscriber._on_receive(package)
+            subscriber.on_receive(package)
             self.comps_to_schedule.add(subscriber)
 
     def _schedule_consumer(self, comp: ConsumerComp):
-        dependencies = comp._get_empty_dependencies()
+        dependencies = comp.get_empty_dependencies()
         if not dependencies:
-            comp._consume()
+            comp.do_consume()
             self.comps_to_schedule.add(comp)
-            return 
+            return
         for dependency in dependencies:
-            dependency._load_data()
-            if dependency._is_ready:
+            dependency.do_load_data()
+            if dependency.is_ready:
                 self.comps_to_schedule.add(dependency)
