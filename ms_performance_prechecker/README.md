@@ -52,8 +52,8 @@ python -m ms_performance_prechecker --help
 
 1. 在能够访问网络的机器上，访问 [PyPI 官方源](https://pypi.org/project/ms-performance-prechecker/#files)
 2. 左侧点击 `Download files`，随后点击 `Built Distribution` 下方链接进行下载，如下图所示：
-   ![image](https://wiki.huawei.com/vision-file-storage/api/file/download/upload-v2/WIKI202503256356399/19882372/c8d9e70604094bb9b4aff402f1cbe027.png)
-   ![image](https://wiki.huawei.com/vision-file-storage/api/file/download/upload-v2/WIKI202503256356399/19882370/4d5814d9facf445dbdebac5b16d7875d.png)
+   ![image](./pics/download.png)
+   ![image](./pics/download_1.png)
 3. 下载完成后，上传到服务器中
 4. 假设 wheel 包存放路径为 `whl_path`，输入下列命令进行安装
 
@@ -253,13 +253,9 @@ source ms_performance_prechecker_env.sh
 
 即可一键配置环境变量到性能最优推荐。终端会出现 `ENABLE=1` 字样。
 
-<div style="background: #f0f8ff;   border-left: 4px solid #2196f3;   padding: 12px 20px;   margin: 16px 0;  border-radius: 4px;">
-
-<div style="color: #2196f3;     font-weight: 600;     margin-bottom: 8px;"> Note </div>
-
+```bash
 本示例中，`ms_performance_prechecker_env.sh` 为默认保存路径，如您已经修改环境变量 shell 脚本路径，请更改为实际保存路径
-
-</div>
+```
 
 随后，再次运行预检工具，检测环境变量是否配置成功。如终端打屏信息中，所有 `env` 字样的字段均为绿色 `[OK]`，则证明配置成功。示例如下：
 
@@ -279,15 +275,12 @@ $ ms_performance_prechecker
 - env [OK] PYTORCH_NPU_ALLOC_CONF
 - env [None env related needs to save] ENV FILE
 # 以下内容省略
-```
+``` 
 
-<div style="background: #f0f8ff;   border-left: 4px solid #2196f3;   padding: 12px 20px;   margin: 16px 0;  border-radius: 4px;">
-
-<div style="color: #2196f3;     font-weight: 600;     margin-bottom: 8px;"> Note </div>
-
+#### Note
+```bash
 环境变量 shell 脚本 **只会** 修改环境变量，并不会修改系统配置。因此 `system` 相关字段不会改变，只会改变 `env` 相关字段。
-
-</div>
+```
 
 回滚环境变量只需运行 `source ms_performance_prechecker_env.sh 0` 即可，终端会出现 `ENABLE=0` 字样。随后再次运行预检工具，打屏信息与最初一致。
 
@@ -305,21 +298,11 @@ ms_performance_prechecker distribute_compare
 
 其中，`distribute_compare` 表明我们使用多机环境比对功能。主节点运行之后，会进行同步状态，等待子节点运行
 
-<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 20px; margin: 16px 0; border-radius: 4px;">
-
-<div style="color: #856404; font-weight: 600; margin-bottom: 8px;"> Warning </div>
-
-<div style="color: #664d03;">
-
+#### WARNING
 使用该功能之前，请 **务必** 准备好 rank table file，上述功能假设以下两种情况任一满足：
-
 1. 环境变量 RANKFILETABLE 已正确配置
 2. 通过 `ms_performance_precheck distribute_compare` 的 `-ranktable` 或者 `--rankfiletable` 参数进行指定 rank file table 的路径
    否则功能 **无法** 正常运行
-
-</div>
-
-</div>
 
 也可不使用多机配置文件，手动配置 `master` 节点和 `LOCAL_RANK` 信息，以双机场景为例，`master` 节点运行：
 
@@ -341,17 +324,10 @@ ms_performance_prechecker distribute_compare -ip 12.34.56.78 -port 10000 -rank 1
 
 `-size` 是 `--world_size` 的缩写, 代表节点的个数;
 
-<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 20px; margin: 16px 0; border-radius: 4px;">
 
-<div style="color: #856404; font-weight: 600; margin-bottom: 8px;"> Warning </div>
 
-<div style="color: #664d03;">
-
+#### WARNING
 工具会默认使用服务化 `config.json` 的 `port` 作为通信端口，如端口已被占用，请通过 `--port` 更换端口
-
-</div>
-
-</div>
 
 ## 3.2 运行结果
 
@@ -421,7 +397,7 @@ ms_performance_prechecker_logger - INFO - dump file saved to: b
 
 落盘文件内容结构如下：
 
-![image](https://wiki.huawei.com/vision-file-storage/api/file/download/upload-v2/WIKI202503256356399/19882369/cf57fd84c46e4e67b7902cd52950f900.png)
+![image](./pics/dump_file_1.png)
 
 - 第一块为 MindIE 服务化配置，即当前环境 MindIE 服务化 config.json 参数
 - 第二块为环境变量，为当前终端所有环境变量值
@@ -462,13 +438,6 @@ ms_performance_prechecker_logger - INFO - == compare end ==
 
 则表明，环境变量 `CPU_AFFINITY_CONF` 在四个文件 `b`, `c`, `d`, `e` 中存在差异。其中 `b` 文件中，该环境变量的值为 `None`，即没有设置该环境变量；而 `c`, `d`, `e` 均设置为 2。
 
-<div style="background: #f0f8ff;   border-left: 4px solid #2196f3;   padding: 12px 20px;   margin: 16px 0;   border-radius: 4px;">
-
-<div style="color: #2196f3;     font-weight: 600;     margin-bottom: 8px;"> Note </div>
-
-其他差异内容打屏信息可以按照以上示例相同的方法进行分析。
-
-</div>
 
 # 5. 自定义配置
 
@@ -512,17 +481,13 @@ ENV_SUGGESTIONS 配置项说明：
 
 根据指南进行配置即可。
 
-<div style="background: #f0f8ff;   border-left: 4px solid #2196f3;   padding: 12px 20px;   margin: 16px 0;   border-radius: 4px;">
-
-<div style="color: #2196f3;     font-weight: 600;     margin-bottom: 8px;"> Note </div>
 
 如使用 `vi` 或者 `vim` 在线编辑，出现如下乱码
 
-![image](https://wiki.huawei.com/vision-file-storage/api/file/download/upload-v2/WIKI202503256356399/19882371/665d2f2ee5f74869b2d20ca1e2d32b6b.png)
+![image](./pics/utf-8.png)
 
 只需输入 `set encoding=utf-8` 即可恢复正常
 
-</div>
 
 样例：在 `ENV_SUGGESTIONS` 列表中添加如下字段：
 
@@ -536,7 +501,7 @@ ENV_SUGGESTIONS 配置项说明：
 
 随后命令行输入预检命令 `ms_performance_precheck precheck`，会出现我们配置的校验项，如下：
 
-![image](https://wiki.huawei.com/vision-file-storage/api/file/download/upload-v2/WIKI202503256356399/19882373/821b630e8f8049e4b229b159d310244b.png)
+![image](./pics/env.png)
 
 # 6. 了解更多
 
