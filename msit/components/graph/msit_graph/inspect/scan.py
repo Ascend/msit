@@ -18,6 +18,7 @@ from components.utils.log import logger
 from components.utils.file_open_check import ms_open
 from components.utils.constants import CSV_FILE_MAX_SIZE
 from msit_graph.graph_extract.graph_extract import GraphAnalyze
+from components.utils.constants import MAX_DEPTH_LIMIT
 
 
 def save_dym_op(data, path):
@@ -25,7 +26,7 @@ def save_dym_op(data, path):
         f.write(",".join(["Graph_Name", "Node_Name", "Input", "Output"]) + "\n")
         for row in data:
             f.write(",".join(map(str, row)) + "\n")
-    logger.info(f"The list of dynamic shape operator saved in {path}.")
+    logger.info("The list of dynamic shape operator saved in %r." % path)
 
 
 class DynamicShape:
@@ -49,7 +50,11 @@ class DynamicShape:
             self.dynamic_to_static_edges.append(dynamic_op)
             self.graph_name.append(parent_name)
 
-    def process_node(self, node, parent_name=None):
+    def process_node(self, node, parent_name=None, depth=0):
+        if depth > MAX_DEPTH_LIMIT:
+            raise RecursionError(
+                f"Exceeded maximum recursion depth {MAX_DEPTH_LIMIT} when process node"
+            )
         if self.is_dynamic_shape(node) and parent_name:
             node.input[:] = [";".join(node.input)]
             node.output[:] = [";".join(node.output)]
@@ -57,7 +62,7 @@ class DynamicShape:
         for attr in node.attribute:
             if hasattr(attr, 'g') and attr.g:
                 for sub_node in attr.g.node:
-                    self.process_node(sub_node, node.name)
+                    self.process_node(sub_node, node.name, depth=depth + 1)
 
     def find_dynamic_shape_op(self):
         for node in self.graph.node:

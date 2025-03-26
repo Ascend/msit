@@ -307,7 +307,7 @@ class LogitsComparison:
         result_filename = "logits_cmp_res_" + get_timestamp() + ".csv"
         ms_makedirs(self.output_dir, mode=0o700, exist_ok=True)
         output_csv = os.path.join(self.output_dir, result_filename)
-        logger.info(f"Save compare result to {output_csv}")
+        logger.info("Save compare result to %r" % output_csv)
         with ms_open(output_csv, 'w', max_size=CSV_FILE_MAX_SIZE) as f:
             writer = csv.writer(f)
             writer.writerow([FILE_NAME, KEY, TOKEN_ID, COS_SIMILARITY, KL_DIVERGENCE, L1_NORM, ULP_MAX_DIFF, ULP,

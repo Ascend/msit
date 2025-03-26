@@ -46,9 +46,8 @@ class BadCaseAnalyzer(object):
 
         """
         logger.info(
-            "'Analyzer' received two csv paths, the golden one is:\n\t'%s'\nand the test one is:\n\t'%s'", 
-            golden_csv_path, 
-            test_csv_path
+            "'Analyzer' received two csv paths, the golden one is:\n\t%r\nand the test one is:\n\t%r" % 
+            (golden_csv_path, test_csv_path)
         )
 
         golden_df = cls._validate_csv_path(golden_csv_path)
@@ -132,7 +131,7 @@ class BadCaseAnalyzer(object):
         with ms_open(path, 'w', max_size=CSV_FILE_MAX_SIZE) as file:
             df_to_save.to_csv(file, encoding='utf-8', index=False)
 
-        logger.info("'Analyzer' has successfully finished the analysis, the result is stored at '%s'", path)
+        logger.info("'Analyzer' has successfully finished the analysis, the result is stored at %r" % path)
 
     @classmethod
     def _get_candidate_path(cls, suffix):

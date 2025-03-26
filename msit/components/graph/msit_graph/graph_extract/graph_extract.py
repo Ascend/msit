@@ -33,6 +33,7 @@ from components.utils.file_open_check import (
     MAX_SIZE_LIMITE_CONFIG_FILE, 
     MAX_SIZE_LIMITE_NORMAL_FILE,
 )
+from components.utils.constants import MAX_DEPTH_LIMIT
 
 
 class GraphSummary:
@@ -67,16 +68,16 @@ class GraphAnalyze:
     @staticmethod
     def validate_file_path(file_path, expected_extension):
         if not os.path.isfile(file_path):
-            logger.error(f"File not found: {file_path}")
-            raise FileNotFoundError(f"File not found: {file_path}")
+            logger.error("File not found: %r" % file_path)
+            raise FileNotFoundError("File not found: %r" % file_path)
         if not file_path.endswith(expected_extension):
-            logger.error(f"Incorrect file extension for {file_path}. Expected {expected_extension}")
-            raise ValueError(f"Incorrect file extension for {file_path}. Expected {expected_extension}")
+            logger.error("Incorrect file extension for %r. Expected %s" % (file_path, expected_extension))
+            raise ValueError("Incorrect file extension for %r. Expected %s" % (file_path, expected_extension))
 
     @staticmethod
     def load_graph_def_from_pbtxt(path):
         """Loads an ONNX graph definition from a binary protocol buffer file."""
-        logger.info(f"Loading {path}, the graph maybe huge, please wait a minute...")
+        logger.info("Loading %r, the graph maybe huge, please wait a minute..." % path)
         data = None
         try:
             GraphAnalyze.validate_file_path(path, ".pbtxt")
@@ -98,7 +99,7 @@ class GraphAnalyze:
             return None
         model = onnx.ModelProto()
         text_format.Parse(data, model)
-        logger.info(f"Load {path} success!")
+        logger.info("Load %r success!" % path)
         return model.graph
 
     @staticmethod
@@ -110,7 +111,7 @@ class GraphAnalyze:
             timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
             output_path = GraphAnalyze._append_file_name_suffix(input_path, timestamp)
 
-        logger.info(f"Begin to read in graph from file {input_path}")
+        logger.info("Begin to read in graph from file %r" % input_path)
         graph_def = GraphAnalyze.load_graph_def_from_pbtxt(input_path)
 
         gs = GraphAnalyze._build_graph_summary(graph_def)
@@ -139,11 +140,11 @@ class GraphAnalyze:
         if not output_path:
             timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
             output_path = GraphAnalyze._append_file_name_suffix(input_path, timestamp)
-        logger.info(f"Begin to read from {input_path} and write to {output_path}")
+        logger.info("Begin to read from %r and write to %r" % (input_path, output_path))
 
         out = GraphAnalyze._process_file(input_path, level)
 
-        logger.info(f"save to {output_path}, total node = {len(out.node)}")
+        logger.info("save to %r, total node = %d" % (output_path, len(out.node)))
 
         # Save graph
         model_def = onnx.helper.make_model(out, producer_name='onnx-subgraph')
@@ -157,12 +158,16 @@ class GraphAnalyze:
 
         op_stat = Counter()
         
-        def process_node(node):
+        def process_node(node, depth=0):
+            if depth > MAX_DEPTH_LIMIT:
+                raise RecursionError(
+                    f"Exceeded maximum recursion depth {MAX_DEPTH_LIMIT} when process node"
+                )
             op_stat[node.op_type] += 1
             for attr in node.attribute:
                 if attr.HasField('g'):  # Check if the attribute has a subgraph
                     for subnode in attr.g.node:
-                        process_node(subnode)
+                        process_node(subnode, depth=depth + 1)
         
         for node in graph_def.node:
             process_node(node)
@@ -220,7 +225,7 @@ class GraphAnalyze:
             return 0, ""
         name_and_index = tensor_name.rsplit(":", 1)
         if len(name_and_index) != 2:
-            logger.warning(f"Invalid node input {tensor_name}")
+            logger.error(f"Invalid node input {tensor_name}")
             raise ValueError(f"Invalid tensor name format: {tensor_name}")
         
         name, index = name_and_index
@@ -368,7 +373,7 @@ class GraphAnalyze:
         for dump_node in dump_nodes:
             out.node.extend([copy.deepcopy(dump_node)])
 
-        logger.info(f"Save to {output_path}")
+        logger.info("Save to %r" % output_path)
         logger.info(f"Total nodes = {len(out.node)}")
         GraphAnalyze._save_graph_def(out, output_path, as_text=True)
 

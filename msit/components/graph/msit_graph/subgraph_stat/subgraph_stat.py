@@ -239,15 +239,15 @@ def stat_subgraph(input_path, max_nodes=8, min_nodes=2, min_times=1):
         logger.error(f"max_nodes should be between {min_nodes} and 10, please set it to an appropriate value")
         return None
     if min_nodes < 2:
-        logger.warning(f"min_nodes can not be less than 2, it will be set as default value 2.")
+        logger.warning("min_nodes can not be less than 2, it will be set as default value 2.")
         min_nodes = 2
     if min_times < 1:
-        logger.warning(f"min_times can not be less than 1, it will be set as default value 1.")
+        logger.warning("min_times can not be less than 1, it will be set as default value 1.")
         min_times = 1
 
     graph_def = GraphAnalyze.load_graph_def_from_pbtxt(input_path)
     if graph_def is None:
-        logger.error(f"Failed to parse the pbtxt file.")
+        logger.error("Failed to parse the pbtxt file.")
         return None
 
     graphs = []
@@ -260,14 +260,14 @@ def stat_subgraph(input_path, max_nodes=8, min_nodes=2, min_times=1):
                         if nodes is not None:
                             graphs.append(nodes)
                         else:
-                            logger.error(f"Failed to get nodes information.")
+                            logger.error("Failed to get nodes information.")
                             return None
     else:
         nodes = parse_pbtxt(graph_def)
         if nodes is not None:
             graphs.append(nodes)
         else:
-            logger.error(f"Failed to get nodes information.")
+            logger.error("Failed to get nodes information.")
             return None
 
     subgraph_count, subgraph_roots = find_duplicate_subgraphs(graphs, max_nodes, min_nodes)
@@ -344,7 +344,7 @@ def calculate_sum(args):
         profile = args.profile
         profile_df = pd.read_csv(profile)
         if profile_df.empty:
-            logger.error("Profile DataFrame is empty, maybe {profile} is missing required columns .")
+            logger.error("Profile DataFrame is empty, maybe %r is missing required columns ." % profile)
             return
 
         # Preprocess Subgraph column in subgraph_df
@@ -376,6 +376,6 @@ def calculate_sum(args):
         # Save the result to output CSV file
         with ms_open(output_path, 'w') as file: 
             output_df.to_csv(file, index=False)
-        logger.info(f"Results saved to {output_path}")
+        logger.info("Results saved to %r" % output_path)
     except Exception as e:
         logger.error(f"Unexpected error during calculation: {e}")
