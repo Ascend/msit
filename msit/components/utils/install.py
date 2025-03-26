@@ -111,6 +111,12 @@ INSTALL_INFO_MAP = [
         "pkg-name": "msit-graph",
         "pkg-path": "graph",
     },
+    {
+        "arg-name": "expert-load-balancing",
+        "pkg-name": "msit-expert-load-balancing",
+        "pkg-path": "expert_load_balancing"
+    },
+        
 ]
 
 ALL_SUB_TOOLS = [pkg.get("arg-name") for pkg in INSTALL_INFO_MAP]
