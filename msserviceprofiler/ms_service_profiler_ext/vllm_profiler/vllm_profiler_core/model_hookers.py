@@ -19,11 +19,19 @@ from .vllm_hooker_base import VLLMHookerBase
 class ModelRunnerExecuteHook(VLLMHookerBase):
     vllm_version = ("0.6.3", "0.6.3")
 
+    def __init__(self):
+        super().__init__()
+        self.is_model_first_run = True
+
     def init(self):
         from vllm.worker.model_runner import ModelRunner
 
         def execute_model_maker(ori_func):
             def execute_model(this, model_input, kv_caches, *args, **kwargs):
+                if self.is_model_first_run:
+                    self.is_model_first_run = False
+                    return ori_func(this, model_input, kv_caches, *args, **kwargs)
+
                 prof = Profiler(Level.INFO)
                 prof.span_start("modelExec")
                 ret = ori_func(this, model_input, kv_caches, *args, **kwargs)
@@ -56,12 +64,20 @@ class ModelRunnerExecuteHook(VLLMHookerBase):
 class ModelForwardHook(VLLMHookerBase):
     vllm_version = ("0.6.3", "0.6.3")
 
+    def __init__(self):
+        super().__init__()
+        self.is_forward_first_run = True
+
     def init(self):
         from vllm.attention.backends.utils import CommonAttentionState
 
         def begin_forward_maker(ori_func):
             def begin_forward(this, model_input):
                 ret = ori_func(this, model_input)
+                if self.is_forward_first_run:
+                    self.is_forward_first_run = False
+                    return ret
+
                 request_id_list = []
 
                 for request_id, _ in model_input.request_ids_to_seq_ids.items():
