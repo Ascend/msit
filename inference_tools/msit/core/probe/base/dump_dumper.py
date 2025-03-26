@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
+from abc import ABC, abstractmethod
 
-from msit.common.constants import DumpConst
+from msit.utils.hijack import release
 
 
-class DataStat:
-    @classmethod
-    def summ_npy(cls, npy: np.ndarray):
-        stat_dict = {}
-        stat_dict[DumpConst.DTYPE] = npy.dtype
-        stat_dict[DumpConst.SHAPE] = npy.shape
-        stat_dict[DumpConst.MAX] = npy.max()
-        stat_dict[DumpConst.MIN] = npy.min()
-        stat_dict[DumpConst.MEAN] = npy.mean()
-        stat_dict[DumpConst.NORM] = np.linalg.norm(npy)
-        return stat_dict
+class BaseDumper(ABC):
+    def __init__(self):
+        self.handler = []
+
+    @abstractmethod
+    def register_hook(self):
+        pass
+
+    def release_hook(self):
+        for handler_hex in self.handler:
+            release(handler_hex)
