@@ -502,7 +502,3 @@ ENV_SUGGESTIONS 配置项说明：
 随后命令行输入预检命令 `ms_performance_precheck precheck`，会出现我们配置的校验项，如下：
 
 ![image](./pics/env.png)
-
-# 6. 了解更多
-
-更详细的安装指导、工具使用说明、发行说明以及源码仓库位置请参考 [预检工具 -- wiki](https://wiki.huawei.com/domains/52290/wiki/75313/WIKI202503086181274)
