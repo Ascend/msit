@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from ms_service_profiler_ext.vllm_profiler.vllm_profiler_core.model_hookers import ModelRunnerExecuteHook, \
-    ModelForwardHook, is_model_first_run, is_forward_first_run
+    ModelForwardHook
 
 
 def test_execute_init():
@@ -58,7 +58,7 @@ def test_execute_model_maker():
         execute_model = execute_model_maker(mock_ori_func)
 
         # 第一次执行，不进入profiler逻辑
-        assert is_model_first_run is True
+        assert hooker.is_model_first_run is True
         result = execute_model(mock_this, mock_model_input, MagicMock())
         mock_ori_func.assert_called_once()
         assert result == "Result"
@@ -103,7 +103,7 @@ def test_begin_forward_maker():
         begin_forward = begin_forward_maker(mock_ori_func)
 
         # 第一次执行，不进入profiler逻辑
-        assert is_forward_first_run is True
+        assert hooker.is_forward_first_run is True
         result = begin_forward(mock_this, mock_model_input)
         mock_ori_func.assert_called_once()
         assert result == "Result"
