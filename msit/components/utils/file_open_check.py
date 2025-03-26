@@ -209,6 +209,18 @@ class FileStat:
     def is_user_and_group_owner(self):
         return self.is_owner and self.is_group_owner
 
+    def check_owner_or_root(self):
+        if os.getuid() == self.file_stat.st_uid:
+            return True
+        elif os.getuid() == 0:
+            logger.warning("You are currently operating this tool using the root user."
+                            " Please be aware of the risk of privilege escalation.")
+            return True
+        else:
+            logging.error("The file owner is not consistent with the current user.")
+            solution_log(SOLUTION_BASE_LOC + OWNER_SUB_CHAPTER)
+            return False
+
     def is_basically_legal(self, perm='none', strict_permission=True):
         if sys.platform.startswith("win"):
             return self.check_windows_permission(perm)
@@ -256,6 +268,8 @@ class FileStat:
         if not self.is_user_or_group_owner and self.is_exists:
             logger.error("current user isn't path: %s's owner or ownergroup", self.file)
             solution_log(SOLUTION_BASE_LOC + OWNER_SUB_CHAPTER)
+            return False
+        if self.is_exists and not self.check_owner_or_root():
             return False
         if perm == 'read':
             if strict_permission and self.permission & READ_FILE_NOT_PERMITTED_STAT > 0:
@@ -313,6 +327,9 @@ def ms_open(file, mode="r", max_size=CONFIG_FILE_MAX_SIZE, softlink=False,
 
     if file_stat.is_exists and file_stat.is_dir:
         raise OpenException(f"Expecting a file, but it's a folder. {file}")
+
+    if file_stat.is_exists and not file_stat.check_owner_or_root():
+        raise OpenException(f"There is a problem with the owner of the file. Please check it.")
 
     if "r" in mode:
         if not file_stat.is_exists:

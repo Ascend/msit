@@ -374,7 +374,8 @@ def calculate_sum(args):
         ]
         sanitize_cell_for_dataframe(output_df)
         # Save the result to output CSV file
-        output_df.to_csv(output_path, index=False)
+        with ms_open(output_path, 'w') as file: 
+            output_df.to_csv(file, index=False)
         logger.info("Results saved to %r" % output_path)
     except Exception as e:
         logger.error(f"Unexpected error during calculation: {e}")

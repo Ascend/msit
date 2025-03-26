@@ -20,6 +20,7 @@ import torch
 
 from components.utils.constants import TENSOR_MAX_SIZE, EXT_SIZE_MAPPING, PATH_WHITE_LIST_REGEX
 from components.utils.log import logger
+from components.utils.file_open_check import is_legal_path_length
 
 
 def get_entry_points(entry_points_name):
@@ -119,6 +120,10 @@ def load_file_to_read_common_check(path: str, exts=None):
         logger.error("Invalid character: %r", path)
         raise ValueError
     
+    if not is_legal_path_length(path):
+        logger.error("Invalid path length.")
+        raise ValueError
+
     path = os.path.realpath(path)
     
     try:
