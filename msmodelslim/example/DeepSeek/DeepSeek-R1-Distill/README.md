@@ -24,13 +24,14 @@
 
 #### DeepSeek-R1-Distill-Llama 量化
 ##### DeepSeek-R1-Distill-Llama-8B w8a8量化
+Atlas 800I A2 w8a8量化
   ```shell
   cd msit/msmodelslim/example/Llama
   python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl  --device_type npu --anti_method m1
   ```
 
 ##### DeepSeek-R1-Distill-Llama-8B 稀疏量化
-
+Atlas 300I DUO/Atlas 300I Pro/Atlas 300V
 - 稀疏量化
 ```shell
   # 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量 
@@ -45,6 +46,7 @@
 ```
 
 ##### DeepSeek-R1-Distill-Llama-70B w8a8量化
+Atlas 800I A2 w8a8量化
   ```shell
   cd msit/msmodelslim/example/Llama
   python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl  --device_type npu --disable_level L5 --anti_method m4 --act_method 3 
@@ -52,11 +54,20 @@
 
 #### DeepSeek-R1-Distill-Qwen 量化
 ##### DeepSeek-R1-Distill-Qwen-1.5B w8a8量化
+Atlas 800I A2 w8a8量化
   ```shell
   cd msit/msmodelslim/example/Qwen
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu
   ```
+OrangePi 
+- 使用 OrangePi 推理，需要准备另外一台Atlas 800I A2 或 Atlas 300I DUO 进行w8a8量化，量化后把权重转移至香橙派上
+```shell
+# w8a8 量化指令
+cd msit/msmodelslim/example/Llama
+python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl  --device_type npu --diable_names "lm_head" --anti_method m4
+```
 ##### DeepSeek-R1-Distill-Qwen-1.5B 稀疏量化
+Atlas 300I DUO/Atlas 300I Pro/Atlas 300V
 
 - 稀疏量化
 ```shell
@@ -73,11 +84,13 @@ python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8S�
 ```
 
 ##### DeepSeek-R1-Distill-Qwen-7B w8a8量化
+Atlas 800I A2 w8a8量化
   ```shell
   cd msit/msmodelslim/example/Qwen
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu
   ```
 ##### DeepSeek-R1-Distill-Qwen-7B 稀疏量化
+Atlas 300I DUO/Atlas 300I Pro/Atlas 300V
 - 稀疏量化
 ```shell
 cd msit/msmodelslim/example/Qwen
@@ -93,6 +106,7 @@ python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8S�
 ```
 
 ##### DeepSeek-R1-Distill-Qwen-14B w8a8量化
+Atlas 800I A2 w8a8量化
   ```shell
   cd msit/msmodelslim/example/Qwen
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu
@@ -121,6 +135,7 @@ python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8S�
 ```
 
 ##### DeepSeek-R1-Distill-Qwen-32B w8a8量化
+Atlas 800I A2 w8a8量化
   ```shell
   cd msit/msmodelslim/example/Qwen
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu
