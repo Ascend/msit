@@ -53,7 +53,7 @@ def parse_parameter_line(line, params, current_request, file_line_number):
                 parsed_value = bool(parsed_value)
             params[key] = parsed_value
         except (ValueError, SyntaxError) as e:
-            logger.error(f"Value parsing error at line {file_line_number} (request {current_request}): {e}")
+            logger.warning(f"Value parsing failed at line {file_line_number} (request {current_request}): {e}")
     elif '{' not in extract_params and '}' not in extract_params and extract_params != ['']:  # 过滤{ }和空行
         logger.warning(
             f"Unexpected parameter format at line {file_line_number}: "
