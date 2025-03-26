@@ -103,11 +103,9 @@ def convert_ms_to_vllm(target_tool, w_bit, weight_dict, json_dict):
             if quant_type in QUANT_TYPE:
                 order = AWQ_PACK_ORDER
                 direction = 'column'
-                if name.endswith('.weight') and '.module.weight' not in name:
+                if name.lower().endswith('.weight') and 'norm.weight' not in name.lower():
                     base_name = name.rsplit('.', 1)[0]
-                    tmp_key = base_name + '.module.weight'
-                    if tmp_key in weight_dict.keys():
-                        continue
+
                     vllm_name = base_name + '.qweight'
                     tensor = tensor.t().contiguous()
                     tensor = torch.clamp(tensor, -2**(w_bit - 1), 2**(w_bit - 1) - 1)
@@ -121,13 +119,13 @@ def convert_ms_to_vllm(target_tool, w_bit, weight_dict, json_dict):
                     elif target_tool == TOOL_GPTQ:
                         qweight = gptq_qweight_pack(tensor, w_bit)
                     vllm_weight_dict[vllm_name] = qweight
-                
-                elif name.endswith('.weight_scale'):
+
+                elif name.lower().endswith('.weight_scale'):
                     vllm_name = name.rsplit('.', 1)[0] + '.scales'
                     tensor = tensor.t().contiguous()
                     vllm_weight_dict[vllm_name] = tensor
 
-                elif name.endswith('.weight_offset'):
+                elif name.lower().endswith('.weight_offset'):
                     vllm_name = name.rsplit('.', 1)[0] + '.qzeros'
                     tensor = tensor.t().contiguous()
                     tensor = torch.clamp(tensor, -2**(w_bit - 1), 2**(w_bit - 1) - 1)
@@ -141,11 +139,8 @@ def convert_ms_to_vllm(target_tool, w_bit, weight_dict, json_dict):
                     elif target_tool == TOOL_GPTQ:
                         qzeros = gptq_qzeros_pack(tensor, w_bit)
                     vllm_weight_dict[vllm_name] = qzeros
-                
-                elif 'module.weight' in name and 'model.norm' not in name:
-                    vllm_name = name.replace('module.weight', 'weight')
-                    vllm_weight_dict[vllm_name] = tensor
-                elif 'model.norm.module.bias' in name or 'model.norm.module.weight' in name:
+
+                elif 'model.norm.bias' in name.lower():
                     pass
                 else:
                     vllm_weight_dict[name] = tensor

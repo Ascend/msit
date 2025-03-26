@@ -21,7 +21,7 @@ AutoGPTQ：GPU
 [大模型量化工具依赖安装](https://gitee.com/ascend/msit/tree/master/msmodelslim/msmodelslim/pytorch/llm_ptq)  
 
 ## 1.1 msModelslim量化
-量化脚本跟正常的量化脚本一样，可以参考：https://gitee.com/ascend/msit/blob/master/msmodelslim/docs/w8a8%E7%B2%BE%E5%BA%A6%E8%B0%83%E4%BC%98%E7%AD%96%E7%95%A5.md。
+量化脚本跟正常的量化脚本一样，可以参考：[w8a8精度调优策略](https://gitee.com/ascend/msit/blob/master/msmodelslim/docs/w8a8%E7%B2%BE%E5%BA%A6%E8%B0%83%E4%BC%98%E7%AD%96%E7%95%A5.md) 。
 本文以W4A16量化方式示例进行说明。需要注意的地方有三处:  
 a.在离群值抑制配置（AntiOutlierConfig）中，a_bit和w_bit应根据量化方式进行设置。当anti_method被设置为"m3"时，代表使用AWQ算法；而对于GPTQ算法，则不需要使用离群值抑制模块，此时可以将相关配置注释掉。
 ```python
@@ -61,7 +61,8 @@ calibrator.save(output_path, safetensors_name=None, json_name=None, save_type=No
 
 
 ## 1.2 转换脚本使用
-转换脚本路径位于：https://gitee.com/ascend/msit/blob/master/msmodelslim/example/ms_to_vllm.py。  
+转换脚本路径位于：https://gitee.com/ascend/msit/blob/master/msmodelslim/example/ms_to_vllm.py
+
 经过上一步1.1使用msModelslim对权重进行量化，生成quant_model_description_w4a16.json和quant_model_weight_w4a16.safetensors，再使用转换脚本ms_to_vllm.py进行权重格式转换，生成转换后的safetensors文件，用法如下：
 ```python 
 命令：
@@ -86,7 +87,7 @@ python ms_to_vllm.py --model ./quant_model_weight_w4a16.safetensors  --json ./qu
 
 ## 2.2量化
 AutoAWQ量化, 需要注意的是，Version使用GEMM，如果没有传入数据集可能会报错，需要传入数据集val.jsonl文件, 参考网址：https://github.com/casper-hansen/AutoAWQ/issues/506
-，数据集获取地址：https://huggingface.co/datasets/mit-han-lab/pile-val-backup/blob/main/val.jsonl.zst。     
+，数据集获取地址：https://huggingface.co/datasets/mit-han-lab/pile-val-backup/blob/main/val.jsonl.zst     
 AutoAWQ量化脚本示例如下：
 
 ```python
@@ -127,22 +128,18 @@ print(f'Model is quantized and saved at "{quant_path}"')
 ```
 
 ## 2.3推理
-首先，修改AutoAWQ量化后权重路径的model.safetensors.index.json文件，请将文件中的weight_map中的权重文件名称修改为第1.2节中的转换脚本所生成的权重文件名，然后运行推理脚本。
+首先，修改AutoAWQ量化后权重路径的model.safetensors.index.json文件，请将文件中的weight_map中的权重文件名称修改为第1.2节中的转换脚本所生成的权重文件名，然后将权重文件替换为第1.2节中转换脚本所生成的权重文件，最后运行推理脚本。
 
 AutoAWQ推理脚本测试对话示例如下：
 ```python
 from awq import AutoAWQForCausalLM
 from transformers import AutoTokenizer
 
-quant_path = './quant_qwen2_7b'         # 浮点模型经过量化后的保存路径
-
-# q_group_size和msModelSlim量化的group_size对应，保持一致
-quant_config = { "zero_point": True, "q_group_size": 128, "w_bit": 4, "version": "GEMM" }
+quant_path = './quant_qwen2_7b'  # 浮点模型经过量化后的保存路径
 
 # Load model
 model = AutoAWQForCausalLM.from_quantized(quant_path, fuse_layers=True)
-tokenizer = AutoTokenizer.from_pretrained(quant_path, trust_remote_code=True, local_files_only=True,
-                                                use_fast=False)
+tokenizer = AutoTokenizer.from_pretrained(quant_path, trust_remote_code=True, local_files_only=True)
 
 test_prompt = "what is deep learning:"
 test_input = tokenizer(test_prompt, return_tensors="pt")
@@ -159,6 +156,30 @@ for idx, item in enumerate(res):
     print(item)
 ```
 
+如果没有使用autoAWQ量化获取量化配置文件，直接使用msModelSlim转换的量化后模型进行推理，需要做以下步骤：
+
+1.将浮点模型的原始配置文件复制到msModelSlim量化后转换生成的权重文件目录中。  
+2.修改量化后权重路径的 model.safetensors.index.json 文件，请将文件中的 weight_map 中的权重文件名称修改为第1.2节中的转换脚本所生成的权重文件名。  
+3.修改 config.json 文件，添加 quantization_config 参数，bits为量化的权重位数，group_size 和msModelSlim量化的 group_size 对应，保持一致。可参考第2.2节使用autoAWQ量化后生成的 config.json 文件进行配置。    
+该处以Qwen2-7B-Instruct，W4A16+AWQ为例，在 config.json 添加 quantization_config 参数：
+```json
+{
+  "model_type": "qwen2",
+  "torch_dtype": "bfloat16",
+  ··· 上述为原始json参数示例 ···
+  ··· 添加下方参数 ···
+  "quantization_config": {
+    "bits": 4,
+    "group_size": 64,
+    "version": "gemm",
+    "zero_point": true
+  }
+}
+```
+
+4.参考第2.3节推理脚本运行推理。
+
+
 
 # 3 开源工具AutoGPTQ量化以及推理
 
@@ -169,7 +190,7 @@ for idx, item in enumerate(res):
 msModelSlim转换为AutoGPTQ权重格式进行推理和AutoAWQ同理，首先去阅读AutoGPTQ的readme.md(链接如上第3.1节)，参考量化的示例，修改相关配置参数，然后进行量化，最后生成量化权重文件。  
 修改的配置包括路径和BaseQuantizeConfig接口，在BaseQuantizeConfig接口中，bits为量化的权重位数，对应msModelSlim中的w_bit；pergroup场景下，group_size设置的值与msModelSlim一致，在perchannel场景下，group_size设置为-1。
 
-## 3.2推理
+## 3.3推理
 将经过msModelslim量化以及经过转换脚本转换后的res.safetensors文件传入GPU生成的量化权重目录，替换掉之前的量化权重文件，文件名保持一致，其他文件不需要修改。
 推理脚本示例如下：
 ```python
@@ -190,6 +211,21 @@ examples = [
 model = AutoGPTQForCausalLM.from_quantized(quant_path, device="cuda:0")
 print(tokenizer.decode(model.generate(**tokenizer("auto_gptq is", return_tensors="pt").to(model.device))[0]))
 ```
+
+如果没有使用autoGPTQ量化获取量化配置文件，直接使用msModelSlim转换的量化后模型进行推理，需要做以下步骤：
+
+1.将浮点模型的原始配置文件 config.json，model.safetensors.index.json 复制到msModelSlim量化后转换生成的权重文件目录中。   
+2.修改量化后权重路径的 model.safetensors.index.json 文件，请将文件中的 weight_map 中的权重文件名称修改为第1.2节中的转换脚本所生成的权重文件名。  
+3.在量化后权重路径下新建 quantize_config.json 文件，bits为量化的权重位数，group_size 和msModelSlim量化的 group_size 对应，保持一致。可参考使用autoGPTQ量化后生成的 quantize_config.json 文件进行配置。  
+该处以Qwen2-7B-Instruct，W4A16+GPTQ为例，新建 quantize_config.json 文件：
+```json
+{
+  "bits": 4,
+  "group_size": 64
+}
+```
+
+4.参考第3.3节推理脚本运行推理。
 
 # 4.总结
 经过上述步骤，成功完成msModelSlim在NPU上的量化，并且量化权重经过转换脚本转换后能够在AutoAWQ和AutoGPTQ推理成功。
