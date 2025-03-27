@@ -86,6 +86,8 @@ class OpChecker:
         
         # 检查dump_data路径合法性
         op_tensor_sub_dir = os.listdir(op_tensor_path)
+        if len(op_tensor_sub_dir) < 1:
+            raise ValueError("No dump data in %r, please check!" % op_tensor_path)
 
         if not op_tensor_sub_dir[0].isdigit() or len(op_tensor_sub_dir) != 1: # 只有一个时间戳的子目录
             raise ValueError(
@@ -93,6 +95,8 @@ class OpChecker:
                 "please confirm whether the file has been tampered with." % op_tensor_path
             )
         op_tensor_final_dir = os.listdir(os.path.join(op_tensor_path, op_tensor_sub_dir[0]))
+        if len(op_tensor_final_dir) < 1:
+            raise ValueError("No dump data in %r, please check!" % os.path.join(op_tensor_path, op_tensor_sub_dir[0]))
 
         if not op_tensor_final_dir[0].isdigit() or len(op_tensor_final_dir) != 1:
             raise ValueError(
@@ -166,6 +170,8 @@ class OpChecker:
         file_names.sort()
         data_info = {}
         for file_name in file_names:
+            if len(file_name.split('.')) < 3:
+                raise ValueError("Invalid npy file name, Please check it!.")
             op_name = file_name.split('.')[1]
             if op_name not in data_info:
                 data_info[op_name] = {"input": [], "output": []}
