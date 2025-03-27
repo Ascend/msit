@@ -20,6 +20,7 @@ import shutil
 
 from components.debug.common import logger
 from components.utils.security_check import check_write_directory
+from components.debug.compare.msquickcmp.common.args_check import check_input_path_legality
 from msit_opcheck.case_manager import CaseManager
 from msit_opcheck.graph_parser import get_all_opinfo, get_ge_graph_name, OpInfo
 from msit_opcheck.utils import NAMEDTUPLE_PRECISION_MODE
@@ -52,6 +53,7 @@ class OpChecker:
     def get_msaccucmp_path():
         cann_path = os.environ.get('ASCEND_TOOLKIT_HOME', "/usr/local/Ascend/ascend-toolkit/latest")
         msaccucmp_path = os.path.join(cann_path, "tools", "operator_cmp", "compare", "msaccucmp.py")
+        msaccucmp_path = check_input_path_legality(msaccucmp_path)
         return msaccucmp_path
 
     @staticmethod
@@ -81,6 +83,7 @@ class OpChecker:
         # 检查model/ge_graph.json
         for item in os.listdir(model_path):
             json_path = os.path.join(model_path, item)
+            json_path = check_input_path_legality(json_path)
             if os.path.isfile(json_path) and item.startswith("ge_proto_") and item.endswith(".json"):
                 self.ge_json_path = json_path
         
@@ -123,7 +126,7 @@ class OpChecker:
                     "Pleas check input_file path: %r, the files below look deleted." % new_dump_path
                 )
             new_dump_path = os.path.join(new_dump_path, sub_dirs[0])
-        self.dump_data_path = new_dump_path
+        self.dump_data_path = check_input_path_legality(new_dump_path)
 
     def convert_all_bin_file_to_npy_data(self, input_path, npy_path, msaccucmp_path):
         # convert all bin file to npy file
@@ -192,6 +195,7 @@ class OpChecker:
             if not graph_name:
                 continue
             new_dump_path = os.path.join(self.origin_dump_path, graph_name)
+            new_dump_path = check_input_path_legality(new_dump_path)
             if not os.path.exists(new_dump_path):
                 continue
             self.update_dump_data_path(new_dump_path)
