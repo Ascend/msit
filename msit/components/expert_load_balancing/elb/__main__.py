@@ -18,7 +18,7 @@ import subprocess
 
 from components.utils.parser import BaseCommand
 from components.utils.log import logger
-from components.llm.msit_llm.common.utils import check_output_path_legality, check_input_path_legality
+from components.debug.compare.msquickcmp.common.args_check import check_output_path_legality, check_input_path_legality
 
 
 class ExpertLoadBalanceCommmand(BaseCommand):
