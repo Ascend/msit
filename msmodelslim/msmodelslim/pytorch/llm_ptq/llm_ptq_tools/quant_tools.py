@@ -74,7 +74,7 @@ from msmodelslim.pytorch.llm_ptq.accelerate_adapter.utils import judge_model_wit
 
 HF_HOOK = "_hf_hook"
 STATE_DICT_COPY_DIR = "copy"
-ALLOWED_MIX_TYPES = {"w8a8", "w8a16", "w8a8_dynamic", "float"}
+ALLOWED_MIX_TYPES = {"w8a8", "w8a16", "w8a8_dynamic", "float", "w4a8_dynamic"}
 
 
 class Calibrator(object):
@@ -158,11 +158,32 @@ class Calibrator(object):
         # the quant config of all mlp layers is w8a8_dynamic, and the quant config of other layers is w8a8
         if self.is_deepseek_v2 and mix_cfg is None and cfg.model_quant_type == QuantType.W8A8:
             mix_cfg = {"*.mlp.*": "w8a8_dynamic", "*": "w8a8"}
-
+        
         # this initializes is kept for forward compatibility
         # in the future, this will receive a cfg_store object from outside, but now it is None
         self.cfg_store = None
 
+        if self.is_deepseek_v2 and self.cfg_store is None and cfg.model_quant_type == QuantType.W4A8_DYNAMIC:
+            self.cfg_store = {
+                'rollback': QuantConfig(w_bit=16, a_bit=16),
+                'float': QuantConfig(w_bit=16, a_bit=16),
+                'w4a8_dynamic': cfg
+            }
+
+            if 'w8a8' not in self.cfg_store:
+                try:
+                    new_cfg = LayerConfigManager.w4a8_dynamic_convert_to_w8a8(cfg)
+                    self.cfg_store['w8a8'] = new_cfg
+                    self.cfg_store['default'] = copy.deepcopy(new_cfg)
+                except Exception as e:
+                    self.logger.warning(f"Failed to build w8a8 config. reason: {e}")
+            if 'w8a8_dynamic' not in self.cfg_store:
+                try:
+                    new_cfg = LayerConfigManager.w4a8_dynamic_convert_to_w8a8_dynamic(cfg)
+                    self.cfg_store['w8a8_dynamic'] = new_cfg
+                except Exception as e:
+                    self.logger.warning(f"Failed to build w8a8_dynamic config. reason: {e}")
+            
         if self.cfg_store is None:
             self.cfg_store = {
                 "default": copy.deepcopy(cfg),
@@ -563,23 +584,24 @@ class Calibrator(object):
                 elif isinstance(module, LowBitLinearQuantizer) and hasattr(module, 'weight_quant_flag'):
                     if not module.weight_quant_flag:
                         self.logger.info(f"Running in Data-Free mode, quantizing the layer: {name}")
-                        module.fp_weight = module.weight.cpu().clone()
+                        if not module.cfg.is_stage_quant:
+                            module.fp_weight = module.weight.cpu().clone()
                         kwargs = {
-                            'powerquant': self.cfg.nonuniform,
-                            'fraction': self.cfg.fraction, 
-                            'num_bits': self.cfg.w_bit,
+                            'powerquant': module.cfg.nonuniform,
+                            'fraction': module.cfg.fraction, 
+                            'num_bits': module.cfg.w_bit,
                             'isolate_outlier_amax': False,
-                            'per_channel': not self.cfg.mm_tensor,
-                            'use_cuda': True if self.cfg.dev_type == 'gpu' else False,
-                            'use_sigma': self.cfg.use_sigma,
-                            'sigma_factor': self.cfg.sigma_factor,
-                            'open_outlier': self.cfg.open_outlier,
-                            'group_size': self.cfg.group_size,
-                            'w_sym': self.cfg.w_sym,
-                            'use_hqq': self.cfg.hqq
+                            'per_channel': not module.cfg.mm_tensor,
+                            'use_cuda': True if module.cfg.dev_type == 'gpu' else False,
+                            'use_sigma': module.cfg.use_sigma,
+                            'sigma_factor': module.cfg.sigma_factor,
+                            'open_outlier': module.cfg.open_outlier,
+                            'group_size': module.cfg.group_size,
+                            'w_sym': module.cfg.w_sym,
+                            'use_hqq': module.cfg.hqq
                         }
                         if 'progressive' in inspect.signature(quant_one_weight_by_outliers_low_bit).parameters:
-                            kwargs['progressive'] = self.cfg.is_stage_quant
+                            kwargs['progressive'] = module.cfg.is_stage_quant
                             
                         recovered_weight, scale_w, _, offset_w = quant_one_weight_by_outliers_low_bit(
                             module.weight,
@@ -596,8 +618,9 @@ class Calibrator(object):
                             module.quant_weight.weight_scale = scale_w.cpu()
                             module.quant_weight.weight_offset = offset_w.cpu()
                         module.has_init_quant_para = True
-                        with torch.no_grad():
-                            module.weight[:] = recovered_weight[:]
+                        if not module.cfg.is_stage_quant:
+                            with torch.no_grad():
+                                module.weight[:] = recovered_weight[:]
                         
                         module.weight_quant_flag = True
                         
@@ -649,24 +672,25 @@ class Calibrator(object):
                     module.quant_weight()
                 elif isinstance(module, LowBitLinearQuantizer):
                     with torch.no_grad():
-                        module.fp_weight = module.weight.cpu().clone()
+                        if not module.cfg.is_stage_quant:
+                            module.fp_weight = module.weight.cpu().clone()
                         self.logger.info(f"Running in Data-Free mode, quantizing the layer: {name}")
                         kwargs = {
-                            'powerquant': self.cfg.nonuniform,
-                            'fraction': self.cfg.fraction, 
-                            'num_bits': self.cfg.w_bit,
+                            'powerquant': module.cfg.nonuniform,
+                            'fraction': module.cfg.fraction, 
+                            'num_bits': module.cfg.w_bit,
                             'isolate_outlier_amax': False,
-                            'per_channel': not self.cfg.mm_tensor,
-                            'use_cuda': True if self.cfg.dev_type == 'gpu' else False,
-                            'use_sigma': self.cfg.use_sigma,
-                            'sigma_factor': self.cfg.sigma_factor,
-                            'open_outlier': self.cfg.open_outlier,
-                            'group_size': self.cfg.group_size,
-                            'w_sym': self.cfg.w_sym,
-                            'use_hqq': self.cfg.hqq
+                            'per_channel': not module.cfg.mm_tensor,
+                            'use_cuda': True if module.cfg.dev_type == 'gpu' else False,
+                            'use_sigma': module.cfg.use_sigma,
+                            'sigma_factor': module.cfg.sigma_factor,
+                            'open_outlier': module.cfg.open_outlier,
+                            'group_size': module.cfg.group_size,
+                            'w_sym': module.cfg.w_sym,
+                            'use_hqq': module.cfg.hqq
                         }
                         if 'progressive' in inspect.signature(quant_one_weight_by_outliers_low_bit).parameters:
-                            kwargs['progressive'] = self.cfg.is_stage_quant
+                            kwargs['progressive'] = module.cfg.is_stage_quant
 
                         recovered_weight, scale_w, _, offset_w = quant_one_weight_by_outliers_low_bit(
                             module.weight,
@@ -683,8 +707,9 @@ class Calibrator(object):
                             module.quant_weight.weight_scale = scale_w.cpu()
                             module.quant_weight.weight_offset = offset_w.cpu()
                         module.has_init_quant_para = True
-                        with torch.no_grad():
-                            module.weight[:] = recovered_weight[:]
+                        if not module.cfg.is_stage_quant:
+                            with torch.no_grad():
+                                module.weight[:] = recovered_weight[:]
 
                     module.weight_quant_flag = True
 

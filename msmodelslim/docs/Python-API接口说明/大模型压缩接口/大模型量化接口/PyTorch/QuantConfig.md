@@ -32,7 +32,7 @@ QuantConfig(a_bit=8, w_bit=8, disable_names=None, dev_type='cpu', dev_id=None, a
 | use_kvcache_quant | 输入 | 是是否使用kvcache量化功能。|可选。<br>数据类型：bool。<br>默认为False。<br>True：使用kvcache量化功能。False：不使用kvcache量化功能。<br>说明:将此参数设置为true并配置表1 量化配置表里的kv_quant参数后，方可使用kvcache量化功能。 |
 | is_dynamic | 输入 | 是否使用per-token动态量化功能。|可选。<br>数据类型：bool。<br>默认为False。<br>True：使用per-token动态量化。False：不使用per-token动态量化。|
 | open_outlier | 输入 | 是否开启权重异常值划分。|可选。<br>数据类型：bool。<br>默认为True。<br>True：开启权重异常值划分。False：关闭权重异常值划分。<br>说明：(1)仅在lowbit设置为True时生效。(2)per_group量化场景下，需协同设置is_lowbit为True，open_outlier为False。|
-| group_size | 输入 | per_group量化中group的大小。|可选。<br>数据类型：int。<br>默认值为64，支持配置为32,64,128。<br>说明:仅适用于per_group量化场景，需协同设置is_lowbit为True，open_outlier为False。|
+| group_size | 输入 | per_group量化中group的大小。|可选。<br>数据类型：int。<br>默认值为64，支持配置为32,64,128,256。<br>说明:仅适用于per_group量化场景，需协同设置is_lowbit为True，open_outlier为False。|
 | percdamp | 输入 | GPTQ算法的矩阵正定偏置系数，用于保障计算过程的稳定性。当GPTQ运行出现非正定矩阵导致的报错时，可以适当增大该参数。|可选。<br>数据类型：float。<br>取值范围为[0,1]，默认值为0.01。<br>说明:仅适用于w_method为GPTQ算法的情况。|
 
 
