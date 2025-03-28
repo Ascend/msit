@@ -12,3 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+class MsitException(Exception, object):
+    def __init__(self, error_group, error_msg=""):
+        super().__init__()
+        self.error_msg = " ".join([error_group, error_msg])
+
+    def __str__(self):
+        return self.error_msg
