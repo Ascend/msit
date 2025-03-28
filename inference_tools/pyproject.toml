@@ -1,0 +1,13 @@
+[tool.black]
+line-length = 120  # 设置最大行长
+skip-magic-trailing-comma = true  # 禁用自动添加末尾逗号
+target-version = ['py37', 'py38', 'py39', 'py310', 'py311', 'py312']  # 兼容的 Python 版本
+
+[tool.isort]
+profile = "black"  # 使 isort 与 Black 兼容
+line_length = 120  # 统一最大行长
+multi_line_output = 3  # 按分组方式输出多行 import 语句
+force_grid_wrap = 0  # 控制换行时的显示方式
+use_parentheses = true  # 使用括号包裹长 import 语句
+combine_as_imports = true  # 合并多行的 as 导入
+include_trailing_comma = false  # 禁用多行导入语句的最后一行末尾逗号

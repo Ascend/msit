@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.base.cmd import MsitCommand
-from msit.base.component.manager import BaseComponent, Component, ConsumerComp, ProducerComp, Scheduler
-from msit.base.component.primordium import OfflineModelActuatorComp
-from msit.base.config import BaseConfig, Dict2Class
-from msit.base.service.manager import Service, ServiceProbe
+from msit.base.component.manager import BaseComponent
+
+
+class OfflineModelActuatorComp(BaseComponent):
+    def __init__(self, priority=100):
+        super().__init__(priority)

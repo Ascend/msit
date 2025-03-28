@@ -1,0 +1,10 @@
+numpy >= 1.19.2, <= 1.21.6
+protobuf >= 3.9.2, <= 3.20.3
+scipy >= 1.5.2, <= 1.7.3
+pandas >= 1.2.0, <= 1.3.5
+decorator
+sympy
+attrs
+psutil
+PyYAML
+tqdm

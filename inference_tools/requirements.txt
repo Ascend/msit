@@ -1,7 +1,0 @@
-numpy>=1.19,<1.22
-typing-extensions>4.10
-protobuf>=3.18,<3.21
-onnx
-onnxruntime
-pandas<=1.6
-PyYAML
