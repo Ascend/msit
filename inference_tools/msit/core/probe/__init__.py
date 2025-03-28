@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.core.probe import service, components
+from msit.core.probe import components, service

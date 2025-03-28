@@ -12,95 +12,103 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from onnx import ValueInfoProto
+import numpy as np
 
-from msit.common.log import logger
 from msit.common.dirs import DirPool
-from msit.common.constants import DumpConst
-from msit.core.probe.base import DataDumper, DataWriter, DataStat
-from msit.utils.toolkits import convert_bytes
-from msit.utils.io import load_onnx_model, load_onnx_session, save_onnx_model, save_npy
+from msit.core.probe.base import OfflineModelActuator, WriterDump
+from msit.utils.constants import DumpConst, MsgConst, PathConst
+from msit.utils.dependencies import dependent
+from msit.utils.exceptions import MsitException
+from msit.utils.io import load_npy_from_buffer, load_onnx_model, load_onnx_session, save_onnx_model
+from msit.utils.log import logger
+from msit.utils.path import convert_bytes, is_file
+from msit.utils.toolkits import get_valid_name
+
+_ONNX_DTYPE = {1: np.float32, 2: np.float64}
 
 
-class OnnxDataDumper(DataDumper):
-    def __init__(self, args):
-        super(OnnxDataDumper, self).__init__(args)
-        self.origin_model = load_onnx_model(args.exec[0])
-        self.model_session = load_onnx_session(args.exec[0], args.onnx_fusion_switch)
-        self.dump_json = DataWriter.init_dump_json(task=self.args.task)
+class OnnxModelActuator(OfflineModelActuator):
+    def __init__(self, model_path, input_shape, input_path, **kwargs):
+        super().__init__(model_path, input_shape, input_path, **kwargs)
 
-    def recapture_input_data(self):
-        for name, input_data in self.input_map.items():
-            DataWriter.update_dump_json(
-                self.dump_json[DumpConst.DATA][DumpConst.INPUT_ARGS], name, DataStat.summ_npy(input_data)
-            )
+    @staticmethod
+    def infer(uninfer_model_path, input_map):
+        model_session = load_onnx_session(uninfer_model_path)
+        output_name = [node.name for node in model_session.get_outputs()]
+        try:
+            return model_session.run(output_name, input_map)
+        except Exception as e:
+            raise MsitException(
+                MsgConst.CALL_FAILED, "Please check if the input shape or data matches the model requirements."
+            ) from e
+
+    def load_model(self):
+        self.origin_model = load_onnx_model(self.model_path)
+        self.model_session = load_onnx_session(self.model_path, self.kwargs.get("onnx_fusion_switch", True))
 
     def get_input_tensor_info(self):
-        self.dump_json[DumpConst.DATA].setdefault(DumpConst.INPUT_ARGS, {})
         inputs_tensor_info = []
         for input_item in self.model_session.get_inputs():
-            tensor_name, tensor_type, tensor_shape = input_item.name, input_item.type, tuple(input_item.shape)
-            DataWriter.update_dump_json(
-                self.dump_json[DumpConst.DATA][DumpConst.INPUT_ARGS], tensor_name, {DumpConst.TYPE: tensor_type}
-            )
-            tensor_shape_info = self._process_tensor_shape(tensor_name, tensor_type, tensor_shape)
+            tensor_name, tensor_type, tensor_shape = (input_item.name, input_item.type, tuple(input_item.shape))
+            tensor_shape_info = self.process_tensor_shape(tensor_name, tensor_type, tensor_shape)
             inputs_tensor_info.extend(tensor_shape_info)
         logger.info(f"Model input tensor info: {inputs_tensor_info}.")
         return inputs_tensor_info
 
-    def export_new_model(self):
-        del self.origin_model.graph.output[:]
-        for node in self.origin_model.graph.node:
-            for tensor_name in node.output:
-                value_info = ValueInfoProto(name=tensor_name)
-                self.origin_model.graph.output.append(value_info)
-        model_size = self.origin_model.ByteSize()
-        logger.info(f"The size of the modified ONNX model to be saved is {convert_bytes(model_size)}.")
-        if model_size < 0 or model_size > DumpConst.MAX_PROTOBUF_2G:
-            logger.warning("The modified ONNX model size has exceeded 2GB, posing a risk of numerical overflow.")
-        new_model_path = DirPool.get_new_model_path(self.args.exec[0])
-        save_onnx_model(self.origin_model, new_model_path)
-        logger.info(f"The modified ONNX model has been successfully saved to {new_model_path}.")
-        return new_model_path
-
-    def run_model(self, new_model_path, input_map):
-        new_model_session = load_onnx_session(new_model_path, self.args.onnx_fusion_switch)
-        output_name = [node.name for node in new_model_session.get_outputs()]
-        return new_model_session.run(output_name, input_map)
+    def export_uninfer_model(self):
+        uninfer_model_path = DirPool.get_uninfer_model_path(self.model_path)
+        if not is_file(uninfer_model_path):
+            onnx = dependent.get("onnx")
+            del self.origin_model.graph.output[:]
+            for node in self.origin_model.graph.node:
+                for tensor_name in node.output:
+                    value_info = onnx.ValueInfoProto(name=tensor_name)
+                    self.origin_model.graph.output.append(value_info)
+            model_size = self.origin_model.ByteSize()
+            logger.info(f"The size of the modified ONNX model to be saved is {convert_bytes(model_size)}.")
+            if model_size < 0 or model_size > PathConst.SIZE_2G:
+                logger.warning("The modified ONNX model size has exceeded 2GB, posing a risk of numerical overflow.")
+            save_onnx_model(self.origin_model, uninfer_model_path)
+            logger.info(f"The modified ONNX model has been successfully saved to {uninfer_model_path}.")
+        return uninfer_model_path
 
 
-class OnnxDataWriter(DataWriter):
-    def __init__(self, args):
-        self.args = args
-        self.origin_model = load_onnx_model(args.exec[0])
-        self.model_session = load_onnx_session(args.exec[0], args.onnx_fusion_switch)
+class OnnxModelDataWriter(WriterDump):
+    def __init__(self, task, dump_mode):
+        super().__init__()
+        self.task = task
+        self.dump_mode = dump_mode
+        self.cache_dump_json[DumpConst.TASK] = task
+        self.cache_dump_json[DumpConst.LEVEL] = DumpConst.LEVEL_KERNEL
+        self.cache_dump_json[DumpConst.FRAMEWORK] = DumpConst.FRAMEWORK_ONNX
 
-    @classmethod
-    def _save_output_stat(cls, name, np_data):
-        cls.update_dump_json(
-            cls.cache_dump_json[DumpConst.DATA][DumpConst.OUTPUT_ARGS], cls._to_valid_name(name), \
-            {**{DumpConst.TYPE: cls._to_valid_type(np_data)}, **DataStat.summ_npy(np_data)}
-        )
-
-    @classmethod
-    def _save_output_data(cls, name, ind, npy_data):
-        cls.cache_dump_json[DumpConst.DUMP_DATA_DIR] = DirPool.get_tensor_dir()
-        rank_dir = DirPool.get_rank_dir()
-        file_name = cls._generate_tensor_name(name, ind)
-        cls.tensor_path = cls._generate_tensor_path(rank_dir, file_name)
-        save_npy(npy_data, cls.tensor_path)
-
-    def summ_output_data(self, dump_data):
-        self.cache_dump_json[DumpConst.DATA].setdefault(DumpConst.OUTPUT_ARGS, {})
-        net_output_node = [item.name for item in self.model_session.get_outputs()]
-        res_idx, net_output = 0, {}
-        for node in self.origin_model.graph.node:
-            for j, output in enumerate(node.output):
-                self._save_output_stat(node.name, dump_data[res_idx])
-                if self.args.task == DumpConst.TENSOR:
-                    self._save_output_data(node.name, j, dump_data[res_idx])
-                if self.args.task == DumpConst.TENSOR and output in net_output_node:
-                    net_output[net_output_node.index(output)] = self.tensor_path
+    @staticmethod
+    def _get_output_map(output_list, origin_model):
+        output_map, res_idx = {}, 0
+        for node in origin_model.graph.node:
+            for node_output in node.output:
+                output_map[get_valid_name(node_output)] = output_list[res_idx]
                 res_idx += 1
-        for index, path in net_output.items():
-            logger.info(f"net_output node is: {index}, file: {path}.")
+        return output_map
+
+    @staticmethod
+    def _augment_input_map(input_map, output_map, origin_model):
+        for temp in origin_model.graph.initializer:
+            npy_data = load_npy_from_buffer(temp.raw_data, _ONNX_DTYPE.get(temp.data_type), temp.dims)
+            input_map[get_valid_name(temp.name)] = npy_data
+        input_map = {**input_map, **output_map}
+        return input_map
+
+    def get_input_output_map(self, input_map, output_list, origin_model):
+        output_map = self._get_output_map(output_list, origin_model)
+        input_map = self._augment_input_map(input_map, output_map, origin_model)
+        return input_map, output_map
+
+    def summ_dump_data(self, input_map, output_map, origin_model, model_session):
+        self.net_output_nodes = list(item.name for item in model_session.get_outputs())
+        for node in origin_model.graph.node:
+            self.cache_dump_json[DumpConst.DATA].setdefault(get_valid_name(node.name), {})
+            if self.dump_mode in DumpConst.INPUT_ALL:
+                self.through_inputs(node.input, node.name, input_map)
+            if self.dump_mode in DumpConst.OUTPUT_ALL:
+                self.through_outputs(node.output, node.name, output_map)

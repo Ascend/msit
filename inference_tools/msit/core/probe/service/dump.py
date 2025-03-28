@@ -12,67 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from msit.base import Component, Service
+from msit.common.dirs import DirPool
+from msit.core.probe.base import ServiceDump
+from msit.utils.constants import CompConst, DumpConst
+from msit.utils.io import savedmodel2pb
 
-from msit.base.component.manager import Scheduler, Component
-from msit.common.log import logger, print_log_with_star
-from msit.common.constants import DumpConst, PathConst, CompConst
+
+@Service.register(DumpConst.STATISTICS)
+class ServiceStatistics(ServiceDump):
+    pass
 
 
-class Service:
-    def __init__(self, args):
-        self.args = args
+@Service.register(DumpConst.TENSOR)
+class ServiceTensor(ServiceDump):
+    def _construct_for_saved_model_on_npu(self):
+        self.cfg.exec[0] = savedmodel2pb(
+            self.cfg.exec[0], self.cfg.saved_model_tag, self.cfg.saved_model_signature, DirPool.get_model_dir()
+        )
+        self._construct_for_frozen_graph_model_on_npu()
 
-    @staticmethod
-    def _is_saved_model_scene(exec: list):
-        saved_model_pb = os.path.join(exec[0], DumpConst.SAVED_MODEL_PB)
-        if not os.path.isfile(saved_model_pb):
-            return False
-        variables_dir = os.path.join(exec[0], DumpConst.VARIABLES)
-        return os.path.isdir(variables_dir)
-
-    @staticmethod
-    def _get_suffix(exec: list):
-        _, extension = os.path.splitext(exec[0])
-        return extension
-
-    def run(self):
-        print_log_with_star(f"The currently executing dump task is {self.args.task}.")
-        if len(self.args.exec) == 2:
-            pass
-        elif len(self.args.exec) == 1:
-            logger.info("Start offline model data dump...")
-            if self.args.device == DumpConst.CPU:
-                self._on_cpu()
-            elif self.args.device == DumpConst.NPU:
-                self._on_npu()
-        print_log_with_star("msit probe dump completed successfully.")
-
-    def _rivet(self, read_comp, execute_comp, writer_comp):
-        reader = Component.get(read_comp)(self.args)
-        execute = Component.get(execute_comp)(self.args)
-        writer = Component.get(writer_comp)(self.args)
-        execute.subscribe(reader)
-        writer.subscribe(execute)
-        scheduler = Scheduler()
-        scheduler.add([reader, execute, writer])
-
-    def _on_cpu(self):
-        logger.info("Deploy data dump task on the CPU.")
-        if self._is_saved_model_scene(self.args.exec):
-            return None
-        elif self._get_suffix(self.args.exec) == PathConst.SUFFIX_PB:
-            return None
-        elif self._get_suffix(self.args.exec) == PathConst.SUFFIX_ONNX:
-            return self._rivet(CompConst.ONNXREADER, CompConst.ONNXACTUATOR, CompConst.ONNXWRITER)
-        else:
-            return None
-
-    def _on_npu(self):
-        logger.info("Deploy data dump task on the NPU.")
-        if self._is_saved_model_scene(self.args.exec):
-            return None
-        elif self._get_suffix(self.args.exec) == PathConst.SUFFIX_OM:
-            return None
-        else:
-            return None
+    def _construct_for_frozen_graph_model_on_npu(self):
+        self.actuator = Component.get(CompConst.FROZEN_GRAPH_ACTUATOR_COMP_NPU)(
+            priority=20,
+            model_path=self.cfg.exec[0],
+            input_shape=self.cfg.input_shape,
+            input_path=self.cfg.input_path,
+            dump_mode=self.cfg.dump_mode,
+            fsf=self.cfg.fusion_switch_file,
+        )
+        self.setter = Component.get(CompConst.FROZEN_GRAPH_SET_GE_COMP_NPU)(
+            priority=10,
+            work_path=DirPool.get_msit_dir(),
+            dump_ge_graph=self.cfg.dump_ge_graph,
+            dump_graph_level=self.cfg.dump_graph_level,
+            dump_graph_path=DirPool.get_model_dir(),
+        )
