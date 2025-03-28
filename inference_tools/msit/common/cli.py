@@ -12,28 +12,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from argparse import ArgumentParser, RawTextHelpFormatter
+from argparse import ArgumentParser
 
-from msit.base.cmd import MsitCommand
-from msit.common.constants import CmdConst
+from msit.base import MsitCommand, Service
 from msit.core.probe.cli.command_probe import ProbeCommand
+from msit.utils.constants import CmdConst, DumpConst, MsgConst
+from msit.utils.exceptions import MsitException
+from msit.utils.log import logger
+
+_DESCRIPTION = """
+                                   _ _
+                     _ __ ___  ___(_) |_ 
+                    | '_ ` _ \/ __| | __|
+                    | | | | | \__ \ | |_ 
+                    |_| |_| |_|___/_|\__|
+
+msit (MindStudio Inference Tools), [Powered by MindStudio].
+Providing one-site debugging and optimization toolkits for inference on Ascend devices.
+For any issue, refer FAQ first. Gitee repo: Ascend/msit, wiki.
+"""
+_CMD_LEVEL_2 = 1
+_L2COMMAND = "L2command"
 
 
 class MainCommand(MsitCommand):
     def __init__(self):
-        super().__init__(prog_name=CmdConst.MSIT)
-        self.parser = ArgumentParser(description=CmdConst.DESCRIPTION, formatter_class=RawTextHelpFormatter)
-        self.subparsers = self.parser.add_subparsers(dest=CmdConst.COMMAND)
-        self.add_subcommand_level = CmdConst.CMD_LEVEL_2
+        super().__init__(prog_name="msit")
+        self.parser = ArgumentParser(description=_DESCRIPTION, formatter_class=self.formatter_class)
+        self.subparser = self.parser.add_subparsers(dest=_L2COMMAND)
+        self.add_subcommand_level = _CMD_LEVEL_2
+        self.match_command_map = {CmdConst.PROBE: ProbeCommand()}
+        self.name_command_help = [[CmdConst.PROBE, CmdConst.HELP_PROBE], [CmdConst.SURGEON, CmdConst.HELP_SURGEON]]
+        self.command_mapping = {"PROBE_DUMP_STATISTICS": DumpConst.STATISTICS, "PROBE_DUMP_TENSOR": DumpConst.TENSOR}
 
-    def add_arguments(self):
-        if self.input_keyword == CmdConst.PROBE:
-            self.add_subcommand(ProbeCommand())
-        elif self.input_keyword == CmdConst.SURGEON:
-            pass
+    def execute(self, args):
+        if hasattr(args, DumpConst.LOG_LEVEL):
+            logger.set_level(args.log_level)
         else:
-            self.subparsers.add_parser(CmdConst.PROBE, help=CmdConst.HELP_PROBE)
-            self.subparsers.add_parser(CmdConst.SURGEON, help=CmdConst.HELP_SURGEON)
+            self.parser.print_help()
+            return
+        command_key = f"{args.L2command}_{args.L3command}_{args.task}".upper()
+        service_key = self.command_mapping.get(command_key)
+        if service_key:
+            Service.get(service_key)(args=args).run_cli()
+        else:
+            MsitException(MsgConst.CALL_FAILED, f"Unsupported command key: {command_key}.")
 
     def parse_args(self):
         return self.parser.parse_args()
