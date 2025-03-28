@@ -35,7 +35,7 @@ class FakeLinearQuantizerOfW8A16OrW4A16(nn.Module):
             if weight_scale.shape[1] != 0:
                 group_size = int(channel_num / weight_scale.shape[1])
             else:
-                raise ZeroDivisionError
+                raise ZeroDivisionError("Weight scale shape[1] is 0, please check quant_params.")
             quant_weight = quant_weight.reshape(-1, group_size)
             weight_offset = weight_offset.reshape(-1, 1)
             weight_scale = weight_scale.reshape(-1, 1)
