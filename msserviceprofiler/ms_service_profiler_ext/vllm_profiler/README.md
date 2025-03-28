@@ -1,1 +1,1 @@
-[vllm_profiler工具使用说明](../../docs/vllm_profiler工具.md)
+[vLLM服务化性能采集工具](../../docs/vLLM服务化性能采集工具.md)
