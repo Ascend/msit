@@ -32,7 +32,7 @@ def add_summary_exporter(func):
         summary_exporter = ExporterSummary()
         summary_exporter.initialize(args)
 
-        return default_exporters + [summary_exporter]
+        return [summary_exporter] + default_exporters
     return wrapper
 
 

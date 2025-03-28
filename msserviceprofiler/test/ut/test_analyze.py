@@ -55,7 +55,7 @@ class TestMainFunction:
         exporters = wrapped_func(args)
 
         assert len(exporters) == 3
-        assert isinstance(exporters[-1], ExporterSummary)
+        assert isinstance(exporters[0], ExporterSummary)
         mock_initialize.assert_called_once_with(args)
 
     def test_command_line_interface(self):
@@ -90,7 +90,7 @@ class TestMainFunction:
         wrapped_create_exporters = spy_add_summary.spy_return
         exporters = wrapped_create_exporters(self.mock_args)
         assert len(exporters) == len(original_exporters) + 1
-        assert isinstance(exporters[-1], ExporterSummary)
+        assert isinstance(exporters[0], ExporterSummary)
 
     @pytest.fixture(autouse=True)
     def _inject_mocker(self, mocker):
