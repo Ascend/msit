@@ -37,7 +37,7 @@ def get_norm_linear_subgraph(model: PreTrainedModel):
 
 def modify_smooth_args(cfg: AntiOutlierConfig,
                        norm_name: str,
-                       linear_names: str,
+                       linear_names: List[str],
                        args: List[Any],
                        kwargs: Dict[str, Any]):
     
