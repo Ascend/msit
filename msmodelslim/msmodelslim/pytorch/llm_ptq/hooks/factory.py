@@ -79,6 +79,13 @@ class CuttingMethodRegistry:
         """
         internlm2 模型的切割方法。
         """
+        if m.config.num_key_value_heads == 0:
+            raise ValueError('Num_key_value_heads must not be zero in model config.')
+        if m.config.num_attention_heads == 0:
+            raise ValueError('Num_attention_heads must not be zero in model config.')
+        if m.config.hidden_size == 0:
+            raise ValueError('Hidden_size must not be zero in model config.')
+
         gs = m.config.num_attention_heads // m.config.num_key_value_heads + 2
         d = m.config.hidden_size // m.config.num_attention_heads
         h = comming_max.shape[0] // (gs * d)
