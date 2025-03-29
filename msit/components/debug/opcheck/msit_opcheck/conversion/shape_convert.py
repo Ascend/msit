@@ -464,6 +464,10 @@ def to_ndc1hwc0(data: np.ndarray, ori_format: str, target_shape: Union[List, Tup
 
 def nd_to_fractal_nz(data: np.ndarray, ori_format: str, target_shape: Union[List, Tuple] = None, groups=None):
     ori_shape = data.shape
+    if len(ori_shape) < 2:
+        err_msg = "If you want to convert the ND format to the NZ format, " + \
+                  "the shape dimension of the input ND format data must be greater than or equal to 2."
+        raise ValueError(err_msg)
     m_ori, n_ori = ori_shape[-2:]
     batch_ori = ori_shape[:-2]
     batch_num = len(batch_ori)
@@ -480,6 +484,10 @@ def nd_to_fractal_nz(data: np.ndarray, ori_format: str, target_shape: Union[List
 
 def nd_to_fractal_z(data: np.ndarray, ori_format: str, target_shape: Union[List, Tuple] = None, groups=None):
     ori_shape = data.shape
+    if len(ori_shape) != 4:
+        err_msg = "If you want to convert the ND format to the fractal_z format, " + \
+                  "the shape dimension of the input ND format data must be equal to 4."
+        raise ValueError(err_msg)
     m_ori, n_ori = ori_shape[-2:]
     batch_ori = ori_shape[:-2]
     batch_num = len(batch_ori)
