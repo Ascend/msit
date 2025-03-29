@@ -89,6 +89,8 @@ def process_req_record(req_map, record):
             'is_complete': False,
             'generated_token_num': None,
             'input_token_num': None,
+            'exec_time': 0.0,
+            'first_token_latency': 0.0,
         }
     entry = req_map[rid]
 
@@ -142,15 +144,22 @@ def is_empty_entry(entry):
 
 
 def process_rid_token_list(req_map, rid_list, token_id_list, record):
-
     if not is_contained_valid_iter_info(rid_list, token_id_list):
         return
 
     for i, value in enumerate(rid_list):
-        req_rid = str(int(value))
+        req_rid = str(value)
         if req_map.get(req_rid) is None:
             print_warning_log('httpReq')
             continue
+
+        # 执行总时长
+        if record.get('name') == 'modelExec':
+            during_time = record.get('during_time')
+            if isinstance(during_time, (int, float)):
+                req_map[req_rid]['exec_time'] += during_time
+            else:
+                logger.warning(f"Invalid during_time: {during_time} for rid={req_rid}")
 
         cur_iter = token_id_list[i]
         if cur_iter is None:
@@ -165,13 +174,6 @@ def process_rid_token_list(req_map, rid_list, token_id_list, record):
                 req_map[req_rid]['first_token_latency'] = record.get('during_time')
             else:
                 req_map[req_rid]['first_token_latency'] += record.get('during_time')
-
-        # 执行总时长
-        if record.get('name') == 'modelExec':
-            if req_map[req_rid].get('exec_time') is None:
-                req_map[req_rid]['exec_time'] = record.get('during_time')
-            else:
-                req_map[req_rid]['exec_time'] += record.get('during_time')
 
 
 def gen_exporter_results(all_data_df):
@@ -287,13 +289,15 @@ def gen_result_record(req_id, req_data):
         "generated_token_num": generated_token_num
     }
 
+    # 检查 httpReq_start 和 httpRes_end 的有效性
+    if req_data["httpReq_start"] is not None and req_data["httpRes_end"] is not None:
+        total_time = (req_data["httpRes_end"] - req_data["httpReq_start"]) / 1000
+        record["total_time"] = round(total_time, 4)
+    else:
+        record["total_time"] = 0.0  # 无效数据
+
     # 非首Token时延
     record["subsequent_token_latency"] = get_non_first_token_latency(req_data)
-
-    # 总时长
-    total_time = req_data["httpRes_end"] - req_data["httpReq_start"]
-    total_time = total_time / 1000
-    record["total_time"] = total_time
 
     # 队列等待时长
     waiting_time = req_data["req_pending_time"] + req_data["req_waiting_time"]
@@ -310,8 +314,16 @@ def calculate_request_metrics(req_map):
         ServiceCSVFields.GENERATE_ALL_TOKEN_SPEED: 0
     }
 
+    valid_requests = []
     first_request_start_time, last_request_end_time = None, None
+
+    # 过滤无效请求时同时保存 req_id
     for req_id, req_data in req_map.items():
+        if req_data["httpReq_start"] is not None and req_data["httpRes_end"] is not None:
+            valid_requests.append((req_id, req_data))
+
+    # 处理有效请求时解包 req_id 和 req_data
+    for req_id, req_data in valid_requests:
         record = gen_result_record(req_id, req_data)
         req_view.append(record)
 
@@ -319,7 +331,7 @@ def calculate_request_metrics(req_map):
         total_map[ServiceCSVFields.TOTAL_INPUT_TOKEN_NUM] += req_data["input_token_num"]
         total_map[ServiceCSVFields.TOTAL_GENERATED_TOKEN_NUM] += req_data["generated_token_num"]
 
-        # 更新第一个请求的开始时间和最后一个请求的结束时间
+        # 更新第一个和最后一个请求的时间
         current_start_time = req_data["httpReq_start"]
         current_end_time = req_data["httpRes_end"]
         if first_request_start_time is None or current_start_time < first_request_start_time:
@@ -327,26 +339,20 @@ def calculate_request_metrics(req_map):
         if last_request_end_time is None or current_end_time > last_request_end_time:
             last_request_end_time = current_end_time
 
-        # 计算total_exec_time
+    total_exec_time = 0.0
+
+    # 计算 total_exec_time
+    if first_request_start_time is not None and last_request_end_time is not None:
         total_exec_time = round((last_request_end_time - first_request_start_time) / 1000000, 4)
 
-        # 计算generate_token_speed和generate_all_token_speed
-        if total_exec_time > 0:
-            total_map[ServiceCSVFields.GENERATE_TOKEN_SPEED] = total_map[
-                ServiceCSVFields.TOTAL_GENERATED_TOKEN_NUM] / total_exec_time
-            total_map[ServiceCSVFields.GENERATE_TOKEN_SPEED] = round(
-                total_map[ServiceCSVFields.GENERATE_TOKEN_SPEED],
-                4
-            )
-
-            total_map[ServiceCSVFields.GENERATE_ALL_TOKEN_SPEED] = (
-                total_map[ServiceCSVFields.TOTAL_INPUT_TOKEN_NUM] + \
-                total_map[ServiceCSVFields.TOTAL_GENERATED_TOKEN_NUM]
-            ) / total_exec_time
-            total_map[ServiceCSVFields.GENERATE_ALL_TOKEN_SPEED] = round(
-                total_map[ServiceCSVFields.GENERATE_ALL_TOKEN_SPEED],
-                4
-            )
+    if total_exec_time > 0:
+        total_map[ServiceCSVFields.GENERATE_TOKEN_SPEED] = round(
+            total_map[ServiceCSVFields.TOTAL_GENERATED_TOKEN_NUM] / total_exec_time, 4
+        )
+        total_map[ServiceCSVFields.GENERATE_ALL_TOKEN_SPEED] = round(
+            (total_map[ServiceCSVFields.TOTAL_INPUT_TOKEN_NUM] +
+             total_map[ServiceCSVFields.TOTAL_GENERATED_TOKEN_NUM]) / total_exec_time, 4
+        )
 
     return req_view, total_map
 
