@@ -313,15 +313,9 @@ class AntiOutlier(object):
 
         # channel shifting
         if STAT_KEY_SHIFT in stat_dict:
-            if self.cfg.ch_align:
-                stat_dict[STAT_KEY_SHIFT] = (stat_dict[STAT_KEY_MAX] + stat_dict[STAT_KEY_MIN]) / 2  # [C]
-            else:
-                stat_dict[STAT_KEY_SHIFT] = torch.zeros(coming_max.size(0)).to(coming_max.device)
+            stat_dict[STAT_KEY_SHIFT] = (stat_dict[STAT_KEY_MAX] + stat_dict[STAT_KEY_MIN]) / 2  # [C]
         else:
-            if self.cfg.ch_align:
-                stat_dict[STAT_KEY_SHIFT] = (coming_max + coming_min) / 2
-            else:
-                stat_dict[STAT_KEY_SHIFT] = torch.zeros(coming_max.size(0)).to(coming_max.device)
+            stat_dict[STAT_KEY_SHIFT] = (coming_max + coming_min) / 2
 
         # the tensor-wise max threshold
         tensor_max = torch.max(tensor - stat_dict[STAT_KEY_SHIFT])  # [N, C]

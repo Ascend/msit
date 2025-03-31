@@ -173,6 +173,9 @@ class ComplexQuantifier:
             if is_scale_list and is_offset_list:
                 yield name + '.weight_scale', model_quant_type, weight_scale[0].cpu()
                 yield name + '.weight_offset', model_quant_type, weight_offset[0].cpu()
+                ori_shape = save_quant_weight.shape
+                weight_scale[1] = weight_scale[1].reshape(ori_shape[0], -1)
+                weight_offset[1] = weight_offset[1].reshape(ori_shape[0], -1)
                 yield name + '.weight_scale_second', model_quant_type, weight_scale[1].cpu()
                 yield name + '.weight_offset_second', model_quant_type, weight_offset[1].cpu()
             else:
@@ -229,14 +232,15 @@ class ComplexQuantifier:
                 fp_weight, powerquant=self.cfg.nonuniform, fraction=self.cfg.fraction, num_bits=self.cfg.w_bit,
                 per_channel=not self.cfg.mm_tensor)
         if isinstance(module, LowBitLinearQuantizer):
-            fp_weight = module.fp_weight
+            if not module.cfg.is_stage_quant:
+                fp_weight = module.fp_weight
             if module.disable_input:
                 res = None, fp_weight, weight_scale, weight_offset
                 return res
-            if self.cfg.model_quant_type == QuantType.W8A8S:
+            if module.cfg.model_quant_type == QuantType.W8A8S:
                 bit = 8
             else:
-                bit = self.cfg.w_bit
+                bit = module.cfg.w_bit
             
             is_scale_list = isinstance(weight_scale, list) and len(weight_scale) == 2
             is_offset_list = isinstance(weight_offset, list) and len(weight_offset) == 2
@@ -246,10 +250,10 @@ class ComplexQuantifier:
                                                           round_opt=round_opt, device=module.weight.device)
                 quant_weight, _ = fake_quantize_save(first_quant_weight, weight_scale[1], weight_offset[1], bit=4,
                                                             round_opt=round_opt, device=module.weight.device,
-                                                            group_size=self.cfg.group_size)
+                                                            group_size=module.cfg.group_size)
             else:
                 quant_weight, _ = fake_quantize_save(fp_weight, weight_scale, weight_offset, bit=bit,
                                                  round_opt=round_opt, device=module.weight.device,
-                                                 group_size=self.cfg.group_size)
+                                                 group_size=module.cfg.group_size)
         res = quant_weight, fp_weight, weight_scale, weight_offset
         return res

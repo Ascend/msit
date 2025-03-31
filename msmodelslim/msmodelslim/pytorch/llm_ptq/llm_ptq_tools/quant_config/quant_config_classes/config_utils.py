@@ -8,7 +8,7 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantType, W
 _SUPPORTED_DEVICES = ["cpu", "npu", 'gpu']
 A_BIT_LIST = [8, 16]
 W_BIT_LIST = [4, 8]
-GROUP_SIZE_LIST = [32, 64, 128]
+GROUP_SIZE_LIST = [32, 64, 128, 256]
 
 
 def set_quant_param(config):
@@ -174,6 +174,7 @@ def check_and_set_w4a8_dynamic_config(config):
             # w_sym and a_sym should be True when w_bit = 4 and a_bit = 8
             config.a_sym = True
             config.is_stage_quant = True
+            config.do_msd = False
 
 
 def check_and_generate_config_param(config):

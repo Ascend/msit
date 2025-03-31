@@ -57,6 +57,39 @@ class LayerConfigManager:
         check_and_generate_config_param(cfg_copy)
         return cfg_copy
 
+
+    """
+        temperal method for deepseek v3/r1, change to w8a8 per token
+    """
+    @staticmethod
+    def w4a8_dynamic_convert_to_w8a8_dynamic(cfg: QuantConfig) -> QuantConfig:
+        cfg_copy = copy.deepcopy(cfg)
+        cfg_copy.w_bit = 8
+        cfg_copy.a_bit = 8
+        cfg_copy.is_dynamic = True
+        cfg_copy.group_size = -1
+        check_and_generate_config_param(cfg_copy)
+        cfg_copy.a_sym = True
+        cfg_copy.is_stage_quant = True
+        return cfg_copy
+
+
+    """
+        temperal method for deepseek v3/r1, change to w8a8 per tensor
+    """
+    @staticmethod
+    def w4a8_dynamic_convert_to_w8a8(cfg: QuantConfig) -> QuantConfig:
+        cfg_copy = copy.deepcopy(cfg)
+        cfg_copy.w_bit = 8
+        cfg_copy.a_bit = 8
+        cfg_copy.is_dynamic = False
+        cfg_copy.group_size = -1
+        check_and_generate_config_param(cfg_copy)
+        cfg_copy.a_sym = False
+        cfg_copy.is_stage_quant = True
+        return cfg_copy
+
+
     @staticmethod
     def resolve_cfg_reference(name, cfg_store):
         if name not in cfg_store:
