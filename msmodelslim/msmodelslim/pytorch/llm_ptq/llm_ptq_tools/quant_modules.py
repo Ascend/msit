@@ -13,6 +13,9 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs import (
     init_weight_quant_normal,
     init_weight_quant_hessian,
 )
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.gptq.gptq import GPTQ, GPTQConfig
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.gptq.quant import GPTQQuantizer
+
 
 _OFFLOAD_DEVICE = "cpu"
 
@@ -428,6 +431,44 @@ class LinearQuantizer(nn.Module):
             # fp32 biasadd
             fp_out += bias_fp
         return fp_out
+
+
+class GPTQLinearQuantizer(LinearQuantizer):
+    def __init__(self, cfg=None, logger=None):
+        super(GPTQLinearQuantizer, self).__init__(cfg, logger)
+        self.gptq = GPTQ(GPTQConfig())
+        self.gptq.quantizer = GPTQQuantizer(cfg.w_bit, 
+                                            perchannel=not cfg.mm_tensor, 
+                                            sym=cfg.w_sym, 
+                                            mse=True)
+
+    def compute_quant_param(self, name):
+        if self.gptq.has_calib:
+            if self.quant_weight.logger:
+                self.quant_weight.logger.info(f"run GPTQ quantization on linear layer: {name}")
+            self.quant_weight.weight_scale, self.quant_weight.weight_offset = self.gptq.fasterquant(self)
+            self.quant_weight.has_init_quant_para = True
+        else:
+            # disable GPTQ for MOE structure
+            self.quant_weight.w_hessian = False
+            if self.quant_weight.logger:
+                self.quant_weight.logger.info(f"run MIN-MAX quantization on linear layer: {name}")
+            self.quant_weight(self.weight)
+
+    def forward(self, x):
+        if self.quant_weight.int_infer and (not self.quant_weight.is_calib):
+            return self._int_infer_forward(x)
+        else:
+            # compute hessian information for GPTQ
+            if self.quant_weight.is_calib:
+                self.gptq.add_batch(x.clone())
+                weight = self.weight
+            # fake quantization
+            else:
+                weight = self.quant_weight(self.weight, y=x.clone())
+            if self.quant_input.bit <= 8:
+                x = self.quant_input(x)
+            return F.linear(x, weight, self.bias)
 
 
 class Conv2dQuantizer(nn.Module):
