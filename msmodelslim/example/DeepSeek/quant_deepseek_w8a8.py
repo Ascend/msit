@@ -1,4 +1,6 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
+import os
+import sys
 import argparse
 import functools
 import json
@@ -9,12 +11,15 @@ import torch_npu
 
 from tqdm import tqdm
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
-
 from convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, OpsType
 from add_safetensors import add_safetensors
 
-from ascend_utils.common.security import get_valid_read_path
+current_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
+sys.path.append(parent_directory)
+
+from ascend_utils.common.security import get_valid_read_path, get_write_directory, check_number
+from example.common.utils import SafeGenerator
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
@@ -30,6 +35,7 @@ def parse_args():
                         help="The calib data for anti outlier")
     parser.add_argument('--calib_dataset', type=str, default="./calib_prompt.json",
                         help="The calib data for calibration")
+    parser.add_argument('--batch_size', type=int, default=4, help="Batch size for anti and calibration")
     parser.add_argument('--from_fp8', action='store_true', help="Origin model is of fp8")
     parser.add_argument('--from_bf16', action='store_true', help="Origin model is of bf16")
     return parser.parse_args()
@@ -41,7 +47,7 @@ def custom_hook(model_config):
     model_config["model_type"] = "deepseekv2"
 
 
-def get_calib_dataset_batch(model_tokenizer, calib_list, batch_size=1, device="npu"):
+def get_calib_dataset_batch(model_tokenizer, calib_list, batch_size, device="npu"):
     calib_dataset = []
     calib_list = [calib_list[i:i + batch_size] for i in range(0, len(calib_list), batch_size)]
     for calib_data in calib_list:
@@ -76,10 +82,17 @@ def main():
     set_logger_level("info")
     # 显示整个量化过程各个步骤的进度条
     pbar = tqdm(total=5, position=0, desc="Total Process")
+
     model_path = args.model_path
-    config = AutoConfig.from_pretrained(pretrained_model_name_or_path=model_path, 
-                                        local_files_only=True, 
-                                        trust_remote_code=True)
+    batch_size = args.batch_size
+
+    save_path = get_write_directory(args.save_path, write_mode=0o750)
+    check_number(batch_size, int, 1, 16, "batch_size")
+
+    safe_generator = SafeGenerator()
+
+    config = safe_generator.get_config_from_pretrained(model_path=model_path, 
+                                                       trust_remote_code=True)
     # Set layer count to 0 means use all layers, otherwise it will only use the first layer_count layers
     config.num_hidden_layers = args.layer_count if args.layer_count != 0 else config.num_hidden_layers
     # Set model type to deepseekv2 because we only support deepseekv2 now,
@@ -88,25 +101,23 @@ def main():
     # Disable use cache because we don't need to use cache, otherwise it will use too much device memory then cause OOM
     config.use_cache = False
 
-    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=model_path,
-                                              local_files_only=True,
-                                              config=config,
-                                              trust_remote_code=True,
-                                              use_fast=True,
-                                              add_eos_token=True)
+    tokenizer = safe_generator.get_tokenizer_from_pretrained(model_path=model_path,
+                                                             config=config,
+                                                             trust_remote_code=True,
+                                                             use_fast=True,
+                                                             add_eos_token=True)
 
-    model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=model_path,
-                                                 local_files_only=True,
-                                                 config=config,
-                                                 trust_remote_code=True,
-                                                 device_map={
-                                                     "model.embed_tokens": 0,
-                                                     "model.layers": "cpu",
-                                                     "model.norm": "cpu",
-                                                     "lm_head": 0,
-                                                 },
-                                                 torch_dtype="auto",
-                                                 attn_implementation='eager')
+    model = safe_generator.get_model_from_pretrained(model_path=model_path,
+                                                     config=config,
+                                                     trust_remote_code=True,
+                                                     device_map={
+                                                         "model.embed_tokens": 0,
+                                                         "model.layers": "cpu",
+                                                         "model.norm": "cpu",
+                                                         "lm_head": 0,
+                                                     },
+                                                     torch_dtype="auto",
+                                                     attn_implementation='eager')
 
     auto_convert_model_fp8_to_bf16(model, model_path, OpsType.get_ops_type(args.from_bf16, args.from_fp8))
 
@@ -120,8 +131,8 @@ def main():
     with open(calib_dataset_path, "r") as file:
         calib_prompt = json.load(file)
 
-    anti_dataset = get_calib_dataset_batch(tokenizer, anti_prompt, 1, model.device)
-    dataset_calib = get_calib_dataset_batch(tokenizer, calib_prompt, 1, model.device)
+    anti_dataset = get_calib_dataset_batch(tokenizer, anti_prompt, batch_size, model.device)
+    dataset_calib = get_calib_dataset_batch(tokenizer, calib_prompt, batch_size, model.device)
 
     with torch.no_grad():
         anti_config = AntiOutlierConfig(w_bit=8,
@@ -153,7 +164,7 @@ def main():
     calibrator.run()
     pbar.update(1)
 
-    calibrator.save(args.save_path,
+    calibrator.save(save_path,
                     json_name="quant_model_description_w8a8_dynamic.json",
                     safetensors_name="quant_model_weight_w8a8_dynamic.safetensors",
                     save_type=["safe_tensor"],
@@ -162,10 +173,10 @@ def main():
     custom_hooks = {
         'config.json': functools.partial(modify_config_json, custom_hook=custom_hook)
     }
-    copy_config_files(input_path=args.model_path, output_path=args.save_path, quant_config=quant_config,
+    copy_config_files(input_path=model_path, output_path=save_path, quant_config=quant_config,
                       custom_hooks=custom_hooks)
     pbar.update(1)
-    add_safetensors(org_paths=args.model_path, target_dir=args.save_path, safetensors_prefix="mtp_float",
+    add_safetensors(org_paths=model_path, target_dir=save_path, safetensors_prefix="mtp_float",
                     max_file_size_gb=5, prefix="model.layers.61.")
     pbar.update(1)
 

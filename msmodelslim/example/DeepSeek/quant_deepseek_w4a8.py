@@ -15,7 +15,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 from convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, OpsType
 from add_safetensors import add_safetensors
 
-from ascend_utils.common.security import json_safe_load, json_safe_dump, get_valid_read_path
+from ascend_utils.common.security import get_valid_read_path, get_write_directory, check_number
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
@@ -78,20 +78,23 @@ def main():
     # 显示整个量化过程各个步骤的进度条
     pbar = tqdm(total=5, position=0, desc="Total Process")
     model_path = args.model_path
+    save_path = args.save_path
     anti_path = args.anti_dataset
     calib_path = args.calib_dataset
+    batch_size = args.batch_size
 
     model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=False)
+    save_path = get_write_directory(save_path, write_mode=0o750)
     anti_path = get_valid_read_path(anti_path, is_dir=False, check_user_stat=False)
     calib_path = get_valid_read_path(calib_path, is_dir=False, check_user_stat=False)
+    check_number(batch_size, int, 1, 16, "batch_size")
     
     config = AutoConfig.from_pretrained(pretrained_model_name_or_path=model_path, trust_remote_code=True)
     # Set layer count to 0 means use all layers, otherwise it will only use the first layer_count layers
     config.num_hidden_layers = args.layer_count if args.layer_count != 0 else config.num_hidden_layers
     if config.num_hidden_layers < 0:
         raise ValueError("model num_hidden_layers is invalid, please check it.")
-    if args.batch_size <= 0:
-        raise ValueError("batch_size should be larger than 0.")
+
     # Set model type to deepseekv2 because we only support deepseekv2 now,
     # but v3's architecture is same as v2 without mtp layers so that we can reuse
     config.model_type = "deepseekv2"
@@ -125,8 +128,8 @@ def main():
     with open(calib_path, "r") as file:
         calib_prompt = json.load(file)
 
-    anti_dataset = get_calib_dataset_batch(tokenizer, anti_prompt, args.batch_size, device=model.device)
-    dataset_calib = get_calib_dataset_batch(tokenizer, calib_prompt, args.batch_size, device=model.device)
+    anti_dataset = get_calib_dataset_batch(tokenizer, anti_prompt, batch_size, device=model.device)
+    dataset_calib = get_calib_dataset_batch(tokenizer, calib_prompt, batch_size, device=model.device)
 
     with torch.no_grad():
         anti_config = AntiOutlierConfig(w_bit=8,
@@ -172,7 +175,7 @@ def main():
     calibrator.run()
     pbar.update(1)
 
-    calibrator.save(args.save_path,
+    calibrator.save(save_path,
                     json_name="quant_model_description_w8a8_dynamic.json",
                     safetensors_name="quant_model_weight_w8a8_dynamic.safetensors",
                     save_type=["safe_tensor"],
@@ -181,10 +184,10 @@ def main():
     custom_hooks = {
         'config.json': functools.partial(modify_config_json, custom_hook=custom_hook)
     }
-    copy_config_files(input_path=args.model_path, output_path=args.save_path, quant_config=w4a8_pertoken_config,
+    copy_config_files(input_path=model_path, output_path=save_path, quant_config=w4a8_pertoken_config,
                       custom_hooks=custom_hooks)
     pbar.update(1)
-    add_safetensors(org_paths=args.model_path, target_dir=args.save_path, safetensors_prefix="mtp_float",
+    add_safetensors(org_paths=model_path, target_dir=save_path, safetensors_prefix="mtp_float",
                     max_file_size_gb=5, prefix="model.layers.61.")
     pbar.update(1)
 
