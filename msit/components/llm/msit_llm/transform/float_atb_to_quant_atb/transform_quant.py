@@ -264,24 +264,22 @@ def transform_quant(source_path, enable_sparse=False):
 
     source_files, target_files = [], []
     for cpp_file_path, hpp_file_path in pairs:
-        logger.info(f"cpp_file_path: {cpp_file_path}, hpp_file_path: {hpp_file_path}")
+        logger.info("cpp_file_path: %r, hpp_file_path: %r" % (cpp_file_path, hpp_file_path))
         target_cpp_file_path, target_hpp_file_path = TransformQuant(
             cpp_file_path, hpp_file_path, enable_sparse=enable_sparse
         )()
 
-        logger.info(f"\nsource cpp file: {cpp_file_path},\ntarget cpp file: {target_cpp_file_path}")
+        logger.info("\nsource cpp file: %r,\ntarget cpp file: %r" % (cpp_file_path, target_cpp_file_path))
         source_files.append(cpp_file_path)
         target_files.append(target_cpp_file_path)
 
-        logger.info(f"\nsource hpp file: {hpp_file_path},\ntarget hpp file: {target_hpp_file_path}")
+        logger.info("\nsource hpp file: %r,\ntarget hpp file: %r" % (hpp_file_path, target_hpp_file_path))
         source_files.append(hpp_file_path)
         target_files.append(target_hpp_file_path)
 
     logger.info(
-        "\nTransformed source files: [\n    "
-        + "\n    ".join(source_files)
-        + "\n]"
-        + "\nTransformed target files: [\n    "
-        + "\n    ".join(target_files)
-        + "\n]"
+        "\nTransformed source files: [\n    %s\n]"
+        "\nTransformed target files: [\n    %s\n]",
+        "\n    ".join("%r" % s for s in source_files),
+        "\n    ".join("%r" % t for t in target_files)
     )

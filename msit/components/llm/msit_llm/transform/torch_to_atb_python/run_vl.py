@@ -153,5 +153,5 @@ if __name__ == "__main__":
     )[0]
 
     logger.info("-" * 40)
-    logger.info("Input: %s", args.text)
+    logger.info("Input: %r" % args.text)
     logger.info("Output: %s", output)
