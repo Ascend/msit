@@ -15,10 +15,12 @@ except ImportError:
         "The current CANN version does not support importing the migration and migration_vit packages."
     )
 
-def check_migration_import(migration):
-    if migration is None:
+
+def check_migration_import(migration_import):
+    if migration_import is None:
         return False
     return True
+
 
 def get_config():
     a_qconfig = {
@@ -326,10 +328,12 @@ class LlavaQuantDecoder(nn.Module):
                     cos_cached = emb.cos().to(torch.get_default_dtype())
                     sin_cached = emb.sin().to(torch.get_default_dtype())
                 except:
-                    raise AttributeError("The model config has no attribute hidden_size or num_attention_heads \
-                                         or max_position_embeddings or rope_theta, please check transformers version and model config.")
+                    raise AttributeError("The model config has no attribute hidden_size or num_attention_heads" + \
+                                         "or max_position_embeddings or rope_theta," + \
+                                         "please check transformers version and model config.")
             if cos_cached is None or sin_cached is None:
-                raise ValueError("cos_cached or sin_cached is None, please check transformers version and model config.")
+                raise ValueError("cos_cached or sin_cached is None," + \
+                                 "please check transformers version and model config.")
             extra_dict = {
                 'num_heads': self.self_attn.num_heads,
                 'num_key_value_heads': self.self_attn.num_key_value_heads,
