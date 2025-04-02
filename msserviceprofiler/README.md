@@ -30,7 +30,6 @@ msServiceProfiler 是一款基于昇腾平台，支持MindIE Service框架和vLL
 
 ```shell
 git clone https://gitee.com/ascend/msit.git
-cd msit/msserviceprofiler
 ```
 
 ## 支持与帮助
