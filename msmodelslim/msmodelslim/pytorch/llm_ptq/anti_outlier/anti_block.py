@@ -327,10 +327,10 @@ class LlavaQuantDecoder(nn.Module):
                     emb = torch.cat((freqs, freqs), dim=-1)
                     cos_cached = emb.cos().to(torch.get_default_dtype())
                     sin_cached = emb.sin().to(torch.get_default_dtype())
-                except:
-                    raise AttributeError("The model config has no attribute hidden_size or num_attention_heads" + \
-                                         "or max_position_embeddings or rope_theta," + \
-                                         "please check transformers version and model config.")
+                except Exception as e:
+                    raise AttributeError("The model config has no attribute hidden_size or num_attention_heads" + 
+                                        "or max_position_embeddings or rope_theta," + 
+                                        "please check transformers version and model config.") from e
             if cos_cached is None or sin_cached is None:
                 raise ValueError("cos_cached or sin_cached is None," + \
                                  "please check transformers version and model config.")
