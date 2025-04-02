@@ -14,7 +14,11 @@ except ImportError:
     msmodelslim_logger.warning(
         "The current CANN version does not support importing the migration and migration_vit packages."
     )
- 
+
+def check_migration_import(migration):
+    if migration is None:
+        return False
+    return True
 
 def get_config():
     a_qconfig = {
@@ -57,6 +61,9 @@ class QuantV2QwenBlock(nn.Module):
     def forward(
         self, *args, **kwargs
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
+        if not check_migration_import(migration):
+            raise ImportError("The current CANN version does not support migration algorithm.")
+
         hidden_states = args[0]
         rotary_pos_emb = kwargs.pop("rotary_pos_emb")
         registered_causal_mask = kwargs.pop("registered_causal_mask")
@@ -179,6 +186,9 @@ class QuantVisualAttentionBlock(nn.Module):
             v_x: Optional[torch.Tensor] = None,
             attn_mask: Optional[torch.Tensor] = None,
     ) -> torch.FloatTensor:
+        if not check_migration_import(migration_vit):
+            raise ImportError("The current CANN version does not support migration_vit algorithm.")
+
         k_x = self.ln_1_kv(k_x) if hasattr(self, "ln_1_kv") and k_x is not None else None
         v_x = self.ln_1_kv(v_x) if hasattr(self, "ln_1_kv") and v_x is not None else None
         post_ln_1 = self.ln_1(q_x)
@@ -273,9 +283,16 @@ class LlavaQuantDecoder(nn.Module):
         self.cac_migrate_attn = True
         self.cac_migrate_mlp = True
 
+        self.cfg = cfg
+        if hasattr(self.cfg, "llm_config"):
+            self.cfg = cfg.llm_config
+
     def forward(
         self, *args, **kwargs
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
+        if not check_migration_import(migration):
+            raise ImportError("The current CANN version does not support migration algorithm.")
+        
         hidden_states = args[0]
         attention_mask = kwargs.pop("attention_mask")
         position_ids = kwargs.pop("position_ids")
@@ -291,12 +308,34 @@ class LlavaQuantDecoder(nn.Module):
                                      self.self_attn.k_proj.weight,
                                      self.self_attn.v_proj.weight])
             bias_list = None
+            cos_cached = None
+            sin_cached = None
+            if hasattr(self.self_attn.rotary_emb, "cos_cached") and hasattr(self.self_attn.rotary_emb, "sin_cached"):
+                cos_cached = self.self_attn.rotary_emb.cos_cached
+                sin_cached = self.self_attn.rotary_emb.sin_cached
+            else:
+                try:
+                    dim = self.cfg.hidden_size // self.cfg.num_attention_heads
+                    max_position_embeddings = self.cfg.max_position_embeddings
+                    base = self.cfg.rope_theta
+                    device = hidden_states.device
+                    inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float().to(device) / dim))
+                    t = torch.arange(max_position_embeddings, device=device, dtype=inv_freq.dtype)
+                    freqs = torch.outer(t, inv_freq)
+                    emb = torch.cat((freqs, freqs), dim=-1)
+                    cos_cached = emb.cos().to(torch.get_default_dtype())
+                    sin_cached = emb.sin().to(torch.get_default_dtype())
+                except:
+                    raise AttributeError("The model config has no attribute hidden_size or num_attention_heads \
+                                         or max_position_embeddings or rope_theta, please check transformers version and model config.")
+            if cos_cached is None or sin_cached is None:
+                raise ValueError("cos_cached or sin_cached is None, please check transformers version and model config.")
             extra_dict = {
                 'num_heads': self.self_attn.num_heads,
                 'num_key_value_heads': self.self_attn.num_key_value_heads,
                 'num_key_value_groups': self.self_attn.num_key_value_groups,
-                'cos_cached': self.self_attn.rotary_emb.cos_cached,
-                'sin_cached': self.self_attn.rotary_emb.sin_cached,
+                'cos_cached': cos_cached,
+                'sin_cached': sin_cached,
                 'head_dim': self.self_attn.head_dim,
                 'position_ids': position_ids,
                 'attention_mask': attention_mask,
@@ -385,6 +424,8 @@ class LlavaClipVision(nn.Module):
         causal_attention_mask: torch.Tensor,
         output_attentions: Optional[bool] = False,
     ) -> Tuple[torch.FloatTensor]:
+        if not check_migration_import(migration):
+            raise ImportError("The current CANN version does not support migration algorithm.")
 
         residual = hidden_states
         hidden_states = self.layer_norm1(hidden_states)
@@ -514,6 +555,9 @@ class QuantQwen2VLDecoderLayer(nn.Module):
     def forward(
         self, *args, **kwargs
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
+        if not check_migration_import(migration):
+            raise ImportError("The current CANN version does not support migration algorithm.")
+
         hidden_states = args[0]
         attention_mask = kwargs.pop("attention_mask")
         position_ids = kwargs.pop("position_ids")
@@ -617,6 +661,8 @@ class QuantQwen2VLVisionBlock(nn.Module):
         self.cfg = config
 
     def forward(self, hidden_states, cu_seqlens, rotary_pos_emb) -> torch.Tensor:
+        if not check_migration_import(migration_vit):
+            raise ImportError("The current CANN version does not support migration_vit algorithm.")
         post_ln_1 = self.norm1(hidden_states)
         if self.cac_migrate_attn:
             msmodelslim_logger.info(f'current block is QuantQwen2VLVisionBlock, layername:{self.layername}')
@@ -697,6 +743,8 @@ class QuantInternLM2DecoderLayer(nn.Module):
     def forward(
         self, *args, **kwargs
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
+        if not check_migration_import(migration):
+            raise ImportError("The current CANN version does not support migration algorithm.")
         hidden_states = args[0]
         attention_mask = kwargs.pop("attention_mask")
         position_ids = kwargs.pop("position_ids")
@@ -824,6 +872,8 @@ class QuantInternVisionEncoderLayer(nn.Module):
             self,
             hidden_states: torch.Tensor,
     ) -> Tuple[torch.FloatTensor, Optional[torch.FloatTensor], Optional[Tuple[torch.FloatTensor]]]:
+        if not check_migration_import(migration_vit):
+            raise ImportError("The current CANN version does not support migration_vit algorithm.")
         qk_normalization = self.cfg.qk_normalization
         post_ln_1 = self.norm1(hidden_states).to(hidden_states.dtype)
         if self.cac_migrate_attn:
