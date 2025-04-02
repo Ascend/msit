@@ -63,8 +63,8 @@ OrangePi
 - 使用 OrangePi 推理，需要准备另外一台Atlas 800I A2 或 Atlas 300I DUO 进行w8a8量化，量化后把权重转移至香橙派上
 ```shell
 # w8a8 量化指令
-cd msit/msmodelslim/example/Llama
-python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl  --device_type npu --diable_names "lm_head" --anti_method m4
+cd msit/msmodelslim/example/Qwen
+python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl  --device_type npu --disable_names "lm_head" --anti_method m4
 ```
 ##### DeepSeek-R1-Distill-Qwen-1.5B 稀疏量化
 Atlas 300I DUO/Atlas 300I Pro/Atlas 300V
