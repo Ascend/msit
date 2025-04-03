@@ -16,7 +16,7 @@
 ## 环境配置
 
 - 环境配置请参考[使用说明](../../README.md)
-- transformers版本请参照模型路径下config.json配置为4.37.2
+- transformers版本需要配置安装为4.46.0
 - 另需安装pip包：pip install timm, fastchat
 
 ## 量化权重生成
@@ -44,8 +44,6 @@
   ```shell
   export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   export PYTORCH_NPU_ALLOC_CONF=expandable_segments:False
-  # 对InternVL2-40B进行量化时，需要开启环境变量：
-  export ASCEND_LAUNCH_BLOCKING=1
   ```
   
 #### 1. InternVL 2.0系列

@@ -15,6 +15,7 @@
 ## 环境配置
 
 - 环境配置请参考[使用说明](https://gitee.com/ascend/msit/blob/master/msmodelslim/README.md)
+- transformers版本需要配置安装为4.37.2
 
 ## 量化权重生成
 
