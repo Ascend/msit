@@ -38,7 +38,8 @@ from msit_llm.common.utils import (
     check_device_range_valid,
     check_cosine_similarity, 
     check_kl_divergence,
-    check_l1_norm
+    check_l1_norm,
+    safe_int_env
 )
 
 
@@ -344,3 +345,38 @@ class TestCommon(unittest.TestCase):
                     logger_output = cm.output
                     self.assertEqual(len(logger_output), 1)
                     self.assertRegex(logger_output[0], r'Privilege escalation risk detected')
+        
+    @patch("os.getenv")
+    def test_valid_integer(self, mock_getenv):
+        mock_getenv.return_value = "42"
+        self.assertEqual(safe_int_env("RANK", 10), 42)
+    
+    @patch("os.getenv")
+    def test_invalid_integer(self, mock_getenv):
+        mock_getenv.return_value = "\ninvalid\n"
+        self.assertEqual(safe_int_env("LOCAL_RANK", 10), 10)
+    
+    @patch("os.getenv")
+    def test_none_value(self, mock_getenv):
+        mock_getenv.return_value = None
+        self.assertEqual(safe_int_env("RANK", 10), 10)
+    
+    @patch("os.getenv")
+    def test_empty_string(self, mock_getenv):
+        mock_getenv.return_value = ""
+        self.assertEqual(safe_int_env("RANK", 10), 10)
+    
+    @patch("os.getenv")
+    def test_whitespace_string(self, mock_getenv):
+        mock_getenv.return_value = "   "
+        self.assertEqual(safe_int_env("RANK", 10), 10)
+    
+    @patch("os.getenv")
+    def test_negative_integer(self, mock_getenv):
+        mock_getenv.return_value = "-5"
+        self.assertEqual(safe_int_env("RANK", 10), -5)
+    
+    @patch("os.getenv") 
+    def test_float_value(self, mock_getenv):
+        mock_getenv.return_value = "3.14"
+        self.assertEqual(safe_int_env("RANK", 10), 10)

@@ -314,3 +314,13 @@ def check_l1_norm(value):
     if ivalue < -1:
         raise argparse.ArgumentTypeError("L1_Norm: %s is an invalid float value" % value)
     return ivalue
+
+
+def safe_int_env(var_name, default):
+    """Safely convert an environment variable to an integer with error handling."""
+    value = os.getenv(var_name, str(default)).strip()  # 获取环境变量并去除前后空格
+    try:
+        return int(value)
+    except (ValueError, TypeError) as e:
+        logger.warning("Failed to convert '%r' for %r, using default %r. Error: %r" % (value, var_name, default, e))
+        return default

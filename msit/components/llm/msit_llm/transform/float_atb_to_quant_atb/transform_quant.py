@@ -164,9 +164,20 @@ class TransformQuant:
         return insert_contents, insert_position, insert_position
 
     def update_in_tensor_count(self, cursor, contents):
+        # Extract the substring starting from the cursor's end offset
         cur_contents = contents[cursor.extent.end.offset:]
         next_semicolon_pos = cur_contents.find(";")
-        cur_in_tensor_count = int(cur_contents[:next_semicolon_pos].split("=")[-1].strip())
+        if next_semicolon_pos == -1:
+            raise ValueError("Semicolon not found; cannot parse in_tensor_count.")
+        
+        # Extract the value after the last '=' and strip whitespace
+        raw_value = cur_contents[:next_semicolon_pos].split("=")[-1].strip()
+        try:
+            cur_in_tensor_count = int(raw_value)
+        except ValueError as e:
+            raise ValueError(f"Failed to convert '{raw_value}' to an integer.") from e
+        
+        # Increase the tensor count by the number of added tensors
         cur_in_tensor_count += len(self.in_tensor_added)
         insert_contents = " = {}".format(cur_in_tensor_count)
         insert_start = cursor.extent.end.offset

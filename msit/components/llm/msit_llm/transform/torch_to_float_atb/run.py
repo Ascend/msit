@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import torch
 from transformers.configuration_utils import PretrainedConfig
 
-from msit_llm.common.utils import load_file_to_read_common_check
+from msit_llm.common.utils import load_file_to_read_common_check, safe_int_env
 from atb_llm.utils import file_utils, bind_cpus, initialize_distributed
 from atb_llm.utils.cpu_binding import NpuHbmInfo
 from atb_llm.utils.env import ENV
@@ -31,7 +31,7 @@ class RouterParam:
     revision: Optional[str] = None
     trust_remote_code: bool = False
 
-    
+
 def get_model(param):
     param.model_name_or_path = file_utils.standardize_path(param.model_name_or_path)
     file_utils.check_path_permission(param.model_name_or_path)
@@ -200,9 +200,9 @@ class TransPARunner(PARunner):
 def main():
     args = parse_arguments()
 
-    rank = int(os.getenv("RANK", "0"))
-    local_rank = int(os.getenv("LOCAL_RANK", "0"))
-    world_size = int(os.getenv("WORLD_SIZE", "1"))
+    rank = safe_int_env("RANK", 0)
+    local_rank = safe_int_env("LOCAL_RANK", 0)
+    world_size = safe_int_env("WORLD_SIZE", 1)
     input_dict = {
         'rank': rank,
         'world_size': world_size,
