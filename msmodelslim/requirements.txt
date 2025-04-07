@@ -1,2 +1,0 @@
-easydict==1.13
-einops
