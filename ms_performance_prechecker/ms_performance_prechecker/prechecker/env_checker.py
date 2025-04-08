@@ -15,7 +15,7 @@
 import os
 from ms_performance_prechecker.prechecker.register import register_checker, cached, RrecheckerBase
 from ms_performance_prechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
-from ms_performance_prechecker.prechecker.utils import logger, get_version_info
+from ms_performance_prechecker.prechecker.utils import logger, get_version_info, get_npu_info
 from ms_performance_prechecker.prechecker.env_suggestion import ENV_SUGGESTIONS
 
 
@@ -58,7 +58,7 @@ def env_rule_checker(envs, env_rule, version_info):
 
     suggest_value_list = []  # (value, reason) 优先级从前到后，在前面的优先级高
     not_suggest_value_dict = {}  # value： reason
-
+    
     for suggestion in suggestions:
         suggestion_value = suggestion.get("VALUE", None)
         if not isinstance(suggestion_value, list):
@@ -149,6 +149,9 @@ class EnvChecker(RrecheckerBase):
 
         fix_pair = []
         version_info = get_version_info(kwargs.get("mindie_service_path", None))
+        version_info["NPU_TYPE"] = get_npu_info()
+        if version_info["NPU_TYPE"] not in ["d802", "d803"]:
+            return 
         for item in ENV_SUGGESTIONS:
             result, env_cmd, undo_env_cmd = env_rule_checker(envs, item, version_info)
 

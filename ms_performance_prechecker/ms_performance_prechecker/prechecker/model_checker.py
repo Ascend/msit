@@ -36,17 +36,38 @@ def get_file_sizes(file_path_regex):
     return result_dict
 
 
-def get_file_sha256s(file_path_regex):
+def get_file_sha256s(file_path_regex, block_size=4096, num_blocks=1000):
     files = glob.glob(file_path_regex)
     result_dict = {}
-    for file_path in SimpleProgressBar(files, desc="Calculating sha256sum", total=len(files)):
+
+    for file_path in files:
         file_name = os.path.basename(file_path)
+        total_size = os.path.getsize(file_path)
+
+        if total_size == 0:
+            result_dict[file_name] = {"sha256sum": hashlib.sha256().hexdigest()}
+            continue
+
         sha256_hash = hashlib.sha256()
+        block_size = min(block_size, total_size)
+
         with open(file_path, "rb") as ff:
-            for byte_block in iter(lambda: ff.read(4096), b""):
-                sha256_hash.update(byte_block)
-        sha256_value = sha256_hash.hexdigest()
-        result_dict[file_name] = {"sha256sum": sha256_value}
+            if num_blocks <= 0 or total_size <= block_size * num_blocks:
+                for byte_block in iter(lambda: ff.read(block_size), b""):
+                    sha256_hash.update(byte_block)
+            else:
+                step = max(1, total_size // num_blocks)
+                test_positions = list(range(0, total_size, step)) + [max(0, total_size - block_size)]
+                
+                for pos in test_positions:
+                    if 0 <= pos < total_size:
+                        ff.seek(pos, 0)
+                        byte_block = ff.read(block_size)
+                        if byte_block:
+                            sha256_hash.update(byte_block)
+
+        result_dict[file_name] = {"sha256sum": sha256_hash.hexdigest()}
+
     return result_dict
 
 
@@ -100,16 +121,17 @@ class ModelSizeChecker(RrecheckerBase):
 
 class ModelSha256Collecter(RrecheckerBase):
     __checker_name__ = "ModelSha256"
-
-    def collect_env(self, mindie_service_path=None, **kwargs):
+    
+    def collect_env(self, mindie_service_path=None, sha256_blocknum=1000, **kwargs):
         model_name, model_weight_path = get_model_path_from_mindie_config(mindie_service_path=mindie_service_path)
 
         if not model_name or not model_weight_path:
             return None
 
-        logger.warning("Model checking sha256sum value could take ~30mins depending on model weights size")
-        model_json_sha256 = get_file_sha256s(os.path.join(model_weight_path, "*.json"))
-        model_weight_sha256 = get_file_sha256s(os.path.join(model_weight_path, "*.safetensors"))
+        model_json_sha256 = get_file_sha256s(os.path.join(model_weight_path, "*.json"), num_blocks=0)
+        model_weight_sha256 = get_file_sha256s(
+            os.path.join(model_weight_path, "*.safetensors"), num_blocks=sha256_blocknum
+        )
         logger.debug(f"ModelSha256Collecter model_weight_sha256={model_weight_sha256}")
         return {
             "model_name": model_name,
@@ -120,6 +142,7 @@ class ModelSha256Collecter(RrecheckerBase):
     def do_precheck(self, model_config, **kwargs):
         logger.warning("Precheck with modelsha256 checker is meaningless. Will skip it")
         return
+
 
 model_size_checker = ModelSizeChecker()
 model_sha256_collecter = ModelSha256Collecter()

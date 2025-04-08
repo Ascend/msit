@@ -19,6 +19,7 @@ import csv
 import socket
 import logging
 import time
+import re
 from collections import namedtuple
 
 _RUN_MODES = ["precheck", "dump", "compare", "distribute_compare"]
@@ -296,6 +297,17 @@ def run_shell_command(command, fail_msg=""):
         logger.error(f"Failed calling {base_command}" + fail_msg)
         return {}
     return result
+
+
+def get_npu_info():
+    result = run_shell_command("lspci", fail_msg=", will skip getting npu info.")
+    for line in result.stdout.splitlines():
+        if "accelerators" in line:
+            match = re.search(r'Device (d\d{3})', line)
+            if match:
+                device_id = match.group(1)
+                return device_id
+    return None
 
 
 class ProcessBarStreamHandler(logging.StreamHandler):
