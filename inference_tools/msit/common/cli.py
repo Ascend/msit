@@ -13,12 +13,14 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
+from sys import argv
 
-from msit.base import MsitCommand, Service
-from msit.core.probe.cli.command_probe import ProbeCommand
-from msit.utils.constants import CmdConst, DumpConst, MsgConst
+from msit.base import Command, MsitCommand, Service
+from msit.common.ascend import cann
+from msit.utils.constants import CfgConst, CmdConst, MsgConst
 from msit.utils.exceptions import MsitException
 from msit.utils.log import logger
+from msit.utils.toolkits import run_subprocess, set_ld_preload
 
 _DESCRIPTION = """
                                    _ _
@@ -31,32 +33,52 @@ msit (MindStudio Inference Tools), [Powered by MindStudio].
 Providing one-site debugging and optimization toolkits for inference on Ascend devices.
 For any issue, refer FAQ first. Gitee repo: Ascend/msit, wiki.
 """
-_CMD_LEVEL_2 = 1
 _L2COMMAND = "L2command"
 
 
 class MainCommand(MsitCommand):
     def __init__(self):
-        super().__init__(prog_name="msit")
-        self.parser = ArgumentParser(description=_DESCRIPTION, formatter_class=self.formatter_class)
+        super().__init__()
+        self.parser = ArgumentParser(prog="msit", description=_DESCRIPTION, formatter_class=self.formatter_class)
         self.subparser = self.parser.add_subparsers(dest=_L2COMMAND)
-        self.add_subcommand_level = _CMD_LEVEL_2
-        self.match_command_map = {CmdConst.PROBE: ProbeCommand()}
-        self.name_command_help = [[CmdConst.PROBE, CmdConst.HELP_PROBE], [CmdConst.SURGEON, CmdConst.HELP_SURGEON]]
-        self.command_mapping = {"PROBE_DUMP_STATISTICS": DumpConst.STATISTICS, "PROBE_DUMP_TENSOR": DumpConst.TENSOR}
+        self.second_commands = Command.get("msit")
+        self.subcommand_level = 1
+
+    def add_arguments(self, parse):
+        pass
+
+    def register(self):
+        for name, cmd_class in self.second_commands.items():
+            cmd_parser = self.subparser.add_parser(
+                name=name, help=CmdConst.HELP_MODULE_MAP.get(name), formatter_class=self.formatter_class
+            )
+            if self.input_module in self.second_commands:
+                cmd_class.add_arguments(cmd_parser)
+                self.subcommand_level = 2
+                self.build_parser(cmd_parser, cmd_class)
+
+    def parse(self):
+        return self.parser.parse_args()
+
+    def set_env(self, framework):
+        env_map = {CfgConst.FRAMEWORK_MINDIE_LLM: cann.get_atb_probe_so_path()}
+        so_path = env_map.get(framework)
+        if so_path:
+            set_ld_preload(so_path)
+        else:
+            raise MsitException(MsgConst.PATH_NOT_FOUND, f".so library path for {framework} not found.")
 
     def execute(self, args):
-        if hasattr(args, DumpConst.LOG_LEVEL):
-            logger.set_level(args.log_level)
+        if Service.get(argv[self.subcommand_level - 1]):
+            logger.info(f"Preparing to launch {argv[self.subcommand_level - 1]} service.")
+            if args.framework:
+                self.set_env(args.framework)
+            if not args.msitx:
+                Service.get(argv[self.subcommand_level - 1])(args=args).run_cli()
+            else:
+                run_subprocess(args.exec)
         else:
-            self.parser.print_help()
-            return
-        command_key = f"{args.L2command}_{args.L3command}_{args.task}".upper()
-        service_key = self.command_mapping.get(command_key)
-        if service_key:
-            Service.get(service_key)(args=args).run_cli()
-        else:
-            MsitException(MsgConst.CALL_FAILED, f"Unsupported command key: {command_key}.")
-
-    def parse_args(self):
-        return self.parser.parse_args()
+            raise MsitException(
+                MsgConst.CALL_FAILED,
+                f"The {argv[self.subcommand_level - 1]} utility is not registered. Please check it.",
+            )
