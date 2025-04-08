@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.core.probe.base.dump_actuator import OfflineModelActuator
-from msit.core.probe.base.dump_dumper import BaseDumper
-from msit.core.probe.base.dump_service import ServiceDump
-from msit.core.probe.base.dump_writer import WriterDump
+from msit.module.probe.base.dump_actuator import OfflineModelActuator
+from msit.module.probe.base.dump_dumper import BaseDumper
+from msit.module.probe.base.dump_writer import WriterDump

@@ -14,8 +14,8 @@
 
 import numpy as np
 
-from msit.core.probe.base import OfflineModelActuator, WriterDump
-from msit.utils.constants import DumpConst, MsgConst
+from msit.module.probe.base import OfflineModelActuator, WriterDump
+from msit.utils.constants import CfgConst, DumpConst, MsgConst
 from msit.utils.exceptions import MsitException
 from msit.utils.io import load_caffe_model
 from msit.utils.log import logger
@@ -25,6 +25,11 @@ class CaffeModelActuator(OfflineModelActuator):
     def __init__(self, model_path, input_shape, input_path, **kwargs):
         super().__init__(model_path, input_shape, input_path, **kwargs)
         self.weight_path = kwargs.get("weight_path", "")
+        if not self.weight_path:
+            raise MsitException(
+                MsgConst.REQUIRED_ARGU_MISSING,
+                "When using Caffe for inference, a weight file (.caffemodel) is required.",
+            )
 
     def load_model(self):
         self.model = load_caffe_model(self.model_path, self.weight_path)
@@ -55,13 +60,11 @@ class CaffeModelActuator(OfflineModelActuator):
 
 
 class CaffeModelDataWriter(WriterDump):
-    def __init__(self, task, dump_mode):
-        super().__init__()
-        self.task = task
+    def __init__(self, dump_format, dump_mode):
+        super().__init__(dump_format)
         self.dump_mode = dump_mode
-        self.cache_dump_json[DumpConst.TASK] = task
-        self.cache_dump_json[DumpConst.LEVEL] = DumpConst.LEVEL_LAYER
-        self.cache_dump_json[DumpConst.FRAMEWORK] = DumpConst.FRAMEWORK_CAFFE
+        self.cache_dump_json[CfgConst.LEVEL] = CfgConst.LEVEL_LAYER
+        self.cache_dump_json[CfgConst.FRAMEWORK] = CfgConst.FRAMEWORK_CAFFE
         self.caffe_net = None
 
     @staticmethod

@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.core.probe.components.dumper_caffe import CaffeActuatorComp, CaffeDumperComp, CaffeWriterComp
-from msit.core.probe.components.dumper_onnx import OnnxActuatorComp, OnnxDumperComp, OnnxWriterComp
-from msit.core.probe.components.dumper_tf import (
+from msit.module.probe.components.dumper_atb import AtbActuatorComp
+from msit.module.probe.components.dumper_caffe import CaffeActuatorComp, CaffeDumperComp, CaffeWriterComp
+from msit.module.probe.components.dumper_onnx import OnnxActuatorComp, OnnxDumperComp, OnnxWriterComp
+from msit.module.probe.components.dumper_tf import (
     FrozenGraphActuatorCompCPU,
     FrozenGraphActuatorCompNPU,
     FrozenGraphDumperCompCPU,

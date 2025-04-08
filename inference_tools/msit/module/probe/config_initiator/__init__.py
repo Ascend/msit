@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.core.probe.config_initiator.config_dump import DumpConfig
+from msit.module.probe.config_initiator.config_dump import DumpConfig

@@ -16,8 +16,8 @@ from glob import glob
 
 from msit.common.ascend import cann
 from msit.common.dirs import DirPool
-from msit.core.probe.base import OfflineModelActuator, WriterDump
-from msit.utils.constants import DumpConst, MsgConst, PathConst
+from msit.module.probe.base import OfflineModelActuator, WriterDump
+from msit.utils.constants import CfgConst, DumpConst, MsgConst, PathConst
 from msit.utils.dependencies import dependent
 from msit.utils.exceptions import MsitException
 from msit.utils.io import load_pb_frozen_graph_model
@@ -33,10 +33,6 @@ class FrozenGraphActuator(OfflineModelActuator):
         self.sess = None
         self.graph_def = None
         self.all_node_names = []
-
-    def __del__(self):
-        if self.sess is not None:
-            self.sess.close()
 
     @staticmethod
     def _import_tf():
@@ -60,6 +56,14 @@ class FrozenGraphActuator(OfflineModelActuator):
             else:
                 shape_list.append(dim.size)
         return shape_list
+
+    def close(self):
+        if self.sess is not None:
+            try:
+                self.sess.close()
+            except AttributeError:
+                pass
+            self.sess = None
 
     def get_input_tensor_info(self):
         inputs_tensor_info = []
@@ -87,6 +91,7 @@ class FrozenGraphActuator(OfflineModelActuator):
             raise MsitException(
                 MsgConst.CALL_FAILED, "Please check if the input shape or data matches the model requirements."
             ) from e
+        self.close()
         return outputs
 
     def _open_session(self):
@@ -170,13 +175,11 @@ class FrozenGraphActuatorNPU(FrozenGraphActuator):
 
 
 class FrozenGraphDataWriter(WriterDump):
-    def __init__(self, task, dump_mode):
-        super().__init__()
-        self.task = task
+    def __init__(self, dump_format, dump_mode):
+        super().__init__(dump_format)
         self.dump_mode = dump_mode
-        self.cache_dump_json[DumpConst.TASK] = task
-        self.cache_dump_json[DumpConst.LEVEL] = DumpConst.LEVEL_KERNEL
-        self.cache_dump_json[DumpConst.FRAMEWORK] = DumpConst.FRAMEWORK_TF
+        self.cache_dump_json[CfgConst.LEVEL] = CfgConst.LEVEL_KERNEL
+        self.cache_dump_json[CfgConst.FRAMEWORK] = CfgConst.FRAMEWORK_TF
 
     @staticmethod
     def _get_input_map(tf_ops, output_map):

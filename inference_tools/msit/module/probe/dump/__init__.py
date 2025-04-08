@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.core.probe.dump.atb_model import AtbModelConfiguration
-from msit.core.probe.dump.caffe_model import CaffeModelActuator, CaffeModelDataWriter
-from msit.core.probe.dump.onnx_model import OnnxModelActuator, OnnxModelDataWriter
-from msit.core.probe.dump.tf_model import FrozenGraphActuatorCPU, FrozenGraphActuatorNPU, FrozenGraphDataWriter
+from msit.module.probe.dump.atb_model import AtbModelConfiguration
+from msit.module.probe.dump.caffe_model import CaffeModelActuator, CaffeModelDataWriter
+from msit.module.probe.dump.onnx_model import OnnxModelActuator, OnnxModelDataWriter
+from msit.module.probe.dump.tf_model import FrozenGraphActuatorCPU, FrozenGraphActuatorNPU, FrozenGraphDataWriter

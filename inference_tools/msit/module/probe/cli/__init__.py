@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.core.probe.cli.command_dump import DumpCommand
+from msit.module.probe.cli.command_dump import DumpCommand

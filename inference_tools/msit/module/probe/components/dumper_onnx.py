@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.base import Component, ConsumerComp, OfflineModelActuatorComp, ProducerComp
-from msit.core.probe.base import BaseDumper
-from msit.core.probe.dump import OnnxModelActuator, OnnxModelDataWriter
+from msit.base import Component, ConsumerComp, ProducerComp
+from msit.module.probe.base import BaseDumper
+from msit.module.probe.components.dumper_offline_model import OfflineModelActuatorComp
+from msit.module.probe.dump import OnnxModelActuator, OnnxModelDataWriter
 from msit.utils.constants import CompConst, MsgConst
 from msit.utils.exceptions import MsitException
 from msit.utils.hijack import POST_HOOK, PRE_HOOK, hijacker
@@ -119,9 +120,9 @@ class OnnxDumperComp(ProducerComp, BaseDumper):
 
 @Component.register(CompConst.ONNX_WRITER_COMP)
 class OnnxWriterComp(ConsumerComp):
-    def __init__(self, priority, task, dump_mode):
+    def __init__(self, priority, dump_format, dump_mode):
         super().__init__(priority)
-        self.writer = OnnxModelDataWriter(task, dump_mode)
+        self.writer = OnnxModelDataWriter(dump_format, dump_mode)
 
     def consume(self, packages):
         input_map, output_list, origin_model, model_session = packages[0][1]

@@ -40,29 +40,6 @@ def get_tf_type2dtype_map():
         return {}
 
 
-_BASE_TYPE2DTYPE_MAP = {
-    "tensor(int)": np.int32,
-    "tensor(int8)": np.int8,
-    "tensor(int16)": np.int16,
-    "tensor(int32)": np.int32,
-    "tensor(int64)": np.int64,
-    "tensor(uint8)": np.uint8,
-    "tensor(uint16)": np.uint16,
-    "tensor(uint32)": np.uint32,
-    "tensor(uint64)": np.uint64,
-    "tensor(float)": np.float32,
-    "tensor(float16)": np.float16,
-    "tensor(double)": np.double,
-    "tensor(bool)": np.bool_,
-    "tensor(complex64)": np.complex64,
-    "tensor(complex128)": np.complex_,
-    "float32": np.float32,
-    "float16": np.float16,
-}
-
-_TYPE2DTYPE_MAP = {**_BASE_TYPE2DTYPE_MAP, **get_tf_type2dtype_map()}
-
-
 class OfflineModelActuator:
     def __init__(self, model_path: str, input_shape: dict, input_path: str, **kwargs):
         self.model_path = model_path
@@ -79,7 +56,26 @@ class OfflineModelActuator:
 
     @staticmethod
     def _tensor2numpy_for_type(tensor_type):
-        numpy_data_type = _TYPE2DTYPE_MAP.get(tensor_type)
+        base_type2dtype_map = {
+            "tensor(int)": np.int32,
+            "tensor(int8)": np.int8,
+            "tensor(int16)": np.int16,
+            "tensor(int32)": np.int32,
+            "tensor(int64)": np.int64,
+            "tensor(uint8)": np.uint8,
+            "tensor(uint16)": np.uint16,
+            "tensor(uint32)": np.uint32,
+            "tensor(uint64)": np.uint64,
+            "tensor(float)": np.float32,
+            "tensor(float16)": np.float16,
+            "tensor(double)": np.double,
+            "tensor(bool)": np.bool_,
+            "tensor(complex64)": np.complex64,
+            "tensor(complex128)": np.complex_,
+            "float32": np.float32,
+            "float16": np.float16,
+        }
+        numpy_data_type = {**base_type2dtype_map, **get_tf_type2dtype_map()}.get(tensor_type)
         if numpy_data_type:
             return numpy_data_type
         else:
