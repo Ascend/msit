@@ -153,4 +153,73 @@ ENV_SUGGESTIONS = [
         "SUGGESTION_VALUE": "expandable_segments:True",
         "REASON": "使能内存池扩展段功能，既虚拟内存特性；设置为True,可以优化内存碎片对内存的占用",
     },
+    {
+        "ENV": "MINDIE_LOG_TO_STDOUT",
+        "SUGGESTION_VALUE": 1,
+        "REASON": "将日志打印到屏幕，默认到日志文件",
+    },
+    {
+        "ENV": "OMP_NUM_THREADS",
+        "SUGGESTION_VALUE": 1,
+        "REASON": "单线程加速权重加载",
+    },
+    {
+        "ENV": "INF_NAN_MODE_ENABLE",
+        "SUGGESTION_VALUE": 0,
+        "REASON": "设置精度饱和模式，防止fp16引起的上下溢出",
+    },
+    {
+        "ENV": "ATB_LLM_HCCL_ENABLE",
+        "SUGGESTIONS": [
+            {
+                "VALUE": 1,
+                "SUGGESTION": {
+                    "VERSION_LIST": {"NPU_TYPE": ["d803"]},
+                    "REASON": "d803 NPU 机型单机配置混合并行，需要额外配置HCCL环境变量",
+                },
+            }
+        ]
+    },
+    {
+        "ENV": "ATB_LLM_COMM_BACKEND",
+        "SUGGESTIONS": [
+            {
+                "VALUE": "hccl",
+                "SUGGESTION": {
+                    "VERSION_LIST": {"NPU_TYPE": ["d803"]},
+                    "REASON": "d803 NPU 机型单机配置混合并行，需要额外配置HCCL环境变量",
+                },
+            }
+        ]
+    },
+    {
+        "ENV": "ATB_LAYER_INTERNAL_TENSOR_REUSE",
+        "SUGGESTION_VALUE": 1,
+        "REASON": "使能内存复用，Model调用Layer时，复用Layer间的中间Tensor",
+    },
+    {
+        "ENV": "ATB_OPERATION_EXECUTE_ASYNC",
+        "SUGGESTION_VALUE": 1,
+        "REASON": "开启算子setup和execute异步执行",
+    },
+    {
+        "ENV": "ATB_CONVERT_NCHW_TO_ND",
+        "SUGGESTION_VALUE": 1,
+        "REASON": "将输入Tensor的格式从NCHW转成ND（加速库不支持传入NCHW格式的Tensor）",
+    },
+    {
+        "ENV": "ATB_CONTEXT_WORKSPACE_SIZE",
+        "SUGGESTION_VALUE": 0,
+        "REASON": "设置NPU侧用来存放算子Workspace data的Buffer块大小",
+    },
+    {
+        "ENV": "ATB_LAUNCH_KERNEL_WITH_TILING",
+        "SUGGESTION_VALUE": 1,
+        "REASON": "开启Tiling data拷贝随算子下发功能",
+    },
+    {
+        "ENV": "ATB_LLM_ENABLE_AUTO_TRANSPOSE",
+        "SUGGESTION_VALUE": 0,
+        "REASON": "开启权重右矩阵自动转置寻优",
+    },
 ]

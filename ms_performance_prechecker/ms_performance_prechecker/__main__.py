@@ -38,9 +38,7 @@ RANKTABLE_FILE = os.getenv(RANKTABLEFILE, None)
 MINDIE_SERVICE_PATH = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
 
 COMMON_ARGS = [
-    dict(
-        args=["-l", "--log_level"], kwargs=dict(default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")
-    ),
+    dict(args=["-l", "--log_level"], kwargs=dict(default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")),
 ]
 DUMP_COMMON_ARGS = [
     dict(
@@ -60,6 +58,14 @@ DUMP_COMMON_ARGS = [
         args=["-ranktable", "--ranktable_file"],
         kwargs=dict(default=RANKTABLE_FILE, help="HCCL rank table file path."),
     ),
+    dict(
+        args=["-blocknum", "--sha256_blocknum"],
+        kwargs=dict(
+            default=1000,
+            type=int,
+            help="Sampling file block number for checking sha256sum. < 1 for checking whole file ",
+        ),
+    ),
 ]
 
 
@@ -67,7 +73,7 @@ def get_next_dict_item(dict_value):
     return dict([next(iter(dict_value.items()))])
 
 
-def get_all_register_prechecker(checkers=(CHECKER_TYPES.basic,)):   
+def get_all_register_prechecker(checkers=(CHECKER_TYPES.basic,)):
     if CHECKER_TYPES.all in checkers:
         checkers = [CHECKER_TYPES.all]
 
@@ -150,7 +156,9 @@ def run_distribute_compare(
 ):
     from ms_performance_prechecker.prechecker import cluster_collector
 
-    dump_env = run_env_dump(dump_file_path=None, service_config_path=service_config_path, checkers=checkers)
+    dump_env = run_env_dump(
+        dump_file_path=None, service_config_path=service_config_path, checkers=checkers, ranktable_file=ranktable_file
+    )
     dump_env_json_str = json.dumps(dump_env)
 
     cluster_collector.init_global_distribute_env(
@@ -191,7 +199,7 @@ def sub_parser_precheck(subparsers):
         help="Save env changes as a file which could be applied directly.",
     )
     for ii in DUMP_COMMON_ARGS + COMMON_ARGS:
-        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
+        parser.add_argument(*ii.get("args", []), **ii.get("kwargs", {}))
     parser.set_defaults(func=run_precheck)
 
 
@@ -208,7 +216,7 @@ def sub_parser_dump(subparsers):
         help="Path save envs. It could be a list of path when you want to compare envs of multiple path.",
     )
     for ii in DUMP_COMMON_ARGS + COMMON_ARGS:
-        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
+        parser.add_argument(*ii.get("args", []), **ii.get("kwargs", {}))
     parser.set_defaults(func=run_env_dump)
 
 
@@ -222,7 +230,7 @@ def sub_parser_compare(subparsers):
         help="Saved configuration path. It could be a list of path when you want to compare envs of multiple path.",
     )
     for ii in COMMON_ARGS:
-        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
+        parser.add_argument(*ii.get("args", []), **ii.get("kwargs", {}))
     parser.set_defaults(func=run_compare)
 
 
@@ -260,7 +268,7 @@ def sub_parser_distribute_compare(subparsers):
         help="world size, required if RANKTABLEFILE not available or using different value",
     )
     for ii in DUMP_COMMON_ARGS + COMMON_ARGS:
-        parser.add_argument(*ii.get('args', []), **ii.get('kwargs', {}))
+        parser.add_argument(*ii.get("args", []), **ii.get("kwargs", {}))
     parser.set_defaults(func=run_distribute_compare)
 
 
@@ -275,7 +283,7 @@ def main():
     args, _ = parser.parse_known_args()
 
     # init
-    set_log_level(getattr(args, 'log_level', 'info'))
+    set_log_level(getattr(args, "log_level", "info"))
 
     # run
     if hasattr(args, "func"):
