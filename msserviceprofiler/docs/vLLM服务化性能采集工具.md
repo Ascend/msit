@@ -48,11 +48,11 @@ import vllm_profiler.vllm_profiler_0_6_3
     "profiler_level": "INFO"
 }
 ```
-|   参数   | 说明                                                                                                                                                                            | 是否必选  | 
-|:------:|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----:|
-|   enable   | 是否开启性能数据采集的开关：<br/>0：关闭<br/>1：开启<br/>默认值：0                                                                                                                                    |   是   |
-|   prof_dir   | 采集到性能数据的存放路径。<br/>默认值：$HOME/Ascend/ascend-toolkit/latest/tools/msserviceprofiler/ms_service_profiler                                                                          |   否   |
-|   profiler_level   | 数据采集等级：<br/>ERROR=10：异常级别的性能数据。<br/>INFO=20：普通级别的性能数据，**默认值**。<br/> DETAILED=30：详细级别的性能数据。<br/>VERBOSE=40：冗长的性能数据。<br/>**注意**<br/>字符串或数字传参均可，如选择VERBOSE会占用一定的设备性能，导致采集数据略有不准。 |   否   |
+|   参数   | 说明                                                       | 是否必选  | 
+|:------:|:---------------------------------------------------------|:-----:|
+|   enable   | 是否开启性能数据采集的开关：<br/>0：关闭<br/>1：开启<br/>默认值：0               |   是   |
+|   prof_dir   | 采集到性能数据的存放路径，支持用户自定义。<br/>默认值：$HOME/.ms_service_profiler |   否   |
+|   profiler_level   | 数据采集等级。默认值为"INFO"，指普通级别的性能数据。                            |   否   |
 
 #### 2. 配置环境变量。
 步骤1. 将采集工具代码路径加入PYTHONPATH。
@@ -75,14 +75,13 @@ python -m vllm.entrypoints.openai.api_server --model ${container_model_path} \
 --max-num-seqs=256 \
 --max-model-len=4096 \
 --max-num-batched-tokens=4096 \
+--dtype=float16 \
 --tensor-parallel-size=1 \
 --block-size=128 \
 --host=${docker_ip} \
 --port=8080 \
---gpu-memory-utilization=0.9 \
---num-scheduler-steps=8 \
---trust-remote-code \
---enforce-eager
+--gpu-memory-utilization=0.8 \
+--trust-remote-code
 ```
  参数   | 说明                                                                                    |
 |:------:|:---------------------------------------------------------------------------------------------------|
@@ -93,13 +92,12 @@ python -m vllm.entrypoints.openai.api_server --model ${container_model_path} \
 
 #### 2. 客户端发送请求
 ```
-curl http://${docker_ip}:8000/v1/completions \
+curl -X POST http://${docker_ip}:8080/generate \
 -H "Content-Type: application/json" \
--d '{        
-      "model": "${container_model_path}",      
+-d '{           
       "prompt": "hello",
-      "max_tokens": 7,
-      "temperature": 0   
+      "max_tokens": 100,
+      "temperature": 0
 }'
 ```
 #### 3. 查看采集结果
