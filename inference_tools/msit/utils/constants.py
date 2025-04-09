@@ -18,8 +18,6 @@ class CmdConst:
     Class for command line const
     """
 
-    L3COMMAND = "L3command"
-    CMD_LEVEL_3 = 2
     PROBE = "probe"
     DUMP = "dump"
     COMPARE = "compare"
@@ -32,17 +30,21 @@ class CmdConst:
     EXTRACT = "extract"
     CONCAT = "concat"
 
-    HELP_PROBE = "A module for diagnosing inference accuracy issues, including data dump, compare, operator check, etc."
-    HELP_PROBE_DUMP = "Inference dump tools for Ascend devices."
-    HELP_PROBE_COMPARE = "Accuracy compare tools for msit dump task."
-    HELP_PROBE_OPCHECK = "Operator check tools for msit dump task"
+    HELP_MODULE_MAP = {
+        PROBE: "A module for diagnosing inference accuracy issues, including data dump, compare, operator check, etc.",
+        SURGEON: "Graph scan and modification Tool.",
+    }
 
-    HELP_SURGEON = "Graph scan and modification Tool."
-    HELP_SURGEON_LIST = "List all knowledge bases that currently support auto-tuning."
-    HELP_SURGEON_EVALUATE = "Search for onnx models that can be optimized by a specified knowledge base."
-    HELP_SURGEON_OPTIMIZE = "Use the specified knowledge base to optimize the specified onnx."
-    HELP_SURGEON_EXTRACT = "Cutting model subgraphs."
-    HELP_SURGEON_CONCAT = "Connecting to the model."
+    HELP_TOOL_MAP = {
+        DUMP: "Inference dump tools for Ascend devices.",
+        COMPARE: "Accuracy compare tools for msit dump task.",
+        OPCHECK: "Operator check tools for msit dump task",
+        LIST: "List all knowledge bases that currently support auto-tuning.",
+        EVALUATE: "Search for onnx models that can be optimized by a specified knowledge base.",
+        OPTIMIZE: "Use the specified knowledge base to optimize the specified onnx.",
+        EXTRACT: "Cutting model subgraphs.",
+        CONCAT: "Connecting to the model.",
+    }
 
 
 class PathConst:
@@ -121,6 +123,38 @@ class CompConst:
     CAFFE_DUMPER_COMP = "CaffeDumperComp"
     CAFFE_WRITER_COMP = "CaffeWriterComp"
 
+    ATB_ACTUATOR_COMP = "ATBActuatorComp"
+
+
+class CfgConst:
+    """
+    Class for config items
+    """
+
+    CONFIG = "config"
+    SERVICE = "service"
+    ALL_SERVICE = {"dump", "compare"}
+    EXEC = "exec"
+    FRAMEWORK = "framework"
+    FRAMEWORK_MINDIE_LLM = "mindie_llm"
+    FRAMEWORK_TORCH_AIR = "torch_air"
+    FRAMEWORK_MINDIE_TORCH = "mindie_torch"
+    FRAMEWORK_ONNX = "ONNX"
+    FRAMEWORK_TF = "TensorFlow"
+    FRAMEWORK_OM = "Ascend OM"
+    FRAMEWORK_CAFFE = "Caffe"
+    ALL_FRAMEWORK = {FRAMEWORK_MINDIE_LLM, FRAMEWORK_TORCH_AIR, FRAMEWORK_MINDIE_TORCH}
+    RANK = "rank"
+    STEP = "step"
+    LEVEL = "level"
+    LEVEL_MODULE = "module"
+    LEVEL_LAYER = "layer"
+    LEVEL_API = "api"
+    LEVEL_KERNEL = "kernel"
+    ALL_LEVEL = {LEVEL_MODULE, LEVEL_LAYER, LEVEL_API, LEVEL_KERNEL}
+    LOG_LEVEL = "log_level"
+    SEED = "seed"
+
 
 class DumpConst:
     """
@@ -136,27 +170,11 @@ class DumpConst:
     OUTPUT_ALL = [OUTPUT, "all"]
     ALL_DUMP_MODE = [INPUT, OUTPUT, "all"]
 
-    TASK = "task"
-    STATISTICS = "statistics"
-    TENSOR = "tensor"
-    OVERFLOW_CHECK = "overflow_check"
-    ALL_DUMP_TASK = [STATISTICS, TENSOR, OVERFLOW_CHECK]
-    FRAMEWORK = "framework"
-    FRAMEWORK_ONNX = "onnx"
-    FRAMEWORK_TF = "tensorflow"
-    FRAMEWORK_CAFFE = "caffe"
-    RANK = "rank"
-    STEP = "step"
-    LEVEL = "level"
-    LEVEL_MODULE = "module"
-    LEVEL_LAYER = "layer"
-    LEVEL_API = "api"
-    LEVEL_KERNEL = "kernel"
-    ALL_DUMP_LEVEL = [LEVEL_MODULE, LEVEL_LAYER, LEVEL_API, LEVEL_KERNEL]
-    LOG_LEVEL = "log_level"
-    SEED = "seed"
-    EXEC = "exec"
     DUMP_PATH = "dump_path"
+    DUMP_FORMAT = "dump_format"
+    DUMP_FORMAT_STAT = "stat"
+    DUMP_FORMAT_TENSOR = "tensor"
+    ALL_DUMP_FORMAT = {DUMP_FORMAT_STAT, DUMP_FORMAT_TENSOR}
     LIST = "list"
     DUMP_MODE = "dump_mode"
     DUMP_EXTRA = "dump_extra"
@@ -171,8 +189,9 @@ class DumpConst:
     DUMP_GRAPH_LEVEL = "dump_graph_level"
     ALL_DUMP_GRAPH_LEVEL = ["1", "2", "3", "4", 1, 2, 3, 4]
     FUSION_SWITCH_FILE = "fusion_switch_file"
-    INPUT_JSON = "input_json"
     ONNX_FUSION_switch = "onnx_fusion_switch"
+    SAVED_MODEL_TAG = "saved_model_tag"
+    SAVED_MODEL_SIGN = "saved_model_signature"
     WEIGHT_PATH = "weight_path"
 
     DUMP_DATA_DIR = "dump_data_dir"
@@ -187,7 +206,7 @@ class DumpConst:
     ENVVAR_ASCEND_WORK_PATH = "ASCEND_WORK_PATH"
 
     ENVVAR_MSIT_OUTPUT_DIR = "ATB_OUTPUT_DIR"
-    ENVVAR_MSIT_DUMP_TASK = "ATB_DUMP_TASK"
+    ENVVAR_MSIT_DUMP_FORMAT = "ATB_DUMP_FORMAT"
     ENVVAR_MSIT_DUMP_LEVEL = "ATB_DUMP_LEVEL"
     ENVVAR_MSIT_SAVE_TENSOR_RANGE = "ATB_SAVE_TENSOR_RANGE"
     ENVVAR_MSIT_DEVICE_ID = "ATB_DEVICE_ID"

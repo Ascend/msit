@@ -22,7 +22,7 @@ _DEBUG = "DEBUG"
 _INFO = "INFO"
 _WARNING = "WARNING"
 _ERROR = "ERROR"
-_LOG_LEVEL = [_DEBUG, _INFO, _WARNING, _ERROR]
+LOG_LEVEL = [_DEBUG, _INFO, _WARNING, _ERROR]
 _SPECIAL_CHAR = [
     "\n",
     "\r",
@@ -90,10 +90,10 @@ class MsitLogger:
 
     @staticmethod
     def get_level_id(level: str):
-        if level.upper() in _LOG_LEVEL:
-            return _LOG_LEVEL.index(level.upper())
+        if level.upper() in LOG_LEVEL:
+            return LOG_LEVEL.index(level.upper())
         else:
-            return _LOG_LEVEL.index(_LOG_LEVEL[1])
+            return LOG_LEVEL.index(LOG_LEVEL[1])
 
     @staticmethod
     def _print_log(level, msg, end="\n"):
@@ -106,23 +106,23 @@ class MsitLogger:
 
     @filter_special_chars
     def error(self, msg):
-        if self.level_id <= _LOG_LEVEL.index(_ERROR):
-            self._print_log(_LOG_LEVEL[3], msg)
+        if self.level_id <= LOG_LEVEL.index(_ERROR):
+            self._print_log(LOG_LEVEL[3], msg)
 
     @filter_special_chars
     def warning(self, msg):
-        if self.level_id <= _LOG_LEVEL.index(_WARNING):
-            self._print_log(_LOG_LEVEL[2], msg)
+        if self.level_id <= LOG_LEVEL.index(_WARNING):
+            self._print_log(LOG_LEVEL[2], msg)
 
     @filter_special_chars
     def info(self, msg):
-        if self.level_id <= _LOG_LEVEL.index(_INFO):
-            self._print_log(_LOG_LEVEL[1], msg)
+        if self.level_id <= LOG_LEVEL.index(_INFO):
+            self._print_log(LOG_LEVEL[1], msg)
 
     @filter_special_chars
     def debug(self, msg):
-        if self.level_id <= _LOG_LEVEL.index(_DEBUG):
-            self._print_log(_LOG_LEVEL[0], msg)
+        if self.level_id <= LOG_LEVEL.index(_DEBUG):
+            self._print_log(LOG_LEVEL[0], msg)
 
 
 logger = MsitLogger()
