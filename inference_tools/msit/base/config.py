@@ -14,10 +14,17 @@
 
 from abc import ABC, abstractmethod
 from argparse import Namespace
-from pathlib import Path
 
-from msit.common.validation import valid_dump_level, valid_dump_task, valid_log_level, valid_seed, valid_step_or_rank
-from msit.utils.constants import DumpConst, MsgConst
+from msit.common.validation import (
+    valid_exec,
+    valid_framework,
+    valid_level,
+    valid_log_level,
+    valid_seed,
+    valid_service,
+    valid_step_or_rank,
+)
+from msit.utils.constants import CfgConst, MsgConst
 from msit.utils.exceptions import MsitException
 from msit.utils.io import load_json
 from msit.utils.log import logger
@@ -27,40 +34,34 @@ class BaseConfig(ABC):
     def __init__(self, config_path):
         self.is_from_cmd = False
         self.config_path = config_path
-        if not self.config_path:
-            self.config_path = Path(__file__).resolve().parent.parent / "config.json"
         self.config = load_json(self.config_path)
-        self.task_config = {}
 
     @abstractmethod
     def check_config(self):
         pass
 
-    def common_check(self, task: str = None, step: list = None, args: Namespace = None):
+    def common_check(self, step: list = None, args: Namespace = None):
         self.is_from_cmd = isinstance(args, Namespace)
         if self.is_from_cmd:
             logger.info("Configure parameters via the command line.")
         else:
             logger.info(f"Configure parameters via {self.config_path}.")
-        self._update_config(self.config, DumpConst.TASK, args, valid_dump_task, task or DumpConst.STATISTICS)
-        self._update_config(self.config, DumpConst.RANK, args, valid_step_or_rank, self.config.get(DumpConst.RANK, []))
+        logger.info("Validating configuration file parameters.")
+        self._update_config(self.config, CfgConst.SERVICE, valid_service, self.config.get(CfgConst.SERVICE, ""))
+        self._update_config(self.config, CfgConst.EXEC, valid_exec, args.exec or self.config.get(CfgConst.EXEC, []))
+        self._update_config(self.config, CfgConst.FRAMEWORK, valid_framework, self.config.get(CfgConst.FRAMEWORK, ""))
+        self._update_config(self.config, CfgConst.STEP, valid_step_or_rank, step or self.config.get(CfgConst.STEP, []))
+        self._update_config(self.config, CfgConst.RANK, valid_step_or_rank, self.config.get(CfgConst.RANK, []))
         self._update_config(
-            self.config, DumpConst.STEP, args, valid_step_or_rank, step or self.config.get(DumpConst.STEP, [])
+            self.config, CfgConst.LEVEL, valid_level, self.config.get(CfgConst.LEVEL, [CfgConst.LEVEL_API])
         )
         self._update_config(
-            self.config,
-            DumpConst.LEVEL,
-            args,
-            valid_dump_level,
-            self.config.get(DumpConst.LEVEL, [DumpConst.LEVEL_API]),
+            self.config, CfgConst.LOG_LEVEL, valid_log_level, self.config.get(CfgConst.LOG_LEVEL, "info")
         )
-        self._update_config(
-            self.config, DumpConst.LOG_LEVEL, args, valid_log_level, self.config.get(DumpConst.LOG_LEVEL, "info")
-        )
-        self._update_config(self.config, DumpConst.SEED, args, valid_seed, self.config.get(DumpConst.SEED))
+        self._update_config(self.config, CfgConst.SEED, valid_seed, self.config.get(CfgConst.SEED, None))
 
-    def _update_config(self, dic, key, args, check_fun, value):
-        dic[key] = getattr(args, key) if self.is_from_cmd else check_fun(value)
+    def _update_config(self, dic: dict, key: str, check_fun, value: str):
+        dic[key] = check_fun(value)
 
 
 class Dict2Class:
@@ -69,9 +70,12 @@ class Dict2Class:
             raise MsitException(
                 MsgConst.RISK_ALERT, f"Maximum recursion depth of {MsgConst.MAX_RECURSION_DEPTH} exceeded."
             )
-        if data.get(DumpConst.TASK) in data:
-            data_pop = data.pop(data.get(DumpConst.TASK))
+        if data.get(CfgConst.SERVICE) in data:
+            data_pop = data.pop(data.get(CfgConst.SERVICE))
             for key, value in data_pop.items():
+                if key == "input" and len(value) == 2:
+                    setattr(self, "input_shape", value[0])
+                    setattr(self, "input_path", value[1])
                 setattr(self, key, value)
         for key, value in data.items():
             if isinstance(value, dict):

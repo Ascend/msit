@@ -12,47 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
-from msit.base.component.manager import BaseComponent, Scheduler
-from msit.base.component.primordium import OfflineModelActuatorComp
-from msit.common.dirs import DirPool
+from msit.base import BaseComponent, Scheduler
 from msit.utils.toolkits import register
-
-
-class ServiceProbe(object):
-    def __init__(self):
-        self.is_from_cmd = True
-        self.comps = []
-        self.current_iter = 0
-
-    @abstractmethod
-    def construct(self):
-        pass
-
-    def start(self, *args, **kwargs):
-        DirPool.make_step_dir(self.current_iter)
-        DirPool.make_rank_dir()
-        self.construct()
-        for attr in self.__dict__.values():
-            if isinstance(attr, BaseComponent):
-                self.comps.append(attr)
-                self._ignore_actuator(attr)
-        self.comps.sort(key=lambda x: x.priority)
-        scheduler = Scheduler()
-        scheduler.add(self.comps)
-        scheduler.remove(self.comps)
-        self.comps.clear()
-
-    def step(self, *args, **kwargs):
-        self.current_iter += 1
-
-    def stop(self, *args, **kwargs):
-        pass
-
-    def _ignore_actuator(self, attr):
-        if not self.is_from_cmd and isinstance(attr, OfflineModelActuatorComp):
-            self.comps.remove(attr)
 
 
 class Service:
@@ -65,3 +28,43 @@ class Service:
     @classmethod
     def get(cls, name):
         return cls._services_map.get(name)
+
+
+class BaseService(ABC):
+    def __init__(self):
+        self.comps = []
+
+    @abstractmethod
+    def construct(self):
+        pass
+
+    def start(self, *args, **kwargs):
+        """
+        Service startup workflow:
+        1. Configure services (init_start).
+        2. Build components (construct).
+        3. Filter/prioritize components (ignore_actuator), then schedule execution.
+        4. Schedule execution and cleanup.
+        5. Post-processing (finalize_start).
+        """
+        self.init_start()
+        self.construct()
+        for attr in self.__dict__.values():
+            if isinstance(attr, BaseComponent):
+                self.comps.append(attr)
+                self.ignore_actuator(attr)
+        self.comps.sort(key=lambda x: x.priority)
+        scheduler = Scheduler()
+        scheduler.add(self.comps)
+        scheduler.remove(self.comps)
+        self.comps.clear()
+        self.finalize_start()
+
+    def init_start(self):
+        pass
+
+    def ignore_actuator(self, attr):
+        pass
+
+    def finalize_start(self):
+        pass
