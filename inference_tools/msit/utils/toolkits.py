@@ -76,6 +76,8 @@ def run_subprocess(cmd: list, check_interval: Union[int, float] = 1, capture_out
     cmd = filter_cmd(cmd, _INVALID_CHARS)
     if not isinstance(check_interval, (int, float)) or check_interval < 0:
         raise MsitException(MsgConst.INVALID_DATA_TYPE, "`check_interval` must be a non-negative number.")
+    logger.warning("Please ensure the executed command is correct.")
+    logger.info(f'Running command: {" ".join(cmd)}.')
     with Popen(cmd, stdout=(PIPE if capture_output else None), stderr=PIPE, shell=False) as process:
         output = [] if capture_output else None
         start_time = time()
@@ -230,3 +232,12 @@ def is_input_yes(prompt):
         logger.info('Input interrupted. Defaulting to "no".')
         return False
     return bool(confirm_pattern.fullmatch(user_action))
+
+
+def set_ld_preload(so_path):
+    ld_preload = evars.get("LD_PRELOAD", required=False)
+    if ld_preload:
+        evars.set("LD_PRELOAD", f"{so_path}:{ld_preload}")
+    else:
+        evars.set("LD_PRELOAD", so_path)
+    logger.info(f"Environment updated with .so library {so_path}.")

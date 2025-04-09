@@ -18,7 +18,7 @@ from msit.common.cli import MainCommand
 def main():
     msit_command = MainCommand()
     msit_command.register()
-    args = msit_command.parser.parse_args()
+    args = msit_command.parse()
     msit_command.execute(args)
 
 

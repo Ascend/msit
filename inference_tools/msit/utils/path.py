@@ -153,7 +153,7 @@ class MsitPath:
                 MsgConst.INVALID_ARGU, f"The validation level of symbolic links must be one of {_SOFT_LINK_LEVELS}."
             )
         if level == SOFT_LINK_LEVEL_STRICT:
-            MsitException(MsgConst.RISK_ALERT, f"Path {path} is a symlink. Usage prohibited.")
+            raise MsitException(MsgConst.RISK_ALERT, f"Path {path} is a symlink. Usage prohibited.")
         elif level == SOFT_LINK_LEVEL_WARNING:
             logger.warning(f"Found a symlink, path {path} points to {real_path}.")
         elif level == SOFT_LINK_LEVEL_IGNORE:
@@ -300,7 +300,7 @@ def change_permission(path, permission):
 
 
 def is_enough_disk_space(path, required_space):
-    return disk_usage(path).free < required_space
+    return disk_usage(path).free >= required_space
 
 
 class DirSafeHandler:

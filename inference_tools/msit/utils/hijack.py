@@ -104,7 +104,7 @@ def release(handler):
         handler.released = True
         HiJackerManager.remove_unit(handler.unit)
     else:
-        HiJackerManager.remove_unit(handler)
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, "Handler must be an instance of HijackHandler.")
 
 
 class HijackerUnit:
