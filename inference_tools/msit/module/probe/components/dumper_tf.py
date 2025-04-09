@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.base import BaseComponent, Component, ConsumerComp, OfflineModelActuatorComp, ProducerComp
-from msit.core.probe.base import BaseDumper
-from msit.core.probe.dump import FrozenGraphActuatorCPU, FrozenGraphActuatorNPU, FrozenGraphDataWriter
+from msit.base import BaseComponent, Component, ConsumerComp, ProducerComp
+from msit.module.probe.base import BaseDumper
+from msit.module.probe.components.dumper_offline_model import OfflineModelActuatorComp
+from msit.module.probe.dump import FrozenGraphActuatorCPU, FrozenGraphActuatorNPU, FrozenGraphDataWriter
 from msit.utils.constants import CompConst, DumpConst
 from msit.utils.env import evars
 from msit.utils.hijack import POST_HOOK, PRE_HOOK, hijacker
@@ -101,9 +102,9 @@ class FrozenGraphDumperCompCPU(ProducerComp, BaseDumper):
 
 @Component.register(CompConst.FROZEN_GRAPH_WRITER_COMP_CPU)
 class FrozenGraphWriterCompCPU(ConsumerComp):
-    def __init__(self, priority, task, dump_mode):
+    def __init__(self, priority, dump_format, dump_mode):
         super().__init__(priority)
-        self.writer = FrozenGraphDataWriter(task, dump_mode)
+        self.writer = FrozenGraphDataWriter(dump_format, dump_mode)
 
     def consume(self, packages):
         tf_ops, infer_output, graph_def = packages[0][1]

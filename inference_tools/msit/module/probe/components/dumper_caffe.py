@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.base import Component, ConsumerComp, OfflineModelActuatorComp, ProducerComp
-from msit.core.probe.base import BaseDumper
-from msit.core.probe.dump import CaffeModelActuator, CaffeModelDataWriter
+from msit.base import Component, ConsumerComp, ProducerComp
+from msit.module.probe.base import BaseDumper
+from msit.module.probe.components.dumper_offline_model import OfflineModelActuatorComp
+from msit.module.probe.dump import CaffeModelActuator, CaffeModelDataWriter
 from msit.utils.constants import CompConst
 from msit.utils.hijack import POST_HOOK, hijacker
 
@@ -62,9 +63,9 @@ class CaffeDumperComp(ProducerComp, BaseDumper):
 
 @Component.register(CompConst.CAFFE_WRITER_COMP)
 class CaffeWriterComp(ConsumerComp):
-    def __init__(self, priority, task, dump_mode):
+    def __init__(self, priority, dump_format, dump_mode):
         super().__init__(priority)
-        self.writer = CaffeModelDataWriter(task, dump_mode)
+        self.writer = CaffeModelDataWriter(dump_format, dump_mode)
 
     def consume(self, packages):
         caffe_net = packages[0][1]

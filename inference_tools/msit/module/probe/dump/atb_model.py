@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.common.ascend import cann
 from msit.common.dirs import DirPool
-from msit.utils.constants import DumpConst, MsgConst, PathConst
+from msit.utils.constants import CfgConst, DumpConst, MsgConst, PathConst
 from msit.utils.env import evars
 from msit.utils.exceptions import MsitException
 from msit.utils.log import logger
@@ -25,8 +24,8 @@ from msit.utils.toolkits import run_subprocess, seed_all
 class AtbModelConfiguration:
     def __init__(self, dump_path, **kwargs):
         self.dump_path = dump_path
-        self.task = kwargs.get("task", DumpConst.STATISTICS)
-        self.dump_level = kwargs.get("dump_level", [DumpConst.LEVEL_KERNEL])
+        self.dump_format = kwargs.get("dump_format", DumpConst.DUMP_FORMAT_STAT)
+        self.dump_level = kwargs.get("dump_level", [CfgConst.LEVEL_KERNEL])
         self.step = kwargs.get("step", [])
         self.rank = kwargs.get("rank", [])
         self.seed = kwargs.get("seed")
@@ -37,18 +36,9 @@ class AtbModelConfiguration:
         self.op_name = kwargs.get("op_name", "")
         self.exec = kwargs.get("exec", [])
 
-    @staticmethod
-    def _set_ld_preload():
-        so_path = cann.get_atb_probe_so_path()
-        ld_preload = evars.get("LD_PRELOAD", required=False)
-        if ld_preload:
-            evars.set("LD_PRELOAD", f"{so_path}:{ld_preload}")
-        else:
-            evars.set("LD_PRELOAD", so_path)
-
     def set_env_vars(self):
         self._set_dump_path()
-        self._set_dump_task()
+        self._set_dump_format()
         self._set_dump_level()
         self._set_step()
         self._set_rank()
@@ -58,12 +48,9 @@ class AtbModelConfiguration:
         self._set_dump_time()
         self._set_op_id()
         self._set_op_name()
-        self._set_ld_preload()
         logger.info("The ATB dump parameters have been set.")
 
     def execute_dump(self):
-        logger.info(f'The ATB model inference command: {" ".join(self.exec)}.')
-        logger.warning("Please ensure the executed command is correct.")
         if not is_enough_disk_space(DirPool.get_msit_dir(), PathConst.SIZE_2G):
             raise MsitException(MsgConst.RISK_ALERT, "Please reserve at least 2GB of disk space for saving dump data.")
         run_subprocess(self.exec)
@@ -71,8 +58,8 @@ class AtbModelConfiguration:
     def _set_dump_path(self):
         evars.set(DumpConst.ENVVAR_MSIT_OUTPUT_DIR, self.dump_path)
 
-    def _set_dump_task(self):
-        evars.set(DumpConst.ENVVAR_MSIT_DUMP_TASK, self.task)
+    def _set_dump_format(self):
+        evars.set(DumpConst.ENVVAR_MSIT_DUMP_FORMAT, self.dump_format)
 
     def _set_dump_level(self):
         evars.set(DumpConst.ENVVAR_MSIT_DUMP_LEVEL, ",".join(self.dump_level))

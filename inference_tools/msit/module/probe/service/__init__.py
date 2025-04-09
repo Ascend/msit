@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.core.probe.service.dump import ServiceStatistics, ServiceTensor
+from msit.module.probe.service.dump import ServiceDump

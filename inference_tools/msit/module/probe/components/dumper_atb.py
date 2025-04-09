@@ -13,15 +13,17 @@
 # limitations under the License.
 
 from msit.base import BaseComponent, Component, ConsumerComp, ProducerComp
-from msit.core.probe.dump import AtbModelConfiguration
+from msit.module.probe.dump import AtbModelConfiguration
+from msit.utils.constants import CompConst
 
 
+@Component.register(CompConst.ATB_ACTUATOR_COMP)
 class AtbActuatorComp(BaseComponent):
     def __init__(self, priority, dump_path, **kwargs):
         super().__init__(priority)
         self.actuator = AtbModelConfiguration(
             dump_path,
-            task=kwargs.get("task"),
+            dump_format=kwargs.get("dump_format"),
             dump_level=kwargs.get("dump_level"),
             step=kwargs.get("step"),
             rank=kwargs.get("rank"),

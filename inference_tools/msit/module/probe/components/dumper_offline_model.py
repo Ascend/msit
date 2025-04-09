@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from msit.base import Command, MsitCommand
-from msit.utils.constants import CmdConst
+from msit.base import BaseComponent
 
 
-@Command.register("msit", CmdConst.PROBE)
-class ProbeCommand(MsitCommand):
-    @classmethod
-    def add_arguments(cls, parse):
-        pass
+class OfflineModelActuatorComp(BaseComponent):
+    def __init__(self, priority=100):
+        super().__init__(priority)

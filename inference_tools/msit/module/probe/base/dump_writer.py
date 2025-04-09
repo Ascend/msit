@@ -18,7 +18,7 @@ from inspect import stack
 
 from msit.common.dirs import DirPool
 from msit.common.stat import DataStat
-from msit.utils.constants import DumpConst, PathConst
+from msit.utils.constants import CfgConst, DumpConst, PathConst
 from msit.utils.io import save_json, save_npy
 from msit.utils.log import get_current_timestamp, logger
 from msit.utils.path import MsitPath, join_path
@@ -30,7 +30,8 @@ _WITHOUT_CALL_STACK = "The call stack retrieval failed."
 
 
 class WriterDump(ABC):
-    def __init__(self):
+    def __init__(self, dump_format):
+        self.dump_format = dump_format
         self.max_cache_size = _SIZE_1M
         self.cache_dump_json = {}
         self.cache_dump_json_size = 0
@@ -104,9 +105,8 @@ class WriterDump(ABC):
     def init_dump_json(self, **kwargs):
         self.cache_dump_json.update(
             {
-                DumpConst.TASK: kwargs.get(DumpConst.TASK, None),
-                DumpConst.LEVEL: kwargs.get(DumpConst.LEVEL, None),
-                DumpConst.FRAMEWORK: kwargs.get(DumpConst.FRAMEWORK, None),
+                CfgConst.LEVEL: kwargs.get(CfgConst.LEVEL, None),
+                CfgConst.FRAMEWORK: kwargs.get(CfgConst.FRAMEWORK, None),
                 DumpConst.DUMP_DATA_DIR: kwargs.get(DumpConst.DUMP_DATA_DIR, None),
                 DumpConst.DATA: {},
             }
@@ -132,7 +132,7 @@ class WriterDump(ABC):
             input_name = input_item if isinstance(input_item, str) else input_item.name
             mapped_value = input_map.get(get_valid_name(input_name))
             self.update_stat(node_name, DumpConst.INPUT_ARGS, input_name, mapped_value)
-            if self.task == DumpConst.TENSOR:
+            if self.dump_format == DumpConst.DUMP_FORMAT_TENSOR:
                 self._save_tensor_data(node_name, DumpConst.INPUT, i, mapped_value)
         logger.debug(f"Processed the input data of {node_name}.")
 
@@ -146,7 +146,7 @@ class WriterDump(ABC):
                     f"net_output node index is: {self.net_output_nodes.index(self._remove_colon(output_name))}, "
                     f"node name: {output_name}."
                 )
-            if self.task == DumpConst.TENSOR:
+            if self.dump_format == DumpConst.DUMP_FORMAT_TENSOR:
                 self._save_tensor_data(node_name, DumpConst.OUTPUT, i, mapped_value)
         logger.debug(f"Processed the output data of {node_name}.")
 

@@ -15,8 +15,8 @@
 import numpy as np
 
 from msit.common.dirs import DirPool
-from msit.core.probe.base import OfflineModelActuator, WriterDump
-from msit.utils.constants import DumpConst, MsgConst, PathConst
+from msit.module.probe.base import OfflineModelActuator, WriterDump
+from msit.utils.constants import CfgConst, DumpConst, MsgConst, PathConst
 from msit.utils.dependencies import dependent
 from msit.utils.exceptions import MsitException
 from msit.utils.io import load_npy_from_buffer, load_onnx_model, load_onnx_session, save_onnx_model
@@ -74,13 +74,11 @@ class OnnxModelActuator(OfflineModelActuator):
 
 
 class OnnxModelDataWriter(WriterDump):
-    def __init__(self, task, dump_mode):
-        super().__init__()
-        self.task = task
+    def __init__(self, dump_format, dump_mode):
+        super().__init__(dump_format)
         self.dump_mode = dump_mode
-        self.cache_dump_json[DumpConst.TASK] = task
-        self.cache_dump_json[DumpConst.LEVEL] = DumpConst.LEVEL_KERNEL
-        self.cache_dump_json[DumpConst.FRAMEWORK] = DumpConst.FRAMEWORK_ONNX
+        self.cache_dump_json[CfgConst.LEVEL] = CfgConst.LEVEL_KERNEL
+        self.cache_dump_json[CfgConst.FRAMEWORK] = CfgConst.FRAMEWORK_ONNX
 
     @staticmethod
     def _get_output_map(output_list, origin_model):
