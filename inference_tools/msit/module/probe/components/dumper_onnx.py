@@ -120,9 +120,9 @@ class OnnxDumperComp(ProducerComp, BaseDumper):
 
 @Component.register(CompConst.ONNX_WRITER_COMP)
 class OnnxWriterComp(ConsumerComp):
-    def __init__(self, priority, dump_format, dump_mode):
+    def __init__(self, priority, task, dump_mode):
         super().__init__(priority)
-        self.writer = OnnxModelDataWriter(dump_format, dump_mode)
+        self.writer = OnnxModelDataWriter(task, dump_mode)
 
     def consume(self, packages):
         input_map, output_list, origin_model, model_session = packages[0][1]

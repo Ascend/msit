@@ -24,11 +24,9 @@ _INT_BORDER = [0, 1e6]
 _HYPHEN_NUM_PATTERN = r"^(?:\d+-\d+|\d+-\d+-\d+)$"
 
 
-def valid_service(value: str):
-    if value not in CfgConst.ALL_SERVICE:
-        raise MsitException(
-            MsgConst.INVALID_ARGU, f'"service" must be one of {CfgConst.ALL_SERVICE}, currently: {value}.'
-        )
+def valid_task(value: str):
+    if value not in CfgConst.ALL_TASK:
+        raise MsitException(MsgConst.INVALID_ARGU, f'"task" must be one of {CfgConst.ALL_TASK}, currently: {value}.')
     return value
 
 
@@ -63,7 +61,7 @@ def valid_exec(values: list):
             )
         _ = MsitPath(first_keyword, PathConst.FILE, "r", PathConst.SIZE_50G).check()
     else:
-        raise MsitException(MsgConst.INVALID_ARGU, f'Please check the "exec" or `--exec (-e)`, currently: {values}.')
+        raise MsitException(MsgConst.INVALID_ARGU, f"Please check the `--exec (-e)`, currently: {values}.")
     return values
 
 
