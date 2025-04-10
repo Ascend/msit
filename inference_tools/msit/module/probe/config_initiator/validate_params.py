@@ -16,7 +16,7 @@ import re
 from itertools import product
 
 from msit.common.validation import check_int_border, parse_hyphen
-from msit.utils.constants import CfgConst, DumpConst, MsgConst, PathConst
+from msit.utils.constants import DumpConst, MsgConst, PathConst
 from msit.utils.exceptions import MsitException
 from msit.utils.log import logger
 from msit.utils.path import MsitPath
@@ -30,42 +30,39 @@ def valid_dump_path(value: str):
     return MsitPath(value, PathConst.DIR, "w").check()
 
 
-def valid_dump_format(value: str):
-    if not value:
-        return value
-    if value not in DumpConst.ALL_DUMP_FORMAT:
-        raise MsitException(
-            MsgConst.INVALID_ARGU, f'"dump_format" must be one of {DumpConst.ALL_DUMP_FORMAT}, currently: {value}.'
-        )
-    return value
+def valid_list(value: tuple):
+    def re_format(value: tuple):
+        ret = {}
+        for ii in value[1]:
+            ret[ii] = value[0]
+            return ret
 
-
-def valid_list(value: dict):
-    if not value:
-        return value
-    if not isinstance(value, dict):
+    if not value[0] or (isinstance(value[0], list) and len(value[1]) == 1):
+        return re_format(value)
+    elif isinstance(value[0], dict):
+        for key, vv in value[0].items():
+            if key not in value[1]:
+                raise MsitException(MsgConst.INVALID_ARGU, f"Key not in allowed list {value[1]}, currently: {key}.")
+            if not isinstance(vv, list):
+                raise MsitException(MsgConst.INVALID_DATA_TYPE, f"Value must be a list, got {type(vv)} instead.")
+        return value[0]
+    else:
         raise MsitException(
             MsgConst.INVALID_DATA_TYPE,
-            f"The list must be a dictionary with keys like {CfgConst.ALL_LEVEL}, "
-            "and the values must be in list format.",
+            """The list parameter supports two types:
+    1. List, which requires "level" to be set with only one element.
+    2. Dictionary, which allows "level" to be set with multiple elements.""",
         )
-    for key, vv in value.items():
-        if key not in CfgConst.ALL_LEVEL:
-            raise MsitException(
-                MsgConst.INVALID_ARGU, f"Key not in allowed list {CfgConst.ALL_LEVEL}, currently: {key}."
-            )
-        if not isinstance(vv, list):
-            raise MsitException(MsgConst.INVALID_DATA_TYPE, f"Value must be a list, got {type(vv)} instead.")
-    return value
 
 
-def valid_dump_mode(value: str):
+def valid_dump_mode(value: list):
     if not value:
         return value
-    if value not in DumpConst.ALL_DUMP_MODE:
-        raise MsitException(
-            MsgConst.INVALID_ARGU, f'"dump_mode" must be one of {DumpConst.ALL_DUMP_MODE}, currently: {value}.'
-        )
+    for vv in value:
+        if vv not in DumpConst.ALL_DUMP_MODE:
+            raise MsitException(
+                MsgConst.INVALID_ARGU, f'"dump_mode" must be one of {DumpConst.ALL_DUMP_MODE}, currently: {vv}.'
+            )
     return value
 
 

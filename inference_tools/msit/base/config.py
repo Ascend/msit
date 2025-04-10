@@ -21,8 +21,8 @@ from msit.common.validation import (
     valid_level,
     valid_log_level,
     valid_seed,
-    valid_service,
     valid_step_or_rank,
+    valid_task,
 )
 from msit.utils.constants import CfgConst, MsgConst
 from msit.utils.exceptions import MsitException
@@ -40,20 +40,20 @@ class BaseConfig(ABC):
     def check_config(self):
         pass
 
-    def common_check(self, step: list = None, args: Namespace = None):
+    def common_check(self, step: list = None, task="", level: list = None, args: Namespace = None):
         self.is_from_cmd = isinstance(args, Namespace)
         if self.is_from_cmd:
             logger.info("Configure parameters via the command line.")
         else:
             logger.info(f"Configure parameters via {self.config_path}.")
         logger.info("Validating configuration file parameters.")
-        self._update_config(self.config, CfgConst.SERVICE, valid_service, self.config.get(CfgConst.SERVICE, ""))
-        self._update_config(self.config, CfgConst.EXEC, valid_exec, args.exec or self.config.get(CfgConst.EXEC, []))
+        self._update_config(self.config, CfgConst.TASK, valid_task, task or self.config.get(CfgConst.TASK, ""))
+        self._update_config(self.config, CfgConst.EXEC, valid_exec, args.exec or [])
         self._update_config(self.config, CfgConst.FRAMEWORK, valid_framework, self.config.get(CfgConst.FRAMEWORK, ""))
         self._update_config(self.config, CfgConst.STEP, valid_step_or_rank, step or self.config.get(CfgConst.STEP, []))
         self._update_config(self.config, CfgConst.RANK, valid_step_or_rank, self.config.get(CfgConst.RANK, []))
         self._update_config(
-            self.config, CfgConst.LEVEL, valid_level, self.config.get(CfgConst.LEVEL, [CfgConst.LEVEL_API])
+            self.config, CfgConst.LEVEL, valid_level, level or self.config.get(CfgConst.LEVEL, [CfgConst.LEVEL_API])
         )
         self._update_config(
             self.config, CfgConst.LOG_LEVEL, valid_log_level, self.config.get(CfgConst.LOG_LEVEL, "info")
@@ -70,8 +70,8 @@ class Dict2Class:
             raise MsitException(
                 MsgConst.RISK_ALERT, f"Maximum recursion depth of {MsgConst.MAX_RECURSION_DEPTH} exceeded."
             )
-        if data.get(CfgConst.SERVICE) in data:
-            data_pop = data.pop(data.get(CfgConst.SERVICE))
+        if data.get(CfgConst.TASK) in data:
+            data_pop = data.pop(data.get(CfgConst.TASK))
             for key, value in data_pop.items():
                 if key == "input" and len(value) == 2:
                     setattr(self, "input_shape", value[0])

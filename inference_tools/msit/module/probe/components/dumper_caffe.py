@@ -63,9 +63,9 @@ class CaffeDumperComp(ProducerComp, BaseDumper):
 
 @Component.register(CompConst.CAFFE_WRITER_COMP)
 class CaffeWriterComp(ConsumerComp):
-    def __init__(self, priority, dump_format, dump_mode):
+    def __init__(self, priority, task, dump_mode):
         super().__init__(priority)
-        self.writer = CaffeModelDataWriter(dump_format, dump_mode)
+        self.writer = CaffeModelDataWriter(task, dump_mode)
 
     def consume(self, packages):
         caffe_net = packages[0][1]

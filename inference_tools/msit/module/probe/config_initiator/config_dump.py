@@ -18,7 +18,6 @@ from msit.base import BaseConfig
 from msit.module.probe.config_initiator.validate_params import (
     valid_device,
     valid_dump_extra,
-    valid_dump_format,
     valid_dump_ge_graph,
     valid_dump_graph_level,
     valid_dump_last_logits,
@@ -39,10 +38,12 @@ from msit.utils.constants import CfgConst, DumpConst
 
 
 class DumpConfig(BaseConfig):
-    def check_config(self, dump_path: str = None, step: list = None, args: Namespace = None):
-        self.common_check(step, args)
-        self.dump_config = self.config[self.config.get(CfgConst.SERVICE)]
-        self.config[self.config.get(CfgConst.SERVICE)] = self._check_dump_dic(dump_path)
+    def check_config(
+        self, dump_path: str = None, step: list = None, task="", level: list = None, args: Namespace = None
+    ):
+        self.common_check(step, task, level, args)
+        self.dump_config = self.config[self.config.get(CfgConst.TASK)]
+        self.config[self.config.get(CfgConst.TASK)] = self._check_dump_dic(dump_path)
         return self.config
 
     def _check_dump_dic(self, dump_path: str = None):
@@ -54,13 +55,12 @@ class DumpConfig(BaseConfig):
         )
         self._update_config(
             self.dump_config,
-            DumpConst.DUMP_FORMAT,
-            valid_dump_format,
-            self.dump_config.get(DumpConst.DUMP_FORMAT, "stat"),
+            DumpConst.LIST,
+            valid_list,
+            (self.dump_config.get(DumpConst.LIST, []), self.config.get(CfgConst.LEVEL)),
         )
-        self._update_config(self.dump_config, DumpConst.LIST, valid_list, self.dump_config.get(DumpConst.LIST, {}))
         self._update_config(
-            self.dump_config, DumpConst.DUMP_MODE, valid_dump_mode, self.dump_config.get(DumpConst.DUMP_MODE, "all")
+            self.dump_config, DumpConst.DUMP_MODE, valid_dump_mode, self.dump_config.get(DumpConst.DUMP_MODE, ["all"])
         )
         self._update_config(
             self.dump_config, DumpConst.DUMP_EXTRA, valid_dump_extra, self.dump_config.get(DumpConst.DUMP_EXTRA, [])

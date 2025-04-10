@@ -132,8 +132,10 @@ class CfgConst:
     """
 
     CONFIG = "config"
-    SERVICE = "service"
-    ALL_SERVICE = {"dump", "compare"}
+    TASK = "task"
+    TASK_STAT = "statistics"
+    TASK_TENSOR = "tensor"
+    ALL_TASK = {TASK_STAT, TASK_TENSOR}
     EXEC = "exec"
     FRAMEWORK = "framework"
     FRAMEWORK_MINDIE_LLM = "mindie_llm"
@@ -171,10 +173,6 @@ class DumpConst:
     ALL_DUMP_MODE = [INPUT, OUTPUT, "all"]
 
     DUMP_PATH = "dump_path"
-    DUMP_FORMAT = "dump_format"
-    DUMP_FORMAT_STAT = "stat"
-    DUMP_FORMAT_TENSOR = "tensor"
-    ALL_DUMP_FORMAT = {DUMP_FORMAT_STAT, DUMP_FORMAT_TENSOR}
     LIST = "list"
     DUMP_MODE = "dump_mode"
     DUMP_EXTRA = "dump_extra"
@@ -206,7 +204,7 @@ class DumpConst:
     ENVVAR_ASCEND_WORK_PATH = "ASCEND_WORK_PATH"
 
     ENVVAR_MSIT_OUTPUT_DIR = "ATB_OUTPUT_DIR"
-    ENVVAR_MSIT_DUMP_FORMAT = "ATB_DUMP_FORMAT"
+    ENVVAR_MSIT_DUMP_TASK = "ATB_DUMP_TASK"
     ENVVAR_MSIT_DUMP_LEVEL = "ATB_DUMP_LEVEL"
     ENVVAR_MSIT_SAVE_TENSOR_RANGE = "ATB_SAVE_TENSOR_RANGE"
     ENVVAR_MSIT_DEVICE_ID = "ATB_DEVICE_ID"

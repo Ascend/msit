@@ -131,9 +131,6 @@ class FrozenGraphActuatorCPU(FrozenGraphActuator):
     def _open_session(self):
         return self.tf.compat.v1.Session()
 
-    def _renew_all_node_names(self):
-        pass
-
 
 class FrozenGraphActuatorNPU(FrozenGraphActuator):
     def __init__(self, model_path, input_shape, input_path, **kwargs):
@@ -175,8 +172,8 @@ class FrozenGraphActuatorNPU(FrozenGraphActuator):
 
 
 class FrozenGraphDataWriter(WriterDump):
-    def __init__(self, dump_format, dump_mode):
-        super().__init__(dump_format)
+    def __init__(self, task, dump_mode):
+        super().__init__(task)
         self.dump_mode = dump_mode
         self.cache_dump_json[CfgConst.LEVEL] = CfgConst.LEVEL_KERNEL
         self.cache_dump_json[CfgConst.FRAMEWORK] = CfgConst.FRAMEWORK_TF
@@ -208,7 +205,7 @@ class FrozenGraphDataWriter(WriterDump):
         self.net_output_nodes = get_net_output_nodes_from_graph_def(graph_def)
         for node in tf_ops:
             self.cache_dump_json[DumpConst.DATA].setdefault(get_valid_name(node.name), {})
-            if self.dump_mode in DumpConst.INPUT_ALL:
+            if any(x in self.dump_mode for x in DumpConst.INPUT_ALL):
                 self.through_inputs(node.op.inputs, node.name, input_map)
-            if self.dump_mode in DumpConst.OUTPUT_ALL:
+            if any(x in self.dump_mode for x in DumpConst.OUTPUT_ALL):
                 self.through_outputs(node.op.outputs, node.name, output_map)
