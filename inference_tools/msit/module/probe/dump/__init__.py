@@ -14,5 +14,6 @@
 
 from msit.module.probe.dump.atb_model import AtbModelConfiguration
 from msit.module.probe.dump.caffe_model import CaffeModelActuator, CaffeModelDataWriter
+from msit.module.probe.dump.om_model import OmModelActuator
 from msit.module.probe.dump.onnx_model import OnnxModelActuator, OnnxModelDataWriter
 from msit.module.probe.dump.tf_model import FrozenGraphActuatorCPU, FrozenGraphActuatorNPU, FrozenGraphDataWriter

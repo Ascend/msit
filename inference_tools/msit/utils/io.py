@@ -155,7 +155,12 @@ def load_onnx_session(model_path, onnx_fusion_switch=True, provider="CPUExecutio
 
 @_load_file("r", PathConst.SIZE_30G, PathConst.SUFFIX_OM, use_safely_open=False)
 def load_om_model(model_path):
-    pass
+    om = dependent.get("msit.lib.msit_c")
+    model_id, ret = om.acl.load_from_file(model_path)
+    if ret != 0:
+        raise MsitException(MsgConst.IO_FAILURE, f"Load model:{model_path} failed! ErrorCode = {ret}.")
+    logger.info(f"Load model:{model_path} success!")
+    return model_id
 
 
 @_save_file("w", None, PathConst.SUFFIX_ONNX, use_safely_open=False)
@@ -198,12 +203,14 @@ def save_bin_from_ndarray(numpy_data: np.ndarray, save_path):
 
 
 @_load_file("r", PathConst.SIZE_10G, PathConst.SUFFIX_BIN, use_safely_open=False)
-def load_bin_to_ndarray(bin_path, dtype=np.float16, shape=None):
+def load_bin_data(bin_path, dtype=np.float16, shape=None, is_byte_data=False):
+    if is_byte_data:
+        return np.fromfile(bin_path, dtype=np.int8)
     if dtype == np.float32 and get_file_size(bin_path) == np.prod(shape) * 2:
         return np.fromfile(bin_path, dtype=np.float16).astype(np.float32)
     else:
         return np.fromfile(bin_path, dtype=dtype)
-
+    
 
 @_load_dir(PathConst.SIZE_30G)
 def load_saved_model(model_path, tag):

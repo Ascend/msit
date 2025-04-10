@@ -125,6 +125,8 @@ class CompConst:
 
     ATB_ACTUATOR_COMP = "ATBActuatorComp"
 
+    OM_ACTUATOR_COMP = "OmActuatorComp"
+
 
 class CfgConst:
     """

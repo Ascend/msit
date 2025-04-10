@@ -22,3 +22,4 @@ from msit.module.probe.components.dumper_tf import (
     FrozenGraphSetGECompNPU,
     FrozenGraphWriterCompCPU,
 )
+from msit.module.probe.components.dumper_om import OmActuatorComp
