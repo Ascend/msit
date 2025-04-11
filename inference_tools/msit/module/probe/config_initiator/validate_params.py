@@ -58,6 +58,8 @@ def valid_list(value: tuple):
 def valid_dump_mode(value: list):
     if not value:
         return value
+    if not isinstance(value, list):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"dump_mode" must be a list.')
     for vv in value:
         if vv not in DumpConst.ALL_DUMP_MODE:
             raise MsitException(
@@ -69,6 +71,8 @@ def valid_dump_mode(value: list):
 def valid_dump_extra(values: list):
     if not values:
         return values
+    if not isinstance(value, list):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"dump_extra" must be a list.')
     for value in values:
         if value not in DumpConst.ALL_DUMP_EXTRA:
             raise MsitException(
@@ -80,6 +84,8 @@ def valid_dump_extra(values: list):
 def valid_dump_time(value):
     if not value:
         return value
+    if not isinstance(value, str):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"dump_time" must be a string.')
     if value not in DumpConst.ALL_DUMP_TIME:
         raise MsitException(
             MsgConst.INVALID_ARGU, f'"dump_time" must be one of {DumpConst.ALL_DUMP_TIME}, currently: {value}.'
@@ -88,6 +94,8 @@ def valid_dump_time(value):
 
 
 def valid_op_id(value: list):
+    if not isinstance(value, list):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"op_id" must be a list.')
     res = []
     for element in value:
         if isinstance(element, int):
@@ -123,6 +131,8 @@ def valid_dump_weight(value):
 def valid_dump_ge_graph(value):
     if not value:
         return value
+    if not isinstance(value, str):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"dump_ge_graph" must be a string.')
     if value not in DumpConst.ALL_DUMP_GE_GRAPH:
         raise MsitException(
             MsgConst.INVALID_ARGU, f'"dump_ge_graph" must be one of {DumpConst.ALL_DUMP_GE_GRAPH}, currently: {value}.'
@@ -133,6 +143,8 @@ def valid_dump_ge_graph(value):
 def valid_dump_graph_level(value):
     if not value:
         return value
+    if not isinstance(value, str):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"dump_graph_level" must be a string.')
     if value not in DumpConst.ALL_DUMP_GRAPH_LEVEL:
         raise MsitException(
             MsgConst.INVALID_ARGU,
@@ -150,6 +162,8 @@ def valid_fusion_switch_file(value):
 def valid_device(value: str):
     if not value:
         return value
+    if not isinstance(value, str):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"device" must be a string.')
     if value not in _ALL_DEVICE:
         raise MsitException(MsgConst.INVALID_ARGU, f'"device" must be one of {_ALL_DEVICE}, currently: {value}.')
     return value

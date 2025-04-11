@@ -122,7 +122,7 @@ class OfflineModelActuator:
             raise MsitException(
                 MsgConst.REQUIRED_ARGU_MISSING,
                 f"{op_name}'s input_shape is missing. "
-                f"Please set `shape: [xxx]` in input.json according to {model_shape}.",
+                f'Please set `shape: [xxx]` in "input" according to {model_shape}.',
             )
         if len(model_shape) != len(input_shape):
             raise MsitException(
@@ -168,12 +168,12 @@ class OfflineModelActuator:
                 raise MsitException(
                     MsgConst.INVALID_ARGU,
                     f"The dynamic shape {tensor_shape} are not supported. Please "
-                    f'set "shape" of {tensor_name} in input.json file to fix the dynamic shape.',
+                    f'set "shape" of {tensor_name} in "input" to fix the dynamic shape.',
                 )
             if tensor_name not in self.input_shape:
                 raise MsitException(
                     MsgConst.INVALID_ARGU,
-                    f"{tensor_name} has a dynamic shape, but its shape is not defined in the input.json file.",
+                    f'{tensor_name} has a dynamic shape, but its shape is not defined in the "input".',
                 )
         if self.input_shape:
             inshape = self.input_shape.get(tensor_name)

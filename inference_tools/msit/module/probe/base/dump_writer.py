@@ -35,7 +35,7 @@ class WriterDump(ABC):
         self.max_cache_size = _SIZE_1M
         self.cache_dump_json = {}
         self.cache_dump_json_size = 0
-        self.dump_json = self.init_dump_json()
+        self.dump_json = self.init_dump_json(task=task)
         self.cache_stack_json = {}
         self.cache_stack_json_size = 0
         self.tensor_path = ""
@@ -107,6 +107,7 @@ class WriterDump(ABC):
     def init_dump_json(self, **kwargs):
         self.cache_dump_json.update(
             {
+                CfgConst.TASK: kwargs.get(CfgConst.TASK, None),
                 CfgConst.LEVEL: kwargs.get(CfgConst.LEVEL, None),
                 CfgConst.FRAMEWORK: kwargs.get(CfgConst.FRAMEWORK, None),
                 DumpConst.DUMP_DATA_DIR: kwargs.get(DumpConst.DUMP_DATA_DIR, None),
