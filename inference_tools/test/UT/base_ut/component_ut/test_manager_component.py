@@ -267,7 +267,3 @@ class TestScheduler(unittest.TestCase):
         self.scheduler._schedule_consumer(self.consumer)
         dependency_mock.do_load_data.assert_called_once()
         self.assertIn(dependency_mock, self.scheduler.comps_to_schedule)
-
-
-if __name__ == "__main__":
-    unittest.main()
