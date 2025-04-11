@@ -25,6 +25,8 @@ _HYPHEN_NUM_PATTERN = r"^(?:\d+-\d+|\d+-\d+-\d+)$"
 
 
 def valid_task(value: str):
+    if not isinstance(value, str):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"task" must be a string.')
     if value not in CfgConst.ALL_TASK:
         raise MsitException(MsgConst.INVALID_ARGU, f'"task" must be one of {CfgConst.ALL_TASK}, currently: {value}.')
     return value
@@ -33,6 +35,8 @@ def valid_task(value: str):
 def valid_exec(values: list):
     if not values:
         return values
+    if not isinstance(values, list):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"exec" must be a list.')
     first_keyword = values[0]
     if is_dir(first_keyword):
         _ = MsitPath(first_keyword, PathConst.DIR, "r", PathConst.SIZE_50G).check()
@@ -84,6 +88,8 @@ class CheckConfigPath(Action):
 def valid_framework(value: str):
     if not value:
         return value
+    if not isinstance(value, str):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"framework" must be a string.')
     if value not in CfgConst.ALL_FRAMEWORK:
         raise MsitException(
             MsgConst.INVALID_ARGU, f'"framework" must be one of {CfgConst.ALL_FRAMEWORK}, currently: {value}.'
@@ -99,6 +105,8 @@ class CheckFramework(Action):
 
 def check_int_border(*args):
     for num in args:
+        if not isinstance(num, int):
+            raise MsitException(MsgConst.INVALID_DATA_TYPE, f"Expected int type, but got {type(num).__name__}.")
         if not (_INT_BORDER[0] <= num <= _INT_BORDER[1]):
             raise MsitException(
                 MsgConst.INVALID_ARGU, f"The integer range is limited to {_INT_BORDER}, currently: {num}."
@@ -109,22 +117,23 @@ def parse_hyphen(element):
     if not re.match(_HYPHEN_NUM_PATTERN, element):
         raise MsitException(MsgConst.INVALID_ARGU, 'Only accepts numbers or a range like "123-456", "123-456-2".')
     split_ele = element.split("-")
-    if len(split_ele) == 2 or len(split_ele) == 3:
-        start = int(split_ele[0])
-        end = int(split_ele[1])
-        check_int_border(start, end)
-        if start > end:
-            raise MsitException(
-                MsgConst.INVALID_ARGU, f"The left value must be smaller than the right, currently: {start} v.s. {end}."
-            )
-        step = int(split_ele[2]) if len(split_ele) == 3 else 1
-        ranges = [i for i in range(start, end + 1, step)]
-        return ranges
-    else:
-        raise MsitException(MsgConst.INVALID_ARGU, "The hyphen must split into two or three parts.")
+    start = int(split_ele[0])
+    end = int(split_ele[1])
+    check_int_border(start, end)
+    if start > end:
+        raise MsitException(
+            MsgConst.INVALID_ARGU, f"The left value must be smaller than the right, currently: {start} v.s. {end}."
+        )
+    step = int(split_ele[2]) if len(split_ele) == 3 else 1
+    ranges = [i for i in range(start, end + 1, step)]
+    return ranges
 
 
 def valid_step_or_rank(values: list):
+    if not values:
+        return values
+    if not isinstance(values, list):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"rank" or "step" must be a list.')
     res = []
     for element in values:
         if isinstance(element, str):
@@ -144,6 +153,8 @@ def valid_step_or_rank(values: list):
 def valid_level(values: list):
     if not values:
         return values
+    if not isinstance(values, list):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"level" must be a list.')
     for value in values:
         if value not in CfgConst.ALL_LEVEL:
             raise MsitException(
@@ -155,6 +166,8 @@ def valid_level(values: list):
 def valid_log_level(value: str):
     if not value:
         return value
+    if not isinstance(value, str):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"log_level" must be a string.')
     log_level = {level.lower() for level in LOG_LEVEL}
     if value not in log_level:
         raise MsitException(MsgConst.INVALID_ARGU, f'"log_level" must be one of {log_level}, currently: {value}.')
