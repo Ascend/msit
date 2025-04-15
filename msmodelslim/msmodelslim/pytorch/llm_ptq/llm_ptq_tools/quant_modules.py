@@ -334,6 +334,7 @@ class LinearQuantizer(nn.Module):
             bit=cfg.w_bit, is_signed=cfg.w_signed, is_enable=True,
             is_input=False, cfg=cfg, logger=logger
         )
+        self.cfg = cfg
 
     def set_param(self, linear):
         self.in_features = linear.in_features

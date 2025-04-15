@@ -225,7 +225,7 @@ class ComplexQuantifier:
         quant_weight = None
         fp_weight, device, weight_scale, weight_offset, round_opt = _get_module_quant_input(module)
         if isinstance(module, LinearQuantizer):
-            quant_weight, _ = fake_quantize_save(fp_weight, weight_scale, weight_offset, bit=8,
+            quant_weight, _ = fake_quantize_save(fp_weight, weight_scale, weight_offset, bit=module.cfg.w_bit,
                                                  round_opt=round_opt, device=device)
         if isinstance(module, LinearSparseQuantizer):
             _, _, quant_weight, _ = quant_one_weight_by_outliers(
