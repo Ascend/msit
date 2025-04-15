@@ -135,7 +135,7 @@ class FrozenGraphActuatorCPU(FrozenGraphActuator):
 class FrozenGraphActuatorNPU(FrozenGraphActuator):
     def __init__(self, model_path, input_shape, input_path, **kwargs):
         super().__init__(model_path, input_shape, input_path, **kwargs)
-        self.dump_mode = kwargs.get("dump_mode", "all")
+        self.dump_mode = kwargs.get("dump_mode", ["all"])
         self.fusion_switch_file = kwargs.get("fsf", "")
 
     def convert_txt2json(self):
@@ -156,7 +156,7 @@ class FrozenGraphActuatorNPU(FrozenGraphActuator):
             custom_op.parameter_map["enable_dump"].b = True
             custom_op.parameter_map["dump_path"].s = self.tf.compat.as_bytes(DirPool.get_rank_dir())
             custom_op.parameter_map["dump_step"].s = self.tf.compat.as_bytes("0")
-            custom_op.parameter_map["dump_mode"].s = self.tf.compat.as_bytes(self.dump_mode)
+            custom_op.parameter_map["dump_mode"].s = self.tf.compat.as_bytes(self.dump_mode[0])
             if self.fusion_switch_file:
                 logger.info(f"Fusion switch settings read from {self.fusion_switch_file}.")
                 custom_op.parameter_map["fusion_switch_file"].s = self.tf.compat.as_bytes(self.fusion_switch_file)

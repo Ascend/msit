@@ -60,18 +60,20 @@ def valid_dump_mode(value: list):
         return value
     if not isinstance(value, list):
         raise MsitException(MsgConst.INVALID_DATA_TYPE, '"dump_mode" must be a list.')
-    for vv in value:
-        if vv not in DumpConst.ALL_DUMP_MODE:
+    if len(value) == 1:
+        if value[0] not in DumpConst.ALL_DUMP_MODE:
             raise MsitException(
-                MsgConst.INVALID_ARGU, f'"dump_mode" must be one of {DumpConst.ALL_DUMP_MODE}, currently: {vv}.'
+                MsgConst.INVALID_ARGU, f'"dump_mode" must be one of {DumpConst.ALL_DUMP_MODE}, currently: {value[0]}.'
             )
+    else:
+        raise MsitException(MsgConst.INVALID_ARGU, '"dump_mode" only accepts a single-item list.')
     return value
 
 
 def valid_dump_extra(values: list):
     if not values:
         return values
-    if not isinstance(value, list):
+    if not isinstance(values, list):
         raise MsitException(MsgConst.INVALID_DATA_TYPE, '"dump_extra" must be a list.')
     for value in values:
         if value not in DumpConst.ALL_DUMP_EXTRA:
@@ -94,6 +96,8 @@ def valid_dump_time(value):
 
 
 def valid_op_id(value: list):
+    if not value:
+        return value
     if not isinstance(value, list):
         raise MsitException(MsgConst.INVALID_DATA_TYPE, '"op_id" must be a list.')
     res = []
