@@ -20,10 +20,12 @@ import sqlite3
 import json
 import csv
 import ast
+from typing import Dict, List, Tuple, Any
 import pandas as pd
 from loguru import logger
-from typing import Dict, List, Tuple, Any
 from modelevalstate.train.pretrain import pretrain
+
+
 def fetch_rids_from_db(db_path):
     try:
         # 连接数据库
@@ -55,6 +57,7 @@ def fetch_rids_from_db(db_path):
         if 'conn' in locals():
             conn.close()
 
+
 class DatabaseConnector:
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -68,7 +71,7 @@ class DatabaseConnector:
             self.cursor = self.conn.cursor()
             return self.cursor
         except sqlite3.Error as e:
-            raise ConnectionError(f"无法连接到数据库: {e}")
+            raise ConnectionError(f"无法连接到数据库: {e}") from e
 
     def close(self):
         """关闭数据库连接"""
@@ -77,13 +80,15 @@ class DatabaseConnector:
         if self.conn:
             self.conn.close()
 
+
 def read_batch_exec_data(cursor) -> List[Tuple]:
     """读取 batch_exec 表中的数据"""
     try:
         cursor.execute("SELECT * FROM batch_exec WHERE name = 'forward';")
         return cursor.fetchall()
     except sqlite3.Error as e:
-        raise ValueError(f"读取 batch_exec 表时出错: {e}")
+        raise ValueError(f"读取 batch_exec 表时出错: {e}") from e
+
 
 def group_exec_data_by_pid(exec_rows: List[Tuple]) -> Dict[int, List[Tuple]]:
     """按 pid 分组 batch_exec 数据"""
@@ -95,13 +100,15 @@ def group_exec_data_by_pid(exec_rows: List[Tuple]) -> Dict[int, List[Tuple]]:
         data_by_pid[pid].append(row)
     return data_by_pid
 
+
 def read_batch_data(cursor) -> List[Tuple]:
     """读取 batch 表中的数据"""
     try:
         cursor.execute("SELECT * FROM batch WHERE name = 'modelExec';")
         return cursor.fetchall()
     except sqlite3.Error as e:
-        raise ValueError(f"读取 batch 表时出错: {e}")
+        raise ValueError(f"读取 batch 表时出错: {e}") from e
+
 
 def read_batch_req_data(cursor) -> List[Tuple]:
     """读取 batch_req 表中的数据"""
@@ -109,7 +116,8 @@ def read_batch_req_data(cursor) -> List[Tuple]:
         cursor.execute("SELECT * FROM batch_req;")
         return cursor.fetchall()
     except sqlite3.Error as e:
-        raise ValueError(f"读取 batch_req 表时出错: {e}")
+        raise ValueError(f"读取 batch_req 表时出错: {e}") from e
+
 
 def calculate_block_sums(req_rows: List[Tuple]) -> Dict[int, float]:
     """按 batch_id 分组并计算 block 的总和"""
@@ -132,6 +140,7 @@ def create_output_folder(input_path: str) -> str:
     os.makedirs(output_folder, exist_ok=True)
     return output_folder
 
+
 def process_batch_data(exec_data: List[Tuple], batch_rows: List[Tuple], current_batch_index: int) -> List[Tuple]:
     """处理批量数据"""
     num_exec_rows = len(exec_data)
@@ -142,12 +151,14 @@ def process_batch_data(exec_data: List[Tuple], batch_rows: List[Tuple], current_
     else:
         return batch_rows[current_batch_index:current_batch_index + num_exec_rows]
 
+
 def write_csv_header(csvfile) -> None:
     writer = csv.writer(csvfile)
     writer.writerow([
         ('batch_stage', 'batch_size', 'total_need_blocks', 'total_prefill_token', 'max_seq_len', 'model_execute_time'),
         ('input_length', 'need_blocks', 'output_length')
     ])
+
 
 def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_df: pd.DataFrame, rids_ori: List[Any]) -> List[Tuple]:
     processed_data = []
@@ -200,9 +211,11 @@ def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_
         processed_data.append(combined_row)
     return processed_data
 
+
 def write_csv_row(csvfile, row: Tuple) -> None:
     writer = csv.writer(csvfile)
     writer.writerow(row)
+
 
 def save_processed_data_to_csv(
     input_path: str,
@@ -227,6 +240,7 @@ def save_processed_data_to_csv(
             processed_data = process_execution_data(exec_data, batch_data, req_df, rids_ori)
             for row in processed_data:
                 write_csv_row(csvfile, row)
+
 
 def source_to_model(input_path: str):
     ori_db_path = os.path.join(input_path, 'profiler.db')
@@ -256,9 +270,10 @@ def source_to_model(input_path: str):
         )
 
     except Exception as e:
-        logger.error(f"处理过程中出错: {e}")
+        logger.error(f"处理过程中出错: {e}") from e
     finally:
         db_connector.close()
+
 
 def req_decodetimes(input_path, output_path):
     csv_file = os.path.join(input_path, f'request.csv')
@@ -292,7 +307,7 @@ def main(args):
     try:
         source_to_model(input_path)
     except IOError as e:
-        logger.error(f"无法读取输入文件: {e}")
+        logger.error(f"无法读取输入文件: {e}") from e
         sys.exit(1)
     
     # 确保输出目录存在
