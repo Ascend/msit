@@ -38,6 +38,8 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=4, help="Batch size for anti and calibration")
     parser.add_argument('--from_fp8', action='store_true', help="Origin model is of fp8")
     parser.add_argument('--from_bf16', action='store_true', help="Origin model is of bf16")
+    parser.add_argument('--dynamic', action='store_true', help="Dynamic Quantization")
+    parser.add_argument('--disable_anti', action='store_true', help="No AntiOutlier")
     return parser.parse_args()
 
 
@@ -134,14 +136,15 @@ def main():
     anti_dataset = get_calib_dataset_batch(tokenizer, anti_prompt, batch_size, model.device)
     dataset_calib = get_calib_dataset_batch(tokenizer, calib_prompt, batch_size, model.device)
 
-    with torch.no_grad():
-        anti_config = AntiOutlierConfig(w_bit=8,
-                                        a_bit=8,
-                                        anti_method='m4',
-                                        dev_type='npu',
-                                        dev_id=model.device.index)
-        anti_outlier = AntiOutlier(model, calib_data=anti_dataset, cfg=anti_config)
-        anti_outlier.process()
+    if not args.disable_anti:
+        with torch.no_grad():
+            anti_config = AntiOutlierConfig(w_bit=8,
+                                            a_bit=8,
+                                            anti_method='m4',
+                                            dev_type='npu',
+                                            dev_id=model.device.index)
+            anti_outlier = AntiOutlier(model, calib_data=anti_dataset, cfg=anti_config)
+            anti_outlier.process()
     pbar.update(1)
 
     disable_names = []
@@ -158,6 +161,7 @@ def main():
         pr=1.0,
         w_sym=True,
         mm_tensor=False,
+        is_dynamic=args.dynamic,
     )
 
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level="L0")
