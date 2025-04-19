@@ -336,8 +336,6 @@ class TrainVersion1:
         )
         custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=sp.ohe_path)
         custom_encoder.fit()
-        # custom_one_hot_encoder = CustomOneHotEncoder(preset_category_data, save_dir=sp.ohe_path)
-        # custom_one_hot_encoder.fit()
         dataset = MyDataSet(custom_encoder=custom_encoder, predict_field=sp.predict_field,
                             shuffle=sp.shuffle, op_algorithm=sp.op_algorithm)
 
