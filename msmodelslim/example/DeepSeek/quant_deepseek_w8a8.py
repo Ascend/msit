@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, OpsType
 from add_safetensors import add_safetensors
+from example.DeepSeek.add_safetensors import AddTensorsConfig
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
@@ -40,6 +41,7 @@ def parse_args():
     parser.add_argument('--from_bf16', action='store_true', help="Origin model is of bf16")
     parser.add_argument('--dynamic', action='store_true', help="Dynamic Quantization")
     parser.add_argument('--disable_anti', action='store_true', help="No AntiOutlier")
+    parser.add_argument('--quant_mtp', action='store_true', help="MTP W8A8DYNAMIC Quantization")
     return parser.parse_args()
 
 
@@ -59,26 +61,6 @@ def get_calib_dataset_batch(model_tokenizer, calib_list, batch_size, device="npu
     return calib_dataset
 
 
-def set_initialized_submodules(model, state_dict_keys):
-    """
-    Sets the `_is_hf_initialized` flag in all submodules of a given model when all its weights are in the loaded state
-    dict.
-    """
-    state_dict_keys = set(state_dict_keys)
-    not_initialized_submodules = {}
-    for module_name, module in model.named_modules():
-        if module_name == "":
-            # When checking if the root module is loaded there's no need to prepend module_name.
-            module_keys = set(module.state_dict())
-        else:
-            module_keys = {f"{module_name}.{k}" for k in module.state_dict()}
-        if module_keys.issubset(state_dict_keys):
-            module._is_hf_initialized = True
-        else:
-            not_initialized_submodules[module_name] = module
-    return not_initialized_submodules
-
-
 def main():
     args = parse_args()
     set_logger_level("info")
@@ -92,8 +74,8 @@ def main():
     check_number(batch_size, int, 1, 16, "batch_size")
 
     safe_generator = SafeGenerator()
- 
-    config = safe_generator.get_config_from_pretrained(model_path=model_path, 
+
+    config = safe_generator.get_config_from_pretrained(model_path=model_path,
                                                        trust_remote_code=True)
     # Set layer count to 0 means use all layers, otherwise it will only use the first layer_count layers
     config.num_hidden_layers = args.layer_count if args.layer_count != 0 else config.num_hidden_layers
@@ -180,8 +162,14 @@ def main():
     copy_config_files(input_path=model_path, output_path=save_path, quant_config=quant_config,
                       custom_hooks=custom_hooks)
     pbar.update(1)
-    add_safetensors(org_paths=model_path, target_dir=save_path, safetensors_prefix="mtp_float",
-                    max_file_size_gb=5, prefix="model.layers.61.")
+    add_safetensors(AddTensorsConfig(
+        org_paths=model_path,
+        target_dir=save_path,
+        safetensors_prefix="mtp_float",
+        max_file_size_gb=5,
+        prefix="model.layers.61.",
+        should_quant=args.quant_mtp
+    ))
     pbar.update(1)
 
 
@@ -189,7 +177,5 @@ if __name__ == "__main__":
     # torch_npu will fork a new process to init,
     # it's lazy_init will fail after we load a big model,so we need to init it here
     torch_npu.npu.init()
-    # This patch is for speeding up transformer loading big model
-    patch("transformers.modeling_utils.set_initialized_submodules", new=set_initialized_submodules).start()
     # Invoke main process
     main()
