@@ -93,7 +93,11 @@ class PerformanceIndex(BaseModel):
 class BenchMarkConfig(BaseModel):
     name: str = "benchmark"
     work_path: Path = Path("Ascend-mindie-server_1.0.RC3_linux-aarch64")
-    command: str = r"benchmark --DatasetPath /gsm8k --DatasetType gsm8k --ModelName llama3-8b --ModelPath /data/LLM/llama3-8b --TestType client --MaxOutputLen 256 --Http http://127.0.0.1:7425 --ManagementHttp http://127.0.0.2:7426 --Concurrency 300 --RequestRate 20 --WarmupSize 20 --Tokenizer True --SaveTokensPath output/gsm8k.csv"
+    command: str = (r"benchmark --DatasetPath /gsm8k --DatasetType gsm8k "
+                    r"--ModelName llama3-8b --ModelPath /data/LLM/llama3-8b --TestType client "
+                    r"--MaxOutputLen 256 --Http http://127.0.0.1:7425 "
+                    r"--ManagementHttp http://127.0.0.2:7426 --Concurrency 300 --RequestRate 20 "
+                    r"--WarmupSize 20 --Tokenizer True --SaveTokensPath output/gsm8k.csv")
     output_path: Path = Path(r"Ascend-mindie-server_1.0.RC3_linux-aarch64/instance")
     custom_collect_output_path: Path = Path(r"Ascend-mindie-server_1.0.RC3_linux-aarch64/simulate_logs")
     custom_analysis_output_path: Path = Path(r"model_forward.csv")

@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from modelevalstate.common import StateType
 from modelevalstate.inference.constant import OpAlgorithm
 
+
 @dataclass
 class StateParam:
     """
