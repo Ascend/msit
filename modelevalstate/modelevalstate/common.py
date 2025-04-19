@@ -1,22 +1,10 @@
+# !/usr/bin/python3.7
 # -*- coding: utf-8 -*-
-# Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-from enum import Enum
-from typing import Dict
+# Copyright (c) Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
+from typing import Dict
 
 _PREFILL = "prefill"
 _DECODE = "decode"
@@ -55,7 +43,7 @@ def computer_speed(line_node, field):
 
 
 def computer_speed_with_second(line_node, field):
-    return 1 / (getattr(line_node, field) * 10 ** -3)
+    return 1 / (getattr(line_node, field) * 10 ** -6)
 
 
 def my_std(nums):
@@ -64,7 +52,7 @@ def my_std(nums):
     return (sum(map(lambda e: (e - avg) * (e - avg), nums)) / n) ** 0.5
 
 
-def get_train_sub_path(base_path: Path = Path("state_eval/tmp/pd_content/train")):
+def get_train_sub_path(base_path: Path = Path(r"D:\PyProject\state_eval\tmp\pd_content\train")):
     # 给训练输出目录生成新的目录
     if not base_path.exists():
         base_path.mkdir(parents=True, exist_ok=True)
@@ -79,3 +67,45 @@ def update_global_coefficient(global_coefficient: Dict, key: State, value: float
         global_coefficient[key] = [value]
     else:
         global_coefficient[key].append(value)
+
+
+def get_module_version(module_name):
+    try:
+        # 方法1：直接导入模块
+        # fix
+        module = importlib.import_module(module_name)
+        if hasattr(module, "__version__"):
+            return module.__version__
+        elif hasattr(module, "version"):
+            return module.version
+    except ImportError:
+        pass
+
+    try:
+        # 方法2：使用 pkg_resources
+        import pkg_resources
+        return pkg_resources.get_distribution(module_name).version
+    except (ImportError, pkg_resources.DistributionNotFound):
+        pass
+
+    try:
+        # 方法3：使用 importlib.metadata（Python 3.8+）
+        import importlib.metadata
+        return importlib.metadata.version(module_name)
+    except (ImportError):
+        pass
+
+    # 方法4：最后尝试 pip show
+    try:
+        import subprocess
+        output = subprocess.check_output(
+            ["/usr/bin/pip", "show", module_name],
+            universal_newlines=True
+        )
+        for line in output.splitlines():
+            if line.startswith("Version:"):
+                return line.split(":")[1].strip()
+    except subprocess.CalledProcessError:
+        pass
+
+    raise ValueError("模块未安装或无法获取版本")
