@@ -73,8 +73,8 @@ class EnvChecker(PrecheckerBase):
 
             if result == CheckResult.ERROR:
                 env_key = suggestion_rule.get(CONFIG.name)
-                env_cmd = to_env_export_cmd(env_key, suggestion_value)
-                undo_env_cmd = to_env_export_cmd(env_key, current_value)
+                env_cmd = self.action(env_key, suggestion_value)
+                undo_env_cmd = self.action(env_key, current_value)
                 fix_pair.append((env_cmd, undo_env_cmd))
 
         if not env_save_path:
