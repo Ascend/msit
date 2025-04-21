@@ -76,12 +76,12 @@ class XGBStateEvaluate:
         elif stage == self.decode_type:
             _ud = res
         else:
-            raise ValueError(
-                f"Data error. expected Data Type {self.prefill_type, self.decode_type}. got is {stage}")
+            raise ValueError(f"Data error. expected Data Type {self.prefill_type, self.decode_type}. got is {stage}")
         return _up, _ud
 
 
 # 接口提供三个参数1个batch字段，1个request字段，1个config 字段。
+
 
 def predict_v1(batch_info: BatchField, request_info: Tuple[RequestField, ...], config_path: ConfigPath):
     # 读取其他字段数据
@@ -92,44 +92,47 @@ def predict_v1(batch_info: BatchField, request_info: Tuple[RequestField, ...], c
     input_data = InputData(
         batch_field=batch_info,
         request_field=request_info,
-        model_op_field=fh.get_op_field(batch_info.batch_stage, batch_info.batch_size, batch_info.max_seq_len,
-                                       fh.prefill_op_data, fh.decode_op_data),
+        model_op_field=fh.get_op_field(
+            batch_info.batch_stage, batch_info.batch_size, batch_info.max_seq_len, fh.prefill_op_data, fh.decode_op_data
+        ),
         model_struct_field=fh.model_struct_info,
         model_config_field=fh.model_config_info,
         mindie_field=fh.mindie_info,
         env_field=fh.env_info,
-        hardware_field=fh.hardware
+        hardware_field=fh.hardware,
     )
     # 进行预测
     custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=config_path.ohe_path)
     custom_encoder.fit(load=True)
     # 加载模型
     data_processor = DataProcessor(custom_encoder)
-    xgb_state_eval = XGBStateEvaluate(
-        xgb_model_path=config_path.model_path,
-        dataprocessor=data_processor)
+    xgb_state_eval = XGBStateEvaluate(xgb_model_path=config_path.model_path, dataprocessor=data_processor)
     # 预测
     res = xgb_state_eval.predict(input_data)
     return res
 
 
-def predict_v1_with_cache(batch_info: BatchField, request_info: Tuple[RequestField, ...], config_path: ConfigPath,
-                          fh: FileHanlder, data_processor: DataProcessor):
+def predict_v1_with_cache(
+    batch_info: BatchField,
+    request_info: Tuple[RequestField, ...],
+    config_path: ConfigPath,
+    fh: FileHanlder,
+    data_processor: DataProcessor,
+):
     # 组合为input data
     input_data = InputData(
         batch_field=batch_info,
         request_field=request_info,
-        model_op_field=fh.get_op_field(batch_info.batch_stage, batch_info.batch_size, batch_info.max_seq_len,
-                                       fh.prefill_op_data, fh.decode_op_data),
+        model_op_field=fh.get_op_field(
+            batch_info.batch_stage, batch_info.batch_size, batch_info.max_seq_len, fh.prefill_op_data, fh.decode_op_data
+        ),
         model_struct_field=fh.model_struct_info,
         model_config_field=fh.model_config_info,
         mindie_field=fh.mindie_info,
         env_field=fh.env_info,
-        hardware_field=fh.hardware
+        hardware_field=fh.hardware,
     )
-    xgb_state_eval = XGBStateEvaluate(
-        xgb_model_path=config_path.model_path,
-        dataprocessor=data_processor)
+    xgb_state_eval = XGBStateEvaluate(xgb_model_path=config_path.model_path, dataprocessor=data_processor)
     # 预测
     res = xgb_state_eval.predict(input_data)
     return res
@@ -143,66 +146,108 @@ def demo_predict_v1():
     3. 再启动仿真程序调用predict_v1函数。
 
     """
-    batch_field = BatchField('decode', 20, 20.0, 580.0, 29.0)
-    request_field = (RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2))
-    config_path = ConfigPath(Path(r".\PyProject\state_eval\tmp\pd_content\train\151\bak\base\xgb_model.ubj"),
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\151\ohe"),
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\151\deepseek_r1")
-                             )
-    batch_field = BatchField('prefill', 20, 20.0, 580.0, 29.0)
-
-
+    batch_field = BatchField("decode", 20, 20.0, 580.0, 29.0)
+    request_field = (
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+    )
+    config_path = ConfigPath(
+        Path(r".\PyProject\state_eval\tmp\pd_content\train\151\bak\base\xgb_model.ubj"),
+        Path(r".\PyProject\state_eval\tmp\pd_content\train\151\ohe"),
+        Path(r".\PyProject\state_eval\tmp\pd_content\train\151\deepseek_r1"),
+    )
+    batch_field = BatchField("prefill", 20, 20.0, 580.0, 29.0)
 
 
 def demo_predict_v1_with_cache():
-    batch_field = BatchField('decode', 20, 20.0, 580.0, 29.0)
-    request_field = (RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2))
-    config_path = ConfigPath(Path(r".\PyProject\state_eval\tmp\pd_content\train\114\bak\base\xgb_model.ubj"),
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\114\ohe"),
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\114\llama3-8b")
-                             )
+    batch_field = BatchField("decode", 20, 20.0, 580.0, 29.0)
+    request_field = (
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+    )
+    config_path = ConfigPath(
+        Path(r".\PyProject\state_eval\tmp\pd_content\train\114\bak\base\xgb_model.ubj"),
+        Path(r".\PyProject\state_eval\tmp\pd_content\train\114\ohe"),
+        Path(r".\PyProject\state_eval\tmp\pd_content\train\114\llama3-8b"),
+    )
     static_file = StaticFile(base_path=config_path.static_file_dir)
     fh = FileHanlder(static_file)
     fh.load_static_data()
     custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=config_path.ohe_path)
     custom_encoder.fit(load=True)
     data_processor = DataProcessor(custom_encoder)
-    batch_field = BatchField('prefill', 20, 20.0, 580.0, 29.0)
-   
+    batch_field = BatchField("prefill", 20, 20.0, 580.0, 29.0)
 
 
 def demo_predict_v1_with_cache_with_simple_data_processor():
-    batch_field = BatchField('decode', 20, 20.0, 580.0, 29.0)
-    request_field = (RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
-                     RequestField(29.0, 1, 2), RequestField(29.0, 1, 2))
+    batch_field = BatchField("decode", 20, 20.0, 580.0, 29.0)
+    request_field = (
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+        RequestField(29.0, 1, 2),
+    )
     config_path = ConfigPath(
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\155\bak\base\xgb_model.ubj"),
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\155\ohe"),
-                             Path(r".\PyProject\ModelEvalState\data\v1.0.0\deepseek_r1_forward_0")
-                             )
+        Path(r".\PyProject\state_eval\tmp\pd_content\train\155\bak\base\xgb_model.ubj"),
+        Path(r".\PyProject\state_eval\tmp\pd_content\train\155\ohe"),
+        Path(r".\PyProject\ModelEvalState\data\v1.0.0\deepseek_r1_forward_0"),
+    )
     static_file = StaticFile(base_path=config_path.static_file_dir)
     fh = FileHanlder(static_file)
     fh.load_static_data()
     custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=config_path.ohe_path)
     custom_encoder.fit(load=True)
     data_processor = DataProcessor(custom_encoder)
-    batch_field = BatchField('prefill', 20, 20.0, 580.0, 29.0)
-    
-
+    batch_field = BatchField("prefill", 20, 20.0, 580.0, 29.0)

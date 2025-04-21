@@ -12,12 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import csv
 import json
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, List, Union
 from pathlib import Path
+from typing import Dict, Optional, Tuple, List, Union
 
 from loguru import logger
 
@@ -58,7 +57,7 @@ class StaticFile:
         for path in [self.hardware_path, self.env_path, self.mindie_config_path, self.config_path,
                      self.model_struct_path, self.model_decode_op_path, self.model_prefill_op_path]:
             if not path.exists():
-                logger.warning(f"Not Found {path}")
+                logger.debug(f"Not Found {path}")
 
 
 class FileHanlder:
@@ -80,27 +79,53 @@ class FileHanlder:
     def load_hardware_data(hardware_path: Path) -> HardWare:
         with open(hardware_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return HardWare(**{k: v for k, v in data.items() if k in HARDWARE_FIELD})
+        if not data:
+            raise AssertionError("Data is None")
+        new_data = {}
+        for k, v in data.items():
+            if isinstance(v, list):
+                new_data[k] = tuple(v)
+            else:
+                new_data[k] = v
+        return HardWare(**{k: v for k, v in new_data.items() if k in HARDWARE_FIELD})
 
     @staticmethod
     def load_env_data(env_path: Path) -> EnvField:
         with open(env_path, "r", encoding="utf-8") as f:
             data = json.load(f)
+        if not data:
+            raise AssertionError("Data is None")
         return EnvField(**{k: v for k, v in data.items() if k in ENV_FIELD})
 
     @staticmethod
     def load_mindie_config(mindie_config_path: Path) -> MindieConfig:
         with open(mindie_config_path, "r", encoding="utf-8") as f:
             data = json.load(f)
+        if not data:
+            raise AssertionError("Data is None")
         if "max_seq_len" in data:
             data["mindie__max_seq_len"] = data["max_seq_len"]
-        return MindieConfig(**{k: v for k, v in data.items() if k in MINDIE_FIELD})
+        new_data = {}
+        for k, v in data.items():
+            if isinstance(v, list):
+                new_data[k] = tuple(v)
+            else:
+                new_data[k] = v
+        return MindieConfig(**{k: v for k, v in new_data.items() if k in MINDIE_FIELD})
 
     @staticmethod
     def load_model_config(config_path: Path) -> ModelConfig:
         with open(config_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return ModelConfig(**{k: v for k, v in data.items() if k in MODEL_CONFIG_FIELD})
+        if not data:
+            raise AssertionError("Data is None")
+        new_data = {}
+        for k, v in data.items():
+            if isinstance(v, list):
+                new_data[k] = tuple(v)
+            else:
+                new_data[k] = v
+        return ModelConfig(**{k: v for k, v in new_data.items() if k in MODEL_CONFIG_FIELD})
 
     @staticmethod
     def load_model_struct(model_struct_path: Path) -> ModelStruct:
@@ -114,52 +139,60 @@ class FileHanlder:
                     _load_field = row
                     if len(row) != len(MODEL_STRUCT_FIELD):
                         raise ValueError(f"Load length {len(row)}, expected length {len(MODEL_STRUCT_FIELD)}")
-                    for k in MODEL_STRUCT_FIELD:
-                        if k in row:
-                            continue
-                        else:
-                            raise ValueError(f"Not Found Field {k} in {row}")
+                    _check = [k for k in MODEL_STRUCT_FIELD if k in row]
+                    if tuple(_check) != MODEL_STRUCT_FIELD:
+                        raise ValueError(f"Missing Field: {set(MODEL_STRUCT_FIELD) - set(_check)}")
                     continue
                 _row = [row[_load_field.index(k)] for k in MODEL_STRUCT_FIELD]
                 model_struct = ModelStruct(*_row)
+        if not model_struct:
+            raise ValueError("model_struct is None")
         return model_struct
 
     @staticmethod
-    def load_op_data(op_path: Path) -> Dict[int, List[ModelOpField]]:
+    def check_filed(row: List[str], op_type: Optional[str] = None) -> str:
+        _tmp_row = row
+        if BATCH_SIZE in row:
+            _tmp_row.remove(BATCH_SIZE)
+            op_type = BATCH_SIZE
+        if MAX_SEQ_LEN in row:
+            _tmp_row.remove(MAX_SEQ_LEN)
+            op_type = MAX_SEQ_LEN
+        if tuple(_tmp_row) != MODEL_OP_FIELD:
+            raise AssertionError(f"get fields: {row}, expected fields: {MODEL_OP_FIELD}")
+        return op_type
+
+    @staticmethod
+    def load_op_data(op_path: Path) -> Dict[Tuple, Tuple[ModelOpField]]:
         op_type = BATCH_SIZE
         all_op_data = {}
         with open(op_path, "r", encoding="utf-8", newline="") as f:
             op_reader = csv.reader(f)
             for i, row in enumerate(op_reader):
                 if i == 0:
-                    _tmp_row = row
-                    if BATCH_SIZE in row:
-                        _tmp_row.remove(BATCH_SIZE)
-                        op_type = BATCH_SIZE
-                    if MAX_SEQ_LEN in row:
-                        _tmp_row.remove(MAX_SEQ_LEN)
-                        op_type = MAX_SEQ_LEN
-                    if tuple(_tmp_row) != MODEL_OP_FIELD:
-                        raise AssertionError(f"get fields: {row}, expected fields: {MODEL_OP_FIELD}")
+                    op_type = FileHanlder.check_filed(row, op_type)
+                    continue
                 for _row in row:
                     if not _row:
                         raise ValueError(f"Empty data found in {op_path}. i: {i}, row: {row}")
                 if op_type == BATCH_SIZE:
-                    _relation_key = int(row[0])
-                    _relation_value = row[1:]
+                    _relation_key = (int(row[0]),)
+                    _relation_value = tuple(row[1:])
                 else:
                     _relation_key = (int(row[0]), int(row[1]))
-                    _relation_value = row[2:]
+                    _relation_value = tuple(row[2:])
                 if _relation_key not in all_op_data:
-                    all_op_data[_relation_key] = [_relation_value]
+                    all_op_data[_relation_key] = (_relation_value,)
                 else:
-                    all_op_data[_relation_key].append(_relation_value)
+                    all_op_data[_relation_key] = (*all_op_data[_relation_key], _relation_value)
+        if not all_op_data:
+            raise ValueError("all_op_data is None.")
         return all_op_data
 
     @staticmethod
     def get_op_field(batch_stage: str, batch_size: int, max_seq_len: int = 0,
-                     prefill_op_data: Optional[Dict[Union[int, Tuple], List[ModelOpField]]] = None,
-                     decode_op_data: Optional[Dict[Union[int, Tuple], List[ModelOpField]]] = None) -> Optional[Tuple[
+                     prefill_op_data: Optional[Dict[Union[int, Tuple], Tuple[ModelOpField]]] = None,
+                     decode_op_data: Optional[Dict[Union[int, Tuple], Tuple[ModelOpField]]] = None) -> Optional[Tuple[
         ModelOpField]]:
         if prefill_op_data is None and decode_op_data is None:
             return None
@@ -168,7 +201,7 @@ class FileHanlder:
             op_info = prefill_op_data
         else:
             op_info = decode_op_data
-        if isinstance(list(op_info.keys())[0], tuple):
+        if len(list(op_info.keys())[0]) == 2:
             op_type = MAX_SEQ_LEN
         else:
             op_type = BATCH_SIZE
@@ -183,11 +216,11 @@ class FileHanlder:
                 _cur_max_seq_len = min(range(len(tmp_list)), key=lambda i: abs(tmp_list[i][1] - max_seq_len))
                 return tuple(op_info[tmp_list[_cur_max_seq_len]])
         else:
-            if batch_size in op_info:
-                return tuple(op_info[batch_size])
+            if (batch_size,) in op_info:
+                return tuple(op_info[(batch_size,)])
             else:
                 tmp_list = list(op_info.keys())
-                _cur_index = min(range(len(tmp_list)), key=lambda i: abs(tmp_list[i] - batch_size))
+                _cur_index = min(range(len(tmp_list)), key=lambda i: abs(tmp_list[i][0] - batch_size))
                 return tuple(op_info[tmp_list[_cur_index]])
 
     def load_static_data(self):
