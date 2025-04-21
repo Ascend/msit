@@ -27,15 +27,16 @@ import matplotlib
 from matplotlib import pyplot as plt
 from modelevalstate.inference.constant import OpAlgorithm
 from modelevalstate.inference.data_format_v1 import (
-    MODEL_OP_FIELD, 
-    MODEL_STRUCT_FIELD, 
-    MODEL_CONFIG_FIELD, 
-    MINDIE_FIELD, 
-    ENV_FIELD, 
+    MODEL_OP_FIELD,
+    MODEL_STRUCT_FIELD,
+    MODEL_CONFIG_FIELD,
+    MINDIE_FIELD,
+    ENV_FIELD,
     HARDWARE_FIELD
 )
 from modelevalstate.inference.dataset import CustomOneHotEncoder, CustomLabelEncoder, preset_category_data
 from modelevalstate.inference.dataset import PreprocessTool, TOTAL_OUTPUT_LENGTH, TOTAL_SEQ_LENGTH, TOTAL_PREFILL_TOKEN
+
 matplotlib.use('Agg')
 
 
@@ -100,7 +101,7 @@ class MyDataSet:
     @staticmethod
     def convert_hardware_info(row: str, index: str) -> Series:
         return PreprocessTool.generate_series(eval(row), eval(index))
-    
+
     @staticmethod
     def get_all_request_info(row: str, index: str) -> DataFrame:
         # 获取所有request原始数据特征，用来分析原始数据
@@ -133,7 +134,7 @@ class MyDataSet:
         else:
             plt.show()
         plt.close()
-        
+
     def preprocess(self, lines_data: Optional[DataFrame] = None):
         # 数据预处理
         # 将各个特征数据转换为列数据
@@ -193,8 +194,6 @@ class MyDataSet:
         if plt_data:
             self.plt_data(lines_data, middle_save_path)
 
-    
-
     def analysis_batch_feature(self, middle_save_path: Optional[Path] = None):
         cur_batch_df = self.load_data.iloc[:, 0:len(self.sub_columns[0])]
         custom_label_encoder = CustomLabelEncoder([preset_category_data[0]])
@@ -206,7 +205,7 @@ class MyDataSet:
     def plt_data(self, line_data: DataFrame, middle_save_path: Optional[Path] = None):
         self.analysis_batch_feature(middle_save_path)
         self.analysis_origin_request_hist(line_data, middle_save_path)
-    
+
     def save(self, save_path: Path):
         self.features.to_csv(save_path.joinpath("features_preprocess.csv"), index=False)
         self.load_data.to_csv(save_path.joinpath("load_data.csv"), index=False)
@@ -235,10 +234,10 @@ class SimpleDataset(MyDataSet):
         env_df = lines_data.iloc[:, 6].apply(self.convert_env_info, args=(lines_data.columns[6],))
         hardware_df = lines_data.iloc[:, 7].apply(self.convert_hardware_info, args=(lines_data.columns[7],))
         self.sub_columns = [batch_df.columns.tolist(), request_df.columns.tolist(), model_config_df.columns.tolist(),
-                            mindie_df.columns.tolist(), 
+                            mindie_df.columns.tolist(),
                             env_df.columns.tolist(), hardware_df.columns.tolist()]
         # 提取 features 和labels
-        self.load_data = pd.concat([batch_df, request_df, model_config_df, mindie_df, 
+        self.load_data = pd.concat([batch_df, request_df, model_config_df, mindie_df,
                                     env_df, hardware_df], axis=1)
         self.labels = pd.DataFrame(batch_df[self.predict_field], columns=[self.predict_field])
         batch_df = batch_df.drop(self.predict_field, axis=1)
@@ -258,8 +257,8 @@ class DecodeDataSet:
         self.load_data = None
         self.features = None
         self.labels = None
-        self.train_x = None 
-        self.test_x = None 
+        self.train_x = None
+        self.test_x = None
         self.train_y = None
         self.test_y = None
 
@@ -287,7 +286,7 @@ class DecodeDataSet:
 
         # 返回匹配的标点符号个数
         return len(matches)
-    
+
     @staticmethod
     def count_chars(line: str):
         # 匹配中文字符
@@ -312,9 +311,9 @@ class DecodeDataSet:
         self.labels = self.load_data[self.predict_field]
         self.features = self.load_data.drop(self.predict_field, axis=1)
         return self.features, self.labels
-    
+
     def construct_data(self, lines_data: Optional[DataFrame] = None, plt_data: bool = True,
-                    middle_save_path: Optional[Path] = None):
+                       middle_save_path: Optional[Path] = None):
         features, labels = self.preprocess(lines_data)
         self.train_x, self.test_x, self.train_y, self.test_y = train_test_split(features, labels,
                                                                                 test_size=self.test_size,
@@ -329,7 +328,7 @@ class DecodeDataSet:
         else:
             plt.show()
         plt.close()
-    
+
     def save(self, save_path: Path):
         self.features.to_csv(save_path.joinpath("features_preprocess.csv"), index=False)
         self.load_data.to_csv(save_path.joinpath("load_data.csv"), index=False)

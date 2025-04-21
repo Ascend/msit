@@ -158,8 +158,6 @@ def demo_predict_v1():
     batch_field = BatchField('prefill', 20, 20.0, 580.0, 29.0)
 
 
-
-
 def demo_predict_v1_with_cache():
     batch_field = BatchField('decode', 20, 20.0, 580.0, 29.0)
     request_field = (RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
@@ -180,7 +178,6 @@ def demo_predict_v1_with_cache():
     custom_encoder.fit(load=True)
     data_processor = DataProcessor(custom_encoder)
     batch_field = BatchField('prefill', 20, 20.0, 580.0, 29.0)
-   
 
 
 def demo_predict_v1_with_cache_with_simple_data_processor():
@@ -193,10 +190,10 @@ def demo_predict_v1_with_cache_with_simple_data_processor():
                      RequestField(29.0, 1, 2), RequestField(29.0, 1, 2), RequestField(29.0, 1, 2),
                      RequestField(29.0, 1, 2), RequestField(29.0, 1, 2))
     config_path = ConfigPath(
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\155\bak\base\xgb_model.ubj"),
-                             Path(r".\PyProject\state_eval\tmp\pd_content\train\155\ohe"),
-                             Path(r".\PyProject\ModelEvalState\data\v1.0.0\deepseek_r1_forward_0")
-                             )
+        Path(r".\PyProject\state_eval\tmp\pd_content\train\155\bak\base\xgb_model.ubj"),
+        Path(r".\PyProject\state_eval\tmp\pd_content\train\155\ohe"),
+        Path(r".\PyProject\ModelEvalState\data\v1.0.0\deepseek_r1_forward_0")
+    )
     static_file = StaticFile(base_path=config_path.static_file_dir)
     fh = FileHanlder(static_file)
     fh.load_static_data()
@@ -204,5 +201,3 @@ def demo_predict_v1_with_cache_with_simple_data_processor():
     custom_encoder.fit(load=True)
     data_processor = DataProcessor(custom_encoder)
     batch_field = BatchField('prefill', 20, 20.0, 580.0, 29.0)
-    
-
