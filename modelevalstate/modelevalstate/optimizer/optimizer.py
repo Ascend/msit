@@ -148,7 +148,7 @@ def clearing_residual_process():
 
 class BenchMark:
     def __init__(self, benchmark_config: BenchMarkConfig, throughput_type: str = "common",
-                bak_path: Optional[Path] = None):
+                 bak_path: Optional[Path] = None):
         self.benchmark_config = benchmark_config
         self.throughput_type = throughput_type
         self.bak_path = bak_path
@@ -290,9 +290,9 @@ class CustomBenchMark(BenchMark):
                                 average_decode_latency=decode_latency, success_rate=success_rate)
 
     def backup(self, del_log=True):
-            super().backup(del_log)
-            backup(self.benchmark_config.custom_collect_output_path, self.bak_path, self.__class__.__name__)
-            backup(self.benchmark_config.custom_analysis_output_path, self.bak_path, self.__class__.__name__)
+        super().backup(del_log)
+        backup(self.benchmark_config.custom_collect_output_path, self.bak_path, self.__class__.__name__)
+        backup(self.benchmark_config.custom_analysis_output_path, self.bak_path, self.__class__.__name__)
 
     def prepare(self):
         super().prepare()
@@ -495,7 +495,7 @@ class Simulator:
                     return _p.value
             return origin_config
 
-     @staticmethod
+    @staticmethod
     def set_config(origin_config, key: str, value: Any):
         next_level = None
         if "." in key:
@@ -641,9 +641,10 @@ class Simulator:
         except Exception as e:
             logger.error(f"Failed to stop mindie simulator process. {e}")
 
+
 class Scheduler:
     def __init__(self, simulator: Simulator, benchmark: BenchMark, data_storage: DataStorage,
-                 bak_path: Optional[Path] = None, retry_number:int = 3):
+                 bak_path: Optional[Path] = None, retry_number: int = 3):
         self.simulator = simulator
         self.benchmark = benchmark
         self.data_storage = data_storage
@@ -813,8 +814,8 @@ class PSOOptimizer:
         if self.load_history_data and self.load_breakpoint:
             self.history_pos, self.history_cost = self.computer_fitness()
         elif self.load_history_data:
-            self.init_pos = self.custom_init_pos()        
-        
+            self.init_pos = self.custom_init_pos()
+
     def custom_init_pos(self) -> Optional[np.ndarray]:
         _all_pos, _all_cost = self.computer_fitness()
         if not _all_pos or not _all_cost:
@@ -956,7 +957,7 @@ def main(args: argparse.Namespace):
             rpc = xmlrpc.client.ServerProxy(server_address, allow_none=True)
             logger.info(f"{server_address} support method {rpc.system.listMethods()}")
             rpc_clients.append(rpc)
-     # 单机benchmark
+    # 单机benchmark
     if args.benchmark_policy == BenchMarkPolicy.benchmark.value and args.deploy_policy == DeployPolicy.single.value:
         benchmark = BenchMark(settings.benchmark, bak_path=bak_path)
     # 多机 传统benchmark

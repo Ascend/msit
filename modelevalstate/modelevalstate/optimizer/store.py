@@ -21,10 +21,10 @@ import pandas as pd
 from loguru import logger
 
 from modelevalstate.config.config import (
-    BenchMarkConfig, 
-    DataStorageConfig, 
-    RUN_TIME, 
-    PerformanceIndex, 
+    BenchMarkConfig,
+    DataStorageConfig,
+    RUN_TIME,
+    PerformanceIndex,
     OptimizerConfigField
 )
 
@@ -71,7 +71,7 @@ class DataStorage:
                 logger.warning(f"IndexError. index: {i + 1}, list: {benchmark_param}")
         for k, v in kwargs.items():
             _column.append(k)
-            _value.append(v) 
+            _value.append(v)
         if self.save_file.exists():
             with open(self.save_file, "a+") as f:
                 data_writer = csv.writer(f)

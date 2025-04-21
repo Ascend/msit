@@ -76,7 +76,7 @@ class RemoteScheduler:
     def stop_simulator(self, del_log=True):
         if self.simulator:
             self.simulator.stop(del_log)
-    
+
     def process_poll(self):
         if self.simulator:
             return self.simulator.process.poll()
