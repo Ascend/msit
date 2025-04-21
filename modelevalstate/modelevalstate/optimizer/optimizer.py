@@ -650,6 +650,7 @@ class Scheduler:
         self.data_storage = data_storage
         self.bak_path = bak_path
         self.retry_number = retry_number
+        self.simulate_run_info = None
 
     def back_up(self):
         if self.bak_path:
@@ -940,7 +941,8 @@ class PSOOptimizer:
                                         breakpoint_cost=self.history_cost)
         cost, joint_vars = optimizer.optimize(self.op_func, iters=self.iters)
         logger.info(
-            f"best cost {cost}, best joint_vars: {[self.target_field[i].format_func(k) for i, k in enumerate(joint_vars)]}")
+            f"best cost {cost}, best joint_vars: "
+            f"{[self.target_field[i].format_func(k) for i, k in enumerate(joint_vars)]}")
         self.visualization(optimizer)
 
 
@@ -961,7 +963,8 @@ def main(args: argparse.Namespace):
     if args.benchmark_policy == BenchMarkPolicy.benchmark.value and args.deploy_policy == DeployPolicy.single.value:
         benchmark = BenchMark(settings.benchmark, bak_path=bak_path)
     # 多机 传统benchmark
-    elif args.benchmark_policy == BenchMarkPolicy.custom_benchmark.value and args.deploy_policy == DeployPolicy.multiple.value:
+    elif args.benchmark_policy == BenchMarkPolicy.custom_benchmark.value and \
+            args.deploy_policy == DeployPolicy.multiple.value:
         benchmark = RPCCustomBenchMark(rpc_clients, settings.benchmark, bak_path=bak_path,
                                        analyze_tool=args.analyze_tool)
     # profiler benchmark, profiler只能采集主节点，因此多机情况下，也是运行单个机器的实例，处理数据。
@@ -992,7 +995,8 @@ def main(args: argparse.Namespace):
 parser = argparse.ArgumentParser(prog='optimizer')
 parser.add_argument("-b", "--benchmark_policy", default=BenchMarkPolicy.profiler_benchmark.value,
                     choices=[k.value for k in list(BenchMarkPolicy)],
-                    help="Whether to use custom performance indicators or mindie performance indicators. Benchmark and custom_benchmark are supported.")
+                    help="Whether to use custom performance indicators or mindie performance indicators. "
+                         "Benchmark and custom_benchmark are supported.")
 parser.add_argument("-lh", "--load_history", default=False, action="store_true",
                     help="Indicates whether to customize the initial location based on historical records.")
 parser.add_argument("-lb", "--load_breakpoint", default=False, action="store_true",
