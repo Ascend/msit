@@ -67,7 +67,7 @@ class RemoteScheduler:
     def check_success(self):
         if not self.simulator:
             return None
-        for i in range(10):
+        for _ in range(10):
             if self.simulator.check_success():
                 return True
             time.sleep(10)
