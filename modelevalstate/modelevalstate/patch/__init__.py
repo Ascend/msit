@@ -44,7 +44,7 @@ try:
     simulate_patch.append(Patch2rc1)
     optimize_patch.append(Patch2rc1)
     collection_patch.append(Patch2rc1)
-except (ModuleNotFoundError, ImportError) as e:
+except ImportError as e:
     warn(f"Failed from .patch_manager import Patch2rc1. error: {e}")
 
 try:
@@ -53,7 +53,7 @@ try:
     simulate_patch_elegant.append(Patch2rc1)
     optimize_patch_elegant.append(Patch2rc1)
     collection_patch_elegant.append(Patch2rc1)
-except (ModuleNotFoundError, ImportError) as e:
+except ImportError as e:
     warn(f"Failed from .patch_manager import Patch2rc1. error: {e}")
 
 
@@ -68,7 +68,8 @@ def enable_patch(targer_env):
         logger.info(f"Installed patch list {flag}.")
     else:
         logger.error(
-            f"No match patch version is found. current version: {mindie_llm_version}, support mindie_llm version {[getattr(_p, MINDIE_LLM) for _p in patchs]}")
+            f"No match patch version is found. current version: {mindie_llm_version}, "
+            f"support mindie_llm version {[getattr(_p, MINDIE_LLM) for _p in env_patch.get(targer_env)]}")
         raise ValueError(
-            f"No match patch version is found. current version: {mindie_llm_version}, support mindie_llm version {[getattr(_p, MINDIE_LLM) for _p in patchs]}")
-
+            f"No match patch version is found. current version: {mindie_llm_version}, "
+            f"support mindie_llm version {[getattr(_p, MINDIE_LLM) for _p in env_patch.get(targer_env)]}")

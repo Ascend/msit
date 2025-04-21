@@ -96,7 +96,7 @@ def update_plugin_manager(module):
     return module
 
 
-def update_PluginManager(module):
+def update_plugin_manager_class(module):
     logger.info(f"Patch {module}")
     module.generate_token = generate_token
     module.modelevalstate = True
@@ -105,34 +105,34 @@ def update_PluginManager(module):
 
 _post_import_hooks = {
     "mindie_llm.text_generator.plugins.plugin_manager": update_plugin_manager,
-    "mindie_llm.text_generator.plugins.plugin_manager.PluginManager": update_PluginManager
+    "mindie_llm.text_generator.plugins.plugin_manager.PluginManager": update_plugin_manager_class
 
 }
 
 
 class PostImportFinder:
     def __init__(self):
-        self._skip = set()
+        self.skip = set()
 
     def find_module(self, fullname, path=None):
-        if fullname in self._skip:
+        if fullname in self.skip:
             return None
         if fullname not in _post_import_hooks:
             return None
-        self._skip.add(fullname)
+        self.skip.add(fullname)
         return PostImportLoader(self)
 
 
 class PostImportLoader:
     def __init__(self, finder):
-        self._finder = finder
+        self.finder = finder
 
     def load_module(self, fullname):
         importlib.import_module(fullname)
         module = sys.modules[fullname]
         if fullname in _post_import_hooks:
             _post_import_hooks[fullname](module)
-        self._finder._skip.remove(fullname)
+        self.finder.skip.remove(fullname)
         return module
 
 
@@ -152,5 +152,5 @@ class Patch2rc1:
 
     @staticmethod
     def patch():
-        sys.meta_path.insert(0, PostImportFinder())
+        sys.meta_path.append(PostImportFinder())
         logger.info("Successful patch")
