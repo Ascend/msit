@@ -1,52 +1,38 @@
+# !/usr/bin/python3.7
 # -*- coding: utf-8 -*-
-# Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+# Copyright (c) Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
 """
-比较实用numpy计算出来的概率和解析文件的概率
+比较实用numpy 计算出来的概率和 解析文件的概率
 """
 import copy
 import json
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
 from statistics import mean, stdev
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 import numpy as np
 from matplotlib import pyplot as plt
+from loguru import logger
 
 from modelevalstate.common import State, my_std
 
-plt.rcParams['font.sans-serif'] = ['Kaitt', 'SimHei']
-plt.rcParams['axes.unicode_minus'] = False
 
-
-class PlotInputVelocityParams:
+@dataclass
+class PlotConfig:
     data: Dict[State, List]
-    predict_data: Dict[State, List]
     x_field: str
     title: str
     x_label: str
     y_label: str
-    save_path: Optional[str] = None
+    save_path: str = None
 
 
 class AnalysisState:
 
     @staticmethod
-    def computer_mean_sigma(data: Dict[State, List], x_field: str):
-        # 合并只有decode, prefill
+    def computer_mean_sigma(data: Dict[State, List], x_field: str, ):
+        # 合并只有decode， prefill
         res = {}
         tmp_data = copy.deepcopy(data)
         for k, v in tmp_data.items():
@@ -64,7 +50,7 @@ class AnalysisState:
         _positive_sigma = []
         _negative_sigma = []
         for k in sorted(res.keys(), key=lambda x: getattr(x, x_field)):
-            v = res.get(k)
+            v = res.get(k, [])
             if len(v) < 2:
                 _x.append(getattr(k, x_field))
                 _mean.append(v[0])
@@ -79,70 +65,111 @@ class AnalysisState:
                 try:
                     _sigma = np.std(v)
                 except Exception:
+                    logger.warning('Failed stdenv', v)
                     _sigma = my_std(v)
             _positive_sigma.append(_mean[-1] + _sigma)
             _negative_sigma.append(_mean[-1] - _sigma)
         return _x, _mean, _positive_sigma, _negative_sigma
 
     @staticmethod
-    def plot_input_velocity(params: PlotInputVelocityParams):
+    def plot_input_velocity(config: PlotConfig):
         """
-        绘制输入数据的平均值, 上波动和下波动曲线
+        绘制输入数据的平均值，上波动 和下波动曲线。
         :return:
         """
-        # 合并只有decode, prefill
-        _x, _mean, _positive_sigma, _negative_sigma = AnalysisState.computer_mean_sigma(params.data, params.x_field)
+        # 合并只有decode， prefill
+        _x, _mean, _positive_sigma, _negative_sigma = AnalysisState.computer_mean_sigma(config.data, config.x_field)
         plt.plot(_x, _mean, label="mean")
         plt.plot(_x, _positive_sigma, label="positive std")
         plt.plot(_x, _negative_sigma, label="negative std")
-        plt.title(params.title)
+        plt.title(config.title)
         plt.legend()
         plt.grid()
-        if x_label:
-            plt.xlabel(params.x_label)
-        if y_label:
-            plt.ylabel(params.y_label)
-        if save_path:
-            plt.savefig(Path(params.save_path)).joinpath(f"{params.x_label}_{params.y_label}_{params.title}.png")
+        if config.x_label:
+            plt.xlabel(config.x_label)
+        if config.y_label:
+            plt.ylabel(config.y_label)
+        if config.save_path:
+            plt.savefig(Path(config.save_path).joinpath(f"{config.x_label}_{config.y_label}_{config.title}.png"))
             plt.close()
         else:
             plt.show()
 
     @staticmethod
-    def plot_input_velocity_with_predict(params: PlotInputVelocityParams):
+    def plot_input_velocity_with_df(predict_df, origin_df, save_path=None):
         """
-        绘制输入数据和预测数据的平均值, 上波动和下波动曲线。
+        绘制输入数据的平均值，上波动 和下波动曲线。
         :return:
         """
-        # 合并只有decode, prefill
-        _x, _mean, _positive_sigma, _negative_sigma = AnalysisState.computer_mean_sigma(params.data, params.x_field)
+        # 合并只有decode， prefill
+        _batch_stage = predict_df["batch_stage"].unique()
+        for _bs in _batch_stage:
+            _cur_predict_df = predict_df[predict_df["batch_stage"] == _bs]
+            _cur_origin_df = origin_df[origin_df["batch_stage"] == _bs]
+            _p_group = _cur_predict_df.groupby("batch_size")
+            _p_mean = _p_group.mean()
+            _p_sigma = _p_group.std().fillna(0)
+            _o_mean = _cur_origin_df.groupby("batch_size").mean().values.flatten()
+            _o_sigma = _cur_origin_df.groupby("batch_size").std().fillna(0).values.flatten()
+
+            plt.plot(_p_mean.index.values, _p_mean.values.flatten(), label="predict mean")
+            plt.plot(_p_mean.index.values, (_p_mean.values + _p_sigma.values).flatten(), label="predict positive std")
+            plt.plot(_p_mean.index.values, (_p_mean.values - _p_sigma.values).flatten(), label="predict negative std")
+
+            plt.plot(_o_mean.index.values, _o_mean.values.flatten(), label="origin mean")
+            plt.plot(_o_mean.index.values, (_o_mean.values + _o_sigma.values).flatten(), label="origin positive std")
+            plt.plot(_o_mean.index.values, (_o_mean.values - _o_sigma.values).flatten(), label="origin negative std")
+            plt.title(f"{_bs} latency")
+            plt.legend()
+            plt.grid()
+            plt.xlabel("batch size")
+            plt.ylabel("res")
+            if save_path:
+                plt.savefig(Path(save_path).joinpath(f"{_bs}_batch_size_res.png"))
+                plt.close()
+            else:
+                plt.show()
+
+    @staticmethod
+    def plot_input_velocity_with_predict(config: PlotConfig, predict_data: Dict[State, List]):
+        """
+        绘制输入数据和预测数据的平均值，上波动 和下波动曲线。
+        :return:
+        """
+        # 合并只有decode， prefill
+        # 合并只有decode， prefill
+        _x, _mean, _positive_sigma, _negative_sigma, = AnalysisState.computer_mean_sigma(config.data, config.x_field)
         plt.figure()
         plt.plot(_x, _mean, label="mean")
         plt.plot(_x, _positive_sigma, label="positive std")
         plt.plot(_x, _negative_sigma, label="negative std")
-        plt.plot(_x, _predict, label="predict")
         _x, _predict, _predict_positive_sigma, _predict_negative_sigma = AnalysisState.computer_mean_sigma(
-            params.predict_data, params.x_field)
+            predict_data,
+            config.x_field
+        )
+
+        plt.plot(_x, _predict, label="predict")
         plt.plot(_x, _predict_positive_sigma, label="predict positive std")
         plt.plot(_x, _predict_negative_sigma, label="predict negative std")
-        plt.title(params.title)
+        plt.title(config.title)
         plt.legend()
         plt.grid()
-        if x_label:
-            plt.xlabel(params.x_label)
-        if y_label:
-            plt.ylabel(params.y_label)
-        if save_path:
-            plt.savefig(Path(params.save_path)).joinpath(f"{params.x_label}_{params.y_label}_{params.title}.png")
+        if config.x_label:
+            plt.xlabel(config.x_label)
+        if config.y_label:
+            plt.ylabel(config.y_label)
+        if config.save_path:
+            plt.savefig(Path(config.save_path).joinpath(f"{config.x_label}_{config.y_label}_{config.title}.png"))
             plt.close()
         else:
             plt.show()
-        with open(params.save_path.joinpath(f"{params.title}.txt"), "w") as f:
+        with open(config.save_path.joinpath(f"{config.title}.txt"), 'w') as f:
             f.write('mean\n')
             f.write(json.dumps(_mean))
             f.write('\n')
             f.write('positive std\n')
             f.write(json.dumps(_positive_sigma))
+            f.write('\n')
             f.write('negative std\n')
             f.write(json.dumps(_negative_sigma))
             f.write('\n')
@@ -153,7 +180,7 @@ class AnalysisState:
     def plot_pred_and_real(pred, real, save_path: Optional[Path] = None):
         plt.figure()
         plt.scatter(range(len(pred)), pred, label='pred', alpha=0.5)
-        plt.scatter(range(len(real)), real, label='real', alpha=0.5)
+        plt.scatter(range(len(real)), real, label="real", alpha=0.5)
         plt.title("predict value and real value")
         plt.xlabel("index")
         plt.ylabel("value")
