@@ -84,6 +84,8 @@ def kill_process(process_name):
 
 
 def remove_file(output_path: Path):
+    if not output_path:
+        return
     if not isinstance(output_path, Path):
         output_path = Path(output_path)
     if not output_path.exists():
@@ -101,87 +103,162 @@ def remove_file(output_path: Path):
                 remove_file(file)
 
 
+def backup(target, bak, class_name=""):
+    if not target:
+        return
+    if not isinstance(target, Path):
+        target = Path(target)
+    if not isinstance(target, Path):
+        bak = Path(bak)
+    if not target.exists():
+        return
+    if not bak.exists():
+        return
+    new_file = bak.joinpath(class_name).joinpath(target.name)
+    if target.is_file():
+        new_file.parent.mkdir(parents=True, exist_ok=True)
+        if not new_file.exists():
+            shutil.copy(target, new_file)
+    else:
+        if new_file.exists():
+            for child in new_file.iterdir():
+                backup(child, new_file, class_name)
+        else:
+            shutil.copytree(target, new_file)
+
+
+def close_file_fp(file_fp):
+    if not file_fp:
+        return
+    try:
+        # 检查file_fp是否是一个文件对象
+        if hasattr(file_fp, 'close'):
+            file_fp.close()
+        else:
+            # 如果file_fp是一个文件描述符，调用os.close()
+            os.close(file_fp)
+    except (AttributeError, OSError):
+        return
+
+
 @atexit.register
 def clearing_residual_process():
     kill_process(MindieConfig().process_name)
 
 
 class BenchMark:
-    def __init__(self, benchmark_config: BenchMarkConfig, throughput_type: str = "common",
-                 bak_path: Optional[Path] = None):
+    def init(self, benchmark_config: BenchMarkConfig, throughput_type: str = "common",
+                bak_path: Optional[Path] = None):
         self.benchmark_config = benchmark_config
         self.throughput_type = throughput_type
-        self.is_sleep_flag = True
         self.bak_path = bak_path
+        self.run_log = None
+        self.run_log_offset = None
+        self.run_log_fp = None
+        self.process = None
 
-    def backup(self):
-        shutil.copytree(Path(self.benchmark_config.output_path),
-                        self.bak_path.joinpath(self.__class__.__name__).joinpath(
-                            Path(self.benchmark_config.output_path).name))
+def backup(self, del_log=True):
+    backup(self.benchmark_config.output_path, self.bak_path, self.__class__.__name__)
+    if not del_log:
+        backup(self.run_log, self.bak_path, self.__class__.__name__)
 
-    def get_performance_index(self):
-        for file in Path(self.benchmark_config.output_path).iterdir():
-            if "result_common" in file.name:
+def get_performance_index(self):
+    output_path = Path(self.benchmark_config.output_path)
+    common_generate_speed = None
+    first_token_time = None
+    perf_generate_token_speed = None
+    decode_time = None
+    for file in output_path.iterdir():
+        if "result_common" in file.name:
+            try:
                 df = pd.read_csv(file)
-                try:
-                    common_generate_speed = float(df["GenerateSpeed"][0].split()[0])
-                except AttributeError:
-                    logger.error(f"Failed in get GenerateSpeed. value: {df}")
-                continue
-            if "result_perf" in file.name:
+                common_generate_speed = float(df["GenerateSpeed"][0].split()[0])
+            except (KeyError, AttributeError) as e:
+                logger.error(f"Failed in get GenerateSpeed. error: {e}")
+            continue
+        if "result_perf" in file.name:
+            try:
                 df = pd.read_csv(file)
-                try:
-                    first_token_time = float(df["FirstTokenTime"][0].split()[0])
-                    perf_generate_token_speed = float(df["GeneratedTokenSpeed"][0].split()[0])
-                    decode_time = float(df["DecodeTime"][0].split()[0])
-                except AttributeError:
-                    logger.error(f"Failed in get FirstTokenTime or GeneratedTokenSpeed . value: {df}")
-        if "common_generate_speed" not in locals() and "perf_generate_token_speed" not in locals():
-            raise ValueError("Not Found common_generate_speed or perf_generate_token_speed.")
-        if "first_token_time" not in locals() or "decode_time" not in locals():
-            raise ValueError("Not Found first_token_time.")
-        if self.throughput_type == "common":
-            average_decode_throughput = common_generate_speed
-        else:
-            average_decode_throughput = perf_generate_token_speed
-        average_prefill_latency = first_token_time / 10 ** 6
-        average_decode_latency = decode_time / 10 ** 6
-        return PerformanceIndex(average_decode_throughput=average_decode_throughput,
-                                average_prefill_latency=average_prefill_latency,
-                                average_decode_latency=average_decode_latency)
+                first_token_time = float(df["FirstTokenTime"][0].split()[0])
+                perf_generate_token_speed = float(df["GeneratedTokenSpeed"][0].split()[0])
+                decode_time = float(df["DecodeTime"][0].split()[0])
+            except (AttributeError, KeyError):
+                logger.error(f"Failed in get FirstTokenTime or GeneratedTokenSpeed. error: {e}")
+    if common_generate_speed is None and perf_generate_token_speed is None:
+        raise ValueError("Not Found common_generate_speed or perf_generate_token_speed.")
+    if first_token_time is None or decode_time is None:
+        raise ValueError("Not Found first_token_time.")
+    if self.throughput_type == "common":
+        average_decode_throughput = common_generate_speed
+    else:
+        average_decode_throughput = perf_generate_token_speed
+    average_prefill_latency = first_token_time / 10 ** 6
+    average_decode_latency = decode_time / 10 ** 6
+    return PerformanceIndex(average_decode_throughput=average_decode_throughput,
+                            average_prefill_latency=average_prefill_latency,
+                            average_decode_latency=average_decode_latency)
 
     def prepare(self):
         remove_file(Path(self.benchmark_config.output_path))
 
+    def check_success(self, print_log=False):
+        if self.run_log:
+            run_log_path = Path(self.run_log)
+            if run_log_path.exists() and print_log:
+                try:
+                    with open(run_log_path, "r", encoding="utf-8") as f:
+                        f.seek(self.run_log_offset)
+                        output = f.read()
+                        self.run_log_offset = f.tell()
+                        logger.info(f"benchmark out: \n{output}")
+                except (UnicodeError, OSError) as e:
+                    logger.error(f"Failed read benchmark log. error {e}")
+        try:
+            if self.process.poll() is None:
+                return False
+            elif self.process.poll() == 0:
+                return True
+            else:
+                raise subprocess.SubprocessError(
+                    f"Failed in run benchmark. return code: {self.process.returncode}. ")
+        except AttributeError as e:
+            logger.error(f"Failed to check process status, error {e}")
+            return False
+
     def run(self, run_params: Tuple[OptimizerConfigField]):
-        self.prepare()
         # 启动测试
         logger.info("Start the benchmark test.")
+        self.run_log_fp, self.run_log = tempfile.mkstemp(prefix="modelevalstate")
+        self.run_log_offset = 0
+        if self.benchmark_config.work_path:
+            cwd = self.benchmark_config.work_path
+        else:
+            cwd = os.getcwd()
         for k in run_params:
             if k.config_position == "env":
-                os.environ[k.name] = str(k.value)
+                try:
+                    os.environ[k.name] = str(k.value)
+                except KeyError as e:
+                    logger.error(f"Failed to set environment variable. error {e}")
         run_cmd = shlex.split(self.benchmark_config.command)
-        if os.environ:
-            os.environ[IS_SLEEP_FLAG] = str(self.is_sleep_flag)
-            custom_env = os.environ
-        else:
-            custom_env = {IS_SLEEP_FLAG: str(self.is_sleep_flag)}
-        logger.info(f"command: {' '.join(run_cmd)}")
-        process = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=custom_env,
-                                   text=True)
-        while True:
-            errs = process.stderr.readline()
-            logger.info(f"{errs}")
-            if process.poll() is not None:
-                logger.info(f"Process running complete. return code {process.returncode}")
-                break
-        time.sleep(1)
-        # 获取测试结果
-        performance_index = self.get_performance_index()
-        logger.info("Finished the benchmark test.")
-        if self.bak_path:
-            self.backup()
-        return performance_index
+        try:
+            self.process = subprocess.Popen(run_cmd, env=os.environ, stdout=self.run_log_fp, stderr=subprocess.STDOUT,
+                                            text=True, cwd=cwd)
+        except OSError as e:
+            logger.error(f"Failed to run benchmark. error {e}")
+            raise e
+        logger.info(f"command: {' '.join(run_cmd)}, log file: {self.run_log}")
+
+    def stop(self, del_log=True):
+        self.backup(del_log)
+        close_file_fp(self.run_log_fp)
+        try:
+            if self.process and self.process.poll() is None:
+                self.process.kill()
+        except AttributeError as e:
+            logger.error(f"Failed to kill process. error {e}")
+        if del_log:
+            remove_file(Path(self.run_log))
 
 
 class CustomBenchMark(BenchMark):
@@ -191,29 +268,32 @@ class CustomBenchMark(BenchMark):
         self.analyze_tool = analyze_tool
 
     def extra_performance_index(self, *args, **kwargs):
-        res = _analyze_mapping.get(self.analyze_tool)(*args, **kwargs)
+        logger.info("extra_performance_index")
+        analyze_tool = _analyze_mapping.get(self.analyze_tool)
+        if analyze_tool is None:
+            raise ValueError(f"Analyze tool not found: {self.analyze_tool}")
+        res = analyze_tool(*args, **kwargs)
         first_prefill_latency = decode_latency = success_rate = None
-        if len(res) == 1:
-            throughput = res
-        elif len(res) == 2:
-            throughput, first_prefill_latency = res
-        elif len(res) == 3:
-            throughput, first_prefill_latency, decode_latency = res
-        elif len(res) == 4:
-            throughput, first_prefill_latency, decode_latency, success_rate = res
+        if isinstance(res, tuple):
+            if len(res) == 1:
+                throughput = res[0]
+            elif len(res) == 2:
+                throughput, first_prefill_latency = res
+            elif len(res) == 3:
+                throughput, first_prefill_latency, decode_latency = res
+            elif len(res) == 4:
+                throughput, first_prefill_latency, decode_latency, success_rate = res
+            else:
+                raise ValueError(f"Not Support. res: {res}")
         else:
-            raise ValueError(f"Not Support. res: {res}")
+            throughput = res
         return PerformanceIndex(average_decode_throughput=throughput, average_prefill_latency=first_prefill_latency,
                                 average_decode_latency=decode_latency, success_rate=success_rate)
 
-    def backup(self):
-        super().backup()
-        shutil.copytree(Path(self.benchmark_config.custom_collect_output_path),
-                        self.bak_path.joinpath(self.__class__.__name__).joinpath(
-                            Path(self.benchmark_config.custom_collect_output_path).name))
-        shutil.copytree(Path(self.benchmark_config.custom_analysis_output_path),
-                        self.bak_path.joinpath(self.__class__.__name__).joinpath(
-                            Path(self.benchmark_config.custom_analysis_output_path).name))
+    def backup(self, del_log=True):
+            super().backup(del_log)
+            backup(self.benchmark_config.custom_collect_output_path, self.bak_path, self.__class__.__name__)
+            backup(self.benchmark_config.custom_analysis_output_path, self.bak_path, self.__class__.__name__)
 
     def prepare(self):
         super().prepare()
@@ -223,6 +303,14 @@ class CustomBenchMark(BenchMark):
     def get_performance_index(self):
         logger.info("get_performance_index")
         collect_path = Path(self.benchmark_config.custom_collect_output_path)
+        if not collect_path.exists():
+            raise FileNotFoundError(f"Collect path not found: {collect_path}")
+        if self.analyze_tool == AnalyzeTool.deepseek.value:
+            res = self.extra_performance_index(collect_path, self.benchmark_config.custom_analysis_output_path,
+                                               self.benchmark_config.output_path)
+            return res
+        if not collect_path.is_dir():
+            raise NotADirectoryError(f"Collect path is not a directory: {collect_path}")
         for file in collect_path.iterdir():
             if not file.is_dir():
                 continue
