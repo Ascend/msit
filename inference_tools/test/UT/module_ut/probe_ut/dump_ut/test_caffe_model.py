@@ -87,7 +87,7 @@ class TestCaffeModelActuator(unittest.TestCase):
 class TestCaffeModelDataWriter(unittest.TestCase):
 
     def test_get_input_output_map(self):
-        writer = CaffeModelDataWriter(task="mock_task", dump_mode=["input", "output"])
+        writer = CaffeModelDataWriter(task="mock_task", data_mode=["input", "output"])
         mock_net = MagicMock()
         mock_net.blobs = {"conv1": MagicMock(data=np.ones((1, 3, 224, 224)))}
         mock_net.params = {"conv1": [MagicMock(data=np.ones((64, 3, 3, 3))), MagicMock(data=np.ones((64,)))]}
@@ -102,7 +102,7 @@ class TestCaffeModelDataWriter(unittest.TestCase):
     @patch("msit.module.probe.dump.onnx_model.get_valid_name")
     def test_summ_dump_data(self, mock_get_valid_name, mock_model_dir, mock_save_json):
         mock_get_valid_name.side_effect = lambda name: f"valid_{name}"
-        writer = CaffeModelDataWriter(task="mock_task", dump_mode=["input", "output"])
+        writer = CaffeModelDataWriter(task="mock_task", data_mode=["input", "output"])
         mock_net = MagicMock()
         mock_net.outputs = ["fc"]
         mock_net.blobs = {"fc": MagicMock(data=np.ones((1, 1000)))}

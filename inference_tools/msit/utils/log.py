@@ -15,7 +15,7 @@
 import os
 from functools import wraps
 from sys import stdout
-from time import localtime, strftime, time
+from time import localtime, perf_counter, strftime
 
 _STAR = "*"
 _DEBUG = "DEBUG"
@@ -55,9 +55,9 @@ def get_current_timestamp(used_for_log=True, microsecond=False):
         return strftime("%Y-%m-%d %H:%M:%S", localtime())
     else:
         if microsecond:
-            return round(time() * 1e6) % 10**10
+            return round(perf_counter() * 1e6) % 10**10
         else:
-            timestamp = int(time())
+            timestamp = int(perf_counter())
             return timestamp
 
 

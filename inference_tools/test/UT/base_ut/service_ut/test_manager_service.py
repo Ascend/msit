@@ -10,13 +10,17 @@ class TestService(unittest.TestCase):
         Service._services_map.clear()
 
     @patch("msit.base.service.manager.load_json")
-    def test_service_initialization(self, mock_load_json):
+    @patch("msit.base.service.manager.valid_task")
+    def test_service_initialization_via_config(self, mock_valid_task, mock_load_json):
         mock_load_json.return_value = {CfgConst.TASK: CfgConst.TASK_STAT}
+        mock_valid_task.return_value = CfgConst.TASK_STAT
         mock_service_cls = MagicMock()
         Service._services_map[CmdConst.DUMP] = mock_service_cls
-        service = Service("dummy_path", key="value")
+        cmd_namespace = MagicMock()
+        cmd_namespace.config_path = "dummy_path"
+        service = Service(cmd_namespace=cmd_namespace, key="value")
         mock_load_json.assert_called_once_with("dummy_path")
-        mock_service_cls.assert_called_once_with("dummy_path", key="value")
+        mock_service_cls.assert_called_once_with(cmd_namespace=cmd_namespace, key="value")
         self.assertEqual(service.service_instance, mock_service_cls.return_value)
 
     def test_service_registration(self):
@@ -24,26 +28,24 @@ class TestService(unittest.TestCase):
         class TestServiceImpl:
             pass
 
-        self.assertEqual(Service._services_map["test_service"], TestServiceImpl)
+        self.assertIs(Service._services_map["test_service"], TestServiceImpl)
 
-    def test_service_getattr_delegation(self):
+    @patch("msit.base.service.manager.load_json")
+    @patch("msit.base.service.manager.valid_task")
+    def test_service_method_delegation(self, mock_valid_task, mock_load_json):
         mock_instance = MagicMock()
-        mock_instance.target_method = MagicMock(return_value="mocked_result")
-
-        with patch("msit.base.service.manager.Service._services_map", {CmdConst.DUMP: MagicMock()}) as mock_map, patch(
-            "msit.base.service.manager.load_json"
-        ) as mock_load, patch("msit.base.service.manager.valid_task") as mock_valid, patch(
-            "os.path.exists", return_value=True
-        ):
-            mock_load.return_value = {CfgConst.TASK: CfgConst.TASK_STAT}
-            mock_valid.return_value = CfgConst.TASK_STAT
-            mock_service_cls = mock_map[CmdConst.DUMP]
-            mock_service_cls.return_value = mock_instance
-            service = Service("any_dummy_path")
-            result = service.target_method("test_arg", kwarg=123)
-            mock_instance.target_method.assert_called_once_with("test_arg", kwarg=123)
-            self.assertEqual(result, "mocked_result")
-            mock_service_cls.assert_called_once_with("any_dummy_path")
+        mock_instance.target_method = MagicMock(return_value="result")
+        mock_service_cls = MagicMock(return_value=mock_instance)
+        Service._services_map[CmdConst.DUMP] = mock_service_cls
+        mock_load_json.return_value = {CfgConst.TASK: CfgConst.TASK_STAT}
+        mock_valid_task.return_value = CfgConst.TASK_STAT
+        cmd_namespace = MagicMock()
+        cmd_namespace.config_path = "valid_path"
+        service = Service(cmd_namespace=cmd_namespace)
+        result = service.target_method("arg", kw=456)
+        mock_instance.target_method.assert_called_once_with("arg", kw=456)
+        self.assertEqual(result, "result")
+        mock_service_cls.assert_called_once_with(cmd_namespace=cmd_namespace)
 
 
 class TestBaseService(unittest.TestCase):

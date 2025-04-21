@@ -73,8 +73,8 @@ class DirPool:
 
     @classmethod
     def make_tensor_dir(cls):
-        cls.tensor_dir = DirSafeHandler.join_and_create(cls.get_rank_dir(), "tensor")
+        cls.tensor_dir = DirSafeHandler.join_and_create(cls.get_rank_dir(), "dump_tensor_data")
 
     @classmethod
     def get_tensor_dir(cls):
-        return DirSafeHandler.get_or_raise(cls.tensor_dir, "Tensor dir has not been set.")
+        return DirSafeHandler.get_or_raise(cls.tensor_dir, "dump_tensor_data dir has not been set.")

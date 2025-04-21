@@ -16,7 +16,7 @@ import re
 from functools import wraps
 from random import seed
 from subprocess import PIPE, Popen
-from time import sleep, time
+from time import perf_counter, sleep
 from typing import Union
 
 import numpy as np
@@ -80,9 +80,9 @@ def run_subprocess(cmd: list, check_interval: Union[int, float] = 1, capture_out
     logger.info(f'Running command: {" ".join(cmd)}.')
     with Popen(cmd, stdout=(PIPE if capture_output else None), stderr=PIPE, shell=False) as process:
         output = [] if capture_output else None
-        start_time = time()
+        start_time = perf_counter()
         while process.poll() is None:
-            elapsed_time = time() - start_time
+            elapsed_time = perf_counter() - start_time
             if elapsed_time > _SECOND_5:
                 check_interval = min(check_interval * 2, _SECOND_300)
             if capture_output:

@@ -131,7 +131,7 @@ class CfgConst:
     Class for config items
     """
 
-    CONFIG = "config"
+    CONFIG_PATH = "config_path"
     TASK = "task"
     TASK_STAT = "statistics"
     TASK_TENSOR = "tensor"
@@ -170,11 +170,11 @@ class DumpConst:
     OUTPUT = "output"
     INPUT_ALL = [INPUT, "all"]
     OUTPUT_ALL = [OUTPUT, "all"]
-    ALL_DUMP_MODE = [INPUT, OUTPUT, "all"]
+    ALL_DATA_MODE = [INPUT, OUTPUT, "all"]
 
     DUMP_PATH = "dump_path"
     LIST = "list"
-    DUMP_MODE = "dump_mode"
+    DATA_MODE = "data_mode"
     DUMP_EXTRA = "dump_extra"
     ALL_DUMP_EXTRA = ["desc", "tiling", "child_op", "cpu_profiling", "onnx"]
     DUMP_TIME = "dump_time"

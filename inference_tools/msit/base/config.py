@@ -13,10 +13,8 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from argparse import Namespace
 
 from msit.common.validation import (
-    valid_exec,
     valid_framework,
     valid_level,
     valid_log_level,
@@ -31,29 +29,53 @@ from msit.utils.log import logger
 
 
 class BaseConfig(ABC):
-    def __init__(self, config_path):
-        self.is_from_cmd = False
+    def __init__(self, config_path, task="", step: list = None, level: list = None):
         self.config_path = config_path
         self.config = load_json(self.config_path)
+        self.task_config = {}
+        self.task = task
+        self.step = step
+        self.level = level
+
+    def __getattribute__(self, name):
+        attr = object.__getattribute__(self, name)
+        if name == "check_config" and callable(attr):
+
+            def wrapper(*args, **kwargs):
+                self.common_check()
+                self.get_task_dict()
+                result = attr(*args, **kwargs)
+                return result
+
+            return wrapper
+        return attr
 
     @abstractmethod
     def check_config(self):
         pass
 
-    def common_check(self, step: list = None, task="", level: list = None, args: Namespace = None):
-        self.is_from_cmd = isinstance(args, Namespace)
-        if self.is_from_cmd:
-            logger.info("Configure parameters via the command line.")
+    def get_task_dict(self):
+        self.task_config = self.config.get(self.config.get(CfgConst.TASK))
+        if self.task_config:
+            return self.task_config
         else:
-            logger.info(f"Configure parameters via {self.config_path}.")
+            raise MsitException(
+                MsgConst.REQUIRED_ARGU_MISSING, f'Missing dictionary for key "{self.config.get(CfgConst.TASK)}".'
+            )
+
+    def common_check(self):
         logger.info("Validating configuration file parameters.")
-        self._update_config(self.config, CfgConst.TASK, valid_task, task or self.config.get(CfgConst.TASK, ""))
-        self._update_config(self.config, CfgConst.EXEC, valid_exec, args.exec or [])
+        self._update_config(self.config, CfgConst.TASK, valid_task, self.task or self.config.get(CfgConst.TASK, ""))
         self._update_config(self.config, CfgConst.FRAMEWORK, valid_framework, self.config.get(CfgConst.FRAMEWORK, ""))
-        self._update_config(self.config, CfgConst.STEP, valid_step_or_rank, step or self.config.get(CfgConst.STEP, []))
+        self._update_config(
+            self.config, CfgConst.STEP, valid_step_or_rank, self.step or self.config.get(CfgConst.STEP, [])
+        )
         self._update_config(self.config, CfgConst.RANK, valid_step_or_rank, self.config.get(CfgConst.RANK, []))
         self._update_config(
-            self.config, CfgConst.LEVEL, valid_level, level or self.config.get(CfgConst.LEVEL, [CfgConst.LEVEL_API])
+            self.config,
+            CfgConst.LEVEL,
+            valid_level,
+            self.level or self.config.get(CfgConst.LEVEL, [CfgConst.LEVEL_API]),
         )
         self._update_config(
             self.config, CfgConst.LOG_LEVEL, valid_log_level, self.config.get(CfgConst.LOG_LEVEL, "info")

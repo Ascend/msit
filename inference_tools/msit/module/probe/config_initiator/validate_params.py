@@ -55,18 +55,18 @@ def valid_list(value: tuple):
         )
 
 
-def valid_dump_mode(value: list):
+def valid_data_mode(value: list):
     if not value:
         return value
     if not isinstance(value, list):
-        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"dump_mode" must be a list.')
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"data_mode" must be a list.')
     if len(value) == 1:
-        if value[0] not in DumpConst.ALL_DUMP_MODE:
+        if value[0] not in DumpConst.ALL_DATA_MODE:
             raise MsitException(
-                MsgConst.INVALID_ARGU, f'"dump_mode" must be one of {DumpConst.ALL_DUMP_MODE}, currently: {value[0]}.'
+                MsgConst.INVALID_ARGU, f'"data_mode" must be one of {DumpConst.ALL_DATA_MODE}, currently: {value[0]}.'
             )
     else:
-        raise MsitException(MsgConst.INVALID_ARGU, '"dump_mode" only accepts a single-item list.')
+        raise MsitException(MsgConst.INVALID_ARGU, '"data_mode" only accepts a single-item list.')
     return value
 
 

@@ -27,17 +27,16 @@ class DumpCommand(MsitCommand):
             "-e",
             "--exec",
             dest=CfgConst.EXEC,
-            nargs="+",
             action=CheckExec,
             required=True,
             help=f"""<str> Supports two input types:
         1. An offline model file with {("saved_model",) + PathConst.SUFFIX_OFFLINE_MODEL} extension;
-        2. An executable CLI script ending in {PathConst.SUFFIX_ONLINE_SCRIPT}. Default: None""",
+        2. An executable CLI scripts enclosed in quotes end with {PathConst.SUFFIX_ONLINE_SCRIPT}. Default: None""",
         )
         req.add_argument(
             "-cfg",
             "--config",
-            dest=CfgConst.CONFIG,
+            dest=CfgConst.CONFIG_PATH,
             action=CheckConfigPath,
             required=True,
             help="""<str> A config JSON file for storing data dump settings. Default: None""",

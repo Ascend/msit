@@ -26,16 +26,18 @@ from msit.utils.path import get_name_and_ext, is_file, is_saved_model_scene
 
 @Service.register(CmdConst.DUMP)
 class ServiceDump(BaseService):
-    def __init__(self, config_path="", **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__()
         task = kwargs.get(CfgConst.TASK)
         step = kwargs.get(CfgConst.STEP)
         level = kwargs.get(CfgConst.LEVEL)
         dump_path = kwargs.get(DumpConst.DUMP_PATH)
-        args = kwargs.get("args")
+        cmd_namespace = kwargs.get("cmd_namespace")
+        config_path = cmd_namespace.config_path
         self.current_iter = 0
-        config = DumpConfig(config_path).check_config(dump_path, step, task, level, args)
+        config = DumpConfig(config_path, task, step, level).check_config(dump_path)
         self.cfg = Dict2Class(config)
+        setattr(self.cfg, CfgConst.EXEC, cmd_namespace.exec)
         logger.set_level(self.cfg.log_level)
         DirPool.make_msit_dir(self.cfg.dump_path)
         DirPool.make_model_dir()
@@ -145,7 +147,7 @@ class ServiceDump(BaseService):
         )
         self.dumper = Component.get(CompConst.ONNX_DUMPER_COMP)(priority=10)
         self.writer = Component.get(CompConst.ONNX_WRITER_COMP)(
-            priority=15, task=self.cfg.task, dump_mode=self.cfg.dump_mode
+            priority=15, task=self.cfg.task, data_mode=self.cfg.data_mode
         )
         self.writer.subscribe(self.dumper)
 
@@ -159,7 +161,7 @@ class ServiceDump(BaseService):
         )
         self.dumper = Component.get(CompConst.CAFFE_DUMPER_COMP)(priority=10)
         self.writer = Component.get(CompConst.CAFFE_WRITER_COMP)(
-            priority=15, task=self.cfg.task, dump_mode=self.cfg.dump_mode
+            priority=15, task=self.cfg.task, data_mode=self.cfg.data_mode
         )
         self.writer.subscribe(self.dumper)
 
@@ -169,7 +171,7 @@ class ServiceDump(BaseService):
         )
         self.dumper = Component.get(CompConst.FROZEN_GRAPH_DUMPER_COMP_CPU)(priority=10)
         self.writer = Component.get(CompConst.FROZEN_GRAPH_WRITER_COMP_CPU)(
-            priority=15, task=self.cfg.task, dump_mode=self.cfg.dump_mode
+            priority=15, task=self.cfg.task, data_mode=self.cfg.data_mode
         )
         self.writer.subscribe(self.dumper)
 
@@ -191,7 +193,7 @@ class ServiceDump(BaseService):
             model_path=self.cfg.exec[0],
             input_shape=self.cfg.input_shape,
             input_path=self.cfg.input_path,
-            dump_mode=self.cfg.dump_mode,
+            data_mode=self.cfg.data_mode,
             fsf=self.cfg.fusion_switch_file,
         )
         self.setter = Component.get(CompConst.FROZEN_GRAPH_SET_GE_COMP_NPU)(

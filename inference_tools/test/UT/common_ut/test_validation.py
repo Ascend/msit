@@ -72,38 +72,38 @@ class TestValidationFunctions(unittest.TestCase):
     @patch("msit.common.validation.MsitPath")
     def test_valid_exec_directory(self, mock_msitpath, mock_is_dir):
         mock_is_dir.return_value = True
-        values = ["/valid/directory"]
+        values = "/valid/directory"
         result = valid_exec(values)
-        self.assertEqual(result, values)
+        self.assertEqual(result, [values])
         mock_msitpath.assert_called_once()
 
     def test_valid_exec_bash_valid(self):
-        values = ["bash", "script.sh"]
-        self.assertEqual(valid_exec(values), values)
+        values = "bash script.sh"
+        self.assertEqual(valid_exec(values), ["bash", "script.sh"])
 
     def test_valid_exec_bash_invalid(self):
         with self.assertRaises(MsitException) as cm:
-            valid_exec(["bash", "invalid_script.py"])
+            valid_exec("bash invalid_script.py")
         self.assertIn("[ERROR] Parsing failed.", str(cm.exception))
 
     def test_valid_exec_python_invalid(self):
         with self.assertRaises(MsitException) as cm:
-            valid_exec(["python", "invalid_script.sh"])
+            valid_exec("python invalid_script.sh")
         self.assertIn("[ERROR] Parsing failed.", str(cm.exception))
 
     @patch("msit.common.validation.is_file")
     @patch("msit.common.validation.MsitPath")
     def test_valid_exec_model_file(self, mock_msitpath, mock_is_file):
         mock_is_file.return_value = True
-        values = ["model.onnx"]
-        self.assertEqual(valid_exec(values), values)
+        values = "model.onnx"
+        self.assertEqual(valid_exec(values), [values])
         mock_msitpath.assert_called_once()
 
     @patch("msit.common.validation.is_file")
     @patch("msit.common.validation.MsitPath")
     def test_invalid_exec_model_file(self, mock_msitpath, mock_is_file):
         mock_is_file.return_value = True
-        values = ["model.tfv"]
+        values = "model.tfv"
         with self.assertRaises(MsitException) as cm:
             valid_exec(values)
         self.assertIn("('.pb', '.onnx', '.om', '.prototxt', '.py', '.sh').", str(cm.exception))
@@ -114,19 +114,15 @@ class TestValidationFunctions(unittest.TestCase):
     def test_check_exec_action(self, mock_msitpath, mock_is_file, mock_is_dir):
         mock_is_dir.return_value = False
         mock_is_file.return_value = True
-
         action = CheckExec(option_strings=["-e", "--exec"], dest="exec")
-
         mock_namespace = Namespace()
-        test_values = ["valid_script.sh"]
-
+        test_values = "valid_script.sh"
         with patch.object(MsitPath, "check") as mock_check:
             mock_check.return_value = test_values[0]
             action(None, mock_namespace, test_values)
-
-            self.assertEqual(mock_namespace.exec, test_values)
-            mock_is_dir.assert_called_once_with(test_values[0])
-            mock_is_file.assert_called_once_with(test_values[0])
+            self.assertEqual(mock_namespace.exec, [test_values])
+            mock_is_dir.assert_called_once_with(test_values)
+            mock_is_file.assert_called_once_with(test_values)
 
     @patch("msit.common.validation.MsitPath")
     def test_valid_config_path_valid(self, mock_msitpath):
