@@ -158,11 +158,11 @@ class DataProcessor:
             _load_data.append(model_op_series)
         if input_data.model_struct_field:
             model_struct_series = PreprocessTool.generate_series_with_struct_info(input_data.model_struct_field,
-                                                                                  MODEL_STRUCT_FIELD)
+                                                                              MODEL_STRUCT_FIELD)
             _load_data.append(model_struct_series)
         if input_data.model_config_field:
             model_config_series = PreprocessTool.gene_series_with_model_config(input_data.model_config_field,
-                                                                               MODEL_CONFIG_FIELD)
+                                                                           MODEL_CONFIG_FIELD)
             _load_data.append(model_config_series)
         if input_data.mindie_field:
             mindie_series = PreprocessTool.generate_series(input_data.mindie_field, MINDIE_FIELD)

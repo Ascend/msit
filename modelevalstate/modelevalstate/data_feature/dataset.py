@@ -36,7 +36,6 @@ from modelevalstate.inference.data_format_v1 import (
 )
 from modelevalstate.inference.dataset import CustomOneHotEncoder, CustomLabelEncoder, preset_category_data
 from modelevalstate.inference.dataset import PreprocessTool, TOTAL_OUTPUT_LENGTH, TOTAL_SEQ_LENGTH, TOTAL_PREFILL_TOKEN
-
 matplotlib.use('Agg')
 
 
@@ -194,6 +193,8 @@ class MyDataSet:
         if plt_data:
             self.plt_data(lines_data, middle_save_path)
 
+
+
     def analysis_batch_feature(self, middle_save_path: Optional[Path] = None):
         cur_batch_df = self.load_data.iloc[:, 0:len(self.sub_columns[0])]
         custom_label_encoder = CustomLabelEncoder([preset_category_data[0]])
@@ -313,7 +314,7 @@ class DecodeDataSet:
         return self.features, self.labels
 
     def construct_data(self, lines_data: Optional[DataFrame] = None, plt_data: bool = True,
-                       middle_save_path: Optional[Path] = None):
+                    middle_save_path: Optional[Path] = None):
         features, labels = self.preprocess(lines_data)
         self.train_x, self.test_x, self.train_y, self.test_y = train_test_split(features, labels,
                                                                                 test_size=self.test_size,
