@@ -147,7 +147,7 @@ def clearing_residual_process():
 
 
 class BenchMark:
-    def init(self, benchmark_config: BenchMarkConfig, throughput_type: str = "common",
+    def __init__(self, benchmark_config: BenchMarkConfig, throughput_type: str = "common",
                 bak_path: Optional[Path] = None):
         self.benchmark_config = benchmark_config
         self.throughput_type = throughput_type
@@ -157,46 +157,46 @@ class BenchMark:
         self.run_log_fp = None
         self.process = None
 
-def backup(self, del_log=True):
-    backup(self.benchmark_config.output_path, self.bak_path, self.__class__.__name__)
-    if not del_log:
-        backup(self.run_log, self.bak_path, self.__class__.__name__)
+    def backup(self, del_log=True):
+        backup(self.benchmark_config.output_path, self.bak_path, self.__class__.__name__)
+        if not del_log:
+            backup(self.run_log, self.bak_path, self.__class__.__name__)
 
-def get_performance_index(self):
-    output_path = Path(self.benchmark_config.output_path)
-    common_generate_speed = None
-    first_token_time = None
-    perf_generate_token_speed = None
-    decode_time = None
-    for file in output_path.iterdir():
-        if "result_common" in file.name:
-            try:
-                df = pd.read_csv(file)
-                common_generate_speed = float(df["GenerateSpeed"][0].split()[0])
-            except (KeyError, AttributeError) as e:
-                logger.error(f"Failed in get GenerateSpeed. error: {e}")
-            continue
-        if "result_perf" in file.name:
-            try:
-                df = pd.read_csv(file)
-                first_token_time = float(df["FirstTokenTime"][0].split()[0])
-                perf_generate_token_speed = float(df["GeneratedTokenSpeed"][0].split()[0])
-                decode_time = float(df["DecodeTime"][0].split()[0])
-            except (AttributeError, KeyError):
-                logger.error(f"Failed in get FirstTokenTime or GeneratedTokenSpeed. error: {e}")
-    if common_generate_speed is None and perf_generate_token_speed is None:
-        raise ValueError("Not Found common_generate_speed or perf_generate_token_speed.")
-    if first_token_time is None or decode_time is None:
-        raise ValueError("Not Found first_token_time.")
-    if self.throughput_type == "common":
-        average_decode_throughput = common_generate_speed
-    else:
-        average_decode_throughput = perf_generate_token_speed
-    average_prefill_latency = first_token_time / 10 ** 6
-    average_decode_latency = decode_time / 10 ** 6
-    return PerformanceIndex(average_decode_throughput=average_decode_throughput,
-                            average_prefill_latency=average_prefill_latency,
-                            average_decode_latency=average_decode_latency)
+    def get_performance_index(self):
+        output_path = Path(self.benchmark_config.output_path)
+        common_generate_speed = None
+        first_token_time = None
+        perf_generate_token_speed = None
+        decode_time = None
+        for file in output_path.iterdir():
+            if "result_common" in file.name:
+                try:
+                    df = pd.read_csv(file)
+                    common_generate_speed = float(df["GenerateSpeed"][0].split()[0])
+                except (KeyError, AttributeError) as e:
+                    logger.error(f"Failed in get GenerateSpeed. error: {e}")
+                continue
+            if "result_perf" in file.name:
+                try:
+                    df = pd.read_csv(file)
+                    first_token_time = float(df["FirstTokenTime"][0].split()[0])
+                    perf_generate_token_speed = float(df["GeneratedTokenSpeed"][0].split()[0])
+                    decode_time = float(df["DecodeTime"][0].split()[0])
+                except (AttributeError, KeyError):
+                    logger.error(f"Failed in get FirstTokenTime or GeneratedTokenSpeed. error: {e}")
+        if common_generate_speed is None and perf_generate_token_speed is None:
+            raise ValueError("Not Found common_generate_speed or perf_generate_token_speed.")
+        if first_token_time is None or decode_time is None:
+            raise ValueError("Not Found first_token_time.")
+        if self.throughput_type == "common":
+            average_decode_throughput = common_generate_speed
+        else:
+            average_decode_throughput = perf_generate_token_speed
+        average_prefill_latency = first_token_time / 10 ** 6
+        average_decode_latency = decode_time / 10 ** 6
+        return PerformanceIndex(average_decode_throughput=average_decode_throughput,
+                                average_prefill_latency=average_prefill_latency,
+                                average_decode_latency=average_decode_latency)
 
     def prepare(self):
         remove_file(Path(self.benchmark_config.output_path))
@@ -264,7 +264,6 @@ def get_performance_index(self):
 class CustomBenchMark(BenchMark):
     def __init__(self, benchmark_config: BenchMarkConfig, analyze_tool: AnalyzeTool = AnalyzeTool.default, **kwargs):
         super().__init__(benchmark_config=benchmark_config, **kwargs)
-        self.is_sleep_flag = False
         self.analyze_tool = analyze_tool
 
     def extra_performance_index(self, *args, **kwargs):
@@ -409,7 +408,6 @@ class ProfilerBenchmark(CustomBenchMark):
 class RPCCustomBenchMark(CustomBenchMark):
     def __init__(self, rpc_clients, benchmark_config: BenchMarkConfig, **kwargs):
         super().__init__(benchmark_config=benchmark_config, **kwargs)
-        self.is_sleep_flag = False
         self.rpc_clients = rpc_clients
 
     def prepare(self):
@@ -719,58 +717,6 @@ class Scheduler:
         self.simulator.stop(del_log)
         self.benchmark.stop(del_log)
 
-
-        self.simulate_run_info = map_param_with_value(params, params_field)
-        try:
-            self.run_target_server(params, params_field)
-            time.sleep(1)
-            performance_index = self.benchmark.get_performance_index()
-        except Exception as e:
-            logger.error(f"Failed running. bak path: {self.simulator.bak_path}")
-            self.data_storage.save(PerformanceIndex(), tuple(self.simulate_run_info), self.benchmark.benchmark_config,
-                                   error=e)
-            self.stop_target_server(del_log=False)
-            raise e
-        self.data_storage.save(performance_index, tuple(self.simulate_run_info), self.benchmark.benchmark_config,
-                               error=None)
-        self.stop_target_server()
-
-
-    def back_up(self):
-        if self.bak_path:
-            _cur_bak_path = get_train_sub_path(self.bak_path)
-            self.simulator.bak_path = _cur_bak_path
-            self.benchmark.bak_path = _cur_bak_path
-            for rpc in self.rpc_clients:
-                if rpc.simulator:
-                    rpc.simulator.bak_path = _cur_bak_path
-
-    def monitoring_status(self):
-        logger.info("Start monitoring")
-        while True:
-            all_poll = [self.simulator.process.poll()]
-            for rpc in self.rpc_clients:
-                all_poll.append(rpc.process_poll())
-            if any([_i is not None for _i in all_poll]):
-                self.stop_target_server(del_log=False)
-                raise subprocess.SubprocessError(
-                    f"Failed in run mindie. all status: {all_poll}, machine info: master, {self.rpc_clients}.")
-            if self.benchmark.check_success():
-                return
-            time.sleep(1)
-
-    def run_simulate(self, params: np.ndarray, params_field: Tuple[OptimizerConfigField]):
-        self.benchmark.prepare()
-        _simulate_run_info = map_param_with_value(params, params_field)
-        [rpc.run_simulator(params.tolist()) for rpc in self.rpc_clients]
-        self.simulator.run(tuple(self.simulate_run_info))
-        self.wait_simulate()
-        [rpc.check_success() for rpc in self.rpc_clients]
-
-    def stop_target_server(self, del_log=True):
-        super(ScheduleWithMultiMachine, self).stop_target_server(del_log)
-        [rpc.stop_simulator(del_log) for rpc in self.rpc_clients]
-
     def run(self, params: np.ndarray, params_field: Tuple[OptimizerConfigField]) -> PerformanceIndex:
         """
         1. 启动mindie仿真
@@ -993,8 +939,7 @@ class PSOOptimizer:
                                         breakpoint_cost=self.history_cost)
         cost, joint_vars = optimizer.optimize(self.op_func, iters=self.iters)
         logger.info(
-            f"best cost {cost}, best joint_vars: {[self.target_field[i].format_func(k) for 
-            i, k in enumerate(joint_vars)]}")
+            f"best cost {cost}, best joint_vars: {[self.target_field[i].format_func(k) for i, k in enumerate(joint_vars)]}")
         self.visualization(optimizer)
 
 
@@ -1027,8 +972,23 @@ def main(args: argparse.Namespace):
     # 存储结果，只在主节点存储结果
     data_storage = DataStorage(settings.data_storage)
     # 初始化调度模块，支持单机和多机。
+    if args.deploy_policy == DeployPolicy.multiple.value:
+        scheduler = ScheduleWithMultiMachine(rpc_clients, simulator, benchmark, data_storage, bak_path=bak_path)
+    else:
+        scheduler = Scheduler(simulator, benchmark, data_storage, bak_path=bak_path)
+    _load_history_data = None
+    if args.load_history:
+        _load_history_data = data_storage.load_history_position(settings.data_storage.store_dir)
+    pso = PSOOptimizer(scheduler, n_particles=settings.n_particles, iters=settings.iters,
+                       prefill_lam=settings.prefill_lam, target_field=settings.target_field,
+                       decode_lam=settings.decode_lam, success_rate_lam=settings.success_rate_lam,
+                       decode_constrain=settings.decode_constrain, prefill_constrain=settings.prefill_constrain,
+                       success_rate_constrain=settings.success_rate_constrain, load_history_data=_load_history_data,
+                       load_breakpoint=args.load_breakpoint)
+    pso.run()
 
 
+parser = argparse.ArgumentParser(prog='optimizer')
 parser.add_argument("-b", "--benchmark_policy", default=BenchMarkPolicy.profiler_benchmark.value,
                     choices=[k.value for k in list(BenchMarkPolicy)],
                     help="Whether to use custom performance indicators or mindie performance indicators. Benchmark and custom_benchmark are supported.")
@@ -1039,7 +999,7 @@ parser.add_argument("-lb", "--load_breakpoint", default=False, action="store_tru
 parser.add_argument("-d", "--deploy_policy", default=DeployPolicy.single.value,
                     choices=[k.value for k in list(DeployPolicy)],
                     help="Indicates whether the multi-node running policy is used.")
-parser.add_argument("--back_up", default=True, action="store_true",
+parser.add_argument("--back_up", default=False, action="store_true",
                     help="Whether to back up data.")
 parser.add_argument("-a", "--analyze_tool", default=AnalyzeTool.profiler.value,
                     choices=[k.value for k in list(AnalyzeTool)], help="Tool of data to be analyze")
