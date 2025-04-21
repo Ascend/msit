@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "modelevalstate"
+version = "1.0.3"
+description = ""
+authors = ["wangdengkai2@huawei.com"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+# numpy,pandas 环境都是自带的，就不加了，以免重装或更新环境中的版本
+xgboost = "2.0.0"
+seaborn = "^0.13.2"
+matplotlib = "^3.7.2"
+scipy = "^1.10.1"
+scikit-learn = "^1.3.2"
+pydantic-settings = "^2.2.1"
+pydantic = "^2.10.5"
+pyswarms = "^1.3.0"
+swifter = { version = "^1.4.0", extras = ["groupby"], optional = true }
+modin = { version = "^0.32.0", extras = ["all"], optional = true }
+
+[tool.poetry.extras]
+speed = ["swifter", "modin"]
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

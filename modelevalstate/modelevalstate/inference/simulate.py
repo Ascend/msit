@@ -12,19 +12,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-import time
 import json
+import os
+import stat
+import time
 from pathlib import Path
 
-import torch
 import numpy as np
+import torch
 
-from modelevalstate.inference.data_format_v1 import BatchField, RequestField, ConfigPath
-from modelevalstate.inference.state_eval_v1 import predict_v1_with_cache
-from modelevalstate.inference.file_reader import FileHanlder, StaticFile
+from modelevalstate.config.config import settings
 from modelevalstate.inference.constant import IS_SLEEP_FLAG, BatchStage
+from modelevalstate.inference.data_format_v1 import BatchField, RequestField, ConfigPath
 from modelevalstate.inference.dataset import CustomLabelEncoder, preset_category_data, DataProcessor
+from modelevalstate.inference.file_reader import FileHanlder, StaticFile
+from modelevalstate.inference.state_eval_v1 import predict_v1_with_cache
 
 
 class ServiceField:
@@ -37,13 +39,34 @@ class ServiceField:
     req_id_and_max_decode_length = None
 
 
+ServiceField.config_path = ConfigPath(settings.mindie.model_path, settings.mindie.ohe_path,
+                                      settings.mindie.static_file_dir)
+
+
 class Simulate:
+    first = True
+
     @staticmethod
     def init(plugin_object):
-        if isinstance(plugin_object.input_manager.cache_config.eos_token_id, int):
-            plugin_object.eos_token_id = plugin_object.input_manager.cache_config.eos_token_id
-        else:
-            plugin_object.eos_token_id = plugin_object.input_manager.cache_config.eos_token_id[0]
+        if Simulate.first:
+            if isinstance(plugin_object.input_manager.cache_config.eos_token_id, int):
+                plugin_object.eos_token_id = plugin_object.input_manager.cache_config.eos_token_id
+            else:
+                plugin_object.eos_token_id = plugin_object.input_manager.cache_config.eos_token_id[0]
+            if settings.mindie.req_and_decode_file.exists():
+                with open(settings.mindie.req_and_decode_file, 'r') as f:
+                    ServiceField.req_id_and_max_decode_length = {int(k): int(v) for k, v in json.load(f).items()}
+            else:
+                ServiceField.req_id_and_max_decode_length = {}
+            if not Path(ServiceField.config_path.static_file_dir).exists():
+                Path(ServiceField.config_path.static_file_dir).mkdir(parents=True)
+            static_file = StaticFile(base_path=settings.mindie.static_file_dir)
+            ServiceField.fh = FileHanlder(static_file)
+            ServiceField.fh.load_static_data()
+            custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=settings.mindie.ohe_path)
+            custom_encoder.fit(load=True)
+            ServiceField.data_processor = DataProcessor(custom_encoder)
+            Simulate.first = False
 
     @staticmethod
     def generate_random_token(plugin_object, shape, max_value=32000):
@@ -70,10 +93,7 @@ class Simulate:
         return tensor
 
     @staticmethod
-    def generate_token(plugin_object, input_metadata, cached_idx):
-        next_tokens = Simulate.generate_random_token(plugin_object, (input_metadata.batch_size,),
-                                                     plugin_object.model_wrapper.config.vocab_size)
-
+    def generate_features(plugin_object, input_metadata, cached_idx):
         output_len_count = plugin_object.input_manager.cache.output_len_count[cached_idx]
         if input_metadata.is_prefill:
             batch_stage = BatchStage.PREFILL
@@ -94,6 +114,17 @@ class Simulate:
                                  sum(_total_req_input_len), max(_total_req_input_len))
 
         request_field = tuple(request_field)
+        ServiceField.batch_field = batch_field
+        ServiceField.request_field = request_field
+        return batch_field, request_field
+
+    @staticmethod
+    def generate_token(plugin_object, input_metadata, cached_idx):
+        next_tokens = Simulate.generate_random_token(plugin_object, (input_metadata.batch_size,),
+                                                     plugin_object.model_wrapper.config.vocab_size)
+
+        batch_field, request_field = Simulate.generate_features(plugin_object, input_metadata, cached_idx)
+        output_len_count = plugin_object.input_manager.cache.output_len_count[cached_idx]
         ServiceField.batch_field = batch_field
         ServiceField.request_field = request_field
         new_next_tokens = next_tokens.copy()
@@ -125,20 +156,17 @@ class Simulate:
             else:
                 return _pre_v
 
-
-def init(req_and_decode_file: Path):
-    with open(req_and_decode_file, 'r') as f:
-        ServiceField.req_id_and_max_decode_length = {int(k): int(v) for k, v in json.load(f).items()}
-    static_file = StaticFile(base_path=ServiceField.config_path.static_file_dir)
-    ServiceField.fh = FileHanlder(static_file)
-    ServiceField.fh.load_static_data()
-    custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=ServiceField.config_path.ohe_path)
-    custom_encoder.fit(load=True)
-    ServiceField.data_processor = DataProcessor(custom_encoder)
-
-
-ServiceField.config_path = ConfigPath(Path(r"/data/deepseek/simulate/model/bak/base/xgb_model.ubj"),
-                                      Path(r"/data/deepseek/simulate/model/ohe"),
-                                      Path(r"/data/deepseek/simulate/model/deepseek_r1"))
-
-init(Path(r"/data/deepseek/simulate/model/req_id_and_decode_num.json"))
+    @staticmethod
+    def predict_and_save():
+        res = Simulate.predict(False)
+        file_path = Path(settings.benchmark.custom_collect_output_path).joinpath(f"simulate_{os.getpid()}.csv")
+        if file_path.exists():
+            with open(file_path, "a+") as f:
+                f.write(str(res))
+                f.write("\n")
+        else:
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+            modes = stat.S_IWUSR | stat.S_IRUSR
+            with os.fdopen(os.open(file_path, flags, modes), 'w') as fout:
+                fout.write(str(res))
+                fout.write("\n")

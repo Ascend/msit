@@ -1,62 +1,179 @@
 {
-    "output": "/data/deepseek/simulate/output",
-    "n_particles": 30,
-    "iters": 40,
-    "prefill_lam": 0.01,
-    "decode_lam": 0.5,
-    "prefill_constrain": 0.5,
-    "decode_constrain": 0.05,
-    "float_range_in_best_particle": 0.1,
-    "server": ["http://90.91.105.42:8000"],
-    "mindie": {
-      "process_name": "mindieservice_daemon",
-      "config_path": "/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json",
-      "config_bak_path": "/usr/local/Ascend/mindie/latest/mindie-service/conf/config_bak.json",
-      "work_path": "/data/deepseek/ModelEvalState",
-      "command": "/usr/bin/bash ./run.sh",
-      "log_path": "/usr/local/Ascend/mindie/latest/mindie-service/logs",
-      "model_path": "/data/deepseek/simulate/model/bak/base/xgb_model.ubj",
-      "ohe_path": "/data/deepseek/simulate/model/ohe",
-      "static_file_dir": "/data/deepseek/simulate/model/deepseek_r1",
-      "req_and_decode_file": "/data/deepseek/simulate/model/req_id_and_decode_num.json"
+  "output": "/tmp/modelevalstate/simulate/output",
+  "n_particles": 30,
+  "iters": 100,
+  "prefill_lam": 0,
+  "decode_lam": 0,
+  "prefill_constrain": 0.5,
+  "decode_constrain": 0.05,
+  "float_range_in_best_particle": 0.1,
+  "server": [
+    "http://141.61.22.87:8000"
+  ],
+  "mindie": {
+    "process_name": "mindieservice",
+    "config_path": "/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json",
+    "config_bak_path": "/usr/local/Ascend/mindie/latest/mindie-service/conf/config_bak.json",
+    "work_path": "/home/ModelEvalState",
+    "command": "/usr/bin/bash ./run_mindie.sh",
+    "log_path": "/usr/local/Ascend/mindie/latest/mindie-service/logs",
+    "model_path": "/tmp/modelevalstate/simulate/model/bak/base/xgb_model.ubj",
+    "ohe_path": "/tmp/modelevalstate/simulate/model/ohe",
+    "static_file_dir": "/tmp/modelevalstate/simulate/model/deepseek_r1",
+    "req_and_decode_file": "/tmp/modelevalstate/simulate/model/req_id_and_decode_num.json"
+  },
+  "benchmark": {
+    "name": "benchmark",
+    "work_path": "/home/ModelEvalState",
+    "command": "/usr/bin/bash ./run_benchmark.sh",
+    "output_path": "/usr/local/Ascend/mindie/latest/mindie-service/instance",
+    "custom_collect_output_path": "/tmp/modelevalstate/train",
+    "custom_analysis_output_path": "/tmp/modelevalstate/output",
+    "profile_input_path": "/tmp/modelevalstate/profile_input_path",
+    "profile_output_path": "/tmp/modelevalstate/profile_output_path"
+  },
+  "data_storage": {
+    "store_dir": "/tmp/modelevalstate/simulate/output"
+  },
+  "pso_options": {
+    "c1": 0.5,
+    "c2": 0.3,
+    "w": 0.9
+  },
+  "target_field": [
+    {
+      "name": "max_batch_size",
+      "config_position": "BackendConfig.ScheduleConfig.maxBatchSize",
+      "min": 10,
+      "max": 4096,
+      "dtype": "int"
     },
-    "benchmark": {
-      "name": "evalscope",
-      "command": "/usr/bin/bash /data/deepseek/ModelEvalState/run_evalscope.sh",
-      "output_path": "/data/deepseek/evalscope/outputs",
-      "custom_collect_output_path": "/data/deepseek/train",
-      "custom_analysis_output_path": "/data/deepseek/output"
+    {
+      "name": "max_prefill_batch_size",
+      "config_position": "BackendConfig.ScheduleConfig.maxPrefillBatchSize",
+      "min": 0,
+      "max": 1,
+      "dtype": "ratio",
+      "dtype_param": "max_batch_size"
     },
-    "data_storage": {
-      "store_dir": "/data/deepseek/simulate/output"
+    {
+      "name": "prefill_time_ms_per_req",
+      "config_position": "BackendConfig.ScheduleConfig.prefillTimeMsPerReq",
+      "min": 0,
+      "max": 1000,
+      "dtype": "int"
     },
-    "pso_options": {
-      "c1": 0.5,
-      "c2": 0.3,
-      "w": 0.9
+    {
+      "name": "decode_time_ms_per_req",
+      "config_position": "BackendConfig.ScheduleConfig.decodeTimeMsPerReq",
+      "min": 0,
+      "max": 1000,
+      "dtype": "int"
     },
-    "target_field": [
-      {"name": "max_batch_size", "config_position": "BackendConfig.ScheduleConfig.maxBatchSize",
-        "min": 25, "max": 300, "dtype": "int"},
-      {"name": "max_prefill_batch_size", "config_position": "BackendConfig.ScheduleConfig.maxPrefillBatchSize",
-      "min": 1, "max":  25, "dtype": "int"},
-      {"name": "prefill_time_ms_per_req", "config_position": "BackendConfig.ScheduleConfig.prefillTimeMsPerReq",
-      "min": 0, "max":  1000, "dtype": "int"},
-      {"name": "decode_time_ms_per_req", "config_position": "BackendConfig.ScheduleConfig.decodeTimeMsPerReq",
-        "min": 0, "max": 1000, "dtype": "int"},
-      {"name": "support_select_batch", "config_position": "BackendConfig.ScheduleConfig.supportSelectBatch",
-        "min": 0, "max": 1, "dtype": "bool"},
-      {"name": "max_prefill_token", "config_position": "BackendConfig.ScheduleConfig.maxPrefillTokens",
-        "min": 4096, "max": 8192, "dtype": "int"},
-      {"name": "max_queue_deloy_mircroseconds", "config_position": "BackendConfig.ScheduleConfig.maxQueueDelayMicroseconds",
-        "min": 500, "max": 1000000, "dtype": "int"},
-      {"name": "prefill_policy_type", "config_position": "BackendConfig.ScheduleConfig.prefillPolicyType",
-        "min": 0, "max": 1, "dtype": "enum", "dtype_param": [0,1,3]},
-      {"name": "decode_policy_type", "config_position": "BackendConfig.ScheduleConfig.decodePolicyType ",
-        "min": 0, "max": 1, "dtype": "enum", "dtype_param": [0,1,3]},
-      {"name": "max_preempt_count", "config_position": "BackendConfig.ScheduleConfig.maxPreemptCount",
-        "min": 0, "max": 1, "dtype": "ratio", "dtype_param": "max_batch_size"},
-      {"name": "PARALELL", "config_position": "env", "min": 1, "max": 400, "dtype": "int"}
-    ]
-
-  }
+    {
+      "name": "support_select_batch",
+      "config_position": "BackendConfig.ScheduleConfig.supportSelectBatch",
+      "min": 0,
+      "max": 1,
+      "dtype": "bool"
+    },
+    {
+      "name": "max_queue_deloy_mircroseconds",
+      "config_position": "BackendConfig.ScheduleConfig.maxQueueDelayMicroseconds",
+      "min": 500,
+      "max": 1000000,
+      "dtype": "int"
+    },
+    {
+      "name": "prefill_policy_type",
+      "config_position": "BackendConfig.ScheduleConfig.prefillPolicyType",
+      "min": 0,
+      "max": 1,
+      "dtype": "enum",
+      "dtype_param": [
+        0,
+        1,
+        3
+      ]
+    },
+    {
+      "name": "decode_policy_type",
+      "config_position": "BackendConfig.ScheduleConfig.decodePolicyType",
+      "min": 0,
+      "max": 1,
+      "dtype": "enum",
+      "dtype_param": [
+        0,
+        1,
+        3
+      ]
+    },
+    {
+      "name": "max_preempt_count",
+      "config_position": "BackendConfig.ScheduleConfig.maxPreemptCount",
+      "min": 0,
+      "max": 1,
+      "dtype": "ratio",
+      "dtype_param": "max_batch_size"
+    },
+    {
+      "name": "CONCURRENCY",
+      "config_position": "env",
+      "min": 10,
+      "max": 1000,
+      "dtype": "int"
+    },
+    {
+      "name": "tp",
+      "config_position": "BackendConfig.ModelDeployConfig.ModelConfig.0.tp ",
+      "min": 0,
+      "max": 1,
+      "dtype": "enum",
+      "dtype_param": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ]
+    },
+    {
+      "name": "dp",
+      "config_position": "BackendConfig.ModelDeployConfig.ModelConfig.0.dp ",
+      "min": 0,
+      "max": 0,
+      "dtype": "factories",
+      "dtype_param": {
+        "target_name": "tp",
+        "product": 16,
+        "dtype": "int"
+      }
+    },
+    {
+      "name": "moe_ep",
+      "config_position": "BackendConfig.ModelDeployConfig.ModelConfig.0.moe_ep ",
+      "min": 0,
+      "max": 1,
+      "dtype": "enum",
+      "dtype_param": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ]
+    },
+    {
+      "name": "moe_tp",
+      "config_position": "BackendConfig.ModelDeployConfig.ModelConfig.0.moe_tp ",
+      "min": 0,
+      "max": 0,
+      "dtype": "factories",
+      "dtype_param": {
+        "target_name": "moe_ep",
+        "product": 16,
+        "dtype": "int"
+      }
+    }
+  ]
+}
