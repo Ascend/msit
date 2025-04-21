@@ -21,6 +21,8 @@ import subprocess
 import shutil
 import time
 import tempfile
+import stat
+from copy import deepcopy
 
 import xmlrpc.client
 from typing import List, Tuple, Optional
@@ -45,12 +47,14 @@ from modelevalstate.optimizer.config import AnalyzeTool, BenchMarkConfig, Mindie
     BenchMarkPolicy, DeployPolicy, map_param_with_value
 from modelevalstate.optimizer.analyze import analyze
 from modelevalstate.optimizer.analyze_deepseek import analyze as analyze_deepseek
+from modelevalstate.optimizer.analyze_profiler import analyze as analyze_profiler
 from modelevalstate.optimizer.store import DataStorage
 from modelevalstate.optimizer.global_best_custom import CustomGlobalBestPSO
 
 _analyze_mapping = {
     AnalyzeTool.default.value: analyze,
-    AnalyzeTool.deepseek.value: analyze_deepseek
+    AnalyzeTool.deepseek.value: analyze_deepseek,
+    AnalyzeTool.profiler.value: analyze_profiler
 }
 
 
