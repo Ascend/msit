@@ -46,7 +46,7 @@ MINDIE_FIELD = (
     "max_prefill_batch_size", "max_batch_size")
 MindieConfig = namedtuple("MindieConfig", MINDIE_FIELD)
 ENV_FIELD = (
-    "atb_llm_razor_attention_enable", "atb_llm_razor_attention_rope", "bind_cpu", 
+    "atb_llm_razor_attention_enable", "atb_llm_razor_attention_rope", "bind_cpu",
     "mies_use_mb_swapper", "mies_pecompute_threshold",
     "mies_tokenizer_sliding_window_size", "atb_llm_lcoc_enable", "lccl_deterministic",
     "hccl_deterministic", "atb_matmul_shuffle_k_enable")

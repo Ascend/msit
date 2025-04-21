@@ -7,7 +7,6 @@ from typing import Optional
 import pandas as pd
 from pandas import DataFrame
 
-
 from matplotlib import pyplot as plt
 
 from modelevalstate.train.pretrain import NodeInfo, PreTrainModel
@@ -39,15 +38,18 @@ def main():
     _train_sleep_nodes = []
     for f in fields:
         df = pd.read_csv(f, header=None, names=['batch_stage', 'batch_size', 'total_need_blocks', \
-            'total_prell_token', 'max_seq_len', 'reqinfo', 'model_execute_time', 'execute_time', \
-            'start_time', 'end_time'])
+                                                'total_prell_token', 'max_seq_len', 'reqinfo', 'model_execute_time',
+                                                'execute_time', \
+                                                'start_time', 'end_time'])
         _tmp_nodes = get_nodes(df, field_name)
         _train_sleep_nodes.extend(_tmp_nodes)
     _train_sleep_up, train_sleep_ud = PreTrainModel.get_up_down(tuple(_train_sleep_nodes), field_name)
     AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_predill", \
-        "up_of_real_and_train_sleep", "batch_predill", "velocity", Path(train_sleep))
+                                                   "up_of_real_and_train_sleep", "batch_predill", "velocity",
+                                                   Path(train_sleep))
     AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_decode", \
-        "up_of_real_and_train_sleep", "batch_decode", "velocity", Path(train_sleep))
+                                                   "up_of_real_and_train_sleep", "batch_decode", "velocity",
+                                                   Path(train_sleep))
 
     train = r"D:\下载D\deepseek\train\41_3-6"
     field_name = "model_execute_time"
@@ -55,20 +57,20 @@ def main():
     _train_sleep_nodes = []
     for f in fields:
         df = pd.read_csv(f, header=None,
-                          names=['batch_stage', 'batch_size', 'total_need_blocks', 'total_prell_token', 'max_seq_len',
-                                  'reqinfo', 'model_execute_time', 'execute_time', 'start_time'])
-        
+                         names=['batch_stage', 'batch_size', 'total_need_blocks', 'total_prell_token', 'max_seq_len',
+                                'reqinfo', 'model_execute_time', 'execute_time', 'start_time'])
+
         df_simulate = pd.read_csv(Path(train).joinpath(f'simulate_{f.split("_")[-1].split(".")[0]}.csv'), header=None,
                                   names=['model_execute_time'])
-        df[field_name] = df_simulate / (10**6)
+        df[field_name] = df_simulate / (10 ** 6)
         _tmp_nodes = get_nodes(df, field_name)
         _train_sleep_nodes.extend(_tmp_nodes)
     _train_sleep_up, train_sleep_ud = PreTrainModel.get_up_down(tuple(_train_sleep_nodes), field_name)
     AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_predill",
-                                                    "up_of_real_and_train", "batch_predill", "velocity", Path(train))
+                                                   "up_of_real_and_train", "batch_predill", "velocity", Path(train))
     AnalysisState.plot_input_velocity_with_predict(_real_up, _train_sleep_up, "batch_decode",
-                                                    "up_of_real_and_train", "batch_decode", "velocity", Path(train))
-    
+                                                   "up_of_real_and_train", "batch_decode", "velocity", Path(train))
+
 
 if __main__ == '__main__':
     main()

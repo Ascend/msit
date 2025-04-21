@@ -28,18 +28,18 @@ class StateParam:
     xgb_model_show_feature_importance: bool = True  # 是否展示特征重要性
     xgb_model_show_test_data_prediction: bool = True  # 是否展示测试集预测结果
     xgb_model_save_model_path: Path = field(init=False)  # 保存模型的路径
-    xgb_model_load_model_path: Path = field(init=False) # 加载模型的路径, 进行预测使用
+    xgb_model_load_model_path: Path = field(init=False)  # 加载模型的路径, 进行预测使用
     xgb_model_update_param: Dict = field(
         default_factory=lambda: {'process_type': 'update', 'updater': 'prune'})  # 增量训练，更新xgb model时，使用的参数
 
-    start_num_lines: int = 8000 # 第一次读取数据全量训练的行数
+    start_num_lines: int = 8000  # 第一次读取数据全量训练的行数
     read_num_lines: int = 1000  # 读取数据的时候，一次读取的数据行数，默认1000行
     predict_field: str = "model_execute_time"
     ohe_path: Path = field(init=False)
     state_type: StateType = StateType.DEFAULT
     plot_velocity_std: bool = True
     plot_predict_std: bool = True
-    plot_data_feature: bool = False # 绘制输出数据的特征和分布
+    plot_data_feature: bool = False  # 绘制输出数据的特征和分布
     plot_input_time_with_predict: bool = True
     op_algorithm: OpAlgorithm = OpAlgorithm.EXPECTED
 

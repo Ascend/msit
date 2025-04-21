@@ -55,13 +55,12 @@ MODEL_CONFIG_FIELD = (
 
 ModelConfig = namedtuple("ModelConfig", MODEL_CONFIG_FIELD)
 
-
 BATCH_FIELD = (
-    "batch_stage", 
-    "batch_size", 
-    "total_need_blocks", 
-    "total_prefill_token", 
-    "max_seq_len", 
+    "batch_stage",
+    "batch_size",
+    "total_need_blocks",
+    "total_prefill_token",
+    "max_seq_len",
     "model_execute_time"
 )
 BATCH_FILE_FIELD = ("ibis_batchid", *BATCH_FIELD, "req_info")
@@ -367,7 +366,8 @@ class FileReader:
                         self.current_line_index = 0
                         self.current_file_index += 1
             except Exception as e:
-                warn(f"读取文件 {self.file_paths[self.current_file_index]} 时发生错误: {e}. 请核对。暂时跳过读取该文件的数据。")
+                warn(
+                    f"读取文件 {self.file_paths[self.current_file_index]} 时发生错误: {e}. 请核对。暂时跳过读取该文件的数据。")
                 self.current_file_index += 1
                 self.current_line_index = 0
         if not lines and self.current_file_index >= len(self.file_paths):

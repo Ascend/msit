@@ -32,8 +32,8 @@ def process_files(directory, out_path):
             batch_df = pd.read_csv(os.path.join(directory, file), header=None)
             req_df = pd.read_csv(os.path.join(directory, req_file), header=None)
             column_names_1 = ['ibis_reqid', 'input_length', 'need_blocks', 'output_length']
-            column_names_2 = ['batch_stage', 'batch_size', 'total_need_blocks', 'total_prefill_token',\
-                               'max_seq_len', 'reqinfo', 'forward_time', 'execute_time', 'start_time']
+            column_names_2 = ['batch_stage', 'batch_size', 'total_need_blocks', 'total_prefill_token', \
+                              'max_seq_len', 'reqinfo', 'forward_time', 'execute_time', 'start_time']
             req_df.columns = column_names_1
             batch_df.columns = column_names_2
             req_df['execute_id'] = req_df['output_length']
@@ -46,7 +46,6 @@ def process_files(directory, out_path):
             # 保存处理后的文件
             batch_df.to_csv(os.path.join(out_path, file), index=False)
             req_df.to_csv(os.path.join(out_path, req_file), index=False)
-
 
 
 def filter_max_values_in_csv_files(path):
@@ -112,7 +111,7 @@ def analyze(input_path_1, input_path_2, input_path_3):
         raise ValueError("两个CSV文件的行数必须相同")
 
     # 将第二个CSV文件中的`during_time`列添加到第一个CSV文件中，并修改列名
-    df1['simulate_time'] = df2['simulate_time'] / 10**6
+    df1['simulate_time'] = df2['simulate_time'] / 10 ** 6
     second_prefill_row = df1[df1['batch_stage'] == 'prefill'].iloc[1]
 
     # 获取该行的索引
@@ -127,17 +126,17 @@ def analyze(input_path_1, input_path_2, input_path_3):
 
         digits = re.findall(r'\d+', row['reqinfo'])
 
-            # 将这些字符串转换为整数列表
+        # 将这些字符串转换为整数列表
         reqinfo_list = [int(num) for num in digits]
 
-            # 使用列表推导式筛选偶数位的数字
+        # 使用列表推导式筛选偶数位的数字
         non_zero_values = [x for i, x in enumerate(reqinfo_list) if i % 2 == 0]
-            # 遍历这些值
-        for val in non_zero_values: 
+        # 遍历这些值
+        for val in non_zero_values:
 
             if val > success_req:
                 break
-            during_time = filtered_df.iloc[val - 1]['first_chunk_latency'] 
+            during_time = filtered_df.iloc[val - 1]['first_chunk_latency']
             arrive_time = row['start_time'] - during_time
             filtered_df1 = df1[df1['start_time'] > arrive_time]
 
@@ -146,14 +145,13 @@ def analyze(input_path_1, input_path_2, input_path_3):
 
             # 计算 simulate_time 的总和
             total_simulate_time += filtered_df1['simulate_time'].sum()
-                    
 
     total_latency = filtered_df['first_chunk_latency'].sum() + total_simulate_time
     total_token = filtered_df['completion_tokens'].sum()
     avg_prefill_latency = total_latency / success_req
     total_time = filtered_df['completed_time'].max() - filtered_df['start_time'].min() + df1['simulate_time'].sum()
     throughput = total_token / total_time
-    total_decode_time = filtered_df['latency'].sum() - filtered_df['first_chunk_latency'].sum() 
+    total_decode_time = filtered_df['latency'].sum() - filtered_df['first_chunk_latency'].sum()
     average_decode_latency = total_decode_time / filtered_df['n_chunks'].sum()
     success_precent = success_req / total_req
     return throughput, avg_prefill_latency, average_decode_latency, success_precent

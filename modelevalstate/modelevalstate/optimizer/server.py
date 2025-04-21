@@ -26,18 +26,7 @@ import numpy as np
 from loguru import logger
 
 from modelevalstate.optimizer.optimizer import Simulator, remove_file
-from modelevalstate.optimizer.config import settings, OptimizerConfigField, map_param_with_value
-
-
-class RemoteSimulator(Simulator):
-    def run(self, run_params: Tuple[OptimizerConfigField]):
-        logger.info(f'start run in simulator. run params: {run_params}')
-        # 根据params 修改配置文件
-        self.update_config(run_params)
-        # 启动mindie仿真
-        self.check_env()
-        self.start_server(run_params)
-        logger.info(f"Successfully started the {self.process.pid} process.")
+from modelevalstate.optimizer.config import settings, map_param_with_value
 
 
 def get_file(target_path, parent_name: str = "", save_current_path: bool = False):
@@ -70,20 +59,28 @@ class RemoteScheduler:
 
     def run_simulator(self, params: np.ndarray):
         # 更新服务器上的config文件
-        self.simulator = RemoteSimulator(settings.mindie)
+        self.simulator = Simulator(settings.mindie)
         _simulate_run_info = map_param_with_value(params, settings.target_field)
         logger.info(f"simulate run info {_simulate_run_info}")
         self.simulator.run(tuple(_simulate_run_info))
 
     def check_success(self):
+        if not self.simulator:
+            return None
         for _ in range(10):
             if self.simulator.check_success():
                 return True
             time.sleep(10)
         raise Exception(f"Simulator run failed. please check log: {self.simulator.mindie_log}")
 
-    def stop_simulator(self):
-        self.simulator.stop()
+    def stop_simulator(self, del_log=True):
+        if self.simulator:
+            self.simulator.stop(del_log)
+
+    def process_poll(self):
+        if self.simulator:
+            return self.simulator.process.poll()
+        return None
 
 
 parser = argparse.ArgumentParser(description='Run the server.')

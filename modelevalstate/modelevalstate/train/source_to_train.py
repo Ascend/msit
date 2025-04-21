@@ -34,7 +34,7 @@ def fetch_rids_from_db(db_path):
         # 执行查询
         cursor.execute("SELECT * FROM batch WHERE name = 'modelExec';")
         batch_rows = cursor.fetchall()
-        
+
         rids = []
         for row in batch_rows:
             if isinstance(row, str):
@@ -160,7 +160,8 @@ def write_csv_header(csvfile) -> None:
     ])
 
 
-def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_df: pd.DataFrame, rids_ori: List[Any]) -> List[Tuple]:
+def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_df: pd.DataFrame,
+                           rids_ori: List[Any]) -> List[Tuple]:
     processed_data = []
     for i in range(len(exec_data)):
         exec_row = exec_data[i]
@@ -218,12 +219,12 @@ def write_csv_row(csvfile, row: Tuple) -> None:
 
 
 def save_processed_data_to_csv(
-    input_path: str,
-    data_by_pid: Dict[int, List[Tuple]],
-    batch_rows: List[Tuple],
-    batch_id_block_sum: Dict[int, float],
-    req_df: pd.DataFrame,
-    rids_ori: List[Any]
+        input_path: str,
+        data_by_pid: Dict[int, List[Tuple]],
+        batch_rows: List[Tuple],
+        batch_id_block_sum: Dict[int, float],
+        req_df: pd.DataFrame,
+        rids_ori: List[Any]
 ) -> None:
     output_folder = create_output_folder(input_path)
 
@@ -270,7 +271,8 @@ def source_to_model(input_path: str):
         )
 
     except Exception as e:
-        logger.error(f"处理过程中出错: {e}") from e
+        logger.error(f"处理过程中出错: {e}")
+        from e
     finally:
         db_connector.close()
 
@@ -287,7 +289,7 @@ def req_decodetimes(input_path, output_path):
         reader = csv.DictReader(file)
         for row in reader:
             http_reqid = row['http_rid']
-            reply_token_size = int(float(row['recv_token_size']))  
+            reply_token_size = int(float(row['recv_token_size']))
             data[http_reqid] = reply_token_size
 
     # 将字典写入JSON文件
@@ -307,14 +309,16 @@ def main(args):
     try:
         source_to_model(input_path)
     except IOError as e:
-        logger.error(f"无法读取输入文件: {e}") from e
+        logger.error(f"无法读取输入文件: {e}")
+        from e
         sys.exit(1)
-    
+
     # 确保输出目录存在
     output_dir = os.path.dirname(output_path)
     input_csv_path = os.path.join(input_path, f'output_csv')
     pretrain(input_csv_path, output_path)
     req_decodetimes(input_path, output_path)
+
 
 if __name__ == '__main__':
     _args = parser.parse_args()

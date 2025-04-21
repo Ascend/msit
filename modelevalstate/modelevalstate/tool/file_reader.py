@@ -37,16 +37,16 @@ BatchNeed = namedtuple("BatchNeed", batch_need_fields)
 
 request_need_fields = "ibis_reqid", "http_reqid", "req_token_size", "res_token_size", "ts_RecvHttpReq", \
     "ts_ReturnHttpRes", "HttpReq_delta", "P_count", "P_queue_latency", "P_batch_execute_delta", "P_e2e_latency", \
-        "P_model_execute_delta", "D_count", "D_queue_latency_mean", "D_queue_latency_min", "D_queue_latency_max", \
-            "D_batch_execute_delta_mean", "D_batch_execute_delta_min", "D_batch_execute_delta_max", \
-                "D_e2e_latency_mean", "D_e2e_latency_min", "D_e2e_latency_max", \
-                    "D_model_execute_delta_mean", "D_model_execute_delta_min", "D_model_execute_delta_max"
+    "P_model_execute_delta", "D_count", "D_queue_latency_mean", "D_queue_latency_min", "D_queue_latency_max", \
+    "D_batch_execute_delta_mean", "D_batch_execute_delta_min", "D_batch_execute_delta_max", \
+    "D_e2e_latency_mean", "D_e2e_latency_min", "D_e2e_latency_max", \
+    "D_model_execute_delta_mean", "D_model_execute_delta_min", "D_model_execute_delta_max"
 
 RequestNeed = namedtuple("RequestNeed", request_need_fields)
 
 batch2req_need_fields = "ibis_reqid", "execute_id", "stage", "ts_AddToQueue", "ts_RemoveFromQueue", \
     "ts_batch_execute_begin", "ts_batch_execute_end", "ts_StateChangeToStart", "ts_StateChangeToEnd", \
-        "ts_model_execute_begin", "ts_model_execute_end", "reqInfo"
+    "ts_model_execute_begin", "ts_model_execute_end", "reqInfo"
 
 Batch2RequestNeed = namedtuple("Batch2RequestNeed", batch2req_need_fields)
 
@@ -54,14 +54,13 @@ train_batch_data_fields = (
     "stage", "batch_num", "model_time", "batch_execute_delta", "total_time", "end_count", "request_info")
 TrainBatchData = namedtuple("TrainBatchData", train_batch_data_fields)
 
-train_request_info_fields = ("id", "execute_id", "input_len", "output_len", "httpreq_delta", 
-                             "p_queue_latency", "p_batch_execute_delta", "d_count", "d_queue_latency_mean", 
-                             "d_queue_latency_min", "d_queue_latency_max", "d_batch_execute_delta_mean", 
-                             "d_batch_execute_delta_min", "d_batch_execute_delta_max", 
+train_request_info_fields = ("id", "execute_id", "input_len", "output_len", "httpreq_delta",
+                             "p_queue_latency", "p_batch_execute_delta", "d_count", "d_queue_latency_mean",
+                             "d_queue_latency_min", "d_queue_latency_max", "d_batch_execute_delta_mean",
+                             "d_batch_execute_delta_min", "d_batch_execute_delta_max",
                              "state_change_delta", "queue_wait_time")
 TrainRequestInfo = namedtuple("TrainRequestInfo", train_request_info_fields, \
                               defaults=[0 for _ in range(len(train_request_info_fields))])
-
 
 
 @dataclass
@@ -71,7 +70,7 @@ class NodeInfo:
     model_time: float  # 这个model （prefill、decode）执行完成的时间
     batch_execute_delta: float  # 组batch的时间
     total_time: float  # 从开始处理到现在的时间
-    end_count: int = 0 # batch中执行完成后有多少个请求结束
+    end_count: int = 0  # batch中执行完成后有多少个请求结束
     request_info: List = field(default_factory=list)  # 当前batch处理包含的请求信息
 
 
@@ -83,19 +82,19 @@ def load_line_data(line, version=2):
     if version == 1:
         # 最初的版本
         _node_info = NodeInfo(stage=cur_row[0],
-                          batch_num=int(cur_row[1]),
-                          model_time=float(cur_row[2]),
-                          batch_execute_delta=float(cur_row[3]),
-                          total_time=float(cur_row[4]),
-                          request_info=_req_info)
+                              batch_num=int(cur_row[1]),
+                              model_time=float(cur_row[2]),
+                              batch_execute_delta=float(cur_row[3]),
+                              total_time=float(cur_row[4]),
+                              request_info=_req_info)
     else:
         _node_info = NodeInfo(stage=cur_row[0],
-                          batch_num=int(cur_row[1]),
-                          model_time=float(cur_row[2]),
-                          batch_execute_delta=float(cur_row[3]),
-                          total_time=float(cur_row[4]),
-                          end_count=int(cur_row[5]),
-                          request_info=_req_info)
+                              batch_num=int(cur_row[1]),
+                              model_time=float(cur_row[2]),
+                              batch_execute_delta=float(cur_row[3]),
+                              total_time=float(cur_row[4]),
+                              end_count=int(cur_row[5]),
+                              request_info=_req_info)
     return _node_info
 
 

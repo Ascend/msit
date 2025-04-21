@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Huawei Technologies Co., Ltd. 2024-2025. All rights reserved.
 import sys
+
 sys.path.append(r"..\state_eval\inference")
 from copy import deepcopy
 from pathlib import Path
@@ -114,11 +115,11 @@ def test_state_eval():
     fl = FileReader(file_paths, num_lines=1000)
     process_num = 1
     run_case(process_num, save_result_path, fl, predict_with_model, {
-                        "xgb_model_path": xgb_model_path,
-                        "ohe_path": ohe_path,
-                        "train_field": train_field,
-                        "dataset_type": SimpleDataProcessor
-                    })
+        "xgb_model_path": xgb_model_path,
+        "ohe_path": ohe_path,
+        "train_field": train_field,
+        "dataset_type": SimpleDataProcessor
+    })
 
 
 if __name__ == '__main__':

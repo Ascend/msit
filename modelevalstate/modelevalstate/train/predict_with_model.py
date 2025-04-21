@@ -23,7 +23,6 @@ from modelevalstate.train.pretrain import NodeInfo, PretrainModel
 from modelevalstate.analysis import AnalysisState
 from modelevalstate.model.xgb_state_model import StateXgbModel
 
-
 BATCH_PREFILL = "batch_prefill"
 BATCH_DECODE = "batch_decode"
 
@@ -54,8 +53,8 @@ def predict_with_model(lines_data: DataFrame,
     model = StateXgbModel(save_model_path=xgb_model_path, load_model_path=xgb_model_path, save_model=False)
     res = model.predict(data_processor.features)
     batch_stage_encoder = [
-        custom_encoder.category_encoders[i] 
-        for i, v in enumerate(custom_encoder.category_info) 
+        custom_encoder.category_encoders[i]
+        for i, v in enumerate(custom_encoder.category_info)
         if v.name == "batch_stage"
     ][0]
     data_processor.features["batch_stage"] = batch_stage_encoder.inverse_transform(
@@ -136,7 +135,7 @@ def manager():
     fl = FileReader(file_paths)
     test_input = fl.read_lines()
     simple_up, simple_ud, metric = predict_with_model(test_input, xgb_model_path=xgb_model_path, ohe_path=ohe_path,
-                                              train_field=train_field, dataset_type=SimpleDataset)
+                                                      train_field=train_field, dataset_type=SimpleDataset)
     simple_up = simple_up.rename(columns=rename_column("simple", simple_up.columns))
     simple_ud = simple_ud.rename(columns=rename_column("simple", simple_ud.columns))
     logging.info('simple metric: %s', metric)
@@ -144,7 +143,7 @@ def manager():
     xgb_model_path = base_path.joinpath("bak/base/xgb_model.ubj")
     ohe_path = base_path.joinpath("ohe")
     data_up, data_ud, metric = predict_with_model(test_input, xgb_model_path=xgb_model_path, ohe_path=ohe_path,
-                                          train_field=train_field, dataset_type=MyDataSet)
+                                                  train_field=train_field, dataset_type=MyDataSet)
     logging.info('data metric', metric)
     data_up = data_up.rename(columns=rename_column("batch_2_op", data_up.columns))
     data_ud = data_ud.rename(columns=rename_column("batch_2_op", data_ud.columns))
@@ -153,19 +152,19 @@ def manager():
     xgb_model_path = base_path.joinpath("bak/base/xgb_model.ubj")
     ohe_path = base_path.joinpath("ohe")
     seq_data_up, seq_data_ud, metric = predict_with_model(test_input, xgb_model_path=xgb_model_path, ohe_path=ohe_path,
-                                          train_field=train_field, dataset_type=MyDataSet)
+                                                          train_field=train_field, dataset_type=MyDataSet)
     logging.info('max seq len data metric', metric)
     seq_data_up = seq_data_up.rename(columns=rename_column("batch_seq_2_op", seq_data_up.columns))
     seq_data_ud = seq_data_ud.rename(columns=rename_column("batch_seq_2_op", seq_data_ud.columns))
 
     up = pd.merge(simple_up, data_up[[BATCH_PREFILL, *[k for k in data_up.columns if "predict" in k]]], \
-        on=BATCH_PREFILL, how="left", )
+                  on=BATCH_PREFILL, how="left", )
     up = pd.merge(up, seq_data_up[[BATCH_PREFILL, *[k for k in seq_data_up.columns if "predict" in k]]], \
-        on=BATCH_PREFILL, how="left", )
+                  on=BATCH_PREFILL, how="left", )
     ud = pd.merge(simple_ud, data_ud[[BATCH_DECODE, *[k for k in data_ud.columns if "predict" in k]]], \
-        on=BATCH_DECODE, how="left", )
+                  on=BATCH_DECODE, how="left", )
     ud = pd.merge(ud, seq_data_ud[[BATCH_DECODE, *[k for k in seq_data_ud.columns if "predict" in k]]], \
-        on=BATCH_DECODE, how="left", )
+                  on=BATCH_DECODE, how="left", )
     up_dfl = pd.melt(up, id_vars=[BATCH_PREFILL], value_name=train_field)
     sns.lineplot(up_dfl, x=BATCH_PREFILL, y=train_field, hue="variable", legend="brief")
     plt.savefig(base_path.joinpath("train_125_up.png"))
@@ -174,6 +173,7 @@ def manager():
     sns.lineplot(ud_dfl, x=BATCH_DECODE, y=train_field, hue="variable", legend="brief")
     plt.savefig(base_path.joinpath("train_125_ud.png"))
     plt.close()
+
 
 if __name__ == '__main__':
     manager()

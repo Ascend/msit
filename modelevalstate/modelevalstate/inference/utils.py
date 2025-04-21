@@ -19,16 +19,16 @@ import numpy as np
 from pandas import Series
 
 from modelevalstate.inference.constant import (
-    ALL_OP, 
-    OP_EXECUTE_DELTA_FIELD, 
-    DTYPE_CATEGORY, UNDEFINED, 
-    ALL_ARCHITECTURE, 
+    ALL_OP,
+    OP_EXECUTE_DELTA_FIELD,
+    DTYPE_CATEGORY, UNDEFINED,
+    ALL_ARCHITECTURE,
     ALL_ARCHITECTURE_MAPPING
 )
 from modelevalstate.inference.common import (
-    OP_EXPECTED_FIELD_MAPPING, 
-    model_op_size, 
-    HistInfo, 
+    OP_EXPECTED_FIELD_MAPPING,
+    model_op_size,
+    HistInfo,
     get_field_bins_count
 )
 
@@ -204,7 +204,6 @@ class PreprocessTool:
                                 new_row.append(_op_delta_expected[_field][_op])
 
         return Series(new_row, index=new_index)
-
 
     @staticmethod
     def get_all_op_input_ratio(input_data: Tuple[Tuple], input_index: Tuple, field: str = "input_shape"):
