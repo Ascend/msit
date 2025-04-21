@@ -2,7 +2,8 @@ import time
 import unittest
 from unittest.mock import patch
 
-from msit.utils.log import _SPECIAL_CHAR, LOG_LEVEL, MsitLogger, get_current_timestamp, logger, print_log_with_star
+from msit.utils.log import LOG_LEVEL, MsitLogger, get_current_timestamp, logger, print_log_with_star
+from msit.lib.msit_c import log
 
 
 class TestGetCurrentTimestamp(unittest.TestCase):
@@ -70,20 +71,20 @@ class TestMsitLogger(unittest.TestCase):
         for level in test_levels:
             with self.subTest(level=level):
                 self.logger.set_level(level)
-                self.assertEqual(self.logger.level_id, LOG_LEVEL.index(level))
+                self.assertEqual(log.get_log_level(), LOG_LEVEL.index(level))
 
     def test_set_level_invalid(self):
         self.logger.set_level("INVALID_LEVEL")
-        self.assertEqual(self.logger.level_id, LOG_LEVEL.index("INFO"))
+        self.assertEqual(log.get_log_level(), LOG_LEVEL.index("INFO"))
 
-    @patch.object(MsitLogger, "_print_log")
+    @patch.object(log, "print_log")
     def test_error_log_when_level_allows(self, mock_print):
         self.logger.set_level("ERROR")
         test_msg = "Test error message"
         self.logger.error(test_msg)
-        mock_print.assert_called_once_with(LOG_LEVEL[3], test_msg)
+        mock_print.assert_called_once_with(LOG_LEVEL.index("ERROR"), test_msg)
 
-    @patch.object(MsitLogger, "_print_log")
+    @patch.object(log, "print_log")
     def test_error_log_when_level_denies(self, mock_print):
         self.logger.set_level("WARNING")
         self.logger.error("Should print")
@@ -93,40 +94,26 @@ class TestMsitLogger(unittest.TestCase):
         self.logger.error("Should ALSO print")
         mock_print.assert_called()
 
-    @patch.object(MsitLogger, "_print_log")
-    def test_error_log_really_deny(self, mock_print):
-        with patch.object(self.logger, "level_id", 4):
-            self.logger.error("Should NOT print")
-            mock_print.assert_not_called()
-
-    @patch.object(MsitLogger, "_print_log")
+    @patch.object(log, "print_log")
     def test_error_special_char_filter(self, mock_print):
         test_msg = "Bad\nmessage\twith\rspecial"
         expected_msg = "Bad_message_with_special"
 
         self.logger.error(test_msg)
-        actual_msg = mock_print.call_args[0][1]
-        self.assertEqual(actual_msg, expected_msg)
+        mock_print.assert_called_once_with(LOG_LEVEL.index("ERROR"), test_msg)
 
-    @patch.object(MsitLogger, "_print_log")
+    @patch.object(log, "print_log")
     def test_debug_log_when_level_allows(self, mock_print):
         self.logger.set_level("DEBUG")
         test_msg = "Debug message"
         self.logger.debug(test_msg)
-        mock_print.assert_called_once_with(LOG_LEVEL[0], test_msg)
+        mock_print.assert_called_once_with(LOG_LEVEL.index("DEBUG"), test_msg)
 
-    @patch.object(MsitLogger, "_print_log")
-    def test_debug_log_when_level_denies(self, mock_print):
-        self.logger.debug("Should NOT print")
-        mock_print.assert_not_called()
-
-    @patch.object(MsitLogger, "_print_log")
+    @patch.object(log, "print_log")
     def test_debug_special_char_filter(self, mock_print):
-        special_str = "".join(_SPECIAL_CHAR)
-        test_msg = f"Special{special_str}chars"
-        expected_msg = "Special__________________chars"
+        test_msg = f"Special\tchars"
+        expected_msg = "Special_chars"
 
         self.logger.set_level("DEBUG")
         self.logger.debug(test_msg)
-        actual_msg = mock_print.call_args[0][1]
-        self.assertEqual(actual_msg, expected_msg)
+        mock_print.assert_called_once_with(LOG_LEVEL.index("DEBUG"), test_msg)

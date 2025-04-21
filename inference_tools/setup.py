@@ -17,6 +17,8 @@ __version__ = "8.1.0rc0630"
 import os
 import sys
 from configparser import ConfigParser
+import platform
+import subprocess
 
 from setuptools import find_packages, setup
 
@@ -47,6 +49,12 @@ required = get_requirements(compat)
 config = ConfigParser()
 config.read("./msit/config.ini")
 
+arch = platform.machine()
+build_cmd = f"bash ./build.sh -j16 -a {arch} -v {sys.version_info.major}.{sys.version_info.minor}"
+p = subprocess.run(build_cmd.split(), shell=False)
+if p.returncode != 0:
+    raise RuntimeError(f"Failed to build source({p.returncode})")
+
 setup(
     name="msit",
     version=__version__,
@@ -60,7 +68,7 @@ setup(
     url=config.get("URL", "msit_url"),
     author="Ascend Team",
     packages=find_packages(include=["msit", "msit.*"]),
-    package_data={"": ["LICENSE", "*.md", "*.txt", "*.cpp", "*.h", "*.json", "*.ini"]},
+    package_data={"": ["LICENSE", "*.md", "*.txt", "*.cpp", "*.h", "*.json", "*.ini", "lib/*.so"]},
     license="Apache-2.0",
     keywords=["msit", "probe", "surgeon"],
     python_requires=">=3.7",

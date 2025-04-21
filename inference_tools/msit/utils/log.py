@@ -17,32 +17,14 @@ from functools import wraps
 from sys import stdout
 from time import localtime, perf_counter, strftime
 
+from msit.lib.msit_c import log
+
 _STAR = "*"
 _DEBUG = "DEBUG"
 _INFO = "INFO"
 _WARNING = "WARNING"
 _ERROR = "ERROR"
 LOG_LEVEL = [_DEBUG, _INFO, _WARNING, _ERROR]
-_SPECIAL_CHAR = [
-    "\n",
-    "\r",
-    "\u007f",
-    "\b",
-    "\f",
-    "\t",
-    "\v",
-    "\u000b",
-    "%08",
-    "%09",
-    "%0a",
-    "%0b",
-    "%0c",
-    "%0d",
-    "%7f",
-    "//",
-    "\\",
-    "&",
-]
 _TOTAL_CHAR_LENGTH = 80
 
 
@@ -65,16 +47,6 @@ def stdout_flush():
     stdout.flush()
 
 
-def filter_special_chars(func):
-    @wraps(func)
-    def func_level(self, msg, **kwargs):
-        for char in _SPECIAL_CHAR:
-            msg = msg.replace(char, "_")
-        return func(self, msg, **kwargs)
-
-    return func_level
-
-
 class MsitLogger:
     _instance = None
 
@@ -82,11 +54,6 @@ class MsitLogger:
         if not cls._instance:
             cls._instance = super(MsitLogger, cls).__new__(cls)
         return cls._instance
-
-    def __init__(self, level=_INFO):
-        if not hasattr(self, "initialized"):
-            self.level_id = self.get_level_id(level)
-            self.initialized = True
 
     @staticmethod
     def get_level_id(level: str):
@@ -96,33 +63,24 @@ class MsitLogger:
             return LOG_LEVEL.index(LOG_LEVEL[1])
 
     @staticmethod
-    def _print_log(level, msg, end="\n"):
-        full_msg = f"{get_current_timestamp()} (PID {get_pid()}) [{level}] {msg}"
-        print(full_msg, end=end)
-        stdout_flush()
+    def error(msg):
+        log.print_log(LOG_LEVEL.index(_ERROR), msg)
+
+    @staticmethod
+    def warning(msg):
+        log.print_log(LOG_LEVEL.index(_WARNING), msg)
+
+    @staticmethod
+    def info(msg):
+        log.print_log(LOG_LEVEL.index(_INFO), msg)
+
+    @staticmethod
+    def debug(msg):
+        log.print_log(LOG_LEVEL.index(_DEBUG), msg)
 
     def set_level(self, level: str):
-        self.level_id = self.get_level_id(level)
-
-    @filter_special_chars
-    def error(self, msg):
-        if self.level_id <= LOG_LEVEL.index(_ERROR):
-            self._print_log(LOG_LEVEL[3], msg)
-
-    @filter_special_chars
-    def warning(self, msg):
-        if self.level_id <= LOG_LEVEL.index(_WARNING):
-            self._print_log(LOG_LEVEL[2], msg)
-
-    @filter_special_chars
-    def info(self, msg):
-        if self.level_id <= LOG_LEVEL.index(_INFO):
-            self._print_log(LOG_LEVEL[1], msg)
-
-    @filter_special_chars
-    def debug(self, msg):
-        if self.level_id <= LOG_LEVEL.index(_DEBUG):
-            self._print_log(LOG_LEVEL[0], msg)
+        level_id = self.get_level_id(level)
+        log.set_log_level(level_id)
 
 
 logger = MsitLogger()
