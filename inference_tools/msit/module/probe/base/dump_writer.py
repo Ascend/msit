@@ -30,12 +30,12 @@ _WITHOUT_CALL_STACK = "The call stack retrieval failed."
 
 
 class WriterDump(ABC):
-    def __init__(self, dump_format):
-        self.dump_format = dump_format
+    def __init__(self, task):
+        self.task = task
         self.max_cache_size = _SIZE_1M
         self.cache_dump_json = {}
         self.cache_dump_json_size = 0
-        self.dump_json = self.init_dump_json()
+        self.dump_json = self.init_dump_json(task=task)
         self.cache_stack_json = {}
         self.cache_stack_json_size = 0
         self.tensor_path = ""
@@ -46,6 +46,9 @@ class WriterDump(ABC):
         if name == "summ_dump_data" and callable(attr):
 
             def wrapper(*args, **kwargs):
+                if self.task == CfgConst.TASK_TENSOR:
+                    DirPool.make_tensor_dir()
+                    self.cache_dump_json[DumpConst.DUMP_DATA_DIR] = DirPool.get_tensor_dir()
                 result = attr(*args, **kwargs)
                 if self.net_output_nodes:
                     save_json(
@@ -105,6 +108,7 @@ class WriterDump(ABC):
     def init_dump_json(self, **kwargs):
         self.cache_dump_json.update(
             {
+                CfgConst.TASK: kwargs.get(CfgConst.TASK, None),
                 CfgConst.LEVEL: kwargs.get(CfgConst.LEVEL, None),
                 CfgConst.FRAMEWORK: kwargs.get(CfgConst.FRAMEWORK, None),
                 DumpConst.DUMP_DATA_DIR: kwargs.get(DumpConst.DUMP_DATA_DIR, None),
@@ -117,7 +121,7 @@ class WriterDump(ABC):
         self._update_dump_json(
             self.cache_dump_json[DumpConst.DATA][get_valid_name(name)],
             in_out,
-            {**{"name": get_valid_name(args_name)}, **DataStat.collect_stats_for_numpy(npy_data)},
+            {**{"data_name": get_valid_name(args_name)}, **DataStat.collect_stats_for_numpy(npy_data)},
         )
 
     def update_stack(self, name):
@@ -132,7 +136,7 @@ class WriterDump(ABC):
             input_name = input_item if isinstance(input_item, str) else input_item.name
             mapped_value = input_map.get(get_valid_name(input_name))
             self.update_stat(node_name, DumpConst.INPUT_ARGS, input_name, mapped_value)
-            if self.dump_format == DumpConst.DUMP_FORMAT_TENSOR:
+            if self.task == CfgConst.TASK_TENSOR:
                 self._save_tensor_data(node_name, DumpConst.INPUT, i, mapped_value)
         logger.debug(f"Processed the input data of {node_name}.")
 
@@ -146,7 +150,7 @@ class WriterDump(ABC):
                     f"net_output node index is: {self.net_output_nodes.index(self._remove_colon(output_name))}, "
                     f"node name: {output_name}."
                 )
-            if self.dump_format == DumpConst.DUMP_FORMAT_TENSOR:
+            if self.task == CfgConst.TASK_TENSOR:
                 self._save_tensor_data(node_name, DumpConst.OUTPUT, i, mapped_value)
         logger.debug(f"Processed the output data of {node_name}.")
 
@@ -176,8 +180,6 @@ class WriterDump(ABC):
         save_json(self.cache_stack_json, stack_json_path, indent=4)
 
     def _save_tensor_data(self, name, in_out, ind, npy_data):
-        DirPool.make_tensor_dir()
-        self.cache_dump_json[DumpConst.DUMP_DATA_DIR] = DirPool.get_tensor_dir()
         file_name = self._generate_name(name, in_out, ind)
         self.tensor_path = self._generate_path(DirPool.get_tensor_dir(), file_name)
         save_npy(npy_data, self.tensor_path)

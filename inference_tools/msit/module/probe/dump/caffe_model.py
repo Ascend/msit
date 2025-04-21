@@ -60,9 +60,9 @@ class CaffeModelActuator(OfflineModelActuator):
 
 
 class CaffeModelDataWriter(WriterDump):
-    def __init__(self, dump_format, dump_mode):
-        super().__init__(dump_format)
-        self.dump_mode = dump_mode
+    def __init__(self, task, data_mode):
+        super().__init__(task)
+        self.data_mode = data_mode
         self.cache_dump_json[CfgConst.LEVEL] = CfgConst.LEVEL_LAYER
         self.cache_dump_json[CfgConst.FRAMEWORK] = CfgConst.FRAMEWORK_CAFFE
         self.caffe_net = None
@@ -83,9 +83,9 @@ class CaffeModelDataWriter(WriterDump):
         self.net_output_nodes = self.caffe_net.outputs
         for layer_name in self.caffe_net.blobs.keys():
             self.cache_dump_json[DumpConst.DATA].setdefault(layer_name, {})
-            if self.dump_mode in DumpConst.INPUT_ALL:
+            if any(x in self.data_mode for x in DumpConst.INPUT_ALL):
                 self.through_inputs(self.caffe_net.bottom_names.get(layer_name), layer_name, input_map)
-            if self.dump_mode in DumpConst.OUTPUT_ALL:
+            if any(x in self.data_mode for x in DumpConst.OUTPUT_ALL):
                 self.through_outputs(self.caffe_net.top_names.get(layer_name), layer_name, output_map)
 
     def _augment_input_map(self, caffe_net):

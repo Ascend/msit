@@ -74,7 +74,8 @@ class MainCommand(MsitCommand):
             if args.framework:
                 self.set_env(args.framework)
             if not args.msitx:
-                Service.get(argv[self.subcommand_level - 1])(args=args).run_cli()
+                serv = Service(cmd_namespace=args, serv_name=argv[self.subcommand_level - 1])
+                serv.run_cli()
             else:
                 run_subprocess(args.exec)
         else:

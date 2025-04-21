@@ -23,7 +23,7 @@ class AtbActuatorComp(BaseComponent):
         super().__init__(priority)
         self.actuator = AtbModelConfiguration(
             dump_path,
-            dump_format=kwargs.get("dump_format"),
+            task=kwargs.get("task"),
             dump_level=kwargs.get("dump_level"),
             step=kwargs.get("step"),
             rank=kwargs.get("rank"),

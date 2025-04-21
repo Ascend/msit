@@ -15,11 +15,33 @@
 from abc import ABC, abstractmethod
 
 from msit.base import BaseComponent, Scheduler
+from msit.common.validation import valid_task
+from msit.utils.constants import CfgConst, CmdConst
+from msit.utils.io import load_json
 from msit.utils.toolkits import register
+
+_TASK_SERVICE_MAP = {CfgConst.TASK_STAT: CmdConst.DUMP, CfgConst.TASK_TENSOR: CmdConst.DUMP}
 
 
 class Service:
     _services_map = {}
+
+    def __init__(self, *args, **kwargs):
+        cmd_namespace = kwargs.get("cmd_namespace")
+        serv_name = kwargs.get("serv_name")
+        if hasattr(cmd_namespace, CfgConst.CONFIG_PATH):
+            if not kwargs.get(CfgConst.TASK):
+                config_path = cmd_namespace.config_path
+                config = load_json(config_path)
+                task = valid_task(config.get(CfgConst.TASK))
+            else:
+                task = valid_task(kwargs.get(CfgConst.TASK))
+            serv_name = _TASK_SERVICE_MAP.get(task)
+        self.service_class = self.get(serv_name)
+        self.service_instance = self.service_class(*args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self.service_instance, name)
 
     @classmethod
     def register(cls, name):

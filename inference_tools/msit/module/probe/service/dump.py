@@ -16,9 +16,8 @@ from tqdm import tqdm
 
 from msit.base import BaseService, Component, Dict2Class, Service
 from msit.common.dirs import DirPool
-from msit.module.probe.components.dumper_offline_model import OfflineModelActuatorComp
 from msit.module.probe.config_initiator import DumpConfig
-from msit.utils.constants import CfgConst, CmdConst, CompConst, MsgConst, PathConst
+from msit.utils.constants import CfgConst, CmdConst, CompConst, DumpConst, MsgConst, PathConst
 from msit.utils.exceptions import MsitException
 from msit.utils.io import savedmodel2pb
 from msit.utils.log import logger, print_log_with_star
@@ -27,21 +26,18 @@ from msit.utils.path import get_name_and_ext, is_file, is_saved_model_scene
 
 @Service.register(CmdConst.DUMP)
 class ServiceDump(BaseService):
-    def __init__(self, config_path="", step=None, dump_path="", args=None):
+    def __init__(self, *args, **kwargs):
         super().__init__()
+        task = kwargs.get(CfgConst.TASK)
+        step = kwargs.get(CfgConst.STEP)
+        level = kwargs.get(CfgConst.LEVEL)
+        dump_path = kwargs.get(DumpConst.DUMP_PATH)
+        cmd_namespace = kwargs.get("cmd_namespace")
+        config_path = cmd_namespace.config_path
         self.current_iter = 0
-        if config_path or dump_path:
-            self.is_from_cmd = False
-            config = DumpConfig(config_path).check_config(dump_path, step)
-        elif args:
-            self.is_from_cmd = True
-            config = DumpConfig(args.config).check_config(args=args)
-        else:
-            raise MsitException(
-                MsgConst.REQUIRED_ARGU_MISSING,
-                "When using MSIT's Python interface for data dump, 'config_path' or 'dump_path' must be set.",
-            )
+        config = DumpConfig(config_path, task, step, level).check_config(dump_path)
         self.cfg = Dict2Class(config)
+        setattr(self.cfg, CfgConst.EXEC, cmd_namespace.exec)
         logger.set_level(self.cfg.log_level)
         DirPool.make_msit_dir(self.cfg.dump_path)
         DirPool.make_model_dir()
@@ -79,16 +75,12 @@ class ServiceDump(BaseService):
         return framework_handlers
 
     def init_start(self):
-        print_log_with_star(f"Launching {self.cfg.service} service...")
+        print_log_with_star(f"Launching {self.cfg.task} task...")
         DirPool.make_step_dir(self.current_iter)
         DirPool.make_rank_dir()
 
-    def ignore_actuator(self, attr):
-        if not self.is_from_cmd and isinstance(attr, OfflineModelActuatorComp):
-            self.comps.remove(attr)
-
     def finalize_start(self):
-        print_log_with_star(f"{self.cfg.service} completed successfully.")
+        print_log_with_star(f"{self.cfg.task} task completed successfully.")
 
     def step(self, *args, **kwargs):
         self.current_iter += 1
@@ -141,7 +133,7 @@ class ServiceDump(BaseService):
         self.actuator = Component.get(CompConst.ATB_ACTUATOR_COMP)(
             priority=100,
             dump_path=DirPool.get_msit_dir(),
-            dump_format=self.cfg.dump_format,
+            task=self.cfg.task,
             dump_level=self.cfg.level,
             step=self.cfg.step,
             rank=self.cfg.rank,
@@ -164,7 +156,7 @@ class ServiceDump(BaseService):
         )
         self.dumper = Component.get(CompConst.ONNX_DUMPER_COMP)(priority=10)
         self.writer = Component.get(CompConst.ONNX_WRITER_COMP)(
-            priority=15, dump_format=self.cfg.dump_format, dump_mode=self.cfg.dump_mode
+            priority=15, task=self.cfg.task, data_mode=self.cfg.data_mode
         )
         self.writer.subscribe(self.dumper)
 
@@ -178,7 +170,7 @@ class ServiceDump(BaseService):
         )
         self.dumper = Component.get(CompConst.CAFFE_DUMPER_COMP)(priority=10)
         self.writer = Component.get(CompConst.CAFFE_WRITER_COMP)(
-            priority=15, dump_format=self.cfg.dump_format, dump_mode=self.cfg.dump_mode
+            priority=15, task=self.cfg.task, data_mode=self.cfg.data_mode
         )
         self.writer.subscribe(self.dumper)
 
@@ -188,7 +180,7 @@ class ServiceDump(BaseService):
         )
         self.dumper = Component.get(CompConst.FROZEN_GRAPH_DUMPER_COMP_CPU)(priority=10)
         self.writer = Component.get(CompConst.FROZEN_GRAPH_WRITER_COMP_CPU)(
-            priority=15, dump_format=self.cfg.dump_format, dump_mode=self.cfg.dump_mode
+            priority=15, task=self.cfg.task, data_mode=self.cfg.data_mode
         )
         self.writer.subscribe(self.dumper)
 
@@ -210,7 +202,7 @@ class ServiceDump(BaseService):
             model_path=self.cfg.exec[0],
             input_shape=self.cfg.input_shape,
             input_path=self.cfg.input_path,
-            dump_mode=self.cfg.dump_mode,
+            data_mode=self.cfg.data_mode,
             fsf=self.cfg.fusion_switch_file,
         )
         self.setter = Component.get(CompConst.FROZEN_GRAPH_SET_GE_COMP_NPU)(

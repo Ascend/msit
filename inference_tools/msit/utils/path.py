@@ -108,12 +108,18 @@ class MsitPath:
         suffix: str = None,
         max_dir_depth: int = _MAX_DIR_DEPTH,
     ):
-        self.path = path
+        self.path = self._check_path(path)
         self.path_type = self._check_path_type(path_type)
         self.mode = self._check_mode(mode)
         self.size_limitation = self._check_positive_int(size_limitation) if size_limitation else None
         self.suffix = suffix
         self.max_dir_depth = self._check_positive_int(max_dir_depth)
+
+    @staticmethod
+    def _check_path(path):
+        if not isinstance(path, str):
+            raise MsitException(MsgConst.INVALID_DATA_TYPE, '"path" must be string.')
+        return path
 
     @staticmethod
     def _check_path_type(path_type):

@@ -102,9 +102,9 @@ class FrozenGraphDumperCompCPU(ProducerComp, BaseDumper):
 
 @Component.register(CompConst.FROZEN_GRAPH_WRITER_COMP_CPU)
 class FrozenGraphWriterCompCPU(ConsumerComp):
-    def __init__(self, priority, dump_format, dump_mode):
+    def __init__(self, priority, task, data_mode):
         super().__init__(priority)
-        self.writer = FrozenGraphDataWriter(dump_format, dump_mode)
+        self.writer = FrozenGraphDataWriter(task, data_mode)
 
     def consume(self, packages):
         tf_ops, infer_output, graph_def = packages[0][1]

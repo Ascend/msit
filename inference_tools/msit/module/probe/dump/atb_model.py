@@ -24,7 +24,7 @@ from msit.utils.toolkits import run_subprocess, seed_all
 class AtbModelConfiguration:
     def __init__(self, dump_path, **kwargs):
         self.dump_path = dump_path
-        self.dump_format = kwargs.get("dump_format", DumpConst.DUMP_FORMAT_STAT)
+        self.task = kwargs.get("task", CfgConst.TASK_STAT)
         self.dump_level = kwargs.get("dump_level", [CfgConst.LEVEL_KERNEL])
         self.step = kwargs.get("step", [])
         self.rank = kwargs.get("rank", [])
@@ -38,7 +38,7 @@ class AtbModelConfiguration:
 
     def set_env_vars(self):
         self._set_dump_path()
-        self._set_dump_format()
+        self._set_task()
         self._set_dump_level()
         self._set_step()
         self._set_rank()
@@ -58,8 +58,8 @@ class AtbModelConfiguration:
     def _set_dump_path(self):
         evars.set(DumpConst.ENVVAR_MSIT_OUTPUT_DIR, self.dump_path)
 
-    def _set_dump_format(self):
-        evars.set(DumpConst.ENVVAR_MSIT_DUMP_FORMAT, self.dump_format)
+    def _set_task(self):
+        evars.set(DumpConst.ENVVAR_MSIT_DUMP_TASK, self.task)
 
     def _set_dump_level(self):
         evars.set(DumpConst.ENVVAR_MSIT_DUMP_LEVEL, ",".join(self.dump_level))

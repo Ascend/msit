@@ -210,7 +210,7 @@ def load_bin_data(bin_path, dtype=np.float16, shape=None, is_byte_data=False):
         return np.fromfile(bin_path, dtype=np.float16).astype(np.float32)
     else:
         return np.fromfile(bin_path, dtype=dtype)
-    
+
 
 @_load_dir(PathConst.SIZE_30G)
 def load_saved_model(model_path, tag):

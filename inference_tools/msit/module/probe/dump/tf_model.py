@@ -131,14 +131,11 @@ class FrozenGraphActuatorCPU(FrozenGraphActuator):
     def _open_session(self):
         return self.tf.compat.v1.Session()
 
-    def _renew_all_node_names(self):
-        pass
-
 
 class FrozenGraphActuatorNPU(FrozenGraphActuator):
     def __init__(self, model_path, input_shape, input_path, **kwargs):
         super().__init__(model_path, input_shape, input_path, **kwargs)
-        self.dump_mode = kwargs.get("dump_mode", "all")
+        self.data_mode = kwargs.get("data_mode", ["all"])
         self.fusion_switch_file = kwargs.get("fsf", "")
 
     def convert_txt2json(self):
@@ -159,7 +156,7 @@ class FrozenGraphActuatorNPU(FrozenGraphActuator):
             custom_op.parameter_map["enable_dump"].b = True
             custom_op.parameter_map["dump_path"].s = self.tf.compat.as_bytes(DirPool.get_rank_dir())
             custom_op.parameter_map["dump_step"].s = self.tf.compat.as_bytes("0")
-            custom_op.parameter_map["dump_mode"].s = self.tf.compat.as_bytes(self.dump_mode)
+            custom_op.parameter_map["data_mode"].s = self.tf.compat.as_bytes(self.data_mode[0])
             if self.fusion_switch_file:
                 logger.info(f"Fusion switch settings read from {self.fusion_switch_file}.")
                 custom_op.parameter_map["fusion_switch_file"].s = self.tf.compat.as_bytes(self.fusion_switch_file)
@@ -175,9 +172,9 @@ class FrozenGraphActuatorNPU(FrozenGraphActuator):
 
 
 class FrozenGraphDataWriter(WriterDump):
-    def __init__(self, dump_format, dump_mode):
-        super().__init__(dump_format)
-        self.dump_mode = dump_mode
+    def __init__(self, task, data_mode):
+        super().__init__(task)
+        self.data_mode = data_mode
         self.cache_dump_json[CfgConst.LEVEL] = CfgConst.LEVEL_KERNEL
         self.cache_dump_json[CfgConst.FRAMEWORK] = CfgConst.FRAMEWORK_TF
 
@@ -208,7 +205,7 @@ class FrozenGraphDataWriter(WriterDump):
         self.net_output_nodes = get_net_output_nodes_from_graph_def(graph_def)
         for node in tf_ops:
             self.cache_dump_json[DumpConst.DATA].setdefault(get_valid_name(node.name), {})
-            if self.dump_mode in DumpConst.INPUT_ALL:
+            if any(x in self.data_mode for x in DumpConst.INPUT_ALL):
                 self.through_inputs(node.op.inputs, node.name, input_map)
-            if self.dump_mode in DumpConst.OUTPUT_ALL:
+            if any(x in self.data_mode for x in DumpConst.OUTPUT_ALL):
                 self.through_outputs(node.op.outputs, node.name, output_map)
