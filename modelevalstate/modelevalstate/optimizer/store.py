@@ -20,7 +20,7 @@ from typing import Optional, List, Tuple
 import pandas as pd
 from loguru import logger
 
-from modelevalstate.optimizer.config import (
+from modelevalstate.config.config import (
     BenchMarkConfig, 
     DataStorageConfig, 
     RUN_TIME, 
@@ -43,9 +43,7 @@ class DataStorage:
         if not load_dir.is_dir():
             raise ValueError(f"Expect a directory, not a file.")
         history_data = []
-        for file in load_dir.iterdir():
-            if not file.is_file():
-                continue
+        for file in sorted([f for f in load_dir.iterdir() if f.is_file()], key=lambda x: x.stat().st_ctime):
             if file.name.startswith("data_storage") and file.suffix == ".csv":
                 data = pd.read_csv(file).to_dict(orient="records")
                 history_data.extend(data)
@@ -54,7 +52,7 @@ class DataStorage:
         return history_data
 
     def save(self, performance_index: PerformanceIndex, params: Tuple[OptimizerConfigField],
-             bench_mark_config: BenchMarkConfig):
+             bench_mark_config: BenchMarkConfig, **kwargs):
         logger.info("Save result with DataStorage.")
         _column = []
         _value = []
@@ -71,6 +69,9 @@ class DataStorage:
                 _value.append(benchmark_param[i + 1])
             else:
                 logger.warning(f"IndexError. index: {i + 1}, list: {benchmark_param}")
+        for k, v in kwargs.items():
+            _column.append(k)
+            _value.append(v) 
         if self.save_file.exists():
             with open(self.save_file, "a+") as f:
                 data_writer = csv.writer(f)
