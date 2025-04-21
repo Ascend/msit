@@ -12,16 +12,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import pickle
 from dataclasses import dataclass
-from typing import Tuple, Optional, List, Union
 from pathlib import Path
+from typing import Tuple, Optional, List, Union
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+
 from modelevalstate.inference.constant import DTYPE_CATEGORY, ALL_ASCEND_NAME, ALL_HIDDEN_ACT, ALL_MODEL_TYPE, \
     ALL_QUANTIZE, \
     ALL_KV_QUANT_TYPE, ALL_GROUP_SIZE, ALL_REDUCE_QUANT_TYPE, ALL_BATCH_STAGE
@@ -83,7 +83,7 @@ class CustomOneHotEncoder:
                     _cur_one_hot = pickle.load(f)
             else:
                 _cur_one_hot = OneHotEncoder(handle_unknown='infrequent_if_exist')
-                _cur_one_hot.fit([[k] for k in _one_hot.all_value])
+                _cur_one_hot.fit(np.array([[k] for k in _one_hot.all_value]))
             self.one_hot_encoders.append(_cur_one_hot)
 
     def save(self):
@@ -94,12 +94,12 @@ class CustomOneHotEncoder:
     def transformer(self, x: DataFrame):
         for i, _one_hot_encoder in enumerate(self.one_hot_encoders):
             _one_hot_info = self.one_hots[i]
+            if _one_hot_info.name not in x.columns:
+                continue
             encode_value = _one_hot_encoder.transform(x[_one_hot_info.name].values.reshape(-1, 1)).toarray()
-            column_names = []
-            for category in _one_hot_encoder.categories_:
-                for __ in category:
-                    column_names.append(f"{_one_hot_info.name}__{i}")
-            _encode_df = pd.DataFrame(encode_value, columns=column_names)
+            _encode_df = pd.DataFrame(encode_value,
+                                      columns=[f"{_one_hot_info.name}__{i}" for k in _one_hot_encoder.categories_ for i
+                                               in k])
             x = pd.concat([_encode_df, x], axis=1)
             x = x.drop(_one_hot_info.name, axis=1)
         return x
@@ -124,7 +124,7 @@ class CustomLabelEncoder:
                     _cur_encoder = pickle.load(f)
             else:
                 _cur_encoder = LabelEncoder()
-                _cur_encoder.fit([[k] for k in _cate_info.all_value])
+                _cur_encoder.fit(np.array([[k] for k in _cate_info.all_value]))
             self.category_encoders.append(_cur_encoder)
 
     def save(self):
@@ -147,33 +147,38 @@ class DataProcessor:
         self.custom_encoder = custom_encoder
 
     def preprocessor(self, input_data: InputData) -> np.ndarray:
-        batch_series = PreprocessTool.generate_series(input_data.batch_field, BATCH_FIELD)
-        request_series = PreprocessTool.generate_series_with_request_info(input_data.request_field, REQUEST_FIELD)
-        batch_series[TOTAL_OUTPUT_LENGTH] = request_series[TOTAL_OUTPUT_LENGTH]
-        batch_series[TOTAL_SEQ_LENGTH] = batch_series[TOTAL_PREFILL_TOKEN] + request_series[TOTAL_OUTPUT_LENGTH]
-        request_series = request_series.drop(TOTAL_OUTPUT_LENGTH)
-        _load_data = [batch_series, request_series]
+        v, col = PreprocessTool.generate_data(input_data.batch_field, BATCH_FIELD)
+        batch_df = pd.DataFrame((v,), columns=col)
+        v, col = PreprocessTool.generate_data_with_request_info(input_data.request_field, REQUEST_FIELD)
+        request_df = pd.DataFrame((v,), columns=col)
+        batch_df[TOTAL_OUTPUT_LENGTH] = request_df[TOTAL_OUTPUT_LENGTH]
+        batch_df[TOTAL_SEQ_LENGTH] = batch_df[TOTAL_PREFILL_TOKEN] + batch_df[TOTAL_OUTPUT_LENGTH]
+        request_df = request_df.drop(TOTAL_OUTPUT_LENGTH, axis=1)
+        _load_data = [batch_df, request_df]
         if input_data.model_op_field:
-            model_op_series = PreprocessTool.generate_series_with_op_info(input_data.model_op_field, MODEL_OP_FIELD)
-            _load_data.append(model_op_series)
+            v, col = PreprocessTool.generate_data_with_op_info(input_data.model_op_field, MODEL_OP_FIELD)
+            model_op_df = pd.DataFrame((v,), columns=col)
+            _load_data.append(model_op_df)
         if input_data.model_struct_field:
-            model_struct_series = PreprocessTool.generate_series_with_struct_info(input_data.model_struct_field,
-                                                                              MODEL_STRUCT_FIELD)
-            _load_data.append(model_struct_series)
+            v, col = PreprocessTool.generate_data_with_struct_info(input_data.model_struct_field,
+                                                                   MODEL_STRUCT_FIELD)
+            model_struct_df = pd.DataFrame((v,), columns=col)
+            _load_data.append(model_struct_df)
         if input_data.model_config_field:
-            model_config_series = PreprocessTool.gene_series_with_model_config(input_data.model_config_field,
-                                                                           MODEL_CONFIG_FIELD)
-            _load_data.append(model_config_series)
+            v, col = PreprocessTool.generate_data_with_model_config(input_data.model_config_field,
+                                                                    MODEL_CONFIG_FIELD)
+            model_config_df = pd.DataFrame((v,), columns=col)
+            _load_data.append(model_config_df)
         if input_data.mindie_field:
-            mindie_series = PreprocessTool.generate_series(input_data.mindie_field, MINDIE_FIELD)
-            _load_data.append(mindie_series)
+            v, col = PreprocessTool.generate_data(input_data.mindie_field, MINDIE_FIELD)
+            mindie_df = pd.DataFrame((v,), columns=col)
+            _load_data.append(mindie_df)
         if input_data.env_field:
-            env_series = PreprocessTool.generate_series(input_data.env_field, ENV_FIELD)
-            _load_data.append(env_series)
+            v, col = PreprocessTool.generate_data(input_data.env_field, ENV_FIELD)
+            _load_data.append(pd.DataFrame((v,), columns=col))
         if input_data.hardware_field:
-            hardware_series = PreprocessTool.generate_series(input_data.hardware_field, HARDWARE_FIELD)
-            _load_data.append(hardware_series)
-        feature_series = pd.concat(_load_data)
-        feature_df = feature_series.to_frame().T
+            v, col = PreprocessTool.generate_data(input_data.hardware_field, HARDWARE_FIELD)
+            _load_data.append(pd.DataFrame((v,), columns=col))
+        feature_df = pd.concat(_load_data, axis=1)
         feature_df = self.custom_encoder.transformer(feature_df)
         return feature_df.values

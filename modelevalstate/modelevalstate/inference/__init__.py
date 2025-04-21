@@ -12,9 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import os
 import sys
 
 current_dir = os.path.dirname(os.path.dirname(__file__))
-sys.path.append(0, current_dir)
+sys.path.insert(0, current_dir)

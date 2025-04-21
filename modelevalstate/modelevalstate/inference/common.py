@@ -20,7 +20,7 @@ import numpy as np
 from modelevalstate.inference.constant import ALL_OP, DTYPE_CATEGORY, OP_EXECUTE_DELTA_FIELD, ALL_OP_PARAM_TYPE
 
 
-def get_bins_and_label(field, interval=20, number=51, start=0, end=float('inf')):
+def get_bins_and_label(field, interval=20, number=51, start=0, end=float("inf")):
     _hist_label = []
     _hist_bins = []
     for i in range(0, number):
@@ -47,20 +47,25 @@ def get_field_bins_count(target, field, bins):
 class HistInfo:
     input_length = get_bins_and_label("input_length", interval=80)
     need_blocks = get_bins_and_label("need_blocks", interval=1)
-    output_length = get_bins_and_label("output_length", interval=10, )
+    output_length = get_bins_and_label(
+        "output_length",
+        interval=10,
+    )
 
 
 OP_EXPECTED_FIELD_MAPPING = {}
 for _op in ALL_OP:
-    OP_EXPECTED_FIELD_MAPPING[_op] = OrderedDict({
-        f"{_op}__op_name": 0,
-        f"{_op}__call_count": 0,
-        **{f"{_op}__input_dtype__{k}": 0 for k in DTYPE_CATEGORY},
-        **{f"{_op}__input_size__{k}": 0 for k in range(len(ALL_OP_PARAM_TYPE[_op]["input"]))},
-        **{f"{_op}__output_dtype__{k}": 0 for k in DTYPE_CATEGORY},
-        **{f"{_op}__output_size__{k}": 0 for k in range(len(ALL_OP_PARAM_TYPE[_op]["output"]))},
-        **{f"{_op}__{k}": 0 for k in OP_EXECUTE_DELTA_FIELD},
-    })
+    OP_EXPECTED_FIELD_MAPPING[_op] = OrderedDict(
+        {
+            f"{_op}__op_name": 0,
+            f"{_op}__call_count": 0,
+            **{f"{_op}__input_dtype__{k}": 0 for k in DTYPE_CATEGORY},
+            **{f"{_op}__input_size__{k}": 0 for k in range(len(ALL_OP_PARAM_TYPE[_op]["input"]))},
+            **{f"{_op}__output_dtype__{k}": 0 for k in DTYPE_CATEGORY},
+            **{f"{_op}__output_size__{k}": 0 for k in range(len(ALL_OP_PARAM_TYPE[_op]["output"]))},
+            **{f"{_op}__{k}": 0 for k in OP_EXECUTE_DELTA_FIELD},
+        }
+    )
 
 model_op_size = get_bins_and_label("ratio", interval=20, number=6, end=100)
 
@@ -79,11 +84,13 @@ for _op in ALL_OP:
         for _size_hist in model_op_size["label"]:
             time_size_label[f"{_op}__{_field}__{_size_hist}"] = 0
 
-    OP_SCALE_HIST_FIELD_MAPPING[_op] = OrderedDict({
-        f"{_op}__op_name": 0,
-        **{f"{_op}__input_dtype__{k}": 0 for k in DTYPE_CATEGORY},
-        **input_size_label,
-        **{f"{_op}__output_dtype__{k}": 0 for k in DTYPE_CATEGORY},
-        **output_size_label,
-        **time_size_label,
-    })
+    OP_SCALE_HIST_FIELD_MAPPING[_op] = OrderedDict(
+        {
+            f"{_op}__op_name": 0,
+            **{f"{_op}__input_dtype__{k}": 0 for k in DTYPE_CATEGORY},
+            **input_size_label,
+            **{f"{_op}__output_dtype__{k}": 0 for k in DTYPE_CATEGORY},
+            **output_size_label,
+            **time_size_label,
+        }
+    )

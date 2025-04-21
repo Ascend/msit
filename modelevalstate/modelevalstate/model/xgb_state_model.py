@@ -15,11 +15,12 @@
 """
 训练预测每个状态速度的线性模型
 """
-from typing import Dict, Tuple, Optional
 from pathlib import Path
+from typing import Dict, Optional
 
-import xgboost
 import numpy as np
+import xgboost
+from loguru import logger
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_squared_error as MSE
 
@@ -52,6 +53,7 @@ class StateXgbModel:
         :param train_type: 训练方式，支持全新训练和增量训练。默认default，全新训练，update 为增量训练，更新原来的模型。
         :return:
         """
+        logger.info("train")
         dtrain = xgboost.DMatrix(dataset.train_x, label=dataset.train_y)
         dtest = xgboost.DMatrix(dataset.test_x, label=dataset.test_y)
         if train_type == 'partial_fit':
@@ -69,7 +71,7 @@ class StateXgbModel:
             model.save_model(self.save_model_path)
         return rmse
 
-    def predict(self, data: Tuple[Tuple]) -> np.ndarray:
+    def predict(self, data: np.ndarray) -> np.ndarray:
         _model = xgboost.Booster()
         _model.load_model(self.load_model_path)
         res = _model.predict(xgboost.DMatrix(data, feature_names=_model.feature_names))
@@ -78,6 +80,7 @@ class StateXgbModel:
 
 def plot_feature_importance(model, save_path: Optional[Path] = None):
     fig, ax = plt.subplots(figsize=(15, 8))
+    logger.info('weight score %s', model.get_score(importance_type='weight'))
     xgboost.plot_importance(model, ax=ax)
     plt.title('weight score')
     if save_path:
@@ -85,6 +88,7 @@ def plot_feature_importance(model, save_path: Optional[Path] = None):
         plt.close()
     else:
         plt.show()
+    logger.info('gain score %s', model.get_score(importance_type='gain'))
     fig, ax = plt.subplots(figsize=(15, 8))
     xgboost.plot_importance(model, ax=ax, importance_type='gain')
     plt.title('gain score')
@@ -93,6 +97,7 @@ def plot_feature_importance(model, save_path: Optional[Path] = None):
         plt.close()
     else:
         plt.show()
+    logger.info('cover score', model.get_score(importance_type='cover'))
     fig, ax = plt.subplots(figsize=(15, 8))
     xgboost.plot_importance(model, ax=ax, importance_type='cover')
     plt.title('cover score')
@@ -122,3 +127,5 @@ def plot_pred_and_test(pred, my_data, save_path: Optional[Path] = None):
         plt.close()
     else:
         plt.show()
+
+
