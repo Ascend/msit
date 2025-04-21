@@ -999,7 +999,7 @@ parser.add_argument("-lb", "--load_breakpoint", default=False, action="store_tru
 parser.add_argument("-d", "--deploy_policy", default=DeployPolicy.single.value,
                     choices=[k.value for k in list(DeployPolicy)],
                     help="Indicates whether the multi-node running policy is used.")
-parser.add_argument("--back_up", default=False, action="store_true",
+parser.add_argument("--back_up", default=False, action="store_false",
                     help="Whether to back up data.")
 parser.add_argument("-a", "--analyze_tool", default=AnalyzeTool.profiler.value,
                     choices=[k.value for k in list(AnalyzeTool)], help="Tool of data to be analyze")
