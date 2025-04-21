@@ -323,6 +323,89 @@ class CustomBenchMark(BenchMark):
             return res
 
 
+class ProfilerBenchmark(CustomBenchMark):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.profiler_cmd = ["python", "-m", "ms_service_profiler.parse",
+                             f"--input-path={self.benchmark_config.profile_input_path}",
+                             f"--output-path={self.benchmark_config.profile_output_path}"]
+        self.profiler_log = None
+        self.profiler_log_fp = None
+        self.profiler_log_offset = 0
+        self.profiler_process = None
+
+    def backup(self, del_log=True):
+        super().backup(del_log)
+        backup(self.benchmark_config.profile_input_path, self.bak_path, self.__class__.__name__)
+        backup(self.benchmark_config.profile_output_path, self.bak_path, self.__class__.__name__)
+        if not del_log and self.profiler_log:
+            backup(self.profiler_log, self.bak_path, self.__class__.__name__)
+
+    def prepare(self):
+        super().prepare()
+        remove_file(Path(self.benchmark_config.profile_input_path))
+        remove_file(Path(self.benchmark_config.profile_output_path))
+
+    def check_profiler(self, print_log=False):
+        if print_log:
+            try:
+                with open(self.profiler_log, "r") as f:
+                    f.seek(self.profiler_log_offset)
+                    output = f.read()
+                    self.profiler_log_offset = f.tell()
+            except (UnicodeError, OSError) as e:
+                logger.error(f"Failed read benchmark log. error {e}")
+            if output:
+                logger.info(f"benchmark out: \n{output}")
+        if self.profiler_process.poll() is None:
+            return False
+        elif self.profiler_process.poll() == 0:
+            return True
+        else:
+            raise subprocess.SubprocessError(
+                f"Failed in run benchmark. return code: {self.process.returncode}. ")
+
+    def start_profiler(self):
+        self.profiler_log_fp, self.profiler_log = tempfile.mkstemp(prefix="modelevalstate")
+        self.profiler_log_offset = 0
+        if not os.path.exists(self.benchmark_config.work_path):
+            raise FileNotFoundError(f"Work path not found: {self.benchmark_config.work_path}")
+        logger.info(f"command: {' '.join(self.profiler_cmd)}, log file: {self.profiler_log}")
+        self.profiler_process = subprocess.Popen(self.profiler_cmd, env=os.environ, stdout=self.profiler_log_fp,
+                                                 stderr=subprocess.STDOUT,
+                                                 text=True, cwd=self.benchmark_config.work_path)
+
+    def get_performance_index(self):
+        logger.info("get_performance_index")
+        try:
+            self.start_profiler()
+            logger.info("wait profiler")
+            while True:
+                if self.check_profiler(print_log=True):
+                    break
+                time.sleep(1)
+        except Exception as e:
+            logger.error(f"Failed in start profiler. relation log: {self.profiler_log}")
+            raise e
+        collect_path = Path(self.benchmark_config.custom_collect_output_path)
+        if self.analyze_tool == AnalyzeTool.profiler.value:
+            res = self.extra_performance_index(self.benchmark_config.profile_output_path, collect_path)
+            return res
+        else:
+            return super().get_performance_index()
+
+    def stop(self, del_log=True):
+        super().stop(del_log)
+        close_file_fp(self.profiler_log_fp)
+        if del_log:
+            remove_file(Path(self.profiler_log))
+        try:
+            if self.profiler_process and self.profiler_process.poll() is None:
+                self.profiler_process.kill()
+        except AttributeError as e:
+            logger.error(f"Failed to kill process. error {e}")
+
+
 class RPCCustomBenchMark(CustomBenchMark):
     def __init__(self, rpc_clients, benchmark_config: BenchMarkConfig, **kwargs):
         super().__init__(benchmark_config=benchmark_config, **kwargs)
@@ -344,8 +427,17 @@ class RPCCustomBenchMark(CustomBenchMark):
             _tmp_file = Path(_file_name)
             new_file = Path(self.benchmark_config.custom_collect_output_path).joinpath(
                 f"{_tmp_file.stem}_rpc{_tmp_file.suffix}")
-            with open(new_file, "wb") as f:
-                f.write(file_binary.data)
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+            modes = stat.S_IWUSR | stat.S_IRUSR
+            try:
+                with os.fdopen(os.open(new_file, flags, modes), 'wb') as fout:
+                    fout.write(file_binary.data)
+            except FileExistsError:
+                logger.error(f"File already exists: {new_file}")
+            except PermissionError:
+                logger.error(f"Permission denied: {new_file}")
+            except AttributeError:
+                logger.error(f"Invalid file binary: {file_binary}")
 
     def get_performance_index(self):
         logger.info("get_performance_index")
@@ -367,73 +459,120 @@ class Simulator:
         self.default_config = data
         logger.info(f"config bak path {self.mindie_config.config_bak_path}", )
         if not self.mindie_config.config_bak_path.exists():
-            with open(self.mindie_config.config_bak_path, "w") as f:
-                json.dump(self.default_config, f, indent=4)
+            flags = os.O_WRONLY | os.O_CREAT
+            modes = stat.S_IWUSR | stat.S_IRUSR
+            with os.fdopen(os.open(self.mindie_config.config_bak_path, flags, modes), 'w') as fout:
+                json.dump(self.default_config, fout, indent=4)
         self.mindie_log = None
         self.mindie_log_offset = 0
         self.bak_path = bak_path
+        self.mindie_log_fp = None
         self.process = None
 
     @staticmethod
-    def get_new_config(origin_config, params: Tuple[OptimizerConfigField], upper_key: str = ""):
+    def get_new_config(origin_config, params: Tuple[OptimizerConfigField], upper_key: str = "") -> Any:
         if upper_key:
             _keys = [upper_key]
         else:
             _keys = []
         if isinstance(origin_config, dict):
-            _new_config = {}
+            _dict_config = {}
             for k, v in origin_config.items():
                 _root_key = ".".join([*_keys, k])
                 new_value = Simulator.get_new_config(v, params, _root_key)
-                _new_config[k] = new_value
+                _dict_config[k] = new_value
+            return _dict_config
+
         elif isinstance(origin_config, list):
-            _new_config = []
+            _list_config = []
             for i, v in enumerate(origin_config):
                 _root_key = ".".join([*_keys, str(i)])
                 new_value = Simulator.get_new_config(v, params, f"{upper_key}.{i}")
-                _new_config.append(new_value)
+                _list_config.append(new_value)
+            return _list_config
         else:
-            _new_config = origin_config
             for _p in params:
                 if upper_key == _p.config_position:
-                    _new_config = _p.value
-                    break
-        return _new_config
+                    logger.info(f"Update Config key: {upper_key}")
+                    return _p.value
+            return origin_config
 
-    def backup(self):
-        shutil.copy(self.mindie_config.config_path,
-                    self.bak_path.joinpath(self.mindie_config.config_path.name))
+     @staticmethod
+    def set_config(origin_config, key: str, value: Any):
+        next_level = None
+        if "." in key:
+            _f_index = key.index(".")
+            _cur_key, next_level = key[:_f_index], key[_f_index + 1:]
+        else:
+            _cur_key = key
+        if next_level:
+            if isinstance(origin_config, dict):
+                Simulator.set_config(origin_config[_cur_key], next_level, value)
+            elif isinstance(origin_config, list):
+                Simulator.set_config(origin_config[int(_cur_key)], next_level, value)
+            else:
+                raise ValueError(f"Not Support type {type(origin_config)}")
+        else:
+            origin_config[_cur_key] = value
+
+    def backup(self, del_log=True):
+        backup(self.mindie_config.config_path, self.bak_path, self.__class__.__name__)
+        if not del_log and self.mindie_log:
+            backup(self.mindie_log, self.bak_path, self.__class__.__name__)
 
     def update_config(self, params: Tuple[OptimizerConfigField]):
         # 将params值更新到新的config中
-        new_config = self.get_new_config(self.default_config, params)
+        new_config = deepcopy(self.default_config)
+        for p in params:
+            if not p.config_position.startswith("BackendConfig"):
+                continue
+            Simulator.set_config(new_config, p.config_position, p.value)
+
         # 将新的config写入到config文件中
-        logger.info(f"new config {new_config}")
-        with open(self.mindie_config.config_path, "w") as f:
-            json.dump(new_config, f, indent=4)
+        logger.debug(f"new config {new_config}")
+        flags = os.O_WRONLY | os.O_CREAT
+        modes = stat.S_IWUSR | stat.S_IRUSR
+        if self.mindie_config.config_path.exists():
+            self.mindie_config.config_path.unlink()
+        with os.fdopen(os.open(self.mindie_config.config_path, flags, modes), "w") as fout:
+            json.dump(new_config, fout, indent=4)
 
     def check_env(self):
-        remove_file(Path(self.mindie_config.log_path))
+        logger.info("check env")
         _residual_process = []
+        _all_process_name = self.mindie_config.process_name.split(",")
         for proc in psutil.process_iter(["pid", "name"]):
             if not hasattr(proc, "info"):
                 continue
-            if self.mindie_config.process_name not in proc.info["name"]:
+            _proc_flag = []
+            for p in _all_process_name:
+                if p not in proc.info["name"]:
+                    _proc_flag.append(True)
+                else:
+                    _proc_flag.append(False)
+            if all(_proc_flag):
                 continue
             _residual_process.append(proc)
         if _residual_process:
             logger.info("kill residual_process")
-            kill_process(self.mindie_config.process_name)
-        logger.info("check env")
+            for _p_name in _all_process_name:
+                try:
+                    kill_process(_p_name)
+                except Exception as e:
+                    logger.error(f"Failed to kill process. {e}")
         time.sleep(1)
 
-    def check_success(self):
+    def check_success(self, print_log=False):
         with open(self.mindie_log, "r") as f:
-            f.seek(self.mindie_log_offset)
-            output = f.read()
-            self.mindie_log_offset = f.tell()
+            try:
+                f.seek(self.mindie_log_offset)
+                output = f.read()
+                self.mindie_log_offset = f.tell()
+            except Exception as e:
+                logger.info(f"Failed in read mindie log. error: {e}")
         if output:
-            logger.info(f"simulate out: \n{output}")
+            if print_log:
+                logger.info(f"simulate out: \n{output}")
             if "Daemon start success!" in output:
                 return True
         if self.process.poll() is not None:
@@ -443,72 +582,194 @@ class Simulator:
         return False
 
     def start_server(self, run_params: Tuple[OptimizerConfigField]):
-        cur_dir = os.getcwd()
-        self.mindie_log = tempfile.NamedTemporaryFile(delete=False).name
+        self.mindie_log_fp, self.mindie_log = tempfile.mkstemp(prefix="modelevalstate")
         self.mindie_log_offset = 0
         if self.mindie_config.work_path:
-            os.chdir(self.mindie_config.work_path)
+            cwd = self.mindie_config.work_path
+        else:
+            cwd = os.getcwd()
         for k in run_params:
             if k.config_position == "env":
                 os.environ[k.name] = str(k.value)
-        logger.info(f"env {os.environ}")
-        cmd = f"{self.mindie_config.command} {self.mindie_log}"
-        run_cmd = shlex.split(cmd)
-        logger.info(f"run cmd: {run_cmd}")
-
-        self.process = subprocess.Popen(run_cmd, env=os.environ, text=True)
-        os.chdir(cur_dir)
+        logger.debug(f"env {os.environ}")
+        run_cmd = shlex.split(self.mindie_config.command)
+        logger.info(f"run cmd: {run_cmd}, log path: {self.mindie_log}")
+        self.process = subprocess.Popen(run_cmd, stdout=self.mindie_log_fp, stderr=subprocess.STDOUT, env=os.environ,
+                                        text=True, cwd=cwd)
 
     def run(self, run_params: Tuple[OptimizerConfigField]):
         logger.info(f'start run in simulator. run params: {run_params}')
         # 根据params 修改配置文件
         self.update_config(run_params)
         # 启动mindie仿真
-        self.check_env()
+        try:
+            self.check_env()
+        except Exception as e:
+            logger.error(f"Failed to check env. {e}")
         self.start_server(run_params)
-        while True:
-            time.sleep(1)
-            if self.check_success():
-                break
-        logger.info(f"Successfully started the {self.process.pid} process.")
 
-    def stop(self):
+    def stop(self, del_log=True):
         logger.info("Stop mindie simulator process")
         if self.bak_path:
-            self.backup()
-        os.remove(self.mindie_log)
+            self.backup(del_log)
+        close_file_fp(self.mindie_log_fp)
+        if del_log:
+            remove_file(self.mindie_log)
         self.mindie_log_offset = 0
-        if self.process.poll() is not None:
+        if not self.process:
             return
-        children = psutil.Process(self.process.pid).children(recursive=True)
-        self.process.kill()
+        _process_state = self.process.poll()
+        if _process_state is not None:
+            logger.info(f"mindie already. exit_code: {_process_state}")
+            return
         try:
-            self.process.wait(10)
-        except subprocess.TimeoutExpired:
-            self.process.send_signal(9)
-        if self.process.poll() is not None:
-            logger.info(f"The {self.process.pid} process has been shut down.")
-        else:
-            raise subprocess.SubprocessError(f"The {self.process.pid} process shutdown failed.")
-        kill_children(children)
-        kill_process(self.mindie_config.process_name)
-        with open(self.mindie_config.config_path, "w") as f:
-            json.dump(self.default_config, f)
-
+            children = psutil.Process(self.process.pid).children(recursive=True)
+            self.process.kill()
+            try:
+                self.process.wait(10)
+            except subprocess.TimeoutExpired:
+                self.process.send_signal(9)
+            if self.process.poll() is not None:
+                logger.info(f"The {self.process.pid} process has been shut down.")
+            else:
+                logger.error(f"The {self.process.pid} process shutdown failed.")
+            kill_children(children)
+            kill_process(self.mindie_config.process_name)
+            remove_file(self.mindie_config.config_path)
+            flags = os.O_WRONLY | os.O_CREAT
+            modes = stat.S_IWUSR | stat.S_IRUSR
+            with os.fdopen(os.open(self.mindie_config.config_path, flags, modes), "w") as fout:
+                json.dump(self.default_config, fout)
+        except Exception as e:
+            logger.error(f"Failed to stop mindie simulator process. {e}")
 
 class Scheduler:
     def __init__(self, simulator: Simulator, benchmark: BenchMark, data_storage: DataStorage,
-                 bak_path: Optional[Path] = None):
+                 bak_path: Optional[Path] = None, retry_number:int = 3):
         self.simulator = simulator
         self.benchmark = benchmark
         self.data_storage = data_storage
         self.bak_path = bak_path
+        self.retry_number = retry_number
 
     def back_up(self):
         if self.bak_path:
             _cur_bak_path = get_train_sub_path(self.bak_path)
             self.simulator.bak_path = _cur_bak_path
             self.benchmark.bak_path = _cur_bak_path
+
+    def wait_simulate(self):
+        logger.info("wait run mindie")
+        while True:
+            time.sleep(1)
+            if self.simulator.check_success():
+                break
+        logger.info(f"Successfully started the {self.simulator.process.pid} process.")
+
+    def run_simulate(self, params: np.ndarray, params_field: Tuple[OptimizerConfigField]):
+        self.benchmark.prepare()
+        self.simulator.run(tuple(self.simulate_run_info))
+        self.wait_simulate()
+
+    def monitoring_status(self):
+        logger.info("monitor status")
+        while True:
+            if self.simulator.process.poll() is not None:
+                self.simulator.stop(del_log=False)
+                self.benchmark.stop(del_log=False)
+                raise subprocess.SubprocessError(f"Failed in run mindie. "
+                                                 f"return code: {self.simulator.process.returncode}.")
+            if self.benchmark.check_success():
+                return
+            time.sleep(1)
+
+    def run_target_server(self, params: np.ndarray, params_field: Tuple[OptimizerConfigField]):
+        """
+        1. 启动mindie仿真
+        2. 启动benchmark 测试
+        3. 检查mindie状态，检查benchmark状态
+        """
+        for _ in range(self.retry_number):
+            try:
+                self.run_simulate(params, params_field)
+            except Exception as e:
+                logger.error(f"Failed in Mindie Running. error: {e}， mindie log {self.simulator.mindie_log}")
+                self.stop_target_server(del_log=False)
+                continue
+            time.sleep(1)
+            try:
+                self.benchmark.run(tuple(self.simulate_run_info))
+            except Exception as e:
+                logger.error(f"Failed in Benchmark Running. error: {e}, benchmark log {self.benchmark.run_log}")
+                self.stop_target_server(del_log=False)
+                continue
+            time.sleep(1)
+            try:
+                self.monitoring_status()
+            except Exception as e:
+                self.stop_target_server(del_log=False)
+                logger.error(f"Failed in monitoring status. error: {e}, mindie log {self.simulator.mindie_log}, "
+                             f"benchmark log {self.benchmark.run_log}")
+                continue
+            return
+        raise ValueError(
+            f"Failed in run_target_server, params: {self.simulate_run_info}")
+
+    def stop_target_server(self, del_log=True):
+        self.simulator.stop(del_log)
+        self.benchmark.stop(del_log)
+
+
+        self.simulate_run_info = map_param_with_value(params, params_field)
+        try:
+            self.run_target_server(params, params_field)
+            time.sleep(1)
+            performance_index = self.benchmark.get_performance_index()
+        except Exception as e:
+            logger.error(f"Failed running. bak path: {self.simulator.bak_path}")
+            self.data_storage.save(PerformanceIndex(), tuple(self.simulate_run_info), self.benchmark.benchmark_config,
+                                   error=e)
+            self.stop_target_server(del_log=False)
+            raise e
+        self.data_storage.save(performance_index, tuple(self.simulate_run_info), self.benchmark.benchmark_config,
+                               error=None)
+        self.stop_target_server()
+
+
+    def back_up(self):
+        if self.bak_path:
+            _cur_bak_path = get_train_sub_path(self.bak_path)
+            self.simulator.bak_path = _cur_bak_path
+            self.benchmark.bak_path = _cur_bak_path
+            for rpc in self.rpc_clients:
+                if rpc.simulator:
+                    rpc.simulator.bak_path = _cur_bak_path
+
+    def monitoring_status(self):
+        logger.info("Start monitoring")
+        while True:
+            all_poll = [self.simulator.process.poll()]
+            for rpc in self.rpc_clients:
+                all_poll.append(rpc.process_poll())
+            if any([_i is not None for _i in all_poll]):
+                self.stop_target_server(del_log=False)
+                raise subprocess.SubprocessError(
+                    f"Failed in run mindie. all status: {all_poll}, machine info: master, {self.rpc_clients}.")
+            if self.benchmark.check_success():
+                return
+            time.sleep(1)
+
+    def run_simulate(self, params: np.ndarray, params_field: Tuple[OptimizerConfigField]):
+        self.benchmark.prepare()
+        _simulate_run_info = map_param_with_value(params, params_field)
+        [rpc.run_simulator(params.tolist()) for rpc in self.rpc_clients]
+        self.simulator.run(tuple(self.simulate_run_info))
+        self.wait_simulate()
+        [rpc.check_success() for rpc in self.rpc_clients]
+
+    def stop_target_server(self, del_log=True):
+        super(ScheduleWithMultiMachine, self).stop_target_server(del_log)
+        [rpc.stop_simulator(del_log) for rpc in self.rpc_clients]
 
     def run(self, params: np.ndarray, params_field: Tuple[OptimizerConfigField]) -> PerformanceIndex:
         """
@@ -521,11 +782,20 @@ class Scheduler:
         """
         logger.info("Start run in scheduler.")
         self.back_up()
-        _simulate_run_info = map_param_with_value(params, params_field)
-        self.simulator.run(tuple(_simulate_run_info))
-        performance_index = self.benchmark.run(tuple(_simulate_run_info))
-        self.data_storage.save(performance_index, tuple(_simulate_run_info), self.benchmark.benchmark_config)
-        self.simulator.stop()
+        self.simulate_run_info = map_param_with_value(params, params_field)
+        try:
+            self.run_target_server(params, params_field)
+            time.sleep(1)
+            performance_index = self.benchmark.get_performance_index()
+        except Exception as e:
+            logger.error(f"Failed running. bak path: {self.simulator.bak_path}")
+            self.data_storage.save(PerformanceIndex(), tuple(self.simulate_run_info), self.benchmark.benchmark_config,
+                                   error=e)
+            self.stop_target_server(del_log=False)
+            raise e
+        self.data_storage.save(performance_index, tuple(self.simulate_run_info), self.benchmark.benchmark_config,
+                               error=None)
+        self.stop_target_server()
         return performance_index
 
 
@@ -534,27 +804,40 @@ class ScheduleWithMultiMachine(Scheduler):
         super().__init__(*args, **kwargs)
         self.rpc_clients = rpc_clients
 
-    def run(self, params: np.ndarray, params_field: Tuple[OptimizerConfigField]) -> PerformanceIndex:
-        """
-        1. 启动mindie仿真
-        2. 启动benchmark 测试
-        3. 获取benchmark测试结果
-        4. 关闭mindie仿真
-        5. 返回benchmark测试结果
-        params: 是一维数组，其值对应mindie 的相关配置。
-        """
-        logger.info("Start run in scheduler.")
-        self.back_up()
-        _simulate_run_info = []
+    def back_up(self):
+        if self.bak_path:
+            _cur_bak_path = get_train_sub_path(self.bak_path)
+            self.simulator.bak_path = _cur_bak_path
+            self.benchmark.bak_path = _cur_bak_path
+            for rpc in self.rpc_clients:
+                if rpc.simulator:
+                    rpc.simulator.bak_path = _cur_bak_path
+
+    def monitoring_status(self):
+        logger.info("Start monitoring")
+        while True:
+            all_poll = [self.simulator.process.poll()]
+            for rpc in self.rpc_clients:
+                all_poll.append(rpc.process_poll())
+            if any([_i is not None for _i in all_poll]):
+                self.stop_target_server(del_log=False)
+                raise subprocess.SubprocessError(
+                    f"Failed in run mindie. all status: {all_poll}, machine info: master, {self.rpc_clients}.")
+            if self.benchmark.check_success():
+                return
+            time.sleep(1)
+
+    def run_simulate(self, params: np.ndarray, params_field: Tuple[OptimizerConfigField]):
+        self.benchmark.prepare()
         _simulate_run_info = map_param_with_value(params, params_field)
         [rpc.run_simulator(params.tolist()) for rpc in self.rpc_clients]
-        self.simulator.run(tuple(_simulate_run_info))
+        self.simulator.run(tuple(self.simulate_run_info))
+        self.wait_simulate()
         [rpc.check_success() for rpc in self.rpc_clients]
-        performance_index = self.benchmark.run(tuple(_simulate_run_info))
-        self.data_storage.save(performance_index, tuple(_simulate_run_info), self.benchmark.benchmark_config)
-        [rpc.stop_simulator() for rpc in self.rpc_clients]
-        self.simulator.stop()
-        return performance_index
+
+    def stop_target_server(self, del_log=True):
+        super(ScheduleWithMultiMachine, self).stop_target_server(del_log)
+        [rpc.stop_simulator(del_log) for rpc in self.rpc_clients]
 
 
 class PSOOptimizer:
@@ -584,22 +867,7 @@ class PSOOptimizer:
         if self.load_history_data and self.load_breakpoint:
             self.history_pos, self.history_cost = self.computer_fitness()
         elif self.load_history_data:
-            self.init_pos = self.custom_init_pos()
-
-    @classmethod
-    def visualization(cls, optimizer: SwarmOptimizer):
-        plot_cost_history(cost_history=optimizer.cost_history)
-        plt.savefig(settings.output.joinpath(f"cost_history_{RUN_TIME}.png"))
-        plt.close()
-        m = Mesher(func=fx.sphere)
-        animation = plot_contour(pos_history=optimizer.pos_history, mesher=m, mark=(0, 0))
-        animation.save(settings.output.joinpath(f"pos_history_{RUN_TIME}.gif"), writer="pillow")
-        pos_history_3d = m.compute_history_3d(optimizer.pos_history)
-        d = Designer(limits=[(-1, 1), (-1, 1), (-0.1, 1)], label=['x-axis', 'y-axis', 'z-axis'])
-        animation_3d = plot_surface(pos_history=pos_history_3d, mesher=m, designer=d, mark=(0, 0, 0))
-        animation_3d.save(str(settings.output.joinpath(f"pos_history_3d_{RUN_TIME}.gif").resolve()),
-                          writer="pillow", )
-        
+            self.init_pos = self.custom_init_pos()        
         
     def custom_init_pos(self) -> Optional[np.ndarray]:
         _all_pos, _all_cost = self.computer_fitness()
@@ -638,6 +906,8 @@ class PSOOptimizer:
                 _fitness = self.minimum_algorithm(performance_index)
                 logger.info(f"fitness {_fitness}")
                 _pos = [case_data.get(_field.name) for _field in self.target_field]
+                if not all(_pos):
+                    continue
                 all_cost.append(_fitness)
                 all_position.append(_pos)
             except KeyError:
@@ -680,9 +950,14 @@ class PSOOptimizer:
         throughput = []
         for i in range(n_particles):
             # 调用schedule， 获取采集的数据
-            _res = self.scheduler.run(x[i], self.target_field)
-            # 根据采集的数据，计算最优化值
-            _fitness = self.minimum_algorithm(_res)
+            try:
+                _res = self.scheduler.run(x[i], self.target_field)
+                # 根据采集的数据，计算最优化值
+                _fitness = self.minimum_algorithm(_res)
+            except Exception as e:
+                logger.error(f"Failed. error: {e}, please check.")
+                logger.exception("What?!")
+                _fitness = inf
             logger.info(f"fitness {_fitness}")
             throughput.append(_fitness)
         return np.array(throughput)
@@ -698,6 +973,18 @@ class PSOOptimizer:
             _max.append(_field.max)
         return (tuple(_min), tuple(_max))
 
+    def visualization(self, optimizer: SwarmOptimizer):
+        plot_cost_history(cost_history=optimizer.cost_history)
+        plt.savefig(settings.output.joinpath(f"cost_history_{RUN_TIME}.png"))
+        plt.close()
+        m = Mesher(func=fx.sphere)
+        animation = plot_contour(pos_history=optimizer.pos_history, mesher=m, mark=(0, 0))
+        animation.save(settings.output.joinpath(f"pos_history_{RUN_TIME}.gif"), writer="pillow")
+        pos_history_3d = m.compute_history_3d(optimizer.pos_history)
+        d = Designer(limits=[(-1, 1), (-1, 1), (-0.1, 1)], label=['x-axis', 'y-axis', 'z-axis'])
+        animation_3d = plot_surface(pos_history=pos_history_3d, mesher=m, designer=d, mark=(0, 0, 0))
+        animation_3d.save(str(settings.output.joinpath(f"pos_history_3d_{RUN_TIME}.gif").resolve()),
+                          writer="pillow", )
 
     def run(self):
         optimizer = CustomGlobalBestPSO(n_particles=self.n_particles, dimensions=len(self.target_field),
@@ -706,8 +993,8 @@ class PSOOptimizer:
                                         breakpoint_cost=self.history_cost)
         cost, joint_vars = optimizer.optimize(self.op_func, iters=self.iters)
         logger.info(
-            f"best cost {cost}, best joint_vars: \
-                {[self.target_field[i].format_func(k) for i, k in enumerate(joint_vars)]}")
+            f"best cost {cost}, best joint_vars: {[self.target_field[i].format_func(k) for 
+            i, k in enumerate(joint_vars)]}")
         self.visualization(optimizer)
 
 
@@ -724,37 +1011,27 @@ def main(args: argparse.Namespace):
             rpc = xmlrpc.client.ServerProxy(server_address, allow_none=True)
             logger.info(f"{server_address} support method {rpc.system.listMethods()}")
             rpc_clients.append(rpc)
-    if args.benchmark_policy == BenchMarkPolicy.benchmark.value and \
-        args.deploy_policy == DeployPolicy.single.value:
+     # 单机benchmark
+    if args.benchmark_policy == BenchMarkPolicy.benchmark.value and args.deploy_policy == DeployPolicy.single.value:
         benchmark = BenchMark(settings.benchmark, bak_path=bak_path)
-    elif args.benchmark_policy == BenchMarkPolicy.custom_benchmark.value \
-        and args.deploy_policy == DeployPolicy.multiple.value:
-        benchmark = RPCCustomBenchMark(rpc_clients, settings.benchmark, \
-                                       bak_path=bak_path, analyze_tool=args.analyze_tool)
+    # 多机 传统benchmark
+    elif args.benchmark_policy == BenchMarkPolicy.custom_benchmark.value and args.deploy_policy == DeployPolicy.multiple.value:
+        benchmark = RPCCustomBenchMark(rpc_clients, settings.benchmark, bak_path=bak_path,
+                                       analyze_tool=args.analyze_tool)
+    # profiler benchmark, profiler只能采集主节点，因此多机情况下，也是运行单个机器的实例，处理数据。
+    elif args.benchmark_policy == BenchMarkPolicy.profiler_benchmark.value:
+        benchmark = ProfilerBenchmark(settings.benchmark, bak_path=bak_path, analyze_tool=args.analyze_tool)
     else:
+        # 默认 自定义单机
         benchmark = CustomBenchMark(settings.benchmark, bak_path=bak_path, analyze_tool=args.analyze_tool)
+    # 存储结果，只在主节点存储结果
     data_storage = DataStorage(settings.data_storage)
-    if args.deploy_policy == DeployPolicy.multiple.value:
-        scheduler = ScheduleWithMultiMachine(rpc_clients, simulator, benchmark, data_storage, bak_path=bak_path)
-    else:
-        scheduler = Scheduler(simulator, benchmark, data_storage, bak_path=bak_path)
-    _load_history_data = None
-    if args.load_history:
-        _load_history_data = data_storage.load_history_position(settings.data_storage.store_dir)
-    pso = PSOOptimizer(scheduler, n_particles=settings.n_particles, iters=settings.iters,
-                       prefill_lam=settings.prefill_lam, target_field=settings.target_field,
-                       decode_lam=settings.decode_lam, success_rate_lam=settings.success_rate_lam,
-                       decode_constrain=settings.decode_constrain, prefill_constrain=settings.prefill_constrain,
-                       success_rate_constrain=settings.success_rate_constrain, load_history_data=_load_history_data,
-                       load_breakpoint=args.load_breakpoint)
-    pso.run()
+    # 初始化调度模块，支持单机和多机。
 
 
-parser = argparse.ArgumentParser(prog='optimizer')
-parser.add_argument("-b", "--benchmark_policy", default=BenchMarkPolicy.custom_benchmark.value,
+parser.add_argument("-b", "--benchmark_policy", default=BenchMarkPolicy.profiler_benchmark.value,
                     choices=[k.value for k in list(BenchMarkPolicy)],
-                    help="Whether to use custom performance indicators or mindie performance indicators. \
-                        Benchmark and custom_benchmark are supported.")
+                    help="Whether to use custom performance indicators or mindie performance indicators. Benchmark and custom_benchmark are supported.")
 parser.add_argument("-lh", "--load_history", default=False, action="store_true",
                     help="Indicates whether to customize the initial location based on historical records.")
 parser.add_argument("-lb", "--load_breakpoint", default=False, action="store_true",
@@ -764,7 +1041,7 @@ parser.add_argument("-d", "--deploy_policy", default=DeployPolicy.single.value,
                     help="Indicates whether the multi-node running policy is used.")
 parser.add_argument("--back_up", default=True, action="store_true",
                     help="Whether to back up data.")
-parser.add_argument("-a", "--analyze_tool", default=AnalyzeTool.default.value,
+parser.add_argument("-a", "--analyze_tool", default=AnalyzeTool.profiler.value,
                     choices=[k.value for k in list(AnalyzeTool)], help="Tool of data to be analyze")
 
 if __name__ == '__main__':
