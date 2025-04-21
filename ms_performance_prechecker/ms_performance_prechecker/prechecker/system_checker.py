@@ -14,7 +14,7 @@
 
 import os
 import platform
-from ms_performance_prechecker.prechecker.register import register_checker, GroupRrechecker, RrecheckerBase
+from ms_performance_prechecker.prechecker.register import register_checker, GroupPrechecker, PrecheckerBase
 from ms_performance_prechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
 from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger, run_shell_command
 
@@ -46,7 +46,7 @@ def get_cpu_info():
     return cpu_info
 
 
-class SystemInfoCollect(RrecheckerBase):
+class SystemInfoCollect(PrecheckerBase):
     __checker_name__ = "SystemInfo"
 
     def collect_env(self, **kwargs):
@@ -89,7 +89,7 @@ class SystemInfoCollect(RrecheckerBase):
         )
 
 
-class KernelReleaseChecker(RrecheckerBase):
+class KernelReleaseChecker(PrecheckerBase):
     __checker_name__ = "KernelRelease"
 
     def collect_env(self, **kwargs):
@@ -132,7 +132,7 @@ class KernelReleaseChecker(RrecheckerBase):
             show_check_result("system", "内核版本", CheckResult.OK)
 
 
-class DriverVersionChecker(RrecheckerBase):
+class DriverVersionChecker(PrecheckerBase):
     __checker_name__ = "DriverVersion"
 
     def collect_env(self, **kwargs):
@@ -192,7 +192,7 @@ class DriverVersionChecker(RrecheckerBase):
             show_check_result("system", "驱动版本", CheckResult.OK)
 
 
-class VirtualMachineChecker(RrecheckerBase):
+class VirtualMachineChecker(PrecheckerBase):
     __checker_name__ = "VirtualMachine"
 
     def collect_env(self, **kwargs):
@@ -227,7 +227,7 @@ class VirtualMachineChecker(RrecheckerBase):
             )
 
 
-class TransparentHugepageChecker(RrecheckerBase):
+class TransparentHugepageChecker(PrecheckerBase):
     __checker_name__ = "TransparentHugepage"
 
     def collect_env(self, **kwargs):
@@ -243,7 +243,7 @@ class TransparentHugepageChecker(RrecheckerBase):
                     logger.debug(f"Got '[always]' from: {TRANSPARENT_HUGEPAGE_PATH}")
                     break
                 elif "[" in line and "]" in line:
-                    cur_value = line.split('[')[-1].split(']')[0]
+                    cur_value = line.split("[")[-1].split("]")[0]
                     additional_msg = f"；恢复配置使用：echo {cur_value} > {TRANSPARENT_HUGEPAGE_PATH}"
                 else:
                     additional_msg = "；当前配置未知"
@@ -264,7 +264,7 @@ class TransparentHugepageChecker(RrecheckerBase):
             )
 
 
-class CpuHighPerformanceChecker(RrecheckerBase):
+class CpuHighPerformanceChecker(PrecheckerBase):
     __checker_name__ = "CpuHighPerformance"
 
     def collect_env(self, **kwargs):
@@ -308,7 +308,7 @@ class CpuHighPerformanceChecker(RrecheckerBase):
             )
 
 
-class SystemChecker(GroupRrechecker):
+class SystemChecker(GroupPrechecker):
     __checker_name__ = "System"
 
     def init_sub_checkers(self):

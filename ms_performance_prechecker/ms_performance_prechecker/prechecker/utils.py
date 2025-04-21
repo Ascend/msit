@@ -118,18 +118,18 @@ def deep_compare_dict(dicts, names, parent_key="", skip_keys=None):
     return has_diff
 
 
-def get_dict_value_by_pos(dict_value, target_pos):
+def get_dict_value_by_pos(dict_value, target_pos, default_value=None):
     cur = dict_value
     for kk in target_pos.split(":"):
         if not cur:
-            cur = None
+            cur = default_value
             break
         if isinstance(cur, list) and str.isdigit(kk):
             cur = cur[int(kk)]
         elif kk in cur:
             cur = cur[kk]
         else:
-            cur = None
+            cur = default_value
             break
     return cur
 
@@ -237,9 +237,7 @@ def parse_ranktable_file(ranktable_file=None):
         return None
 
     ranktable = read_csv_or_json(ranktable_file)
-    logger.debug(
-        "ranktable: %s", get_next_dict_item(ranktable) if ranktable else None
-    )
+    logger.debug("ranktable: %s", get_next_dict_item(ranktable) if ranktable else None)
     return ranktable
 
 
@@ -299,11 +297,37 @@ def run_shell_command(command, fail_msg=""):
     return result
 
 
+def get_global_env_info():
+    env_vars = os.environ
+    ret_envs = {}
+    for key, value in env_vars.items():
+        key_word_list = [
+            "ASCEND",
+            "MINDIE",
+            "ATB_",
+            "HCCL_",
+            "MIES",
+            "RANKTABLE",
+            "GE_",
+            "TORCH",
+            "ACL_",
+            "NPU_",
+            "LCCL_",
+            "LCAL_",
+            "OPS",
+            "INF_",
+        ]
+        for key_word in key_word_list:
+            if key_word in key:
+                ret_envs.update({key: value})
+    return ret_envs
+
+
 def get_npu_info():
     result = run_shell_command("lspci", fail_msg=", will skip getting npu info.")
     for line in result.stdout.splitlines():
         if "accelerators" in line:
-            match = re.search(r'Device (d\d{3})', line)
+            match = re.search(r"Device (d\d{3})", line)
             if match:
                 device_id = match.group(1)
                 return device_id
@@ -334,7 +358,7 @@ class SimpleProgressBar:
         for item in self.iterable:
             yield item
             self.update(1)
-        self.logger.info('\n')
+        self.logger.info("\n")
 
     @staticmethod
     def _init_logger():
@@ -342,7 +366,7 @@ class SimpleProgressBar:
         local_logger.setLevel(logging.INFO)
 
         handler = ProcessBarStreamHandler(sys.stdout)
-        handler.setFormatter(logging.Formatter('%(message)s'))
+        handler.setFormatter(logging.Formatter("%(message)s"))
         local_logger.addHandler(handler)
         return local_logger
 
@@ -354,7 +378,7 @@ class SimpleProgressBar:
         progress = self.current / self.total
         bar_length = 30
         filled_length = int(bar_length * progress)
-        bar = '█' * filled_length + '-' * (bar_length - filled_length)
+        bar = "█" * filled_length + "-" * (bar_length - filled_length)
         percent = progress * 100
 
         # 计算剩余时间
@@ -365,5 +389,5 @@ class SimpleProgressBar:
             remaining_time = 0
 
         self.logger.info(
-            f'\r{self.desc} |{bar}| {percent:.1f}% [{self.current}/{self.total}] ETA: {remaining_time:.1f}s'
+            f"\r{self.desc} |{bar}| {percent:.1f}% [{self.current}/{self.total}] ETA: {remaining_time:.1f}s"
         )

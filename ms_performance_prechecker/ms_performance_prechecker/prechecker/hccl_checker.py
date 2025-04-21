@@ -16,12 +16,12 @@ import os
 import platform
 from glob import glob
 from concurrent import futures
-from ms_performance_prechecker.prechecker.register import register_checker, GroupRrechecker, RrecheckerBase
+from ms_performance_prechecker.prechecker.register import register_checker, GroupPrechecker, PrecheckerBase
 from ms_performance_prechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
 from ms_performance_prechecker.prechecker.utils import logger
 from ms_performance_prechecker.prechecker.utils import parse_ranktable_file, run_shell_command, get_interface_by_ip
 
-_DAVINCI_DEVICES = sorted(glob('/dev/davinci*'))
+_DAVINCI_DEVICES = sorted(glob("/dev/davinci*"))
 NPU_DEVICES = [int(ii.split("davinci")[-1]) for ii in _DAVINCI_DEVICES if str.isdigit(ii.split("davinci")[-1])]
 
 
@@ -36,11 +36,11 @@ def run_hccl_command(command_formatter):
     with futures.ThreadPoolExecutor(max_workers=len(NPU_DEVICES)) as executor:
         map_args = [command_formatter.format(device_id=device_id) for device_id in NPU_DEVICES]
         for result in executor.map(run_shell_command, map_args):
-            results.append([ii.strip() for ii in result.stdout.split('\n')] if result else [])
+            results.append([ii.strip() for ii in result.stdout.split("\n")] if result else [])
     return results
 
 
-class HcclIfnameChecker(RrecheckerBase):
+class HcclIfnameChecker(PrecheckerBase):
     __checker_name__ = "HcclIfname"
 
     def collect_env(self, **kwargs):
@@ -56,11 +56,15 @@ class HcclIfnameChecker(RrecheckerBase):
             ifnames.append(cur_ifname)
         logger.debug(f"ifnames = {ifnames}")
         return ifnames
-    
+
     def do_precheck(self, ifnames, **kwargs):
         if not ifnames:
             show_check_result(
-                "hccl", "lldp Ifname", CheckResult.UNFINISH, action="需要在主机执行该检查", reason="当前没有 hccn_tool 命令或执行失败"
+                "hccl",
+                "lldp Ifname",
+                CheckResult.UNFINISH,
+                action="需要在主机执行该检查",
+                reason="当前没有 hccn_tool 命令或执行失败",
             )
             return
         if not all(len(ii) > 0 for ii in ifnames):
@@ -75,7 +79,7 @@ class HcclIfnameChecker(RrecheckerBase):
             show_check_result("hccl", f"lldp Ifname: {ifnames}", CheckResult.OK)
 
 
-class HcclLinkChecker(RrecheckerBase):
+class HcclLinkChecker(PrecheckerBase):
     __checker_name__ = "HcclLink"
 
     def collect_env(self, **kwargs):
@@ -91,11 +95,15 @@ class HcclLinkChecker(RrecheckerBase):
             link_status.append(cur_link_status)
         logger.debug(f"link_status = {link_status}")
         return link_status
-    
+
     def do_precheck(self, link_status, **kwargs):
         if not link_status:
             show_check_result(
-                "hccl", "lldp Ifname", CheckResult.UNFINISH, action="需要在主机执行该检查", reason="当前没有 hccn_tool 命令或执行失败"
+                "hccl",
+                "lldp Ifname",
+                CheckResult.UNFINISH,
+                action="需要在主机执行该检查",
+                reason="当前没有 hccn_tool 命令或执行失败",
             )
             return
         if not all(ii == "UP" for ii in link_status):
@@ -110,7 +118,7 @@ class HcclLinkChecker(RrecheckerBase):
             show_check_result("hccl", f"link: {link_status}", CheckResult.OK)
 
 
-class HcclTlsSwitchChecker(RrecheckerBase):
+class HcclTlsSwitchChecker(PrecheckerBase):
     __checker_name__ = "HcclTlsSwitch"
 
     def collect_env(self, **kwargs):
@@ -126,11 +134,15 @@ class HcclTlsSwitchChecker(RrecheckerBase):
             tls_switch.append(cur_tls_switch)
         logger.debug(f"tls_switch = {tls_switch}")
         return tls_switch
-    
+
     def do_precheck(self, tls_switch, **kwargs):
         if not tls_switch:
             show_check_result(
-                "hccl", "tls switch", CheckResult.UNFINISH, action="需要在主机执行该检查", reason="当前没有 hccn_tool 命令或执行失败"
+                "hccl",
+                "tls switch",
+                CheckResult.UNFINISH,
+                action="需要在主机执行该检查",
+                reason="当前没有 hccn_tool 命令或执行失败",
             )
             return
         if not all(ii == "0" for ii in tls_switch):
@@ -145,7 +157,7 @@ class HcclTlsSwitchChecker(RrecheckerBase):
             show_check_result("hccl", f"tls_switch: {tls_switch}", CheckResult.OK)
 
 
-class HcclPingChecker(RrecheckerBase):
+class HcclPingChecker(PrecheckerBase):
     __checker_name__ = "HcclPing"
 
     def collect_env(self, ranktable_file=None, **kwargs):
@@ -182,7 +194,7 @@ class HcclPingChecker(RrecheckerBase):
                 if bool_results:
                     multi_server_results.setdefault(server_ip, {}).update({device_ip: bool_results})
         logger.debug(f"ping results = {multi_server_results}")
-    
+
         if multi_server_results:
             # Also add local device results and assume pass for later checking
             local_results = {device_ip: [True] * len(NPU_DEVICES) for device_ip in device_ips}
@@ -192,7 +204,11 @@ class HcclPingChecker(RrecheckerBase):
     def do_precheck(self, multi_server_results, **kwargs):
         if not multi_server_results:
             show_check_result(
-                "hccl", "ping", CheckResult.UNFINISH, action="需要在主机执行该检查", reason="当前没有 hccn_tool 命令或执行失败"
+                "hccl",
+                "ping",
+                CheckResult.UNFINISH,
+                action="需要在主机执行该检查",
+                reason="当前没有 hccn_tool 命令或执行失败",
             )
             return
         for server_ip, device_connect_result in multi_server_results.items():
@@ -217,8 +233,8 @@ class HcclPingChecker(RrecheckerBase):
             if is_connect_server_pass:
                 show_check_result("hccl", f"ping server {server_ip} all pass", CheckResult.OK)
 
-            
-class HCCLChecker(GroupRrechecker):
+
+class HCCLChecker(GroupPrechecker):
     __checker_name__ = "HCCL"
 
     def init_sub_checkers(self):

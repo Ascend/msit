@@ -1,0 +1,141 @@
+version: 1.0
+description: MindIE server config template
+
+# 环境变量建议配置
+environment_variables:
+  - name: CPU_AFFINITY_CONF
+    reason: 开启CPU细粒度绑核，可以优化算子下发
+    value: 2
+  - name: NPU_MEMORY_FRACTION
+    reason: NPU内存占用比例，建议逐渐调高，但是太高会引起OOM，经验值为0.97
+    value: 0.97
+  - name: TASK_QUEUE_ENABLE
+    reason: 算子下发队列使用内存并发，可以提升性能，可能导致运行中NPU内存峰值上升
+    value: 2
+  - name: HCCL_OP_EXPANSION_MODE
+    suggestions:
+    - value: AIV
+      suggested:
+        reason: 配置通信算法的编排展开位置，代表通信算法的编排展开位置在 Device侧的 AI Vector Core 计算单元
+      not_suggested:
+        reason: 使能 AIV 会有崩溃风险，请不要设置它
+        condition:
+          Ascend-mindie: [2.0.T3, 2.0.T3.1, 2.0.T6]
+  - name: HCCL_DETERMINISTIC
+    reason: 关闭确定性计算，一般情况下无需开启确定性计算，当模型多次执行结果不同或者精度调优时，可通过此环境变量开启确定性计算进行辅助调试调 优，但开启确定性计算后，算子执行时间会变慢，导致性能下降
+    value:
+    - 'false'
+    - null
+  - name: HCCL_RDMA_PCIE_DIRECT_POST_NOSTRICT
+    reason: 当通信算子下发性能Host Bound时，开发者可通过此环境变量设置通过PCIe Direct的方式提交RDMA任务，提升通信算子下发性能
+    value: 'TRUE'
+  - name: MINDIE_LOG_LEVEL
+    reason: 控制MindIE组件日志级别，大量的日志打印会影响程序性能，建议提高日志级别
+    value:
+    - ERROR
+    - null
+  - name: ASCEND_GLOBAL_LOG_LEVEL
+    reason: 控制昇腾应用类日志级别，大量的日志打印会影响程序性能，建议提高日志级别
+    value:
+    - 3
+    - null
+  - name: ASCEND_LAUNCH_BLOCKING
+    reason: 同步模式用于算子调试，通常使用异步方式执行，性能更好
+    value:
+    - 0
+    - null
+  - name: ATB_WORKSPACE_MEM_ALLOC_ALG_TYPE
+    reason: workspace 内存分配算法选择，可通过选择不同的算法测试workspace分配情况
+    value: 2
+  - name: ATB_WORKSPACE_MEM_ALLOC_GLOBAL
+    reason: 使用全局中间tensor 内存分配算法，会对中间tensor内存进行大小计算与分配
+    value: 1
+  - name: PYTORCH_NPU_ALLOC_CONF
+    reason: 使能内存池扩展段功能，既虚拟内存特性；设置为True,可以优化内存碎片对内存的占用
+    value: expandable_segments:True
+  - name: MINDIE_LOG_TO_STDOUT
+    reason: 将日志打印到屏幕，默认到日志文件
+    value: 1
+  - name: OMP_NUM_THREADS
+    reason: 单线程加速权重加载
+    value: 1
+  - name: INF_NAN_MODE_ENABLE
+    reason: 设置精度饱和模式，防止fp16引起的上下溢出
+    value: 0
+  - name: ATB_LLM_HCCL_ENABLE
+    suggestions:
+    - value: 1
+      suggested:
+        reason: d803 NPU 机型单机配置混合并行，需要额外配置HCCL环境变量
+        condition:
+          NPU_TYPE: ["d803"]
+  - name: ATB_LLM_COMM_BACKEND
+    suggestions:
+    - value: hccl
+    - suggested:
+        reason: d803 NPU 机型单机配置混合并行，需要额外配置HCCL环境变量
+        condition:
+          NPU_TYPE: ["d803"]
+  - name: ATB_LAYER_INTERNAL_TENSOR_REUSE
+    reason: 使能内存复用，Model调用Layer时，复用Layer间的中间Tensor
+    value: 1
+  - name: ATB_OPERATION_EXECUTE_ASYNC
+    reason: 开启算子setup和execute异步执行
+    value: 1
+  - name: ATB_CONVERT_NCHW_TO_ND
+    reason: 将输入Tensor的格式从NCHW转成ND（加速库不支持传入NCHW格式的Tensor）
+    value: 1
+  - name: ATB_CONTEXT_WORKSPACE_SIZE
+    reason: 设置NPU侧用来存放算子Workspace data的Buffer块大小
+    value: 0
+  - name: ATB_LAUNCH_KERNEL_WITH_TILING
+    reason: 开启Tiling data拷贝随算子下发功能
+    value: 1
+  - name: ATB_LLM_ENABLE_AUTO_TRANSPOSE
+    reason: 开启权重右矩阵自动转置寻优
+    value: 0
+
+mindie_config:
+  - name: ServerConfig:httpsEnabled
+    value: False
+    reason: "建议设置为 false，若开启，需要保证 tlsCrlFiles 指定的证书文件存在，否则可能启动失败"
+  - name: ServerConfig:interCommTLSEnabled
+    value: False
+    reason: "若不需要安全认证，则设置为 false"
+  - name: BackendConfig:multiNodesInferEnabled
+    value: True
+    reason: "多机环境下需要为 True"
+  - name: BackendConfig:interNodeTLSEnabled
+    value: False
+    reason: "若不需要安全认证，则设置为 false"
+  - name: BackendConfig:ModelDeployConfig:ModelConfig:ModelConfig
+    reason: "必需字段，该值不能为空"
+  - name: BackendConfig:ModelDeployConfig:ModelConfig:modelWeightPath
+    reason: "必需字段，该值不能为空"
+
+ranktable:
+  - name: server_count
+    reason: "必需字段，该值不能为空"
+  - name: server_list
+    reason: "必需字段，该值不能为空"
+  - name: version
+    reason: "必需字段，该值不能为空"
+  - name: status
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:server_id
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:container_ip  # [TODO] need to be multi
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:device
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:device:0:device_id
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:device:0:device_ip
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:device:0:rank_id
+    reason: "必需字段，该值不能为空"
+
+model_config:
+  - name: model_type
+    value: "deepseekv2"
+    reason: "当前配置 model_type 不匹配 deepseek 模型"

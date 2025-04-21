@@ -17,9 +17,9 @@ __all__ = [
 ]
 
 from ms_performance_prechecker.prechecker.config_checker import (
-    mindie_config_collecter,
-    ranktable_collecter,
-    model_config_collecter,
+    mindie_config_checker,
+    ranktable_checker,
+    model_config_checker,
 )
 from ms_performance_prechecker.prechecker.env_checker import env_checker
 from ms_performance_prechecker.prechecker.system_checker import system_checker
@@ -31,11 +31,11 @@ CHECKERS = {
     CHECKER_TYPES.basic: [
         system_checker,
         env_checker,
-        mindie_config_collecter,
-        ranktable_collecter,
+        mindie_config_checker,
+        ranktable_checker,
     ],
     CHECKER_TYPES.hccl: [hccl_checker],
-    CHECKER_TYPES.model: [model_config_collecter, model_size_checker, model_sha256_collecter],
+    CHECKER_TYPES.model: [model_config_checker, model_size_checker, model_sha256_collecter],
 }
 
 CHECKERS[CHECKER_TYPES.all] = [ii for key, checker in CHECKERS.items() for ii in checker if key != CHECKER_TYPES.all]

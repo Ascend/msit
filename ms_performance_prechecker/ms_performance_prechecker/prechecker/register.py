@@ -83,7 +83,7 @@ def show_check_result(domain, checker, result=None, action=None, reason=None):
         print(f"    * {reason}")
 
 
-class RrecheckerBase:
+class PrecheckerBase:
     __checker_name__ = "undefined"
 
     def __init__(self):
@@ -107,7 +107,7 @@ class RrecheckerBase:
         show_check_result(self.name(), checker, result, action, reason)
 
 
-class GroupRrechecker(RrecheckerBase):
+class GroupPrechecker(PrecheckerBase):
     __checker_name__ = "undefined"
 
     def __init__(self, *sub):

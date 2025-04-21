@@ -13,125 +13,69 @@
 # limitations under the License.
 
 import os
-from ms_performance_prechecker.prechecker.register import RrecheckerBase, show_check_result, CheckResult
-from ms_performance_prechecker.prechecker.utils import str_ignore_case, logger, set_log_level, deep_compare_dict
+from ms_performance_prechecker.prechecker.register import register_checker, cached, PrecheckerBase
+from ms_performance_prechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
+from ms_performance_prechecker.prechecker.utils import logger, get_version_info, get_npu_info, get_global_env_info
+from ms_performance_prechecker.prechecker.utils import str_ignore_case, set_log_level, deep_compare_dict
 from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH
 from ms_performance_prechecker.prechecker.utils import parse_mindie_server_config, parse_ranktable_file
 from ms_performance_prechecker.prechecker.utils import get_model_path_from_mindie_config, get_mindie_server_config
 from ms_performance_prechecker.prechecker.utils import is_deepseek_model, read_csv_or_json
+from ms_performance_prechecker.prechecker.suggestions import GLOBAL_DEFAULT_CONFIG, DOMAIN, CONFIG
+from ms_performance_prechecker.prechecker.suggestions import update_to_default_suggestions, suggestion_rule_checker
 
 
-class MindieConfigCollecter(RrecheckerBase):
+class ConfigCheckerBase(PrecheckerBase):
+    __checker_name__ = "Config"
+
+    def __init__(self, domain):
+        super().__init__()
+        self.domain = domain
+
+    def do_precheck(self, current_config, additional_checks=None, action=None, **kwargs):
+        if not current_config:
+            return
+        update_to_default_suggestions(self.domain, additional_checks)
+
+        env_info = get_global_env_info()
+        env_info["NPU_TYPE"] = get_npu_info()
+        # if version_info["NPU_TYPE"] not in ["d802", "d803"]:
+        #     return
+        for suggestion_rule in GLOBAL_DEFAULT_CONFIG.get(self.domain, []):
+            result, suggestion_value, current_value = suggestion_rule_checker(
+                current_config, suggestion_rule, env_info, domain=self.domain, action=action
+            )
+
+
+class MindieConfigChecker(ConfigCheckerBase):
     __checker_name__ = "MindieConfig"
+
+    def __init__(self):
+        super().__init__(domain=DOMAIN.mindie_config)
 
     def collect_env(self, mindie_service_path=None, **kwargs):
         self.mindie_service_path = get_mindie_server_config(mindie_service_path)
         return parse_mindie_server_config(mindie_service_path)
-
-    def key_checker_with_value(self, source_dict, target_key, target_value, prefix="", add_msg=""):
-        if target_key not in source_dict or (target_value is not None and source_dict[target_key] != target_value):
-            msg = f"{prefix}{target_key} {add_msg}" if add_msg else f"{prefix}{target_key} 需设置为 {target_value}"
-            show_check_result(
-                "configuration",
-                "mindie_service_config",
-                CheckResult.WARN,
-                action=f"mindie_service={self.mindie_service_path} config 中修改 {prefix}{target_key} 字段",
-                reason=f"{msg}",
-            )
-
-    def key_checker_without_value(self, source_dict, target_key, prefix=""):
-        if target_key not in source_dict:
-            show_check_result(
-                "configuration",
-                "mindie_service_config",
-                CheckResult.ERROR,
-                action=f"mindie_service={self.mindie_service_path} config 中添加 {prefix}{target_key} 字段",
-                reason=f"{prefix}{target_key} 为必需字段",
-            )
-
-    def do_precheck(self, mindie_service_config, **kwargs):
-        if not mindie_service_config:
-            return
-
-        server_config = mindie_service_config.get("ServerConfig", {})
-        self.key_checker_with_value(
-            server_config,
-            target_key="httpsEnabled",
-            target_value=False,
-            prefix="ServerConfig.",
-            add_msg="建议设置为 false，若开启，需要保证 tlsCrlFiles 指定的证书文件存在，否则可能启动失败",
-        )
-        self.key_checker_with_value(
-            server_config,
-            target_key="interCommTLSEnabled",
-            target_value=False,
-            prefix="ServerConfig.",
-            add_msg="若不需要安全认证，则设置为 false",
-        )
-
-        backend_config = mindie_service_config.get("BackendConfig", {})
-        self.key_checker_with_value(
-            backend_config,
-            target_key="multiNodesInferEnabled",
-            target_value=True,
-            prefix="BackendConfig.",
-            add_msg="多机环境下需要为 True",
-        )
-        self.key_checker_with_value(
-            backend_config,
-            target_key="interNodeTLSEnabled",
-            target_value=False,
-            prefix="BackendConfig.",
-            add_msg="若不需要安全认证，则设置为 false",
-        )
-
-        model_config = backend_config.get("ModelDeployConfig", {}).get("ModelConfig", [{}])
-        cur_prefix = "BackendConfig.ModelDeployConfig.ModelConfig."
-        self.key_checker_without_value(model_config[0], target_key="modelName", prefix=cur_prefix)
-        self.key_checker_without_value(model_config[0], target_key="modelWeightPath", prefix=cur_prefix)
+        # action=f"mindie_service={self.mindie_service_path} config 中修改 {prefix}{target_key} 字段",
 
 
-class RankTableCollecter(RrecheckerBase):
+class RankTableChecker(ConfigCheckerBase):
     __checker_name__ = "RankTable"
+
+    def __init__(self):
+        super().__init__(domain=DOMAIN.ranktable)
 
     def collect_env(self, ranktable_file=None, **kwargs):
         self.ranktable_file = ranktable_file
         return parse_ranktable_file(ranktable_file)
-
-    def key_checker(self, source_dict, target_key, prefix=""):
-        if target_key not in source_dict:
-            show_check_result(
-                "configuration",
-                "ranktable",
-                CheckResult.ERROR,
-                action=f"ranktable={self.ranktable_file} 中添加 {prefix}{target_key} 字段",
-                reason=f"{prefix}{target_key} 为必需字段",
-            )
-
-    def do_precheck(self, ranktable, **kwargs):
-        if not ranktable:
-            return
-
-        self.key_checker(source_dict=ranktable, target_key="server_count")
-        self.key_checker(source_dict=ranktable, target_key="server_list")
-        self.key_checker(source_dict=ranktable, target_key="version")
-        self.key_checker(source_dict=ranktable, target_key="status")
-
-        for server_id, server in enumerate(ranktable.get("server_list", [])):
-            cur_prefix = f"server_list.{server_id}."
-            self.key_checker(source_dict=server, target_key="server_id", prefix=cur_prefix)
-            self.key_checker(source_dict=server, target_key="container_ip", prefix=cur_prefix)
-            self.key_checker(source_dict=server, target_key="device", prefix=cur_prefix)
-
-            for device_id, device in enumerate(server.get("device", [])):
-                cur_prefix += f"device.{device_id}."
-                self.key_checker(source_dict=device, target_key="device_id", prefix=cur_prefix)
-                self.key_checker(source_dict=device, target_key="device_ip", prefix=cur_prefix)
-                self.key_checker(source_dict=device, target_key="rank_id", prefix=cur_prefix)
+        # action=f"ranktable={self.ranktable_file} 中添加 {prefix}{target_key} 字段",
 
 
-class ModelConfigCollecter(RrecheckerBase):
+class ModelConfigChecker(ConfigCheckerBase):
     __checker_name__ = "ModelConfig"
+
+    def __init__(self):
+        super().__init__(domain=DOMAIN.model_config)
 
     def collect_env(self, mindie_service_path=None, **kwargs):
         model_name, model_weight_path = get_model_path_from_mindie_config(mindie_service_path=mindie_service_path)
@@ -146,27 +90,19 @@ class ModelConfigCollecter(RrecheckerBase):
         logger.debug(f"ModelConfigCollecter model_name={model_name} model_config={model_config}")
         return {"model_name": model_name, "model_config": model_config}
 
-    def do_precheck(self, model_info, **kwargs):
+    def do_precheck(self, current_config, additional_checks=None, **kwargs):
         if not model_info:
             return
         model_name, model_config = model_info.get("model_name", None), model_info.get("model_config", None)
         if not model_name or not model_config:
             return
+        if not is_deepseek_model(model_name):
+            return
 
-        cur_model_type = model_config.get("model_type")
-        if is_deepseek_model(model_name) and cur_model_type != "deepseekv2":
-            action = f'MindIE配置 model_name={model_name}, 需在模型配置文件 {self.model_config_path} 中设置 model_type="deepseekv2"'
-            show_check_result(
-                "configuration",
-                "model",
-                CheckResult.ERROR,
-                action=action,
-                reason=f"当前配置 model_type={model_type} 不匹配 deepseek 模型",
-            )
-        else:
-            show_check_result("configuration", "model", CheckResult.OK)
+        super().do_precheck(current_config=model_config, additional_checks=additional_checks, **kwargs)
+        # action = f'MindIE配置 model_name={model_name}, 需在模型配置文件 {self.model_config_path} 中设置 model_type="deepseekv2"'
 
 
-mindie_config_collecter = MindieConfigCollecter()
-ranktable_collecter = RankTableCollecter()
-model_config_collecter = ModelConfigCollecter()
+mindie_config_checker = MindieConfigChecker()
+ranktable_checker = RankTableChecker()
+model_config_checker = ModelConfigChecker()

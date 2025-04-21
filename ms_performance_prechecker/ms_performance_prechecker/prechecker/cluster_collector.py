@@ -96,7 +96,6 @@ def init_global_distribute_env(ranktable_file=None, service_config_path=None, ma
     GLOBAL_DISTRIBUTE_ENV[DISTIBUT_ENVS.rank] = ranktable_map.get(local_ip, -1)
 
     logger.info(f"GLOBAL_DISTRIBUTE_ENV: {GLOBAL_DISTRIBUTE_ENV}")
-    
 
 
 class DistributeCollector:

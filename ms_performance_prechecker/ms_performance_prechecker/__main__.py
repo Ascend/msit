@@ -38,7 +38,7 @@ RANKTABLE_FILE = os.getenv(RANKTABLEFILE, None)
 MINDIE_SERVICE_PATH = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
 
 COMMON_ARGS = [
-    dict(args=["-l", "--log_level"], kwargs=dict(default="info", choices=LOG_LEVELS_LOWER, help="specify log level.")),
+    dict(args=["-l", "--log_level"], kwargs=dict(default="info", choices=LOG_LEVELS_LOWER, help="specify log level")),
 ]
 DUMP_COMMON_ARGS = [
     dict(
@@ -63,7 +63,14 @@ DUMP_COMMON_ARGS = [
         kwargs=dict(
             default=1000,
             type=int,
-            help="Sampling file block number for checking sha256sum. < 1 for checking whole file ",
+            help="Sampling file block number for checking sha256sum. < 1 for checking whole file",
+        ),
+    ),
+    dict(
+        args=["-add", "--additional_checks_yaml"],
+        kwargs=dict(
+            default=None,
+            help="additional checks replacing default checking values, should be a yaml file path",
         ),
     ),
 ]
@@ -94,12 +101,36 @@ def print_contents():
         logger.info(sys_info)
 
 
-def run_env_dump(dump_file_path=DEFAULT_DUMP_PATH, service_config_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs):
+def load_yaml(yaml_file_path):
+    import yaml
+
+    if not yaml_file_path:
+        return None
+    if not os.path.exists(yaml_file_path):
+        return None
+    with open(yaml_file_path) as ff:
+        contents = yaml.safe_load(yaml_file_path)
+    return contents
+
+
+def run_env_dump(
+    dump_file_path=DEFAULT_DUMP_PATH,
+    service_config_path=None,
+    checkers=(CHECKER_TYPES.basic,),
+    additional_checks_yaml=None,
+    **kwargs,
+):
     precheckers = get_all_register_prechecker(checkers)
     all_envs = {}
+    additional_checks = load_yaml(additional_checks_yaml)
     for prechecker in precheckers:
         name = prechecker.name()
-        envs = prechecker.collect_env(dump_file_path=dump_file_path, mindie_service_path=service_config_path, **kwargs)
+        envs = prechecker.collect_env(
+            dump_file_path=dump_file_path,
+            mindie_service_path=service_config_path,
+            additional_checks=additional_checks,
+            **kwargs,
+        )
 
         all_envs[name] = envs
 
@@ -133,11 +164,21 @@ def run_compare(dump_file_paths=None, **kwargs):
 
 
 def run_precheck(
-    save_env="ms_performance_prechecker_env.sh", service_config_path=None, checkers=(CHECKER_TYPES.basic,), **kwargs
+    save_env="ms_performance_prechecker_env.sh",
+    service_config_path=None,
+    checkers=(CHECKER_TYPES.basic,),
+    additional_checks_yaml=None,
+    **kwargs,
 ):
     precheckers = get_all_register_prechecker(checkers)
+    additional_checks = load_yaml(additional_checks_yaml)
     for prechecker in precheckers:
-        prechecker.precheck(env_save_path=save_env, mindie_service_path=service_config_path, **kwargs)
+        prechecker.precheck(
+            env_save_path=save_env,
+            mindie_service_path=service_config_path,
+            additional_checks=additional_checks,
+            **kwargs,
+        )
 
     if CHECKER_TYPES.basic in checkers or CHECKER_TYPES.all in checkers:
         print_contents()
