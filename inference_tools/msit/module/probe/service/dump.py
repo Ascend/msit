@@ -62,7 +62,7 @@ class ServiceDump(BaseService):
             PathConst.SUFFIX_PROTOTXT: "_construct_for_caffe_model",
         }
         model_map_for_npu = {
-            PathConst.SUFFIX_OM: None,
+            PathConst.SUFFIX_OM: "_construct_for_om_model",
             PathConst.SUFFIX_PB: "_construct_for_frozen_graph_model_on_npu",
             "saved_model": "_construct_for_saved_model_on_npu",
         }
@@ -119,6 +119,15 @@ class ServiceDump(BaseService):
                 self.start()
         else:
             self.start()
+
+    def _construct_for_om_model(self):
+        self.actuator = Component.get(CompConst.OM_ACTUATOR_COMP)(
+            priority=20,
+            model_path=self.cfg.exec[0],
+            input_shape=self.cfg.input_shape,
+            input_path=self.cfg.input_path,
+            device_id=self.cfg.rank[0],
+        )
 
     def _construct_for_atb_model(self):
         self.actuator = Component.get(CompConst.ATB_ACTUATOR_COMP)(

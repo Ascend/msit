@@ -21,7 +21,7 @@ class TestOfflineModelActuator(unittest.TestCase):
         self.patcher3 = patch("msit.module.probe.base.dump_actuator.DirPool", self.mock_DirPool)
         self.patcher4 = patch("msit.module.probe.base.dump_actuator.save_npy", self.mock_save_npy)
         self.patcher5 = patch("msit.module.probe.base.dump_actuator.load_npy", self.mock_load_npy)
-        self.patcher6 = patch("msit.module.probe.base.dump_actuator.load_bin_to_ndarray", self.mock_load_bin)
+        self.patcher6 = patch("msit.module.probe.base.dump_actuator.load_bin_data", self.mock_load_bin)
 
         self.patcher1.start()
         self.patcher2.start()

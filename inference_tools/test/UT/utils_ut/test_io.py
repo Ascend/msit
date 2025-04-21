@@ -16,7 +16,7 @@ from msit.utils.io import (
     _load_file,
     _save_dir,
     _save_file,
-    load_bin_to_ndarray,
+    load_bin_data,
     load_caffe_model,
     load_csv_by_builtin,
     load_csv_by_pandas,
@@ -420,7 +420,7 @@ class TestBinFileOperations(unittest.TestCase):
             np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32),
         ]
 
-        result = load_bin_to_ndarray("data.bin", dtype=np.float32, shape=(2, 2))
+        result = load_bin_data("data.bin", dtype=np.float32, shape=(2, 2))
 
         mock_get_size.assert_called_once_with("data.bin")
         mock_fromfile.assert_any_call("data.bin", dtype=np.float16)
@@ -435,7 +435,7 @@ class TestBinFileOperations(unittest.TestCase):
         mock_check.return_value = "data.bin"
         mock_get_size.return_value = 10
         mock_fromfile.return_value = np.array([1.0, 2.0], dtype=np.float32)
-        result = load_bin_to_ndarray("data.bin", dtype=np.float32, shape=(2, 2))
+        result = load_bin_data("data.bin", dtype=np.float32, shape=(2, 2))
         mock_fromfile.assert_called_once_with("data.bin", dtype=np.float32)
         self.assertEqual(result.dtype, np.float32)
 

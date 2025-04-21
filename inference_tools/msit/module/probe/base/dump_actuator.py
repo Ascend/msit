@@ -18,7 +18,7 @@ from msit.common.dirs import DirPool
 from msit.utils.constants import MsgConst, PathConst
 from msit.utils.dependencies import dependent
 from msit.utils.exceptions import MsitException
-from msit.utils.io import load_bin_to_ndarray, load_npy, save_npy
+from msit.utils.io import load_bin_data, load_npy, save_npy
 from msit.utils.log import logger
 from msit.utils.path import join_path
 
@@ -75,6 +75,7 @@ class OfflineModelActuator:
             "float32": np.float32,
             "float16": np.float16,
         }
+
         numpy_data_type = {**base_type2dtype_map, **get_tf_type2dtype_map()}.get(tensor_type)
         if numpy_data_type:
             return numpy_data_type
@@ -82,10 +83,13 @@ class OfflineModelActuator:
             raise MsitException(MsgConst.INVALID_DATA_TYPE, f"Tensor type {tensor_type} not provided.")
 
     @staticmethod
-    def _generate_random_input_data(save_dir, names, shapes, dtypes):
+    def _generate_random_input_data(save_dir, names, shapes, dtypes, is_byte_data=False):
         input_map = {}
         for tensor_name, tensor_shape, tensor_dtype in zip(names, shapes, dtypes):
-            input_data = np.random.random(tensor_shape).astype(tensor_dtype)
+            if is_byte_data:
+                input_data = np.random.randint(0, 256, int(np.prod(tensor_shape))).astype(np.uint8)
+            else:
+                input_data = np.random.random(tensor_shape).astype(tensor_dtype)
             input_map[tensor_name] = input_data
             shape_str = "_".join(list(map(str, tensor_shape)))
             file_name = "_".join([tensor_name, "shape", shape_str, PathConst.SUFFIX_NPY])
@@ -97,21 +101,22 @@ class OfflineModelActuator:
         return input_map
 
     @staticmethod
-    def _read_input_data(input_paths, names, shapes, dtypes):
+    def _read_input_data(input_paths, names, shapes, dtypes, is_byte_data=False):
         input_map = {}
         for input_path, name, shape, dtype in zip(input_paths, names, shapes, dtypes):
             if input_path.endswith(PathConst.SUFFIX_BIN):
-                input_data = load_bin_to_ndarray(input_path, dtype, shape)
+                input_data = load_bin_data(input_path, dtype, shape, is_byte_data)
             elif input_path.endswith(PathConst.SUFFIX_NPY):
                 input_data = load_npy(input_path)
-            if np.prod(input_data.shape) != np.prod(shape):
+            if np.prod(input_data.shape) != np.prod(shape) and not is_byte_data:
                 raise MsitException(
                     MsgConst.INVALID_ARGU,
                     "The shape of the input data does not match the model's shape, "
                     f"input path: {input_path}, input shape: {input_data.shape}, "
                     f"model's shape: {shape}.",
                 )
-            input_data = input_data.reshape(shape)
+            if not is_byte_data:
+                input_data = input_data.reshape(shape)
             input_map[name] = input_data
             logger.info(f"Load input file path: {input_path}, shape: {input_data.shape}, dtype: {input_data.dtype}.")
         return input_map
@@ -147,18 +152,19 @@ class OfflineModelActuator:
         logger.info(f"The dynamic shape of {tensor_name} has been fixed to {input_shape}.")
         return tensor_shape_info
 
-    def get_inputs_data(self, inputs_tensor_info):
+    def get_inputs_data(self, inputs_tensor_info, is_byte_data=False):
         names, shapes, dtypes = [], [], []
         for x in inputs_tensor_info:
             names.append(x["name"])
             shapes.append(x["shape"])
-            dtypes.append(self._tensor2numpy_for_type(x["type"]))
+            # read raw byte data (memory) regardless of type; defaults to int8.
+            dtypes.append(self._tensor2numpy_for_type(x["type"]) if not is_byte_data else np.int8)
         if not self.input_path:
             DirPool.make_input_dir()
             input_dir = DirPool.get_input_dir()
-            input_map = self._generate_random_input_data(input_dir, names, shapes, dtypes)
+            input_map = self._generate_random_input_data(input_dir, names, shapes, dtypes, is_byte_data)
         else:
-            input_map = self._read_input_data(self.input_path, names, shapes, dtypes)
+            input_map = self._read_input_data(self.input_path, names, shapes, dtypes, is_byte_data)
         return input_map
 
     def process_tensor_shape(self, tensor_name, tensor_type, tensor_shape):
