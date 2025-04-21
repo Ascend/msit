@@ -32,18 +32,20 @@ class ConfigCheckerBase(PrecheckerBase):
         super().__init__()
         self.domain = domain
 
-    def do_precheck(self, current_config, additional_checks=None, action=None, **kwargs):
+    @staticmethod
+    def action(env_key, env_value):
+        return f"Set {env_key}={env_value}" if env_value else f"Unset {env_key}"
+
+    def do_precheck(self, current_config, additional_checks=None, **kwargs):
         if not current_config:
             return
         update_to_default_suggestions(self.domain, additional_checks)
 
         env_info = get_global_env_info()
         env_info["NPU_TYPE"] = get_npu_info()
-        # if version_info["NPU_TYPE"] not in ["d802", "d803"]:
-        #     return
         for suggestion_rule in GLOBAL_DEFAULT_CONFIG.get(self.domain, []):
             result, suggestion_value, current_value = suggestion_rule_checker(
-                current_config, suggestion_rule, env_info, domain=self.domain, action=action
+                current_config, suggestion_rule, env_info, domain=self.domain, action=self.action
             )
 
 
@@ -56,7 +58,10 @@ class MindieConfigChecker(ConfigCheckerBase):
     def collect_env(self, mindie_service_path=None, **kwargs):
         self.mindie_service_path = get_mindie_server_config(mindie_service_path)
         return parse_mindie_server_config(mindie_service_path)
-        # action=f"mindie_service={self.mindie_service_path} config 中修改 {prefix}{target_key} 字段",
+
+    @staticmethod
+    def action(env_key, env_value):
+        return f"mindie_service={self.mindie_service_path} config 中修改 {env_key} 字段"
 
 
 class RankTableChecker(ConfigCheckerBase):
@@ -68,7 +73,10 @@ class RankTableChecker(ConfigCheckerBase):
     def collect_env(self, ranktable_file=None, **kwargs):
         self.ranktable_file = ranktable_file
         return parse_ranktable_file(ranktable_file)
-        # action=f"ranktable={self.ranktable_file} 中添加 {prefix}{target_key} 字段",
+
+    @staticmethod
+    def action(env_key, env_value):
+        return f"ranktable={self.ranktable_file} 中添加 {env_key} 字段"
 
 
 class ModelConfigChecker(ConfigCheckerBase):
@@ -90,6 +98,10 @@ class ModelConfigChecker(ConfigCheckerBase):
         logger.debug(f"ModelConfigCollecter model_name={model_name} model_config={model_config}")
         return {"model_name": model_name, "model_config": model_config}
 
+    @staticmethod
+    def action(env_key, env_value):
+        return  f'需在模型配置文件 {self.model_config_path} 中设置 {env_key}: {env_value}'
+
     def do_precheck(self, current_config, additional_checks=None, **kwargs):
         if not model_info:
             return
@@ -100,7 +112,6 @@ class ModelConfigChecker(ConfigCheckerBase):
             return
 
         super().do_precheck(current_config=model_config, additional_checks=additional_checks, **kwargs)
-        # action = f'MindIE配置 model_name={model_name}, 需在模型配置文件 {self.model_config_path} 中设置 model_type="deepseekv2"'
 
 
 mindie_config_checker = MindieConfigChecker()
