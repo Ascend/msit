@@ -74,9 +74,9 @@ class OnnxModelActuator(OfflineModelActuator):
 
 
 class OnnxModelDataWriter(WriterDump):
-    def __init__(self, task, dump_mode):
+    def __init__(self, task, data_mode):
         super().__init__(task)
-        self.dump_mode = dump_mode
+        self.data_mode = data_mode
         self.cache_dump_json[CfgConst.LEVEL] = CfgConst.LEVEL_KERNEL
         self.cache_dump_json[CfgConst.FRAMEWORK] = CfgConst.FRAMEWORK_ONNX
 
@@ -106,7 +106,7 @@ class OnnxModelDataWriter(WriterDump):
         self.net_output_nodes = list(item.name for item in model_session.get_outputs())
         for node in origin_model.graph.node:
             self.cache_dump_json[DumpConst.DATA].setdefault(get_valid_name(node.name), {})
-            if any(x in self.dump_mode for x in DumpConst.INPUT_ALL):
+            if any(x in self.data_mode for x in DumpConst.INPUT_ALL):
                 self.through_inputs(node.input, node.name, input_map)
-            if any(x in self.dump_mode for x in DumpConst.OUTPUT_ALL):
+            if any(x in self.data_mode for x in DumpConst.OUTPUT_ALL):
                 self.through_outputs(node.output, node.name, output_map)

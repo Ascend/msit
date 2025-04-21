@@ -1,55 +1,101 @@
 import unittest
-from argparse import Namespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from msit.base import BaseConfig, Dict2Class
 from msit.utils.constants import CfgConst, MsgConst
 from msit.utils.exceptions import MsitException
 
 
-class TestBaseConfig(unittest.TestCase):
-    class ConcreteConfig(BaseConfig):
-        def check_config(self):
-            pass
+class ConcreteConfig(BaseConfig):
+    def check_config(self):
+        pass
 
-    @patch("msit.base.config.load_json")
-    def setUp(self, mock_load_json):
-        self.mock_load_json = mock_load_json
-        self.mock_load_json.return_value = {
-            CfgConst.TASK: CfgConst.TASK_STAT,
-            CfgConst.EXEC: [],
-            CfgConst.FRAMEWORK: "mindie_llm",
-            CfgConst.STEP: [0],
-            CfgConst.RANK: [1],
+
+class TestBaseConfig(unittest.TestCase):
+    def setUp(self):
+        self.mock_config = {
+            CfgConst.TASK: "test_task",
+            "test_task": {"key": "value"},
+            CfgConst.FRAMEWORK: "test_framework",
+            CfgConst.STEP: [],
+            CfgConst.RANK: [],
             CfgConst.LEVEL: [CfgConst.LEVEL_API],
             CfgConst.LOG_LEVEL: "info",
-            CfgConst.SEED: 42,
+            CfgConst.SEED: None,
         }
         self.config_path = "dummy_path.json"
-        self.config = self.ConcreteConfig(self.config_path)
 
-    def test_initialization(self):
-        self.mock_load_json.assert_called_once_with(self.config_path)
-        self.assertEqual(self.config.config, self.mock_load_json.return_value)
-        self.assertFalse(self.config.is_from_cmd)
+    @patch("msit.base.config.load_json")
+    def test_initialization(self, mock_load_json):
+        mock_load_json.return_value = self.mock_config
+        config = ConcreteConfig(self.config_path, task="test_task", step=[], level=[])
+        self.assertEqual(config.config_path, self.config_path)
+        self.assertEqual(config.config, self.mock_config)
+        self.assertEqual(config.task, "test_task")
+        self.assertEqual(config.step, [])
+        self.assertEqual(config.level, [])
+        mock_load_json.assert_called_once_with(self.config_path)
 
-    @patch("msit.base.config.valid_task")
-    @patch("msit.base.config.valid_exec")
-    @patch("msit.base.config.valid_framework")
-    @patch("msit.base.config.valid_step_or_rank")
-    @patch("msit.base.config.valid_log_level")
-    @patch("msit.base.config.valid_seed")
-    def test_common_check_from_file(self, mock_seed, mock_log, mock_step, mock_framework, mock_exec, mock_task):
-        args = Namespace(exec=[])
-        step = [1, 2]
-        self.config.common_check(step=step, args=args)
-        mock_task.assert_called_once_with(CfgConst.TASK_STAT)
-        mock_exec.assert_called_once_with([])
-        mock_framework.assert_called_once_with("mindie_llm")
-        mock_step.assert_any_call([1, 2])
-        mock_step.assert_any_call([1])
-        mock_log.assert_called_once_with("info")
-        mock_seed.assert_called_once_with(42)
+    @patch("msit.base.config.load_json")
+    def test_common_check_calls(self, mock_load_json):
+        mock_load_json.return_value = self.mock_config
+        config = ConcreteConfig(self.config_path)
+
+        with patch.multiple(
+            "msit.base.config",
+            valid_task=MagicMock(return_value="test_task"),
+            valid_framework=MagicMock(return_value="valid_framework"),
+            valid_step_or_rank=MagicMock(side_effect=lambda x: x),
+            valid_level=MagicMock(return_value=["valid_level"]),
+            valid_log_level=MagicMock(return_value="valid_log_level"),
+            valid_seed=MagicMock(return_value=42),
+        ) as mocks:
+            config.common_check()
+
+            self.assertEqual(config.config[CfgConst.TASK], "test_task")
+            self.assertEqual(config.config[CfgConst.FRAMEWORK], "valid_framework")
+            self.assertEqual(config.config[CfgConst.STEP], [])
+            self.assertEqual(config.config[CfgConst.RANK], [])
+            self.assertEqual(config.config[CfgConst.LEVEL], ["valid_level"])
+            self.assertEqual(config.config[CfgConst.LOG_LEVEL], "valid_log_level")
+            self.assertEqual(config.config[CfgConst.SEED], 42)
+
+    @patch("msit.base.config.load_json")
+    def test_get_task_dict_success(self, mock_load_json):
+        mock_load_json.return_value = {CfgConst.TASK: "existing_task", "existing_task": {"key": "value"}}
+        config = ConcreteConfig(self.config_path)
+        task_dict = config.get_task_dict()
+        self.assertEqual(task_dict, {"key": "value"})
+
+    @patch("msit.base.config.load_json")
+    def test_get_task_dict_raises_exception(self, mock_load_json):
+        mock_load_json.return_value = {CfgConst.TASK: "non_existing_task"}
+        config = ConcreteConfig(self.config_path)
+        with self.assertRaises(MsitException) as context:
+            config.get_task_dict()
+        self.assertIn(f'Missing dictionary for key "non_existing_task".', context.exception.error_msg)
+
+    @patch("msit.base.config.load_json")
+    def test_update_config(self, mock_load_json):
+        mock_load_json.return_value = self.mock_config
+        config = ConcreteConfig(self.config_path)
+        test_dict = {}
+        mock_check = MagicMock(return_value="checked_value")
+        config._update_config(test_dict, "test_key", mock_check, "test_value")
+        mock_check.assert_called_once_with("test_value")
+        self.assertEqual(test_dict["test_key"], "checked_value")
+
+    @patch("msit.base.config.load_json")
+    def test_check_config_wrapper(self, mock_load_json):
+        mock_load_json.return_value = self.mock_config
+        config = ConcreteConfig(self.config_path)
+        with patch.object(config, "common_check") as mock_common_check, patch.object(
+            config, "check_config"
+        ) as mock_check_config:
+            config.check_config()
+            mock_common_check.assert_called_once()
+            mock_check_config.assert_called_once()
+            self.assertEqual(config.task_config, {"key": "value"})
 
 
 class TestDict2Class(unittest.TestCase):

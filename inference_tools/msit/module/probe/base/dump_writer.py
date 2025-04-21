@@ -48,6 +48,7 @@ class WriterDump(ABC):
             def wrapper(*args, **kwargs):
                 if self.task == CfgConst.TASK_TENSOR:
                     DirPool.make_tensor_dir()
+                    self.cache_dump_json[DumpConst.DUMP_DATA_DIR] = DirPool.get_tensor_dir()
                 result = attr(*args, **kwargs)
                 if self.net_output_nodes:
                     save_json(
@@ -120,7 +121,7 @@ class WriterDump(ABC):
         self._update_dump_json(
             self.cache_dump_json[DumpConst.DATA][get_valid_name(name)],
             in_out,
-            {**{"name": get_valid_name(args_name)}, **DataStat.collect_stats_for_numpy(npy_data)},
+            {**{"data_name": get_valid_name(args_name)}, **DataStat.collect_stats_for_numpy(npy_data)},
         )
 
     def update_stack(self, name):
@@ -179,7 +180,6 @@ class WriterDump(ABC):
         save_json(self.cache_stack_json, stack_json_path, indent=4)
 
     def _save_tensor_data(self, name, in_out, ind, npy_data):
-        self.cache_dump_json[DumpConst.DUMP_DATA_DIR] = DirPool.get_tensor_dir()
         file_name = self._generate_name(name, in_out, ind)
         self.tensor_path = self._generate_path(DirPool.get_tensor_dir(), file_name)
         save_npy(npy_data, self.tensor_path)

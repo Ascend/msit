@@ -13,9 +13,9 @@ class TestGetCurrentTimestamp(unittest.TestCase):
     def test_used_for_log_false_no_microsecond(self):
         result = get_current_timestamp(used_for_log=False, microsecond=False)
         self.assertIsInstance(result, int)
-        self.assertAlmostEqual(result, int(time.time()), delta=1)
+        self.assertAlmostEqual(result, int(time.perf_counter()), delta=1)
 
-    @patch("msit.utils.log.time")
+    @patch("msit.utils.log.perf_counter")
     def test_used_for_log_false_with_microsecond(self, mock_time):
         mock_time.return_value = 1620000000.123456
         expected = round(1620000000.123456 * 1e6) % 10**10

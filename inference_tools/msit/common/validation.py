@@ -32,11 +32,12 @@ def valid_task(value: str):
     return value
 
 
-def valid_exec(values: list):
+def valid_exec(values: str):
     if not values:
         return values
-    if not isinstance(values, list):
-        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"exec" must be a list.')
+    if not isinstance(values, str):
+        raise MsitException(MsgConst.INVALID_DATA_TYPE, '"exec" must be a string.')
+    values = values.split(" ")
     first_keyword = values[0]
     if is_dir(first_keyword):
         _ = MsitPath(first_keyword, PathConst.DIR, "r", PathConst.SIZE_50G).check()

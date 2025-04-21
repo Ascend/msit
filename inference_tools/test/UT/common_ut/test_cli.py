@@ -54,7 +54,7 @@ class TestMainCommand(unittest.TestCase):
     @patch("msit.common.cli.run_subprocess")
     @patch("msit.common.cli.set_ld_preload")
     @patch("msit.common.cli.cann.get_atb_probe_so_path")
-    @patch("msit.common.cli.argv", ["msit", "valid_service"])
+    @patch("msit.common.cli.argv", ["valid_service"])
     def test_execute_service_with_framework(self, mock_get_so, mock_set_preload, mock_run_subprocess, mock_service):
         mock_get_so.return_value = "/fake/mindie_llm.so"
         mock_service_instance = MagicMock()
@@ -68,7 +68,7 @@ class TestMainCommand(unittest.TestCase):
         self.main_cmd.execute(args)
         mock_get_so.assert_called_once()
         mock_set_preload.assert_called_once_with("/fake/mindie_llm.so")
-        mock_service.assert_called_once_with("config.yaml", args=args)
+        mock_service.assert_called_once_with(cmd_namespace=args, serv_name="valid_service")
         mock_service_instance.run_cli.assert_called_once()
         mock_run_subprocess.assert_not_called()
 
