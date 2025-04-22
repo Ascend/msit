@@ -16,11 +16,13 @@ import os
 import sys
 import json
 import csv
+import errno
 import socket
 import logging
 import time
 import re
 from collections import namedtuple
+
 
 _RUN_MODES = ["precheck", "dump", "compare", "distribute_compare"]
 RUN_MODES = namedtuple("RUN_MODES", _RUN_MODES)(*_RUN_MODES)
@@ -39,6 +41,9 @@ LOG_LEVELS = {
     "fatal": logging.FATAL,
     "critical": logging.CRITICAL,
 }
+
+PORT_RANGE_MIN = 1
+PORT_RANGE_MAX = 65535
 
 
 def str_ignore_case(value):
@@ -391,3 +396,37 @@ class SimpleProgressBar:
         self.logger.info(
             f"\r{self.desc} |{bar}| {percent:.1f}% [{self.current}/{self.total}] ETA: {remaining_time:.1f}s"
         )
+
+
+def is_port_in_use(port: int, host: str = 'localhost') -> bool:
+    """
+    检测端口是否被占用
+    
+    :param port: int, port to be checked, ranging from 1 to 65535
+    :param host: str, host address (IP / domain name), empty string representing all interfaces
+    
+    :return: True if in use otherwise False
+    """
+    if not isinstance(port, int):
+        raise TypeError(f"'port' expected integer, got {type(port).__name__}")
+
+    if not (PORT_RANGE_MIN <= port <= PORT_RANGE_MAX):
+        raise ValueError(f"'port' expected in range [1, 65535], got {port}")
+    
+    if not isinstance(host, str):
+        raise TypeError(f"'host' expected str, got {type(host).__name__}")
+    
+    in_use = False
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind((host, port))
+        except OSError as e:
+            if e.errno == errno.EADDRINUSE:
+                in_use = True
+            elif e.errno == errno.EACCES:
+                in_use = False
+            else:
+                logger.warning(e)
+                in_use = False
+    
+    return in_use
