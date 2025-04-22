@@ -87,7 +87,7 @@ def update_to_default_suggestions(domain, additional_checks_yaml):
             suggestions_dict[cur_key].clear()
             suggestions_dict[cur_key].update(ii)
         else:
-            sub_config.append(cur)
+            sub_config.append(ii)
             suggestions_dict[cur_key] = ii
 
 
