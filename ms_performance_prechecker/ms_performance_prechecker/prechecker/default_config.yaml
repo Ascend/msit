@@ -15,9 +15,9 @@ environment_variables:
     - null
 
 mindie_config:
-  - name: BackendConfig:ModelDeployConfig:ModelConfig:ModelConfig
+  - name: BackendConfig:ModelDeployConfig:ModelConfig:0:modelName
     reason: "必需字段，该值不能为空"
-  - name: BackendConfig:ModelDeployConfig:ModelConfig:modelWeightPath
+  - name: BackendConfig:ModelDeployConfig:ModelConfig:0:modelWeightPath
     reason: "必需字段，该值不能为空"
 
 ranktable:

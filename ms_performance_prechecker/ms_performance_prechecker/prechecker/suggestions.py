@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import typingli
 from collections import namedtuple
 
 import yaml
@@ -67,7 +68,7 @@ _DOMAIN = ["environment_variables", "mindie_config", "ranktable", "model_config"
 DOMAIN = namedtuple("DOMAIN", _DOMAIN)(*_DOMAIN)
 _CONFIG = ["name", "value", "reason", "suggestions", "condition", "suggested", "not_suggested"]
 CONFIG = namedtuple("CONFIG", _CONFIG)(*_CONFIG)
-
+NOT_EMPTY_VALUE = "非空值"
 
 def get_default_suggestions():
     suggestion_file = os.path.join(os.path.dirname(__file__), "default_config.yaml")
@@ -110,14 +111,14 @@ def is_value_met_special_suggestions(current_value, condition, current_configs):
 
 def is_value_met_suggestions(current_value, suggested_values, current_configs):
     if not suggested_values:
-        return True
+        return current_value is not None  # suggested_values is empty, check if current_value not None
     normal_value_suggestions, special_value_suggestions = [], []
     for ii in suggested_values:
         if isinstance(ii, str) and ii.startswith("="):
             special_value_suggestions.append(ii)
         else:
             normal_value_suggestions.append(ii)
-    if current_value in normal_value_suggestions:
+    if isinstance(current_value, typing.Hashable) and current_value in normal_value_suggestions:
         return True
     for condition in special_value_suggestions:
         condition = condition[1:].strip()  # get rid of starting =
@@ -137,23 +138,23 @@ def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, 
     check_item = suggestion_rule.get(CONFIG.name)
     if CONFIG.suggestions in suggestion_rule:
         suggestions = suggestion_rule[CONFIG.suggestions]
-    if CONFIG.value in suggestion_rule:
-        suggestions.append(
-            {
-                CONFIG.value: suggestion_rule.get(CONFIG.value, None),
-                CONFIG.suggested: {CONFIG.reason: suggestion_rule.get(CONFIG.reason, "")},
-            }
-        )
+    else:
+        cur = {CONFIG.value: suggestion_rule[CONFIG.value]} if CONFIG.value in suggestion_rule else {}
+        cur.update({CONFIG.suggested: {CONFIG.reason: suggestion_rule.get(CONFIG.reason, "")}})
+        suggestions.append(cur)
     logger.debug(f"suggestion_rule_checker: suggestions = {suggestions}")
 
     suggest_value_list = []  # (value, reason) 优先级从前到后，在前面的优先级高
     not_suggest_value_dict = {}  # value： reason
 
     for suggestion in suggestions:
-        suggestion_value = suggestion.get(CONFIG.value, None)
-        if not isinstance(suggestion_value, list):
-            suggestion_value = [suggestion_value]
-        value_list = [convert_value_type(ii, domain) for ii in suggestion_value]
+        if CONFIG.value in suggestion:
+            suggestion_value = suggestion.get(CONFIG.value, None)
+            if not isinstance(suggestion_value, list):
+                suggestion_value = [suggestion_value]
+            value_list = [convert_value_type(ii, domain) for ii in suggestion_value]
+        else:
+            suggestion_value, value_list = [], []
         suggestion_reason = ""
         suggestion_condition = None
         not_suggestion_reason = ""
@@ -173,7 +174,7 @@ def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, 
                 not_suggest_value_dict.update({x: not_suggestion_reason for x in suggestion_value})
 
     current_value = get_dict_value_by_pos(current_configs, check_item)
-    if current_value in not_suggest_value_dict:
+    if isinstance(current_value, typing.Hashable) and current_value in not_suggest_value_dict:
         # 最后加一个建议，如果前面没有命中，就直接让用户unset 当前环境变量
         # 如果不建议配置为空，那么一定要有一个前置建议能命中，否则就是配置问题，代码中不做保证
         suggest_value_list.append(([None], not_suggest_value_dict[current_value]))
@@ -184,7 +185,7 @@ def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, 
             f"value_list={value_list}, suggested_values={suggested_values}, current_value={current_value}"
         )
         if not is_value_met_suggestions(current_value, suggested_values, current_configs):
-            suggestion_value = suggested_values[0]
+            suggestion_value = suggested_values[0] if len(suggested_values) > 0 else NOT_EMPTY_VALUE
             show_check_result(
                 domain,
                 check_item,

@@ -21,7 +21,7 @@ from ms_performance_prechecker.prechecker.utils import MIES_INSTALL_PATH, MINDIE
 from ms_performance_prechecker.prechecker.utils import parse_mindie_server_config, parse_ranktable_file
 from ms_performance_prechecker.prechecker.utils import get_model_path_from_mindie_config, get_mindie_server_config
 from ms_performance_prechecker.prechecker.utils import is_deepseek_model, read_csv_or_json
-from ms_performance_prechecker.prechecker.suggestions import GLOBAL_DEFAULT_CONFIG, DOMAIN, CONFIG
+from ms_performance_prechecker.prechecker.suggestions import GLOBAL_DEFAULT_CONFIG, DOMAIN, CONFIG, NOT_EMPTY_VALUE
 from ms_performance_prechecker.prechecker.suggestions import update_to_default_suggestions, suggestion_rule_checker
 
 
@@ -30,11 +30,13 @@ class ConfigCheckerBase(PrecheckerBase):
 
     def __init__(self, domain):
         super().__init__()
-        self.domain = domain
+        self.domain, config_path = domain, ""
 
-    @staticmethod
-    def action(env_key, env_value):
-        return f"Set {env_key}={env_value}" if env_value else f"Unset {env_key}"
+    def action(self, env_key, env_value):
+        if env_value == NOT_EMPTY_VALUE:
+            return f"配置文件 {self.config_path} 中添加 {env_key} 字段"
+        else:
+            return f"配置文件 {self.config_path} 中修改 {env_key}={env_value}"
 
     def do_precheck(self, current_config, additional_checks=None, **kwargs):
         if not current_config:
@@ -56,11 +58,8 @@ class MindieConfigChecker(ConfigCheckerBase):
         super().__init__(domain=DOMAIN.mindie_config)
 
     def collect_env(self, mindie_service_path=None, **kwargs):
-        self.mindie_service_path = get_mindie_server_config(mindie_service_path)
-        return parse_mindie_server_config(mindie_service_path)
-
-    def action(self, env_key, env_value):
-        return f"mindie_service={self.mindie_service_path} config 中修改 {env_key} 字段"
+        self.config_path = get_mindie_server_config(mindie_service_path)
+        return parse_mindie_server_config(self.config_path)
 
 
 class RankTableChecker(ConfigCheckerBase):
@@ -70,11 +69,8 @@ class RankTableChecker(ConfigCheckerBase):
         super().__init__(domain=DOMAIN.ranktable)
 
     def collect_env(self, ranktable_file=None, **kwargs):
-        self.ranktable_file = ranktable_file
-        return parse_ranktable_file(ranktable_file)
-
-    def action(self, env_key, env_value):
-        return f"ranktable={self.ranktable_file} 中添加 {env_key} 字段"
+        self.config_path = ranktable_file
+        return parse_ranktable_file(self.config_path)
 
 
 class ModelConfigChecker(ConfigCheckerBase):
@@ -92,12 +88,9 @@ class ModelConfigChecker(ConfigCheckerBase):
         model_config, model_config_path = {}, os.path.join(model_weight_path, "config.json")
         if os.path.exists(model_config_path):
             model_config = read_csv_or_json(model_config_path)
-        self.model_config_path = model_config_path
+        self.config_path = model_config_path
         logger.debug(f"ModelConfigCollecter model_name={model_name} model_config={model_config}")
         return {"model_name": model_name, "model_config": model_config}
-
-    def action(self, env_key, env_value):
-        return f'需在模型配置文件 {self.model_config_path} 中设置 {env_key}={env_value}'
 
     def do_precheck(self, current_config, additional_checks=None, **kwargs):
         if not model_info:
@@ -118,11 +111,8 @@ class UserConfigChecker(ConfigCheckerBase):
         super().__init__(domain=DOMAIN.user_config)
 
     def collect_env(self, user_config_path=None, **kwargs):
-        self.user_config_path = user_config_path
+        self.config_path = user_config_path
         return read_csv_or_json(user_config_path) if user_config_path and os.path.exists(user_config_path) else {}
-
-    def action(self, env_key, env_value):
-        return f'需在配置文件 {self.user_config_path} 中设置 {env_key}={env_value}'
 
 
 mindie_config_checker = MindieConfigChecker()
