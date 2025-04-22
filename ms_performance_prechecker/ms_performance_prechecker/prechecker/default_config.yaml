@@ -13,11 +13,6 @@ environment_variables:
     value:
     - 3
     - null
-  - name: ASCEND_LAUNCH_BLOCKING
-    reason: 同步模式用于算子调试，通常使用异步方式执行，性能更好
-    value:
-    - 0
-    - null
 
 mindie_config:
   - name: BackendConfig:ModelDeployConfig:ModelConfig:ModelConfig
@@ -46,13 +41,3 @@ ranktable:
     reason: "必需字段，该值不能为空"
   - name: server_list:0:device:0:rank_id
     reason: "必需字段，该值不能为空"
-
-model_config:
-  - name: model_type
-    value: "deepseekv2"
-    reason: "当前配置 model_type 不匹配 deepseek 模型"
-
-user_config:
-  - name: model_type
-    value: "deepseekv2"
-    reason: "当前配置 model_type 不匹配 deepseek 模型"
