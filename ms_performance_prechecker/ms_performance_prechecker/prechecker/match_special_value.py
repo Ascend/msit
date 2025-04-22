@@ -1,6 +1,6 @@
 import json
 import re
-from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, deep_compare_dict, str_to_digit
+from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, deep_compare_dict, str_to_digit, logger
 
 CALCULATING_OPS = ["+", "-", "*", "/", "//"]
 COMPARING_OPS = ['>=', '<=', '!=', '=', '>', '<']
@@ -22,6 +22,7 @@ def parse_calculation_expression(input_value, expr, config):
         expr = expr.replace(var, str(var_value))
     
     # 步骤3：计算并比较
+    logger.debug(f"parse_calculation_expression expr={expr}, input_value={input_value}")
     try:
         calculated_value = eval(expr)
         return input_value == calculated_value
@@ -31,6 +32,7 @@ def parse_calculation_expression(input_value, expr, config):
 
 def parse_comparison_expression(input_value, condition, config):
     operator, condition_key_or_value = _parse_condition(condition)
+    logger.debug(f"parse_comparison_expression operator={operator}, condition_key_or_value={condition_key_or_value}")
 
     # 判断条件值是数字还是键路径
     if isinstance(condition_key_or_value, (int, float)):
@@ -47,9 +49,10 @@ def _parse_condition(condition_str):
     # 强制检查操作符存在性
     for op in COMPARING_OPS:
         if condition_str.startswith(op):
-            remaining = condition_str[len(op):].lstrip(':')
+            remaining = condition_str[len(op):].lstrip(':').strip()
             # 尝试解析剩余部分为数字
             num_val = str_to_digit(remaining)
+            logger.debug(f"_parse_condition remaining={remaining}, num_val={num_val}")
             if num_val is not None:
                 return op, num_val  # 返回操作符和数字
             else:
@@ -62,6 +65,7 @@ def _parse_condition(condition_str):
 def _apply_operator(operator, input_val, condition_val):
     """处理操作符逻辑"""
     # 等值判断（深度结构比较）
+    logger.debug(f"_apply_operator operator={operator}, input_val={input_val}, condition_val={condition_val}")
     if operator in ('=', None):
         return not deep_compare_dict(
             dicts=[input_val, condition_val],
@@ -171,7 +175,7 @@ def is_value_met_special_suggestions(input_value, condition, config):
         # 处理多条件（用分号分隔）
         if ';' in condition:
             sub_conditions = [ii.strip() for ii in condition.split(';') if ii.strip()]
-            return all(parse_config_value(input_value, sub_cond, config) for sub_cond in sub_conditions)
+            return all(is_value_met_special_suggestions(input_value, sub_cond, config) for sub_cond in sub_conditions)
         
         # 情况1：字符串形式的列表（如 "[2, 4, 8]"）
         if condition.startswith('[') and condition.endswith(']'):
