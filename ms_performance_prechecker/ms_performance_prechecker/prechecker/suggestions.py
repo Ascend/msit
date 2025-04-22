@@ -105,11 +105,8 @@ def convert_value_type(value, domain):
     return value if value is None or domain != DOMAIN.environment_variables else str(value)
 
 
-def is_value_met_special_suggestions(current_value, condition, current_configs):
-    return False  # [TODO], adding special checking rules
-
-
 def is_value_met_suggestions(current_value, suggested_values, current_configs):
+    from ms_performance_prechecker.prechecker.suggest_value_list import is_value_met_special_suggestions
     if not suggested_values:
         return current_value is not None  # suggested_values is empty, check if current_value not None
     normal_value_suggestions, special_value_suggestions = [], []
