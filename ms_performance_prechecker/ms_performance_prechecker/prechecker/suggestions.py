@@ -97,9 +97,16 @@ def is_condition_met(env_info, suggestion_condition):
     return True
 
 
+def parse_and_compare_config_value(current_value, suggested_values, current_configs):
+    # [TODO] add other parsing rules
+    if len(suggested_values) > 0 and current_value not in suggested_values:
+        return True
+    return False
+
+
 def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, action_func=None):
     from ms_performance_prechecker.prechecker.register import show_check_result, CheckResult
-    from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos
+    from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, logger
 
     if not suggestion_rule:
         return (CheckResult.OK, None, None)
@@ -134,7 +141,7 @@ def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, 
             suggestion_reason = cur_suggested.get(CONFIG.reason, suggestion_reason)
 
             if suggestion_condition is None or is_condition_met(env_info, suggestion_condition):
-                suggest_value_list.append((value_list, suggestion_reason))  # [TODO] apply specific ruls
+                suggest_value_list.append((value_list, suggestion_reason))
         if CONFIG.not_suggested in suggestion:
             cur_not_suggested = suggestion.get(CONFIG.not_suggested, {})
             not_suggestion_version_list = cur_not_suggested.get(CONFIG.condition, not_suggestion_version_list)
@@ -149,10 +156,12 @@ def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, 
         suggest_value_list.append(([None], not_suggest_value_dict[current_value]))
 
     for value_list, reason in suggest_value_list:
-        not_in_unsuggest_values = [x for x in value_list if x not in not_suggest_value_dict]
-        print(f">>>> {not_in_unsuggest_values = }, {value_list = }, {current_value = }")
-        if len(not_in_unsuggest_values) > 0 and current_value not in not_in_unsuggest_values:
-            suggestion_value = not_in_unsuggest_values[0]
+        suggested_values = [x for x in value_list if x not in not_suggest_value_dict]
+        logger.debug(
+            f"value_list={value_list}, suggested_values={suggested_values}, current_value={current_value}"
+        )
+        if parse_and_compare_config_value(current_value, suggested_values, current_configs):
+            suggestion_value = suggested_values[0]
             show_check_result(
                 domain,
                 check_item,

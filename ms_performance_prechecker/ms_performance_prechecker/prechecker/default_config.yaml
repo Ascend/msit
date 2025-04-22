@@ -112,6 +112,12 @@ mindie_config:
     reason: "必需字段，该值不能为空"
   - name: BackendConfig:ModelDeployConfig:ModelConfig:modelWeightPath
     reason: "必需字段，该值不能为空"
+  - name: BackendConfig:ModelDeployConfig:ModelConfig:dp
+    value: = 16 // BackendConfig:ModelDeployConfig:ModelConfig:tp
+    reason: "必需字段，该值不能为空"
+  - name: BackendConfig:ModelDeployConfig:ModelConfig:tp
+    value: = 16 // BackendConfig:ModelDeployConfig:ModelConfig:dp; >= 2
+    reason: "必需字段，该值不能为空"
 
 ranktable:
   - name: server_count
