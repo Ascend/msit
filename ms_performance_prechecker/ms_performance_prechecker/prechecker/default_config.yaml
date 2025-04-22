@@ -1,0 +1,43 @@
+version: 1.0
+description: MindIE server config template
+
+# 环境变量建议配置
+environment_variables:
+  - name: MINDIE_LOG_LEVEL
+    reason: 控制MindIE组件日志级别，大量的日志打印会影响程序性能，建议提高日志级别
+    value:
+    - ERROR
+    - null
+  - name: ASCEND_GLOBAL_LOG_LEVEL
+    reason: 控制昇腾应用类日志级别，大量的日志打印会影响程序性能，建议提高日志级别
+    value:
+    - 3
+    - null
+
+mindie_config:
+  - name: BackendConfig:ModelDeployConfig:ModelConfig:0:modelName
+    reason: "必需字段，该值不能为空"
+  - name: BackendConfig:ModelDeployConfig:ModelConfig:0:modelWeightPath
+    reason: "必需字段，该值不能为空"
+
+ranktable:
+  - name: server_count
+    reason: "必需字段，该值不能为空"
+  - name: server_list
+    reason: "必需字段，该值不能为空"
+  - name: version
+    reason: "必需字段，该值不能为空"
+  - name: status
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:server_id
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:container_ip
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:device
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:device:0:device_id
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:device:0:device_ip
+    reason: "必需字段，该值不能为空"
+  - name: server_list:0:device:0:rank_id
+    reason: "必需字段，该值不能为空"

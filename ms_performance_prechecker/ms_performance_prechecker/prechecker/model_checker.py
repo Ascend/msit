@@ -17,7 +17,7 @@ import glob
 import hashlib
 from concurrent.futures import ThreadPoolExecutor
 
-from ms_performance_prechecker.prechecker.register import RrecheckerBase, show_check_result, CheckResult
+from ms_performance_prechecker.prechecker.register import PrecheckerBase, show_check_result, CheckResult
 from ms_performance_prechecker.prechecker.utils import logger, get_model_path_from_mindie_config
 from ms_performance_prechecker.prechecker.utils import SimpleProgressBar, is_deepseek_model
 from ms_performance_prechecker.prechecker.utils import SimpleProgressBar, is_deepseek_model, get_next_dict_item
@@ -58,7 +58,7 @@ def get_file_sha256s(file_path_regex, block_size=4096, num_blocks=1000):
             else:
                 step = max(1, total_size // num_blocks)
                 test_positions = list(range(0, total_size, step)) + [max(0, total_size - block_size)]
-                
+
                 for pos in test_positions:
                     if 0 <= pos < total_size:
                         ff.seek(pos, 0)
@@ -71,7 +71,7 @@ def get_file_sha256s(file_path_regex, block_size=4096, num_blocks=1000):
     return result_dict
 
 
-class ModelSizeChecker(RrecheckerBase):
+class ModelSizeChecker(PrecheckerBase):
     __checker_name__ = "ModelSize"
 
     def collect_env(self, mindie_service_path=None, **kwargs):
@@ -119,9 +119,9 @@ class ModelSizeChecker(RrecheckerBase):
             show_check_result("Model", f"size: {total_weight_size_str}", CheckResult.OK)
 
 
-class ModelSha256Collecter(RrecheckerBase):
+class ModelSha256Collecter(PrecheckerBase):
     __checker_name__ = "ModelSha256"
-    
+
     def collect_env(self, mindie_service_path=None, sha256_blocknum=1000, **kwargs):
         model_name, model_weight_path = get_model_path_from_mindie_config(mindie_service_path=mindie_service_path)
 

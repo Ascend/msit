@@ -16,11 +16,13 @@ import os
 import sys
 import json
 import csv
+import errno
 import socket
 import logging
 import time
 import re
 from collections import namedtuple
+
 
 _RUN_MODES = ["precheck", "dump", "compare", "distribute_compare"]
 RUN_MODES = namedtuple("RUN_MODES", _RUN_MODES)(*_RUN_MODES)
@@ -39,6 +41,9 @@ LOG_LEVELS = {
     "fatal": logging.FATAL,
     "critical": logging.CRITICAL,
 }
+
+PORT_RANGE_MIN = 1
+PORT_RANGE_MAX = 65535
 
 
 def str_ignore_case(value):
@@ -118,18 +123,18 @@ def deep_compare_dict(dicts, names, parent_key="", skip_keys=None):
     return has_diff
 
 
-def get_dict_value_by_pos(dict_value, target_pos):
+def get_dict_value_by_pos(dict_value, target_pos, default_value=None):
     cur = dict_value
     for kk in target_pos.split(":"):
         if not cur:
-            cur = None
+            cur = default_value
             break
         if isinstance(cur, list) and str.isdigit(kk):
             cur = cur[int(kk)]
         elif kk in cur:
             cur = cur[kk]
         else:
-            cur = None
+            cur = default_value
             break
     return cur
 
@@ -237,9 +242,7 @@ def parse_ranktable_file(ranktable_file=None):
         return None
 
     ranktable = read_csv_or_json(ranktable_file)
-    logger.debug(
-        "ranktable: %s", get_next_dict_item(ranktable) if ranktable else None
-    )
+    logger.debug("ranktable: %s", get_next_dict_item(ranktable) if ranktable else None)
     return ranktable
 
 
@@ -299,11 +302,37 @@ def run_shell_command(command, fail_msg=""):
     return result
 
 
+def get_global_env_info():
+    env_vars = os.environ
+    ret_envs = {}
+    for key, value in env_vars.items():
+        key_word_list = [
+            "ASCEND",
+            "MINDIE",
+            "ATB_",
+            "HCCL_",
+            "MIES",
+            "RANKTABLE",
+            "GE_",
+            "TORCH",
+            "ACL_",
+            "NPU_",
+            "LCCL_",
+            "LCAL_",
+            "OPS",
+            "INF_",
+        ]
+        for key_word in key_word_list:
+            if key_word in key:
+                ret_envs.update({key: value})
+    return ret_envs
+
+
 def get_npu_info():
     result = run_shell_command("lspci", fail_msg=", will skip getting npu info.")
     for line in result.stdout.splitlines():
         if "accelerators" in line:
-            match = re.search(r'Device (d\d{3})', line)
+            match = re.search(r"Device (d\d{3})", line)
             if match:
                 device_id = match.group(1)
                 return device_id
@@ -334,7 +363,7 @@ class SimpleProgressBar:
         for item in self.iterable:
             yield item
             self.update(1)
-        self.logger.info('\n')
+        self.logger.info("\n")
 
     @staticmethod
     def _init_logger():
@@ -342,7 +371,7 @@ class SimpleProgressBar:
         local_logger.setLevel(logging.INFO)
 
         handler = ProcessBarStreamHandler(sys.stdout)
-        handler.setFormatter(logging.Formatter('%(message)s'))
+        handler.setFormatter(logging.Formatter("%(message)s"))
         local_logger.addHandler(handler)
         return local_logger
 
@@ -354,7 +383,7 @@ class SimpleProgressBar:
         progress = self.current / self.total
         bar_length = 30
         filled_length = int(bar_length * progress)
-        bar = '█' * filled_length + '-' * (bar_length - filled_length)
+        bar = "█" * filled_length + "-" * (bar_length - filled_length)
         percent = progress * 100
 
         # 计算剩余时间
@@ -365,5 +394,39 @@ class SimpleProgressBar:
             remaining_time = 0
 
         self.logger.info(
-            f'\r{self.desc} |{bar}| {percent:.1f}% [{self.current}/{self.total}] ETA: {remaining_time:.1f}s'
+            f"\r{self.desc} |{bar}| {percent:.1f}% [{self.current}/{self.total}] ETA: {remaining_time:.1f}s"
         )
+
+
+def is_port_in_use(port: int, host: str = 'localhost') -> bool:
+    """
+    检测端口是否被占用
+    
+    :param port: int, port to be checked, ranging from 1 to 65535
+    :param host: str, host address (IP / domain name), empty string representing all interfaces
+    
+    :return: True if in use otherwise False
+    """
+    if not isinstance(port, int):
+        raise TypeError(f"'port' expected integer, got {type(port).__name__}")
+
+    if not (PORT_RANGE_MIN <= port <= PORT_RANGE_MAX):
+        raise ValueError(f"'port' expected in range [1, 65535], got {port}")
+    
+    if not isinstance(host, str):
+        raise TypeError(f"'host' expected str, got {type(host).__name__}")
+    
+    in_use = False
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind((host, port))
+        except OSError as e:
+            if e.errno == errno.EADDRINUSE:
+                in_use = True
+            elif e.errno == errno.EACCES:
+                in_use = False
+            else:
+                logger.warning(e)
+                in_use = False
+    
+    return in_use
