@@ -306,7 +306,7 @@ def quantize_model_deploy(graph, params):
     quant_index = -1
     for weight_name in quantized_weight_name:
         quant_index = get_quant_index(quant_index)
-        logging.info("enter this quantized module:%s", weight_name)
+        logging.info("enter this quantized module:%r", weight_name)
 
         index = find_index(nodes, weight_name)
         fp_node = nodes[index]
@@ -383,7 +383,7 @@ def find_all_quant_nodes(all_bias, nodes):
         try:
             quant_weight_name = find_quant_node(nodes, nodes[index].input[1])
         except LookupError as err:
-            logging.info("quant node not finded: %s", nodes[index].input[1])
+            logging.info("quant node not finded: %r", nodes[index].input[1])
         else:
             all_quant_node.append(quant_weight_name)
     return all_quant_node
@@ -410,7 +410,7 @@ def get_linear_quant_map(onnx_model, weight_scale):
             if len(all_quant_node) != 0:
                 quant_map[name_value] = all_quant_node
         else:
-            logging.info("no value:%s, len of quant_map:%d, quant_map:%s", bias_name, len(quant_map), quant_map)
+            logging.info("no value:%r, len of quant_map:%d, quant_map:%r", bias_name, len(quant_map), quant_map)
     return quant_map
 
 

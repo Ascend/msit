@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright Huawei Technologies Co., Ltd. 2022-2022. All rights reserved.
-from ascend_utils.common.security import get_valid_read_path, check_type, check_int
+from ascend_utils.common.security import get_valid_read_path, check_type, check_int, check_element_type
 
 QUANT_MODE_LIST = [0, 1]  # 1: label-free, 0: data-free
 CALIB_METHOD_LIST = [0, 1, 2]  # 0: min-max, 1: percentile, 2: entropy
@@ -59,9 +59,11 @@ class QuantConfig:
         if self.calib_method not in CALIB_METHOD_LIST:
             raise ValueError("calib_method is invalid, please check it.")
         check_int(self.amp_num, min_value=0, param_name="amp_num")
-        check_type(self.quantize_nodes, list, param_name="quantize_nodes")
-        check_type(self.exclude_nodes, list, param_name="exclude_nodes")
+        check_element_type(self.quantize_nodes, str, value_type=list, param_name="quantize_nodes")
+        check_element_type(self.exclude_nodes, str, value_type=list, param_name="exclude_nodes")
         check_type(self.is_optimize_graph, bool, param_name="is_optimize_graph")
         check_type(self.is_quant_depthwise_conv, bool, param_name="is_quant_depthwise_conv")
-        check_type(self.input_shape, list, param_name="input_shape")
+        check_element_type(self.input_shape, list, value_type=list, param_name="input_shape")
+        for item in self.input_shape:
+            check_element_type(item, int, value_type=list, param_name="input_shape_item")
         check_type(self.is_dynamic_shape, bool, param_name="is_dynamic_shape")

@@ -283,14 +283,14 @@ class Calibrator(object):
                 if weight_name in weight_scale.keys() and \
                         weight_scale.get(weight_name) is not None:
                     quantized_weight_namd.append(weight_name)
-                    logger.info("Conv, item.name :%s, weight_name :%s ", item.name, weight_name)
+                    logger.info("Conv, item.name :%r, weight_name :%r ", item.name, weight_name)
 
             elif item.op_type == "MatMul":
                 weight_name = item.input[1]
                 if weight_name in weight_scale.keys() and \
                         weight_scale.get(weight_name) is not None:
                     quantized_weight_namd.append(weight_name)
-                    logger.info("MatMul, item.name :%s, weight_name :%s ", item.name, weight_name)
+                    logger.info("MatMul, item.name :%r, weight_name :%r ", item.name, weight_name)
 
         quantize_model_deploy_params = ModelDeployQuantParams(
             quantized_weight_name=quantized_weight_namd,
@@ -307,7 +307,7 @@ class Calibrator(object):
         temp_quant_model_file = get_valid_write_path(temp_quant_model_file)
         with SafeWriteUmask():
             onnx.save(model, temp_quant_model_file)
-            logger.info("Quantification ended and onnx is stored in %s ", temp_quant_model_file)
+            logger.info("Quantification ended and onnx is stored in %r ", temp_quant_model_file)
 
         if not save_fp:
             save_fp_path = os.path.join(save_path, "{}_fp.onnx".format(model_arch))
@@ -441,7 +441,7 @@ def quantize_model(model, cfg=None):
         setattr(cur_mod, tokens[-1], module)
 
     for name, mod in model.named_modules():
-        logger.info("quantize_model, name :%s, type of mod :%s ", name, type(mod))
+        logger.info("quantize_model, name :%r, type of mod :%s ", name, type(mod))
         if isinstance(mod, nn.Conv2d):
             quant_mod = Conv2dQuantizer(cfg=cfg)
             quant_mod.set_param(mod)
@@ -464,10 +464,10 @@ def set_first_last_layer(model, last=True):
     module_list = []
     for name, mod in model.named_modules():
         if isinstance(mod, Conv2dQuantizer):
-            logger.info("Quantized conv module:%s", name)
+            logger.info("Quantized conv module:%r", name)
             module_list += [mod]
         if isinstance(mod, LinearQuantizer):
-            logger.info("Quantized linear module:%s", name)
+            logger.info("Quantized linear module:%r", name)
             module_list += [mod]
     module_list[0].quant_input.is_enable = False
     module_list[0].quant_weight.is_enable = False
@@ -479,20 +479,20 @@ def set_first_last_layer(model, last=True):
 def disable_input_quantization(model):
     for name, module in model.named_modules():
         if isinstance(module, Quantizer):
-            logger.info("Disabling quantization of input quantizer:%s", name)
+            logger.info("Disabling quantization of input quantizer:%r", name)
             module.disable_input_quantization()
 
 
 def enable_quantization(model):
     for name, module in model.named_modules():
         if isinstance(module, Quantizer):
-            logger.info("Enabling quantizer:%s", name)
+            logger.info("Enabling quantizer:%r", name)
             module.enable_quantization(name)
 
 
 def set_disable_quantization(module, name):
     module.disable_quantization(name)
-    logger.info("Disabling quantizer:%s", name)
+    logger.info("Disabling quantizer:%r", name)
 
 
 def disable_quantization(model, names=None):

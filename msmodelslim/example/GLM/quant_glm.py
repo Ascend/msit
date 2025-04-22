@@ -102,30 +102,40 @@ def parse_arguments():
     parser.add_argument('--disable_last_linear', type=cmd_bool, default=True)
     parser.add_argument('--model_name', type=str, default=None,
                         validator=StringArgumentValidator(min_length=1, max_length=MAX_KEY_LENGTH, allow_none=True))
+    parser.add_argument('--trust_remote_code', type=cmd_bool, default=False)
     return parser.parse_args()
 
 
 class Quantifier:
     def __init__(self, model_path_or_name, quant_config=None,
-                 anti_outlier_config=None, device_type='cpu', **kwargs):
+                 anti_outlier_config=None, device_type='cpu', trust_remote_code=False, **kwargs):
         safe_generator = SafeGenerator()
         self.device_type = device_type
         device_map = CPU if self.device_type == CPU else "auto"
+        self.trust_remote_code = trust_remote_code
 
         self.quant_config = quant_config
         self.anti_outlier_config = anti_outlier_config
         self.model_path_or_name = model_path_or_name
-        self.config = safe_generator.get_config_from_pretrained(self.model_path_or_name, trust_remote_code=True)
+        self.config = safe_generator.get_config_from_pretrained(
+            self.model_path_or_name, 
+            trust_remote_code=self.trust_remote_code
+        )
         self.dtype = self.config.torch_dtype if self.device_type == NPU else torch.float32
         self.model = safe_generator.get_model_from_pretrained(
             self.model_path_or_name,
-            low_cpu_mem_usage=True, torch_dtype=self.dtype,
+            low_cpu_mem_usage=True, 
+            torch_dtype=self.dtype,
             device_map=device_map,
-            trust_remote_code=True
+            trust_remote_code=self.trust_remote_code
         )
         tokenizer_args = kwargs.get("tokenizer_args", {})
         self.tokenizer = safe_generator.get_tokenizer_from_pretrained(
-            self.model_path_or_name, use_fast=False, trust_remote_code=True, legacy=False, **tokenizer_args
+            self.model_path_or_name, 
+            use_fast=False, 
+            trust_remote_code=self.trust_remote_code, 
+            legacy=False, 
+            **tokenizer_args
         )
         self.model_name = kwargs.get("model_name", None)
 
@@ -168,7 +178,10 @@ if __name__ == '__main__':
 
     model_path = args.model_path
     save_directory = args.save_directory
-    num_layers = checker.get_config_from_pretrained(model_path, trust_remote_code=True).num_layers
+    num_layers = checker.get_config_from_pretrained(
+        model_path, 
+        trust_remote_code=args.trust_remote_code
+    ).num_layers
 
     # Check if disable_names is provided, if not and a_bit is 8, generate disable_names
     disable_names = args.disable_names
@@ -213,7 +226,7 @@ if __name__ == '__main__':
     quantifier = Quantifier(
         model_path, quant_conf, anti_outlier_config_val,
         device_type=args.device_type, tokenizer_args=tokenizer_args,
-        model_name=args.model_name,
+        model_name=args.model_name, trust_remote_code=args.trust_remote_code
     )
     anti_file_path = get_valid_read_path(args.anti_file, "json", is_dir=False)
     calib_file_path = get_valid_read_path(args.calib_file, "json", is_dir=False)
@@ -249,7 +262,7 @@ if __name__ == '__main__':
     is_w8a8_dynamic = args.w_bit == 8 and args.a_bit == 8 and args.is_dynamic
     if is_w8a8_dynamic:
         quant_type = "w8a8_dynamic"
-    auto_config = checker.get_config_from_pretrained(model_path, trust_remote_code=True)
+    auto_config = checker.get_config_from_pretrained(model_path, trust_remote_code=args.trust_remote_code)
     checker.modify_config(model_path, save_directory, auto_config.torch_dtype,
                 quant_type, args)
     checker.copy_tokenizer_files(model_path, save_directory)

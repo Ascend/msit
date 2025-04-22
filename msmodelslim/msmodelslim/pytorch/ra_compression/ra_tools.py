@@ -43,7 +43,7 @@ class RACompressor(object):
         with SafeWriteUmask(umask=0o377):
             output_model_path = get_valid_write_path(save_path, extensions=".pt")
             torch.save(wins, output_model_path)
-        logger.info("windows is stored in %s ", output_model_path)
+        logger.info("windows is stored in %r ", output_model_path)
     
     def _get_attention_mlp_blocks(self, model):
         dfs = [model]

@@ -47,14 +47,19 @@ class BoolqProcessor(DatasetProcessorBase):
 
         prmpts_anses = []
         for idx in indexs:
-            sample_data = self.ori_prompts[idx]
-            title = sample_data["title"]
-            quest = sample_data["question"]
-            passage = sample_data["passage"]
-            ans = sample_data["answer"]
+            try:
+                sample_data = self.ori_prompts[idx]
+                title = sample_data["title"]
+                quest = sample_data["question"]
+                passage = sample_data["passage"]
+                ans = sample_data["answer"]
 
-            prompt = build_prompt(title, quest, passage)
-            prmpts_anses.append({"prompt": prompt, "ans": ans})
+                prompt = build_prompt(title, quest, passage)
+                prmpts_anses.append({"prompt": prompt, "ans": ans})
+            except KeyError as e:
+                msmodelslim_logger.error(
+                    f"sample_data has no key: {self.dataset_name}, please check your dataset."
+                )
         return prmpts_anses
 
     def verify_positive_prompt(self, prompts, labels):
@@ -271,6 +276,8 @@ class MmluProcessor(DatasetProcessorBase):
     def format_example(self, df, idx, include_answer=True):
         prompt = df.iloc[idx, 0]
         k = len(self.choices)
+        if k + 1 >= len(df.columns):
+            raise IndexError(f"Can not get column {k + 1}, please check your dataset.")
         for j in range(k):
             prompt += "\n{}. {}".format(self.choices[j], df.iloc[idx, j + 1])
         prompt += "\nAnswer:"
@@ -482,9 +489,9 @@ class CalibrationData(object):
     def add_custormized_dataset_processor(self, dataset_name, processor):
         """添加自定义dataset_processor"""
         if not isinstance(dataset_name, str):
-            raise argparse.ArgumentTypeError("%s is not an str." % dataset_name)
+            raise argparse.ArgumentTypeError("%r is not an str." % dataset_name)
         if not isinstance(processor, DatasetProcessorBase):
-            raise argparse.ArgumentTypeError("%s is not an DatasetProcessorBase." % processor)
+            raise argparse.ArgumentTypeError("%r is not an DatasetProcessorBase." % processor)
         self.custormized_dataset_processor[dataset_name] = processor
         self.handlers[dataset_name] = CalibHandler(dataset_name, processor, self.shuffle_seed, self.batch_size)
 
@@ -521,7 +528,7 @@ class CalibrationData(object):
     def set_batch_size(self, batch_size: int):
         """设置batch_size"""
         if not isinstance(batch_size, int):
-            raise argparse.ArgumentTypeError("%s is not an int." % batch_size)
+            raise argparse.ArgumentTypeError("%r is not an int." % batch_size)
         if batch_size == 0:
             raise ValueError("batch_size cant be zero")
         self.batch_size = batch_size
@@ -529,5 +536,5 @@ class CalibrationData(object):
     def set_shuffle_seed(self, shuffle_seed):
         """设置随机种子"""
         if not isinstance(shuffle_seed, int):
-            raise argparse.ArgumentTypeError("%s is not an int." % shuffle_seed)
+            raise argparse.ArgumentTypeError("%r is not an int." % shuffle_seed)
         self.shuffle_seed = shuffle_seed

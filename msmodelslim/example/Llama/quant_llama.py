@@ -157,6 +157,7 @@ def parse_arguments():
                        help='Disable threshold when auto select disable names')
     parser.add_argument('--pdmix', type=cmd_bool, default=False,
                        help='use pdmix quantization type')
+    parser.add_argument('--trust_remote_code', type=cmd_bool, default=False)
     return parser.parse_args()
 
 
@@ -168,20 +169,29 @@ class Quantifier:
         safe_generator = SafeGenerator()
         self.device_type = device_type
         device_map = CPU if self.device_type == CPU else "auto"
+        self.trust_remote_code = args.trust_remote_code
 
         self.anti_outlier_config = anti_outlier_config
         self.model_path_or_name = model_path_or_name
-        self.config = safe_generator.get_config_from_pretrained(self.model_path_or_name, trust_remote_code=True)
+        self.config = safe_generator.get_config_from_pretrained(
+            self.model_path_or_name, 
+            trust_remote_code=self.trust_remote_code
+        )
         self.dtype = self.config.torch_dtype if self.device_type == NPU else torch.float32
         self.model = safe_generator.get_model_from_pretrained(
             self.model_path_or_name,
-            low_cpu_mem_usage=True, torch_dtype=self.dtype,
+            low_cpu_mem_usage=True, 
+            torch_dtype=self.dtype,
             device_map=device_map,
-            trust_remote_code=True
+            trust_remote_code=self.trust_remote_code
         )
         tokenizer_args = kwargs.get("tokenizer_args", {})
         self.tokenizer = safe_generator.get_tokenizer_from_pretrained(
-            self.model_path_or_name, use_fast=False, trust_remote_code=True, legacy=False, **tokenizer_args
+            self.model_path_or_name, 
+            use_fast=False, 
+            trust_remote_code=self.trust_remote_code, 
+            legacy=False, 
+            **tokenizer_args
         )
         self.model_name = kwargs.get("model_name", None)
         self.quant_config = None
@@ -296,7 +306,10 @@ if __name__ == '__main__':
 
     model_path = args.model_path
     save_directory = args.save_directory
-    num_layers = checker.get_config_from_pretrained(model_path, trust_remote_code=True).num_hidden_layers
+    num_layers = checker.get_config_from_pretrained(
+        model_path, 
+        trust_remote_code=args.trust_remote_code
+        ).num_hidden_layers
 
 
     anti_outlier_config_val = None
@@ -350,10 +363,12 @@ if __name__ == '__main__':
             if ant_calib_texts is not None:
                 tokenized_ant_calib_data = quantifier.get_batch_tokenized_data(ant_calib_texts)
 
-    if args.disable_threshold > 0:
+    if isinstance(args.disable_threshold, float) and args.disable_threshold > 0:
         quantifier.create_quant_config(num_layers, tokenized_ant_calib_data)
-    else:
+    elif args.disable_threshold == 0:
         quantifier.create_quant_config(num_layers)
+    else:
+        raise ValueError("disable_threshold should be a float number >= 0")
 
     if not os.path.exists(save_directory):
         os.makedirs(save_directory, mode=0o750, exist_ok=True)
@@ -372,7 +387,7 @@ if __name__ == '__main__':
         quant_type = "w8a8_dynamic"
     if quantifier.quant_config.model_quant_type == "W4A8_DYNAMIC":
         quant_type = "w4a8_dynamic"
-    auto_config = checker.get_config_from_pretrained(model_path, trust_remote_code=True)
+    auto_config = checker.get_config_from_pretrained(model_path, trust_remote_code=args.trust_remote_code)
     checker.modify_config(model_path, save_directory, auto_config.torch_dtype,
                 quant_type, args)
     checker.copy_tokenizer_files(model_path, save_directory)

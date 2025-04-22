@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright Huawei Technologies Co., Ltd. 2023-2023. All rights reserved.
-from ascend_utils.common.security.type import check_int, check_number, check_type
+from ascend_utils.common.security.type import check_int, check_number, check_type, check_element_type
 # quant_mode
 # 0 : data-free
 # 1 : label-free
@@ -12,6 +12,33 @@ QUANT_MODE_LIST = [0, 1]
 # 2 : histogram
 ACT_METHOD_LIST = [0, 1, 2]
 QUANT_PARAM_OPS_LIST = ['Conv', 'Gemm', 'MatMul']
+SHUT_DOWN_STRUCTURES_LIST = [
+    'ChangeGAPCONVOptimization', 'ChangeResizeOptimization', 
+    'CombineMatmulOptimization', 'DeleteConcatOptimization', 
+    'DoubleFuseBatchNormOptimization', 'DoubleReshapeOptimization', 
+    'FastClipOptimization', 'FuseBatchNormOptimization', 
+    'FuseDivMatmulOptimization', 'GeluErf2FastGeluOptimization', 
+    'GeluErf2SigmoidOptimization', 'GeluErf2TanhOptimization', 
+    'GeluTanh2SigmoidOptimization', 'LayerNormOptimization', 
+    'Matmul2GemmOptimization', 'PatchMerging2ConvOptimizationV0', 
+    'PatchMerging2ConvOptimizationV1', 'PatchMerging2ConvOptimizationV2', 
+    'PatchMerging2ConvOptimizationV3', 'RemoveDoubleResizeOptimization', 
+    'ReplaceAscendQuantOptimizationV1', 'ReplaceAscendQuantOptimizationV2', 
+    'ReplaceConcatQuantOptimizationV1', 'ReplaceConcatQuantOptimizationV2', 
+    'ReplaceConcatQuantOptimizationV3', 'ReplaceConcatQuantOptimizationV4', 
+    'ReplaceConcatQuantOptimizationV5', 'ReplaceConcatQuantOptimizationV6', 
+    'ReplaceConcatQuantOptimizationV7', 'ReplaceConcatQuantOptimizationV8', 
+    'ReplaceConcatQuantOptimizationV9', 'ReplaceHardSigmoidOptimization', 
+    'ReplaceLeakyReluOptimization', 'ReplaceMaxPoolBlockOptimizationV1', 
+    'ReplaceMaxPoolBlockOptimizationV2', 'ReplaceRelu6Optimization', 
+    'ReplaceReluOptimization', 'ReplaceReshapeTransposeOptimizationV1', 
+    'ReplaceReshapeTransposeOptimizationV2', 'ReplaceReshapeTransposeOptimizationV3', 
+    'ReplaceResizeQuantOptimization', 'ReplaceSigmoidOptimizationV1', 
+    'ReplaceSigmoidOptimizationV2', 'ReplaceSoftmaxOptimizationV1', 
+    'ReplaceSoftmaxOptimizationV2', 'Resize2ConvTransposeOptimization', 
+    'SimplifyShapeOptimization', 'SimplifyShapeOptimizationV2'
+    ]
+SHUT_DOWN_STRUCTURES = set(SHUT_DOWN_STRUCTURES_LIST)
 
 
 class QuantConfig:
@@ -153,6 +180,9 @@ class QuantConfig:
 
     def _check_aok_params(self):
         check_type(self.shut_down_structures, list, param_name="shut_down_structures")
+        for structure in self.shut_down_structures:
+            if structure not in SHUT_DOWN_STRUCTURES:
+                raise ValueError(f"{structure} is invalid")
         check_type(self.device_id, int, param_name="device_id")
         om_method_list = ['atc', 'aoe']
         if self.om_method not in om_method_list:
@@ -172,7 +202,9 @@ class QuantConfig:
         if self.sigma != 0 and self.sigma != 25:
             raise ValueError("sigma should be 0 or 25")
         check_type(self.disable_names, list, param_name="disable_names")
-        check_type(self.input_shape, list, param_name="input_shape")
+        check_element_type(self.input_shape, list, value_type=list, param_name="input_shape")
+        for item in self.input_shape:
+            check_element_type(item, int, value_type=list, param_name="input_shape_item")
         check_type(self.act_quant, bool, param_name="act_quant")
         check_type(self.w_signed, bool, param_name="w_signed")
         check_type(self.a_signed, bool, param_name="a_signed")

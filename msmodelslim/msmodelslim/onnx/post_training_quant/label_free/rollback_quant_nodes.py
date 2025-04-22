@@ -62,7 +62,7 @@ def preprocess_quant_model(model):
                                                 param.data_type,
                                                 param_value.shape,
                                                 param_value)
-            logger.debug("%s param is set to zero.", param_name)
+            logger.debug("%r param is set to zero.", param_name)
             new_initializer.append(new_param)
         else:
             new_initializer.append(param)

@@ -75,7 +75,7 @@ def check_model(model_path):
         if len(inputs) == 0:
             raise ValueError("Invalid model file, please check it.")
         if hasattr(inputs[0], "shape") and len(inputs[0].shape) == 0:
-            raise ValueError("The input %s shape of model is invalid, please check it.", inputs[0].name)
+            raise ValueError("The input %r shape of model is invalid, please check it." % inputs[0].name)
 
 
 def get_node_attributes(node):
@@ -124,7 +124,7 @@ def check_and_get_calib_data(model_inputs, calib_data=None, quant_cfg=None) -> [
     for index, data in enumerate(calib_data):
         data_list = data if isinstance(data, list) else [data]
         if len(data_list) != len(model_inputs):
-            logger.warning("The number of %s data records in the calib_data is not equal to "
+            logger.warning("The number of %r data records in the calib_data is not equal to "
                            "the input of the model.", index)
             continue
         per_batch_data = {}
@@ -132,7 +132,7 @@ def check_and_get_calib_data(model_inputs, calib_data=None, quant_cfg=None) -> [
             if check_input_data(input_x, input_data, quant_cfg):
                 per_batch_data.setdefault(input_x.name, input_data)
             else:
-                logger.warning("The %s data records in calib_data is not valid", index)
+                logger.warning("The %r data records in calib_data is not valid", index)
         if len(per_batch_data.values()) == len(model_inputs):
             valid_data.append(per_batch_data)
 
@@ -148,10 +148,10 @@ def check_input_data(input_x, input_data, quant_cfg=None):
     input_x_shape = list(input_x.shape)
     input_data_shape = list(input_data.shape)
     if input_x_shape and not isinstance(input_data, np.ndarray):
-        logger.warning("The input %s type is not valid.", input_x.name)
+        logger.warning("The input %r type is not valid.", input_x.name)
         return False
     if INPUT_DTYPE_DICT.get(input_x.type) != input_data.dtype.type:  # check dtype
-        logger.warning("The input %s data type is not valid.", input_x.name)
+        logger.warning("The input %r data type is not valid.", input_x.name)
         return False
     if input_x_shape and not check_input_shape(input_x_shape, input_data_shape, quant_cfg):
         return False

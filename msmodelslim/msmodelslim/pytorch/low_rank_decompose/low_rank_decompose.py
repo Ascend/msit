@@ -5,6 +5,7 @@ import copy
 import torch
 from torch import nn
 
+from ascend_utils.common.security.type import check_int, check_type
 from msmodelslim.common.low_rank_decompose import (
     is_hidden_channels_valid,
     get_hidden_channels_by_layer_name,
@@ -274,6 +275,8 @@ def decompose_network_recursion(
 def decompose_network(network, decompose_config, do_decompose_weight=True, datasets=None, max_iter=-1):
     if not isinstance(network, torch.nn.Module):
         raise TypeError("Provided network is not a torch.nn.Module")
+    check_type(do_decompose_weight, bool, param_name="do_decompose_weight")
+    check_int(max_iter, min_value=-1, param_name="max_iter")
 
     network = copy.deepcopy(network)
     if datasets is not None:

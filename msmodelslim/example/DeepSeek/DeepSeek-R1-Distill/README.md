@@ -21,13 +21,14 @@
   export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   export PYTORCH_NPU_ALLOC_CONF=expandable_segments:False
   ```
+- 若加载自定义模型，调用`from_pretrained`函数时要指定`trust_remote_code=True`让修改后的自定义代码文件能够正确的被加载。(请确保加载的自定义代码文件的安全性)
 
 #### DeepSeek-R1-Distill-Llama 量化
 ##### DeepSeek-R1-Distill-Llama-8B w8a8量化
 Atlas 800I A2 w8a8量化
   ```shell
   cd msit/msmodelslim/example/Llama
-  python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl  --device_type npu --anti_method m1
+  python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl  --device_type npu --anti_method m1 --trust_remote_code True
   ```
 
 ##### DeepSeek-R1-Distill-Llama-8B 稀疏量化
@@ -36,7 +37,7 @@ Atlas 300I DUO 使用以下方法稀疏量化
 ```shell
   # 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量 
   cd msit/msmodelslim/example/Llama
-  python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8S量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 4 --a_bit 8 --fraction 0.011 --co_sparse True --device_type npu --use_sigma True --is_lowbit True
+  python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8S量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 4 --a_bit 8 --fraction 0.011 --co_sparse True --device_type npu --use_sigma True --is_lowbit True --trust_remote_code True
 ```
 - 权重压缩
 ```shell
@@ -49,7 +50,7 @@ Atlas 300I DUO 使用以下方法稀疏量化
 Atlas 800I A2 w8a8量化
   ```shell
   cd msit/msmodelslim/example/Llama
-  python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl  --device_type npu --disable_level L5 --anti_method m4 --act_method 3 
+  python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl  --device_type npu --disable_level L5 --anti_method m4 --act_method 3 --trust_remote_code True
   ```
 
 #### DeepSeek-R1-Distill-Qwen 量化

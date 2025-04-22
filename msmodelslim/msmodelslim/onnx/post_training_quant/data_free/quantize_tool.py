@@ -17,7 +17,7 @@ from msmodelslim.onnx.post_training_quant.util import get_quantized_nodes, check
 def quantize_model(input_model_path, output_model_path, quant_config):
     quantized_nodes = get_quantized_nodes(input_model_path, quantize_nodes=quant_config.quantize_nodes,
                                           exclude_nodes=quant_config.exclude_nodes)
-    logger.info("%s node will be quantized: %s", len(quantized_nodes), quantized_nodes)
+    logger.info("%r node will be quantized: %r", len(quantized_nodes), quantized_nodes)
 
     ori_model = onnx.load(input_model_path)
     onnx_graph = parse_model(ori_model, quantized_nodes)
@@ -27,7 +27,7 @@ def quantize_model(input_model_path, output_model_path, quant_config):
     for node_name, node in onnx_graph.node_map.items():
         if not isinstance(node, QuantizableOnnxNode):
             continue
-        logger.info("Quantized node: %s", node.name)
+        logger.info("Quantized node: %r", node.name)
         activation_quantizer = ActivationQuantizer(name=node_name, is_signed=quant_config.is_signed_quant)
         activation_quantizer(node.activation)
         node.activation_scale = activation_quantizer.scale

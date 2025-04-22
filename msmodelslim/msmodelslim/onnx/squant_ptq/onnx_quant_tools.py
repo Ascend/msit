@@ -133,7 +133,7 @@ class OnnxCalibrator(object):
                           location=external_path, size_threshold=1024, convert_attribute=True)
             else:
                 onnx.save(quant_model, output_model_path)
-            logger.info("Quantification ended and onnx is stored in %s ", output_model_path)
+            logger.info("Quantification ended and onnx is stored in %r ", output_model_path)
             
             if self.graph_optimize_level > 1:
                 with SafeWriteUmask():
@@ -167,7 +167,7 @@ class OnnxCalibrator(object):
                 else:
                     raise ValueError("Unsupported quant_mode")
                 if node.input_scale == 0:
-                    self.logger.info("automatic disable this node %s", node.name)
+                    self.logger.info("automatic disable this node %r", node.name)
                     node.is_quant = False
 
         self.logger.info("Calibration end!")
@@ -252,13 +252,13 @@ class OnnxCalibrator(object):
         # looping of samples
         for index, data_list in enumerate(calib_data):
             if len(data_list) != num_input:
-                logger.warning("The number of %s data records in the calib_data is not equal to "
+                logger.warning("The number of %r data records in the calib_data is not equal to "
                                "the input of the model.", index)
                 continue
             # looping of inputs in single sample
             for input_data, input_x in zip(data_list, model_inputs):
                 if not check_input_data(input_x, input_data, quant_cfg):
-                    raise ValueError("The %s data records in calib_data is not valid", index)
+                    raise ValueError("The %r data records in calib_data is not valid", index)
 
     def _get_calib_data(self, calib_data, quant_cfg=None):
         if self.use_onnx:
@@ -286,7 +286,7 @@ class OnnxCalibrator(object):
     def _amp(self):
         dequant_index = onnx_amp(self.graph_nodes, self.cfg.amp_num)
         for value in dequant_index:
-            self.logger.info("disable this node: %s", self.graph_nodes[value].name)
+            self.logger.info("disable this node: %r", self.graph_nodes[value].name)
             self.graph_nodes[value].is_quant = False
         return
 
