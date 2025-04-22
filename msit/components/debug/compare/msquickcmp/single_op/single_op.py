@@ -23,6 +23,7 @@ from auto_optimizer.graph_refactor.interface import PlaceHolder
 from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
 from components.utils.security_check import ms_makedirs
+from components.utils.util import filter_cmd
 NPU_ID_INFO_LENGTH = 3
 
 
@@ -146,6 +147,7 @@ def atc_conversion(onnx_path, om_path):
         "--model=" + onnx_path,
         "--output=" + om_path,
     ]
+    atc_cmd = filter_cmd(atc_cmd)
     res = subprocess.run(atc_cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     if res.returncode == 0:

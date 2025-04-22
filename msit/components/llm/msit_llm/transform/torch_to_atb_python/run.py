@@ -21,6 +21,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 from msit_llm.transform.torch_to_atb_python import ATBModel
 from msit_llm.transform.utils import load_model_dict, write_file
 from msit_llm.common.utils import check_input_path_legality
+from components.utils.util import filter_cmd
 
 MODEL_PATH = "model_path_placeholder"
 
@@ -160,6 +161,7 @@ if __name__ == "__main__":
         contents_str = contents_str.replace("Who is the CEO of Google?", args.inputs)
         write_file(run_pa_path, contents_str)
         command = ["bash", run_pa_path, args.weight]
+        command = filter_cmd(command)
         result = subprocess.run(command, shell=False)
         contents_str = Path(run_pa_path).read_text()
         contents_str = contents_str.replace(args.inputs, "Who is the CEO of Google?")

@@ -19,6 +19,7 @@ import subprocess
 
 from model_convert.aie.bean import ConvertConfig
 from components.utils.log import logger
+from components.utils.util import filter_cmd
 
 MAX_AIE_CONVERT_TIME = 300
 
@@ -40,6 +41,7 @@ class Convert:
         Exception Description:
             when invalid command throw exception
         """
+        cmd = filter_cmd(cmd)
         logger.info('Execute command:%s', cmd)
         process = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, _ = process.communicate(timeout=MAX_AIE_CONVERT_TIME)

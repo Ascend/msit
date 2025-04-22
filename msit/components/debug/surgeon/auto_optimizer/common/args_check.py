@@ -19,6 +19,7 @@ import subprocess
 from glob import glob
 
 from components.utils.file_open_check import FileStat, is_legal_args_path_string
+from components.utils.util import filter_cmd
 
 
 MAX_SIZE_LIMITE_NORMAL_MODEL = 32 * 1024 * 1024 * 1024  # 32GB
@@ -78,6 +79,7 @@ def check_soc(value):
     pre_cmd = ["ls"]
     pre_cmd.extend(glob("/dev/davinci*"))
     if len(pre_cmd) > 1:
+        pre_cmd = filter_cmd(pre_cmd)
         process = subprocess.run(pre_cmd, shell=False, stdout=subprocess.PIPE)
         max_device_id = len(process.stdout.decode().split()) - 2
         if ivalue > max_device_id or ivalue < 0:

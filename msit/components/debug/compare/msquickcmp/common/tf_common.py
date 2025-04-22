@@ -26,6 +26,7 @@ from msquickcmp.common import utils
 from msquickcmp.common.utils import AccuracyCompareException
 from components.utils.util import load_file_to_read_common_check
 from components.utils.check.rule import Rule
+from components.utils.util import filter_cmd
 
 DTYPE_MAP = {
     tf.float16: np.float16,
@@ -62,6 +63,7 @@ def execute_command(cmd: str):
     if cmd is None:
         utils.logger.error("Command is None.")
         return -1
+    cmd = filter_cmd(cmd)
     utils.logger.info("[Run CMD]: %s" % cmd)
     complete_process = subprocess.run(cmd, shell=False)
     return complete_process.returncode

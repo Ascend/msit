@@ -36,6 +36,7 @@ from components.debug.common import logger
 from components.utils.util import load_file_to_read_common_check
 from components.utils.file_open_check import ms_open
 from components.utils.constants import TENSOR_MAX_SIZE
+from components.utils.util import filter_cmd
 
 ACCURACY_COMPARISON_INVALID_PARAM_ERROR = 1
 ACCURACY_COMPARISON_INVALID_DATA_ERROR = 2
@@ -617,6 +618,7 @@ def execute_command(cmd, info_need=True):
     Exception Description:
         when invalid command throw exception
     """
+    cmd = filter_cmd(cmd)
     if info_need:
         logger.info('Execute command:%s' % " ".join(cmd))
     process = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

@@ -22,6 +22,8 @@ import numpy as np
 from auto_optimizer.inference_engine.inference.inference_base import InferenceBase
 from auto_optimizer.inference_engine.data_process_factory import InferenceFactory
 from components.debug.common import logger
+from components.utils.util import filter_cmd
+
 
 try:
     from ais_bench.infer.interface import InferSession
@@ -66,6 +68,7 @@ class AclInference(InferenceBase, ABC):
                 '--outfmt={}'.format(cfg['outfmt']),
                 '--loop={}'.format(loop),
             ]
+            msame_cmd = filter_cmd(msame_cmd)
             out = subprocess.run(msame_cmd, capture_output=True, shell=False)
             log = out.stdout.decode('utf-8')
             match = re.search("Inference average time without first time: (.{1,350}) ms", log)

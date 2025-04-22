@@ -16,6 +16,7 @@ import subprocess
 
 from auto_optimizer.inference_engine.model_convert.compiler import Compiler
 from components.debug.common import logger
+from components.utils.util import filter_cmd
 
 
 class OmCompiler(Compiler):
@@ -43,6 +44,7 @@ class OmCompiler(Compiler):
                 raise RuntimeError("Parameter missing! '{}' is required in om convert!".format(param))
 
     def build_model(self):
+        self.atc_cmd = filter_cmd(self.atc_cmd)
         logger.debug(self.atc_cmd)
         subprocess.run(self.atc_cmd, shell=False)
 

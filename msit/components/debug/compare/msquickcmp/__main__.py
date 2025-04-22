@@ -30,6 +30,7 @@ from msquickcmp.common.utils import logger
 from components.debug.compare.msquickcmp.dump.dump_process import dump_process
 from msquickcmp.dump.args_adapter import DumpArgsAdapter
 from components.utils.check import Rule, ArgsChecker
+from components.utils.util import filter_cmd
 
 CANN_PATH = os.environ.get('ASCEND_TOOLKIT_HOME', "/usr/local/Ascend/ascend-toolkit/latest")
 
@@ -382,6 +383,7 @@ class DumpCommand(BaseCommand):
             from components.debug.compare.msquickcmp.dump.mietorch.dump_config import DumpConfig
             DumpConfig(dump_path=args.out_path, api_list=args.opname)
             cmds = args.exec.split()
+            cmds = filter_cmd(cmds)
             subprocess.run(cmds, shell=False)
         else:
             if (not args.model_path) or (not args.device_pattern):
