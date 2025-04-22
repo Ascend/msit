@@ -55,6 +55,10 @@ DUMP_COMMON_ARGS = [
         kwargs=dict(type=str, default=MINDIE_SERVICE_PATH, help="MINDIE service or config json path"),
     ),
     dict(
+        args=["-user", "--user_config_path"],
+        kwargs=dict(type=str, default=None, help="k8s user config json path"),
+    ),
+    dict(
         args=["-ranktable", "--ranktable_file"],
         kwargs=dict(default=RANKTABLE_FILE, help="HCCL rank table file path."),
     ),

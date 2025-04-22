@@ -20,7 +20,7 @@ from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, st
 
 try:
     import acl
-except (ModuleNotFoundError, ImportError):
+except ImportError:
     logger.warning("Import acl error, will skip getting NPU info. Install and source cann toolkit if needed")
     acl = None
 

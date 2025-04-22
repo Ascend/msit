@@ -20,6 +20,7 @@ from ms_performance_prechecker.prechecker.config_checker import (
     mindie_config_checker,
     ranktable_checker,
     model_config_checker,
+    user_config_checker,
 )
 from ms_performance_prechecker.prechecker.env_checker import env_checker
 from ms_performance_prechecker.prechecker.system_checker import system_checker
@@ -33,6 +34,7 @@ CHECKERS = {
         env_checker,
         mindie_config_checker,
         ranktable_checker,
+        user_config_checker,
     ],
     CHECKER_TYPES.hccl: [hccl_checker],
     CHECKER_TYPES.model: [model_config_checker, model_size_checker, model_sha256_collecter],

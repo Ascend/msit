@@ -38,6 +38,10 @@ def save_env_contents(fix_pair, save_path):
 class EnvChecker(PrecheckerBase):
     __checker_name__ = "Env"
 
+    @staticmethod
+    def action(env_key, env_value):
+        return f"export {env_key}={env_value}" if env_value else f"unset {env_key}"
+
     def collect_env(self, additional_checks=None, **kwargs):
         env_vars = os.environ
 
@@ -50,10 +54,6 @@ class EnvChecker(PrecheckerBase):
         ret_envs.update(get_global_env_info())
         return ret_envs
 
-    @staticmethod
-    def action(env_key, env_value):
-        return f"export {env_key}={env_value}" if env_value else f"unset {env_key}"
-
     def do_precheck(self, envs, additional_checks=None, env_save_path=None, mindie_service_path=None, **kwargs):
         if not envs:
             return
@@ -63,8 +63,8 @@ class EnvChecker(PrecheckerBase):
         fix_pair = []
         version_info = get_version_info(mindie_service_path)
         version_info["NPU_TYPE"] = get_npu_info()
-        # if version_info["NPU_TYPE"] not in ["d802", "d803"]:
-            # return
+        if version_info["NPU_TYPE"] not in ["d802", "d803"]:
+            return
         for suggestion_rule in GLOBAL_DEFAULT_CONFIG.get(DOMAIN.environment_variables, []):
             result, suggestion_value, current_value = suggestion_rule_checker(
                 envs, suggestion_rule, version_info, domain=DOMAIN.environment_variables, action_func=self.action
@@ -85,8 +85,8 @@ class EnvChecker(PrecheckerBase):
             return
 
         save_path = save_env_contents(fix_pair, env_save_path)
-        show_check_result("env", "", CheckResult.VIP,action=f"使能环境变量配置：source {save_path}")
-        show_check_result("env", "", CheckResult.VIP, action=f"恢复环境变量配置：source {save_path} 0")
+        show_check_result("env", "", CheckResult.VIP, action=f"使能环境变量配置：source {save_path}")
+        show_check_result("env", "", CheckResult.VIP, action=f"恢复环境变量配置：source {save_path}")
 
 
 env_checker = EnvChecker()

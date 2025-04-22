@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import yaml
 from collections import namedtuple
+
+import yaml
 
 """
 Yaml 配置模板：
@@ -62,7 +63,7 @@ mindie_config_json:
           reason: "早期版本不建议指定"
 """
 
-_DOMAIN = ["environment_variables", "mindie_config", "ranktable", "model_config"]
+_DOMAIN = ["environment_variables", "mindie_config", "ranktable", "model_config", "user_config"]
 DOMAIN = namedtuple("DOMAIN", _DOMAIN)(*_DOMAIN)
 _CONFIG = ["name", "value", "reason", "suggestions", "condition", "suggested", "not_suggested"]
 CONFIG = namedtuple("CONFIG", _CONFIG)(*_CONFIG)
@@ -100,16 +101,17 @@ def is_condition_met(env_info, suggestion_condition):
 
 def convert_value_type(value, domain):
     # For environment_variables, all value is string
-    return value if value is None or doamin != DOMAIN.environment_variables else str(value)
+    return value if value is None or domain != DOMAIN.environment_variables else str(value)
 
 
 def is_value_met_special_suggestions(current_value, condition, current_configs):
     return False  # [TODO], adding special checking rules
 
+
 def is_value_met_suggestions(current_value, suggested_values, current_configs):
     if not suggested_values:
         return True
-    normal_value_suggestions, special_value_suggestions, [], []
+    normal_value_suggestions, special_value_suggestions = [], []
     for ii in suggested_values:
         if isinstance(ii, str) and ii.startswith("="):
             special_value_suggestions.append(ii)

@@ -97,7 +97,7 @@ class ModelConfigChecker(ConfigCheckerBase):
         return {"model_name": model_name, "model_config": model_config}
 
     def action(self, env_key, env_value):
-        return  f'需在模型配置文件 {self.model_config_path} 中设置 {env_key}: {env_value}'
+        return  f'需在模型配置文件 {self.model_config_path} 中设置 {env_key}={env_value}'
 
     def do_precheck(self, current_config, additional_checks=None, **kwargs):
         if not model_info:
@@ -111,6 +111,21 @@ class ModelConfigChecker(ConfigCheckerBase):
         super().do_precheck(current_config=model_config, additional_checks=additional_checks, **kwargs)
 
 
+class UserConfigChecker(ConfigCheckerBase):
+    __checker_name__ = "UserConfig"
+
+    def __init__(self):
+        super().__init__(domain=DOMAIN.user_config)
+
+    def collect_env(self, user_config_path=None, **kwargs):
+        self.user_config_path = user_config_path
+        return read_csv_or_json(user_config_path) if user_config_path and os.path.exists(user_config_path) else {}
+
+    def action(self, env_key, env_value):
+        return  f'需在配置文件 {self.user_config_path} 中设置 {env_key}: {env_value}'
+
+
 mindie_config_checker = MindieConfigChecker()
 ranktable_checker = RankTableChecker()
 model_config_checker = ModelConfigChecker()
+user_config_checker = UserConfigChecker()
