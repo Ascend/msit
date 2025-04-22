@@ -114,10 +114,10 @@ mindie_config:
     reason: "必需字段，该值不能为空"
   - name: BackendConfig:ModelDeployConfig:ModelConfig:dp
     value: = 16 // BackendConfig:ModelDeployConfig:ModelConfig:tp
-    reason: "必需字段，该值不能为空"
+    reason: "需要调整为 dp 与 tp 的乘积 = 16，且 tp >= 2"
   - name: BackendConfig:ModelDeployConfig:ModelConfig:tp
     value: = 16 // BackendConfig:ModelDeployConfig:ModelConfig:dp; >= 2
-    reason: "必需字段，该值不能为空"
+    reason: "需要调整为 dp 与 tp 的乘积 = 16，且 tp >= 2"
 
 ranktable:
   - name: server_count
