@@ -1,10 +1,11 @@
 # Copyright Huawei Technologies Co., Ltd. 2025. All rights reserved.
-import json
 import os
 import glob
-import re
 import argparse
+import dataclasses
+
 from tqdm import tqdm
+import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
 
@@ -13,6 +14,41 @@ from convert_fp8_to_bf16 import weight_dequant
 from ascend_utils.common.security import json_safe_load, json_safe_dump, get_valid_read_path
 from msmodelslim import logger as msmodelslim_logger
 
+
+@dataclasses.dataclass
+class AddTensorsConfig:
+    """
+    org_paths (str): 原始模型safetensors文件所在目录路径
+    target_dir (str): 目标量化模型目录路径
+    safetensors_prefix (str): 新生成的safetensors文件的前缀名
+    max_file_size_gb (float): 单个safetensors文件的最大大小(GB)，默认5GB
+    prefix (str, optional): 只添加指定前缀的tensor，默认None表示添加所有tensor
+    should_quant (bool, optional): 是否量化MTP层，当前仅支持W8A8动态量化
+    """
+
+    org_paths: str
+    target_dir: str
+    safetensors_prefix: str
+    max_file_size_gb: int = 5
+    prefix: str = ''
+    should_quant: bool = False
+
+    def __post_init__(self):
+        if self.max_file_size_gb is None:
+            self.max_file_size_gb = 5
+        if self.prefix is None:
+            self.prefix = ''
+        if self.should_quant is None:
+            self.should_quant = False
+
+
+def weight_quant(tensor: torch.Tensor):
+    qmax = 127.0
+    abs_max = torch.abs(tensor).max(dim=1, keepdim=True)[0]  # [rows, 1]
+    scale = abs_max / qmax  # [rows, 1]
+    quantized = torch.round(tensor / scale)
+    quantized = torch.clamp(quantized, -qmax, qmax)
+    return quantized.to(torch.int8), scale.to(tensor.dtype)
 
 
 def find_file_with_pattern(target_dir, pattern):
@@ -52,20 +88,15 @@ def get_prefix(name, last_index=-1):
     return ".".join(key_list)
 
 
-def add_safetensors(org_paths, target_dir, safetensors_prefix, max_file_size_gb=5, prefix=None):
+def add_safetensors(cfg: AddTensorsConfig):
     """将原始模型的tensor添加到量化模型中，支持分文件保存
     
     Args:
-        org_paths (str): 原始模型safetensors文件所在目录路径
-        target_dir (str): 目标量化模型目录路径
-        safetensors_prefix (str): 新生成的safetensors文件的前缀名
-        max_file_size_gb (float): 单个safetensors文件的最大大小(GB)，默认5GB
-        prefix (str, optional): 只添加指定前缀的tensor，默认None表示添加所有tensor
+        cfg (AddTensorsConfig): 配置
     """
-    quant_type = "FLOAT"
     # 验证输入输出路径
-    org_paths = get_valid_read_path(org_paths, is_dir=True, check_user_stat=False)
-    target_dir = get_valid_read_path(target_dir, is_dir=True, check_user_stat=False)
+    org_paths = get_valid_read_path(cfg.org_paths, is_dir=True, check_user_stat=False)
+    target_dir = get_valid_read_path(cfg.target_dir, is_dir=True, check_user_stat=False)
     index_path = find_file_with_pattern(target_dir, "quant_model_weight_*.index.json")
     desc_path = find_file_with_pattern(target_dir, "quant_model_description_*.json")
 
@@ -76,7 +107,6 @@ def add_safetensors(org_paths, target_dir, safetensors_prefix, max_file_size_gb=
 
     weight_map = get_weight_map(float_index_path)
 
-    
     index_data = json_safe_load(index_path)
     desc_data = json_safe_load(desc_path)
     if "metadata" not in index_data:
@@ -86,51 +116,84 @@ def add_safetensors(org_paths, target_dir, safetensors_prefix, max_file_size_gb=
     current_total_size = index_data.get("metadata", {}).get("total_size", 0)
     tensor_names = weight_map.keys()
 
-    if prefix:
-        tensor_names = [name for name in tensor_names if name.startswith(prefix)]
+    if cfg.prefix:
+        tensor_names = [name for name in tensor_names if name.startswith(cfg.prefix)]
 
-    max_file_size = max_file_size_gb * (1024 ** 3) 
+    max_file_size = cfg.max_file_size_gb * (1024 ** 3)
     current_file_size = 0
     new_data = {}
     file_count = 0
 
-    for tensor_name in tqdm(tensor_names):
-        if "weight_scale_inv" not in tensor_name:
-            tensor = get_tensor(tensor_name, org_paths, weight_map)
-            tensor_size = calculate_tensor_size(tensor)
-            current_total_size += tensor_size
-            
-            mod_name = get_prefix(tensor_name)
-            if mod_name + ".weight_scale_inv" in tensor_names:
-                try:
-                    weight_scale_inv = get_tensor(mod_name + ".weight_scale_inv", org_paths, weight_map)
-                    tensor = weight_dequant(tensor, weight_scale_inv)
-                except KeyError:
-                    msmodelslim_logger.warning(f"{mod_name + '.weight_scale_inv'} not found in org_paths, \
-                                               skip convert {mod_name} from fp8 to bf16")
+    def flush_tensors():
+        nonlocal new_data
+        nonlocal current_file_size
+        nonlocal file_count
 
-            # 如果当前文件大小超过限制，保存当前文件并开始新文件
-            if (current_file_size + tensor_size) > max_file_size and new_data:
-                file_name = f"{safetensors_prefix}-{file_count+1}.safetensors"
-                save_file(new_data, os.path.join(target_dir, file_name))
-                # 更新索引
-                for name in new_data.keys():
-                    index_data["weight_map"][name] = file_name
-                    desc_data[name] = quant_type
-                new_data = {}
-                current_file_size = 0
-                file_count += 1
+        if not new_data:
+            return
 
-            new_data[tensor_name] = tensor
-            current_file_size += tensor_size
-
-    # 保存最后一个文件
-    if new_data:
-        file_name = f"{safetensors_prefix}-{file_count+1}.safetensors"
+        file_name = f"{cfg.safetensors_prefix}-{file_count + 1}.safetensors"
         save_file(new_data, os.path.join(target_dir, file_name))
+        # 更新索引
         for name in new_data.keys():
             index_data["weight_map"][name] = file_name
-            desc_data[name] = "FLOAT"
+        new_data = {}
+        current_file_size = 0
+        file_count += 1
+
+    def add_tensor(name, quant_type, quant_tensor):
+        nonlocal current_file_size
+        nonlocal current_total_size
+
+        tensor_size = calculate_tensor_size(quant_tensor)
+        current_total_size += tensor_size
+        # 如果当前文件大小超过限制，保存当前文件并开始新文件
+        if current_file_size + tensor_size > max_file_size:
+            flush_tensors()
+        new_data[name] = quant_tensor
+        desc_data[name] = quant_type
+        current_file_size += tensor_size
+
+    for tensor_name in tqdm(tensor_names):
+        if "weight_scale_inv" in tensor_name:
+            continue
+
+        tensor = get_tensor(tensor_name, org_paths, weight_map)
+        mod_name = get_prefix(tensor_name)
+        scale_inv_name = mod_name + ".weight_scale_inv"
+        if scale_inv_name in tensor_names:
+            try:
+                weight_scale_inv = get_tensor(mod_name + ".weight_scale_inv", org_paths, weight_map)
+                tensor = weight_dequant(tensor, weight_scale_inv)
+
+            except KeyError:
+                msmodelslim_logger.warning(f"{mod_name + '.weight_scale_inv'} not found in org_paths, \
+                                           skip convert {mod_name} from fp8 to bf16")
+
+        if not cfg.should_quant:
+            add_tensor(tensor_name, 'FLOAT', tensor)
+            continue
+
+        if 'layernorm' in tensor_name:
+            add_tensor(tensor_name, 'FLOAT', tensor)
+            continue
+
+        if not ('self_attn' in tensor_name or 'experts' in tensor_name):
+            add_tensor(tensor_name, 'FLOAT', tensor)
+            continue
+
+        if tensor_name in (
+                f'{cfg.prefix}self_attn.kv_b_proj.weight',
+        ):
+            add_tensor(tensor_name, 'FLOAT', tensor)
+            continue
+
+        tensor, scale = weight_quant(tensor)
+        add_tensor(tensor_name, 'W8A8_DYNAMIC', tensor)
+        add_tensor(tensor_name + '_scale', 'W8A8_DYNAMIC', scale)
+
+    # 保存最后一个文件
+    flush_tensors()
 
     index_data["metadata"]["total_size"] = current_total_size
     json_safe_dump(index_data, index_path, indent=4)
@@ -142,8 +205,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='添加新的safetensors文件到现有模型')
     parser.add_argument('--quant_dir', help='量化模型文件所在目录')
     parser.add_argument('--float_dir', help='浮点safetensors文件所在目录')
-    
+
     args = parser.parse_args()
-    
-    add_safetensors(args.float_dir, args.quant_dir, "mtp", max_file_size_gb=5, prefix='model.layers.61.')
-    
+
+    add_tensors_cfg = AddTensorsConfig(
+        org_paths=args.float_dir,
+        target_dir=args.quant_dir,
+        safetensors_prefix="mtp",
+        max_file_size_gb=5,
+        prefix='model.layers.61.',
+        should_quant=False,
+    )
+    add_safetensors(add_tensors_cfg)
