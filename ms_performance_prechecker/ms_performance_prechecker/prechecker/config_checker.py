@@ -45,7 +45,7 @@ class ConfigCheckerBase(PrecheckerBase):
         env_info["NPU_TYPE"] = get_npu_info()
         for suggestion_rule in GLOBAL_DEFAULT_CONFIG.get(self.domain, []):
             result, suggestion_value, current_value = suggestion_rule_checker(
-                current_config, suggestion_rule, env_info, domain=self.domain, action=self.action
+                current_config, suggestion_rule, env_info, domain=self.domain, action_func=self.action
             )
 
 
@@ -59,8 +59,7 @@ class MindieConfigChecker(ConfigCheckerBase):
         self.mindie_service_path = get_mindie_server_config(mindie_service_path)
         return parse_mindie_server_config(mindie_service_path)
 
-    @staticmethod
-    def action(env_key, env_value):
+    def action(self, env_key, env_value):
         return f"mindie_service={self.mindie_service_path} config 中修改 {env_key} 字段"
 
 
@@ -74,8 +73,7 @@ class RankTableChecker(ConfigCheckerBase):
         self.ranktable_file = ranktable_file
         return parse_ranktable_file(ranktable_file)
 
-    @staticmethod
-    def action(env_key, env_value):
+    def action(self, env_key, env_value):
         return f"ranktable={self.ranktable_file} 中添加 {env_key} 字段"
 
 
@@ -98,8 +96,7 @@ class ModelConfigChecker(ConfigCheckerBase):
         logger.debug(f"ModelConfigCollecter model_name={model_name} model_config={model_config}")
         return {"model_name": model_name, "model_config": model_config}
 
-    @staticmethod
-    def action(env_key, env_value):
+    def action(self, env_key, env_value):
         return  f'需在模型配置文件 {self.model_config_path} 中设置 {env_key}: {env_value}'
 
     def do_precheck(self, current_config, additional_checks=None, **kwargs):

@@ -81,12 +81,13 @@ def update_to_default_suggestions(domain, additional_checks_yaml):
     sub_config = GLOBAL_DEFAULT_CONFIG.get(domain, [])
     suggestions_dict = {ii[CONFIG.name]: ii for ii in sub_config}
     for ii in additional_checks_yaml.pop(domain):  # pop out for only apply once
+        cur_key = ii.get(CONFIG.name, None)
         if cur_key in suggestions_dict:
             suggestions_dict[cur_key].clear()
-            suggestions_dict[cur_key].update(cur)
+            suggestions_dict[cur_key].update(ii)
         else:
             sub_config.append(cur)
-            suggestions_dict[cur_key] = cur
+            suggestions_dict[cur_key] = ii
 
 
 def is_condition_met(env_info, suggestion_condition):
@@ -97,10 +98,29 @@ def is_condition_met(env_info, suggestion_condition):
     return True
 
 
-def parse_and_compare_config_value(current_value, suggested_values, current_configs):
-    # [TODO] add other parsing rules
-    if len(suggested_values) > 0 and current_value not in suggested_values:
+def convert_value_type(value, domain):
+    # For environment_variables, all value is string
+    return value if value is None or doamin != DOMAIN.environment_variables else str(value)
+
+
+def is_value_met_special_suggestions(current_value, condition, current_configs):
+    return False  # [TODO], adding special checking rules
+
+def is_value_met_suggestions(current_value, suggested_values, current_configs):
+    if not suggested_values:
         return True
+    normal_value_suggestions, special_value_suggestions, [], []
+    for ii in suggested_values:
+        if isinstance(ii, str) and ii.startswith("="):
+            special_value_suggestions.append(ii)
+        else:
+            normal_value_suggestions.append(ii)
+    if current_value in normal_value_suggestions:
+        return True
+    for condition in special_value_suggestions:
+        condition = condition[1:].strip()  # get rid of starting =
+        if is_value_met_special_suggestions(current_value, condition, current_configs):
+            return True
     return False
 
 
@@ -122,6 +142,7 @@ def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, 
                 CONFIG.suggested: {CONFIG.reason: suggestion_rule.get(CONFIG.reason, "")},
             }
         )
+    logger.debug(f"suggestion_rule_checker: suggestions = {suggestions}")
 
     suggest_value_list = []  # (value, reason) 优先级从前到后，在前面的优先级高
     not_suggest_value_dict = {}  # value： reason
@@ -130,7 +151,7 @@ def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, 
         suggestion_value = suggestion.get(CONFIG.value, None)
         if not isinstance(suggestion_value, list):
             suggestion_value = [suggestion_value]
-        value_list = [x if x is None else str(x) for x in suggestion_value]
+        value_list = [convert_value_type(ii, domain) for ii in suggestion_value]
         suggestion_reason = ""
         suggestion_condition = None
         not_suggestion_reason = ""
@@ -160,7 +181,7 @@ def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, 
         logger.debug(
             f"value_list={value_list}, suggested_values={suggested_values}, current_value={current_value}"
         )
-        if parse_and_compare_config_value(current_value, suggested_values, current_configs):
+        if not is_value_met_suggestions(current_value, suggested_values, current_configs):
             suggestion_value = suggested_values[0]
             show_check_result(
                 domain,

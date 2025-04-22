@@ -109,7 +109,7 @@ def load_yaml(yaml_file_path):
     if not os.path.exists(yaml_file_path):
         return None
     with open(yaml_file_path) as ff:
-        contents = yaml.safe_load(yaml_file_path)
+        contents = yaml.safe_load(ff)
     return contents
 
 

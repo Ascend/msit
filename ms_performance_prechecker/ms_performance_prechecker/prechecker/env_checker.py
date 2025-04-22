@@ -35,7 +35,6 @@ def save_env_contents(fix_pair, save_path):
     return save_path
 
 
-
 class EnvChecker(PrecheckerBase):
     __checker_name__ = "Env"
 

@@ -97,16 +97,16 @@ environment_variables:
 
 mindie_config:
   - name: ServerConfig:httpsEnabled
-    value: False
+    value: false
     reason: "建议设置为 false，若开启，需要保证 tlsCrlFiles 指定的证书文件存在，否则可能启动失败"
   - name: ServerConfig:interCommTLSEnabled
-    value: False
+    value: false
     reason: "若不需要安全认证，则设置为 false"
   - name: BackendConfig:multiNodesInferEnabled
-    value: True
+    value: true
     reason: "多机环境下需要为 True"
   - name: BackendConfig:interNodeTLSEnabled
-    value: False
+    value: false
     reason: "若不需要安全认证，则设置为 false"
   - name: BackendConfig:ModelDeployConfig:ModelConfig:ModelConfig
     reason: "必需字段，该值不能为空"
