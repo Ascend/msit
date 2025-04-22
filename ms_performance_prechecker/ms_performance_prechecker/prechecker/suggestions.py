@@ -62,76 +62,6 @@ mindie_config_json:
           reason: "早期版本不建议指定"
 """
 
-"""
-配置指南：
-ENV_suggestions 配置项说明：
-  * ENV: 环境变量名
-  * suggestions: 建议列表
-      - VALUE: 环境变量值（如果不建议配置，可以配置为None，表示不建议配置该环境变量）
-      - SUGGESTION: 建议配置该值
-          + VERSION_LIST: 哪些版本建议配置，不配置表示所有版本适用
-          + REASON: 建议值对应的原因
-      - NOT_SUGGESTION: 不建议配置该值（优先级高）
-          + VERSION_LIST: 哪些版本不建议配置，不配置表示所有版本适用
-          + REASON: 不建议的原因
-
-简化配置：
-  ENV: 环境变量名
-  SUGGESTION_VALUE: 建议值
-  REASON: 建议原因
-
-
-建议样例1： 环境变量 ENV_SUGGEST_DEMO, 一般情况下建议配置为 VALUE1
-建议配置1：
-  {
-    "ENV": "ENV_SUGGEST_DEMO",
-    "SUGGESTION_VALUE": "VALUE1",
-    "REASON": "建议配置为VALUE1",
-  }
-建议样例2： 背景同样例1，但是在版本 1.0.0 版本不建议配置为 VALUE1（建议不配置）
-建议配置2：
-  {
-    "ENV": "ENV_SUGGEST_DEMO",
-    "suggestions": [
-      {
-        "VALUE": "VALUE1",
-        "SUGGESTION": {
-          "REASON": "建议配置为VALUE1",
-        },
-        "NOT_SUGGESTION": {
-          "VERSION_LIST": {"Ascend-mindie": ["1.0.0"]},
-          "REASON": "不建议配置为VALUE1",
-        }
-      }
-    ]
-  }
-
-建议样例3： 背景同样例2，但是在版本 1.0.2 版本建议配置为 VALUE2
-建议配置3：
-  {
-    "ENV": "ENV_SUGGEST_DEMO",
-    "suggestions": [
-      {
-        "VALUE": "VALUE1",
-        "SUGGESTION": {
-          "REASON": "建议配置为VALUE1",
-        },
-        "NOT_SUGGESTION": {
-          "VERSION_LIST": {"Ascend-mindie": ["1.0.0"]},
-          "REASON": "不建议配置为VALUE1",
-        }
-      },
-      {
-        "VALUE": "VALUE2",
-        "SUGGESTION": {
-          "VERSION_LIST": {"Ascend-mindie": ["1.0.2"]},
-          "REASON": "建议配置为 VALUE2",
-        },
-    ]
-  }
-
-"""
-
 _DOMAIN = ["environment_variables", "mindie_config", "ranktable", "model_config"]
 DOMAIN = namedtuple("DOMAIN", _DOMAIN)(*_DOMAIN)
 _CONFIG = ["name", "value", "reason", "suggestions", "condition", "suggested", "not_suggested"]
@@ -220,6 +150,7 @@ def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, 
 
     for value_list, reason in suggest_value_list:
         not_in_unsuggest_values = [x for x in value_list if x not in not_suggest_value_dict]
+        print(f">>>> {not_in_unsuggest_values = }, {value_list = }")
         if len(not_in_unsuggest_values) > 0 and current_value not in not_in_unsuggest_values:
             suggestion_value = not_in_unsuggest_values[0]
             show_check_result(
