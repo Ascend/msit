@@ -150,7 +150,7 @@ def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, 
 
     for value_list, reason in suggest_value_list:
         not_in_unsuggest_values = [x for x in value_list if x not in not_suggest_value_dict]
-        print(f">>>> {not_in_unsuggest_values = }, {value_list = }")
+        print(f">>>> {not_in_unsuggest_values = }, {value_list = }, {current_value = }")
         if len(not_in_unsuggest_values) > 0 and current_value not in not_in_unsuggest_values:
             suggestion_value = not_in_unsuggest_values[0]
             show_check_result(
