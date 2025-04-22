@@ -17,6 +17,8 @@ from collections import namedtuple
 
 import yaml
 
+from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, logger
+
 """
 Yaml 配置模板：
 # 配置建议模板
@@ -80,7 +82,9 @@ def get_default_suggestions():
 def update_to_default_suggestions(domain, additional_checks_yaml):
     if not additional_checks_yaml or domain not in additional_checks_yaml:
         return
-    sub_config = GLOBAL_DEFAULT_CONFIG.get(domain, [])
+
+    GLOBAL_DEFAULT_CONFIG.setdefault(domain, [])
+    sub_config = GLOBAL_DEFAULT_CONFIG[domain]
     suggestions_dict = {ii[CONFIG.name]: ii for ii in sub_config}
     for ii in additional_checks_yaml.pop(domain):  # pop out for only apply once
         cur_key = ii.get(CONFIG.name, None)
@@ -110,11 +114,12 @@ def is_value_met_suggestions(current_value, suggested_values, current_configs):
     if not suggested_values:
         return current_value is not None  # suggested_values is empty, check if current_value not None
     normal_value_suggestions, special_value_suggestions = [], []
-    for ii in suggested_values:
-        if isinstance(ii, str) and ii.startswith("="):
-            special_value_suggestions.append(ii)
+    for suggested_value in suggested_values:
+        logger.debug(f"is_value_met_suggestions: suggested_value = {suggested_value}")
+        if isinstance(suggested_value, str) and suggested_value.startswith("="):
+            special_value_suggestions.append(suggested_value)
         else:
-            normal_value_suggestions.append(ii)
+            normal_value_suggestions.append(suggested_value)
     if isinstance(current_value, typing.Hashable) and current_value in normal_value_suggestions:
         return True
     for condition in special_value_suggestions:

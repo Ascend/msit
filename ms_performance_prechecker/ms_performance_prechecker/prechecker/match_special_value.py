@@ -111,7 +111,7 @@ def _is_numeric(*values):
 
 def to_json_object(value):
     try:
-        json_object = json.loads(condition.replace("'", '"'))  # 兼容单引号
+        json_object = json.loads(value.replace("'", '"'))  # 兼容单引号
     except:
         json_object = None
     return json_object
@@ -171,6 +171,7 @@ def is_value_met_special_suggestions(input_value, condition, config):
         condition_dict = to_json_object(condition)
         return compare_dicts(input_value, condition_dict or {})
 
+    logger.debug(f"is_value_met_special_suggestions condition={condition}")
     if isinstance(condition, str):
         # 处理多条件（用分号分隔）
         if ';' in condition:
@@ -180,6 +181,7 @@ def is_value_met_special_suggestions(input_value, condition, config):
         # 情况1：字符串形式的列表（如 "[2, 4, 8]"）
         if condition.startswith('[') and condition.endswith(']'):
             allowed_values = to_json_object(condition)
+            logger.debug(f"is_value_met_special_suggestions input_value={input_value} allowed_values={allowed_values}")
             return input_value in allowed_values if allowed_values else False
         
         # 情况4：嵌套字典字符串（如 '{"xxx":{"x1":2, "y1":3}}'）
