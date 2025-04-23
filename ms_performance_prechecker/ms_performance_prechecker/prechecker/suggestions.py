@@ -131,7 +131,6 @@ def is_value_met_suggestions(current_value, suggested_values, current_configs):
 
 def suggestion_rule_checker(current_configs, suggestion_rule, env_info, domain, action_func=None):
     from ms_performance_prechecker.prechecker.register import show_check_result, CheckResult
-    from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, logger
 
     if not suggestion_rule:
         return (CheckResult.OK, None, None)

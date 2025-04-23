@@ -18,6 +18,7 @@ from ms_performance_prechecker.prechecker.utils import get_dict_value_by_pos, de
 CALCULATING_OPS = ["+", "-", "*", "/", "//"]
 COMPARING_OPS = ['>=', '<=', '!=', '=', '>', '<']
 
+
 def parse_calculation_expression(input_value, expr, config):
     """
     处理含复合变量名的计算表达式（如 "prefix:dp + ns:x/y"）：
@@ -26,7 +27,7 @@ def parse_calculation_expression(input_value, expr, config):
     """
     # 步骤1：提取变量名（匹配包含冒号的键名）
     variables = re.findall(r'\b[a-zA-Z_][a-zA-Z0-9_:]*\b', expr)
-    #breakpoint()
+
     # 步骤2：替换变量值为实际值
     for var in variables:
         var_value = get_dict_value_by_pos(config, var)
@@ -39,7 +40,7 @@ def parse_calculation_expression(input_value, expr, config):
     try:
         calculated_value = eval(expr)
         return input_value == calculated_value
-    except:
+    except Exception:
         return False
 
 
@@ -125,7 +126,7 @@ def _is_numeric(*values):
 def to_json_object(value):
     try:
         json_object = json.loads(value.replace("'", '"'))  # 兼容单引号
-    except:
+    except Exception:
         json_object = None
     return json_object
 
