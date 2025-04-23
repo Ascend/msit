@@ -18,6 +18,7 @@ import subprocess
 import pandas as pd
 
 from msit_llm.common.log import logger
+from components.utils.util import filter_cmd
 
 
 HUMANEVAL_X_KEY_PREFIX = ["CPP", "Go", "Java", "JavaScript", "Python"]
@@ -122,7 +123,8 @@ def execute_command(cmd, info_need=True):
     if info_need:
         logger.info("Execute command: " + " ".join(cmd))
     try:
-        process = subprocess.run(cmd, shell=False, check=True, text=True, \
+        cmd = filter_cmd(cmd)
+        subprocess.run(cmd, shell=False, check=True, text=True, \
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except Exception as e:
         logger.error(f"Failed to execute modeltest cmd, error code: {e.returncode}")

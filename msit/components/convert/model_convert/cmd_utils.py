@@ -21,6 +21,7 @@ import subprocess
 from model_convert.aoe.aoe_args_map import aoe_args
 from model_convert.atc.atc_args_map import atc_args
 from components.utils.security_check import get_valid_read_path, get_valid_write_path, MAX_READ_FILE_SIZE_32G
+from components.utils.util import filter_cmd
 from components.utils.log import logger
 
 input_file_args = ['model', 'weight', 'singleop', 'insert_op_conf', 'op_name_map', 'fusion_switch_file',
@@ -80,6 +81,7 @@ def gen_convert_cmd(conf_args: list, parse_args: argparse.Namespace, backend: st
 
 
 def execute_cmd(cmd: list):
+    cmd = filter_cmd(cmd)
     logger.info("%s start converting now", cmd[0].upper())
     result = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     while result.poll() is None:

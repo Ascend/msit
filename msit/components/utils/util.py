@@ -158,3 +158,13 @@ def load_file_to_read_common_check(path: str, exts=None):
                           " a normal user and is writeable to the user or the user group")
 
     return path
+
+
+def filter_cmd(paras):
+    whitelist_pattern = re.compile(r'^[a-zA-Z0-9_\-./= ]+$')
+    filtered = []
+    for arg in paras:
+        arg_str = str(arg)
+        if whitelist_pattern.fullmatch(arg_str):
+            filtered.append(arg_str)
+    return filtered

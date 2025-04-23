@@ -36,6 +36,7 @@ from components.utils.check.rule import Rule
 
 from components.utils.util import load_file_to_read_common_check
 from components.utils.constants import TENSOR_MAX_SIZE
+from components.utils.util import filter_cmd
 
 MSACCUCMP_DIR_PATH = "toolkit/tools/operator_cmp/compare"
 MSACCUCMP_FILE_NAME = ["msaccucmp.py", "msaccucmp.pyc"]
@@ -75,6 +76,7 @@ class NetCompare(object):
 
     @staticmethod
     def execute_command_line(cmd):
+        cmd = filter_cmd(cmd)
         utils.logger.info('Execute command:%s' % " ".join(cmd))
         process = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         return process

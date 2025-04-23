@@ -18,6 +18,7 @@ import subprocess
 from typing import List
 
 from components.utils.log import logger
+from components.utils.util import filter_cmd
 from model_evaluation.common.enum import Framework, SocType
 
 
@@ -46,6 +47,7 @@ def get_framework(model: str) -> Framework:
 
 
 def exec_command(cmd_args: List[str]):
+    cmd_args = filter_cmd(cmd_args)
     out = subprocess.run(cmd_args, capture_output=True, shell=False)
     outmsg = out.stdout.decode('utf-8')
     outerr = out.stderr.decode('utf-8')

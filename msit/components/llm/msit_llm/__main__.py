@@ -30,6 +30,7 @@ from msit_llm.common.utils import str2bool, check_positive_integer, check_device
 from msit_llm.bc_analyze import Synthesizer, Analyzer
 from msit_llm.common.log import logger, set_log_level, LOG_LEVELS
 from msit_llm.badcase_analyze.bad_case_analyze import BadCaseAnalyzer
+from components.utils.util import filter_cmd
 
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
@@ -171,6 +172,7 @@ class DumpCommand(BaseCommand):
             if not is_enough_disk_space_left(args.output, logger=logger):
                 raise OSError("Please make sure that the remaining disk space in the dump path is greater than 2 GB")
             cmds = args.exec.split()
+            cmds = filter_cmd(cmds)
             subprocess.run(cmds, shell=False)
             clear_dump_task(args)
             return

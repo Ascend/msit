@@ -21,6 +21,7 @@ from msit_llm.common.constant import LD_PRELOAD, ATB_PROB_LIB_WITH_ABI, ATB_PROB
                                 ATB_EXIT, ATB_AIT_LOG_LEVEL
 from msit_llm.common.log import logger
 from msit_llm.dump.initial import is_use_cxx11
+from components.utils.util import filter_cmd
             
 
 def handles_check_type(args) -> None:
@@ -81,6 +82,7 @@ def handles_exec(args) -> None:
     logger.warning("Please make sure that the executable command is safe.")
     
     cmds = args.exec.split()
+    cmds = filter_cmd(cmds)
     subprocess.run(cmds, shell=False)
 
 

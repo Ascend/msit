@@ -24,6 +24,7 @@ from components.debug.compare.msquickcmp.common.args_check import check_input_pa
 from msit_opcheck.case_manager import CaseManager
 from msit_opcheck.graph_parser import get_all_opinfo, get_ge_graph_name, OpInfo
 from msit_opcheck.utils import NAMEDTUPLE_PRECISION_MODE
+from components.utils.util import filter_cmd
 
 
 class OpChecker:
@@ -59,6 +60,7 @@ class OpChecker:
     @staticmethod
     def execute_convert_npy_command(command):
         try:
+            command = filter_cmd(command)
             result = subprocess.run(command, shell=False, capture_output=True, text=True)
             if result.returncode == 0:
                 return result.stdout.strip()
