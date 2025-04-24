@@ -122,9 +122,9 @@ def check_write_directory(dir_name, check_user_stat=True):
 def get_write_directory(dir_name, write_mode=0o750):
     real_dir_name = get_valid_path(dir_name)
     if os.path.exists(real_dir_name):
-        logger.info("write directory exists, write file to directory %s", dir_name)
+        logger.info("write directory exists, write file to directory %r", dir_name)
     else:
-        logger.warning("write directory not exists, creating directory %s", dir_name)
+        logger.warning("write directory not exists, creating directory %r", dir_name)
         os.makedirs(name=real_dir_name, mode=write_mode)
     return real_dir_name
 
@@ -144,7 +144,7 @@ def get_valid_write_path(path, extensions=None, check_user_stat=True, is_dir=Fal
         if not os.access(real_path, os.W_OK):
             raise ValueError("The file {} exist and not writable.".format(path))
         if warn_exists:
-            logger.warning("%s already exist. The original file will be overwritten.", path)
+            logger.warning("%r already exist. The original file will be overwritten.", path)
     return real_path
 
 

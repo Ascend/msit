@@ -65,7 +65,7 @@ class KnowledgeDistillConfig(object):
                 try:
                     func_instance = distill_loss_func[loss_name](*loss_param)
                 except TypeError as ex:
-                    logger.error("Please check loss_param and loss_name, current loss_param is: %s, loss_name is: %s",
+                    logger.error("Please check loss_param and loss_name, current loss_param is: %r, loss_name is: %r",
                                  loss_param, loss_name)
                     raise ex
             loss_func["func_instance"] = func_instance
@@ -95,7 +95,7 @@ class KnowledgeDistillConfig(object):
                     "Custom loss func \"{}\" must be a {}, not {}".format(name, type(func_type), type(loss_func)))
             if distill_loss_func.get(name):
                 loss_func_list = list(distill_loss_func.keys())
-                logger.warning("loss function name in %s. default %s will be overwritten.", str(loss_func_list), name)
+                logger.warning("loss function name in %r. default %r will be overwritten.", str(loss_func_list), name)
             distill_loss_func[name] = custom_loss_func[name]
 
     @staticmethod

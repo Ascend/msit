@@ -195,7 +195,7 @@ class QuantModelJsonDescription:
         self.quant_model_description.pop(weight_name, None)
 
     def save(self, path):
-        logger.info("Path of quant_model_description_json is %s ", path)
+        logger.info("Path of quant_model_description_json is %r ", path)
         json_safe_dump(self.quant_model_description, path, indent=2)
         logger.info("Save quant_model_description_json success!")
 

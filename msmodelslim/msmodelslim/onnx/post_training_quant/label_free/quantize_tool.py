@@ -25,7 +25,7 @@ def quantize_model(input_model_path, output_model_path, quant_config):
 
     data_reader = DataReader(input_model_path,
                              quant_config.calib_data, quant_config)
-    logger.info("%s batch data to calibrate.", data_reader.data_size)
+    logger.info("%r batch data to calibrate.", data_reader.data_size)
     if quant_config.amp_num > 0:
         rollback_data_reader = deepcopy(data_reader)
 
@@ -40,7 +40,7 @@ def quantize_model(input_model_path, output_model_path, quant_config):
     if not quant_config.is_quant_depthwise_conv:  # exclude depthwise conv
         quantized_nodes = list(set(quantized_nodes) - set(depthwise_nodes))
 
-    logger.info("%s node will be quantized: %s", len(quantized_nodes), quantized_nodes)
+    logger.info("%r node will be quantized: %r", len(quantized_nodes), quantized_nodes)
 
     quant_kwargs = {
         "quant_format": QuantFormat.QOperator,
@@ -64,14 +64,14 @@ def quantize_model(input_model_path, output_model_path, quant_config):
     if quant_config.amp_num > 0:
         activation_errors = match_activations(input_model_path, cpu_quant_model_path, quantized_nodes, quant_config)
         rollback_nodes = get_rollback_nodes(input_model_path, activation_errors, quant_config.amp_num)
-        logger.info("%s nodes are rollback.", rollback_nodes)
+        logger.info("%r nodes are rollback.", rollback_nodes)
         quantized_nodes = list(set(quantized_nodes).difference(set(rollback_nodes)))
         quant_kwargs.update({"nodes_to_quantize": quantized_nodes})
         with SafeWriteUmask():
             quantize_static(input_model_path, cpu_quant_model_path, rollback_data_reader, **quant_kwargs)
 
     if os.path.exists(temp_model_file):
-        logger.debug("Remove temp model file: %s.", temp_model_file)
+        logger.debug("Remove temp model file: %r.", temp_model_file)
         os.remove(temp_model_file)
 
     logger.info("Finish to quantize model on cpu.")
@@ -83,6 +83,6 @@ def quantize_model(input_model_path, output_model_path, quant_config):
     cpu_graph.reduce_redundant_quant_node()
     cpu_graph.save_model(output_model_path)
 
-    logger.debug("Remove temp cpu quant model file: %s", cpu_quant_model_path)
+    logger.debug("Remove temp cpu quant model file: %r", cpu_quant_model_path)
     if os.path.exists(cpu_quant_model_path):
         os.remove(cpu_quant_model_path)

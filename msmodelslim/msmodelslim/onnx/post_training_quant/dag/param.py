@@ -39,7 +39,7 @@ class Tensor:
 
     @property
     def initializer(self):
-        logger.debug("Export param: %s", self.name)
+        logger.debug("Export param: %r", self.name)
         if isinstance(self.value, np.ndarray):
             return numpy_helper.from_array(self.value, self.name)
         vals = self.value if isinstance(self.value, list) else [self.value]

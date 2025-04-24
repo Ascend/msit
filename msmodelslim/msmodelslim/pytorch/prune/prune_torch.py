@@ -7,6 +7,7 @@ import torch
 from torch import Tensor
 
 from ascend_utils.common.utils import CallParams
+from ascend_utils.common.security.type import check_dict_character
 from ascend_utils.pytorch.dag.dag_torch_hook import DagTorchHook
 
 from msmodelslim.pytorch.prune.prune_policy import PrunePolicyGraphConv2D, \
@@ -207,6 +208,7 @@ class PruneTorch:
         """
         if not isinstance(desc, dict):
             raise TypeError("parameter desc must be dict")
+        check_dict_character(desc, param_name="desc")
 
         ori_params = self.dag.get_params()
         if ori_params == 0:

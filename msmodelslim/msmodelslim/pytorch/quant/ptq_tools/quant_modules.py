@@ -109,7 +109,7 @@ class Quantizer(nn.Module):
     def _init_data_free_param(self, data):
         """ Initial data-free quantizaton"""
         if not self.has_init_quant_para:
-            logger.info("QUANT %s bit: %s", self.bit.item(), self.name)
+            logger.info("QUANT %r bit: %r", self.bit.item(), self.name)
             self.update_signed(data)
 
             # determine the data_free mode
@@ -153,7 +153,7 @@ class Quantizer(nn.Module):
                         easy_quant=self.easy_quant,
                     )
             else:
-                raise RuntimeError("Unsupported mode:%s", self.dfree_mode)
+                raise RuntimeError("Unsupported mode:%r" % self.dfree_mode)
 
         self.has_init_quant_para = True
 
@@ -171,7 +171,7 @@ class Quantizer(nn.Module):
                 return tensor
         # value check of forward tensor 
         if tensor.numel() == 0:
-            logger.info("the numel of input tensor is zero, disable quantization:%s", self.name)
+            logger.info("the numel of input tensor is zero, disable quantization:%r", self.name)
             self.disable_quantization(self.name)
             return tensor
         with torch.no_grad():

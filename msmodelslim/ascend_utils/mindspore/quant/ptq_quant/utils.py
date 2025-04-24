@@ -253,11 +253,11 @@ class ModelStatistics:
             if hasattr(c_list[idx], 'params'):
                 self.wsize_list.append(c_list[idx].params)
             else:
-                logging.warning('Network has redundancy cell: %s', c_list[idx])
+                logging.warning('Network has redundancy cell: %r', c_list[idx])
             if hasattr(c_list[idx], 'flops'):
                 self.flops_list.append(c_list[idx].flops)
             else:
-                logging.warning('Network has redundancy cell: %s', c_list[idx])
+                logging.warning('Network has redundancy cell: %r', c_list[idx])
 
         context.set_context(mode=0)
         del self.model

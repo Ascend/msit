@@ -75,17 +75,17 @@ class Quantizer(nn.Module):
 
     def init_act_and_observer(self, cfg):
         if cfg.act_method == 1:
-            self.logger.info("use min-max observer:%s, range_parm:%s", self.name, self.range_param)
+            self.logger.info("use min-max observer:%r, range_parm:%r", self.name, self.range_param)
             self.observer = StatMinMaxObserver(self.bit, self.is_signed, self.is_sym)
         elif cfg.act_method == 2:
-            self.logger.info("use histogram observer:%s, range_parm:%s", self.name, self.range_param)
+            self.logger.info("use histogram observer:%r, range_parm:%r", self.name, self.range_param)
             self.observer = HistogramObserver(qscheme=torch.per_tensor_affine)
         elif cfg.act_method == 3:
             if self.range_param <= 50:
-                self.logger.info("use histogram observer:%s, range_parm:%s", self.name, self.range_param)
+                self.logger.info("use histogram observer:%r, range_parm:%r", self.name, self.range_param)
                 self.observer = HistogramObserver(qscheme=torch.per_tensor_affine)
             elif 50 < self.range_param:
-                self.logger.info("use min-max observer:%s, range_parm:%s", self.name, self.range_param)
+                self.logger.info("use min-max observer:%r, range_parm:%r", self.name, self.range_param)
                 self.observer = StatMinMaxObserver(self.bit, self.is_signed, self.is_sym)
 
     def disable_input_quantization(self):
@@ -139,7 +139,7 @@ class Quantizer(nn.Module):
             prob = self.pr
             if self.print_flag:
                 self.logger.info(
-                    "layer: %s, range: %s, Automatically set the drop rate: %s", self.name, self.range_param, prob
+                    "layer: %r, range: %r, Automatically set the drop rate: %r", self.name, self.range_param, prob
                 )
                 self.print_flag = False
 

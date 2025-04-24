@@ -93,6 +93,12 @@ def main():
 
     config = safe_generator.get_config_from_pretrained(model_path=model_path, 
                                                        trust_remote_code=True)
+    num_layer = config.num_hidden_layers
+    if args.layer_count < 0 or args.layer_count > num_layer:
+        raise ValueError(
+            f"Invalid value for parameter layer_count: {args.layer_count}."
+            f"Must be between 0 and {num_layer}."
+        )
     # Set layer count to 0 means use all layers, otherwise it will only use the first layer_count layers
     config.num_hidden_layers = args.layer_count if args.layer_count != 0 else config.num_hidden_layers
     # Set model type to deepseekv2 because we only support deepseekv2 now,

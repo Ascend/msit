@@ -62,7 +62,7 @@ class OnnxNode:
 
     @property
     def node(self):
-        logger.debug("Export node: %s", self.name)
+        logger.debug("Export node: %r", self.name)
         inputs = self.inputs + [param.tensor.name for param in self.params]
         input_size = len(inputs)
 

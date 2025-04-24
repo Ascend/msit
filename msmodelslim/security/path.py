@@ -107,7 +107,7 @@ def get_valid_write_path(path, extensions=None, check_user_stat=True, is_dir=Fal
         if not os.access(real_path, os.W_OK):
             raise ValueError("The file {} exist and not writable.".format(path))
         if warn_exists:
-            logger.warning("%s already exist. The original file will be overwritten.", path)
+            logger.warning("%r already exist. The original file will be overwritten.", path)
     return real_path
 
 

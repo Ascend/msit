@@ -75,26 +75,31 @@ def parse_arguments():
     parser.add_argument('--disable_last_linear', type=cmd_bool, default=True)
     parser.add_argument('--model_name', type=str, default=None,
                         validator=StringArgumentValidator(min_length=1, max_length=MAX_KEY_LENGTH, allow_none=True))
+    parser.add_argument('--trust_remote_code', type=cmd_bool, default=False)
     return parser.parse_args()
 
 
 class Quantifier:
     def __init__(self, model_path_or_name, quant_config=None,
-                 anti_outlier_config=None, device_type='cpu', **kwargs):
+                 anti_outlier_config=None, device_type='cpu', trust_remote_code=False, **kwargs):
         safe_generator = SafeGenerator()
         self.device_type = device_type
         device_map = CPU if self.device_type == CPU else "auto"
+        self.trust_remote_code = trust_remote_code
 
         self.quant_config = quant_config
         self.anti_outlier_config = anti_outlier_config
         self.model_path_or_name = model_path_or_name
-        self.config = safe_generator.get_config_from_pretrained(self.model_path_or_name, trust_remote_code=True)
+        self.config = safe_generator.get_config_from_pretrained(
+            self.model_path_or_name, 
+            trust_remote_code=self.trust_remote_code
+        )
         self.dtype = self.config.torch_dtype if self.device_type == NPU else torch.float32
         self.model = safe_generator.get_model_from_pretrained(
             self.model_path_or_name,
             low_cpu_mem_usage=True,
             torch_dtype=self.dtype,
-            trust_remote_code=True,
+            trust_remote_code=self.trust_remote_code,
             device_map={
                 "model.embed_tokens": 0,
                 "model.layers": "cpu",
@@ -105,7 +110,11 @@ class Quantifier:
 
         tokenizer_args = kwargs.get("tokenizer_args", {})
         self.tokenizer = safe_generator.get_tokenizer_from_pretrained(
-            self.model_path_or_name, use_fast=True, trust_remote_code=True, add_eos_token=True, **tokenizer_args
+            self.model_path_or_name, 
+            use_fast=True, 
+            trust_remote_code=self.trust_remote_code, 
+            add_eos_token=True, 
+            **tokenizer_args
         )
         self.model_name = kwargs.get("model_name", None)
 
@@ -150,7 +159,10 @@ if __name__ == '__main__':
 
     model_path = args.model_path
     save_directory = args.save_directory
-    num_layers = checker.get_config_from_pretrained(model_path, trust_remote_code=True).num_hidden_layers
+    num_layers = checker.get_config_from_pretrained(
+        model_path, 
+        trust_remote_code=args.trust_remote_code
+    ).num_hidden_layers
 
     disable_names = args.disable_names
     if not disable_names:
@@ -193,7 +205,7 @@ if __name__ == '__main__':
     quantifier = Quantifier(
         model_path, quant_conf, anti_outlier_config_val,
         device_type=args.device_type, tokenizer_args=tokenizer_args,
-        model_name=args.model_name,
+        model_name=args.model_name, trust_remote_code=args.trust_remote_code
     )
     tokenized_calib_data = None
 

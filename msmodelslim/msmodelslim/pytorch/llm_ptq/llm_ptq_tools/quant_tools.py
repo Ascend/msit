@@ -996,5 +996,5 @@ def set_ratio(model, ratio=0.9, logger=None):
     for name, module in model.named_modules():
         if isinstance(module, Quantizer):
             if logger:
-                logger.debug('Set the ratio: %s', name)
+                logger.debug('Set the ratio: %r', name)
             module.set_ratio(ratio)

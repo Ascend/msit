@@ -150,3 +150,16 @@ def test_run_quantize_given_onnx_when_graph_optimize_level_is_2_and_om_method_is
     assert os.path.exists(quant_model_path)
     os.remove(quant_model_path)
     CALIBS.append(calib)
+
+
+def test_valid_input_shape():
+    """测试合法的 input_shape"""
+    config = QuantConfig(input_shape=[[1, 2], [3, 4]])
+    assert config.input_shape == [[1, 2], [3, 4]]
+
+
+def test_subelements_contain_non_integer():
+    """测试子列表包含非整数的情况"""
+    with pytest.raises(ValueError) as context:
+        QuantConfig(input_shape=[[1, "a"], [3, 4]])
+    assert "Element in input_shape_items is invalid. Should be all int." in str(context.value)
