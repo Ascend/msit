@@ -121,3 +121,11 @@ def get_tokenized_data(tokenizer, inputs, dtype=torch.float16):
         generation_config = dict(max_new_tokens=1024, do_sample=False)
         tokenization_data.append([tokenizer, pixel_values, query, generation_config])
     return tokenization_data
+
+
+def cmd_bool(cmd_arg):
+    if cmd_arg == "True":
+        return True
+    elif cmd_arg == "False":
+        return False
+    raise ValueError(f"{cmd_arg} should be True or False")

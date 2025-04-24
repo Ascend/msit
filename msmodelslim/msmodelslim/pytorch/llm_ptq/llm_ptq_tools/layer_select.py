@@ -7,7 +7,7 @@ from itertools import groupby
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from ascend_utils.common.security import check_type, check_number
+from ascend_utils.common.security import check_type, check_number, check_element_type
 from msmodelslim import logger as msmodelslim_logger
 _SUPPORT_QUANTILE = False
 try:
@@ -211,6 +211,7 @@ class LayerSelector:
         if layer_names is None:
             self.layer_names = get_all_linear_conv_module(model)
         else:
+            check_element_type(layer_names, element_type=str, value_type=list, param_name='layer_names')
             self.layer_names = list(set(layer_names))
         check_type(range_method, str, param_name="range_method")
         check_layer_names(model, self.layer_names)

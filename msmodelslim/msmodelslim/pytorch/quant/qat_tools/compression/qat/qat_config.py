@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function
 from dataclasses import dataclass
 from typing import List
 
-from ascend_utils.common.security import check_number
+from ascend_utils.common.security import check_number, get_valid_read_path
 from msmodelslim.pytorch.quant.qat_tools.common.config import Config
 
 # onnx version
@@ -75,6 +75,7 @@ class QatConfig(Config):
         check_number(self.grad_scale, float, 0.0, 0.01, param_name="grad_scale")
         if self.compressed_model_checkpoint is not None and not isinstance(self.compressed_model_checkpoint, str):
             raise TypeError("compressed_model_checkpoint should be str, please check it.")
+        self.compressed_model_checkpoint = get_valid_read_path(self.compressed_model_checkpoint)
         if not isinstance(self.a_sym, bool):
             raise TypeError("a_sym should be bool, please check it.")
         if not isinstance(self.is_forward, bool):

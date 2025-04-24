@@ -261,3 +261,11 @@ class StringArgumentValidator(ArgumentValidator):
 
     def create_validation_pipeline(self):
         super()._create_validation_pipeline(self.validate_type, self.validate_length)
+
+
+def cmd_bool(cmd_arg):
+    if cmd_arg == "True":
+        return True
+    elif cmd_arg == "False":
+        return False
+    raise ValueError(f"{cmd_arg} should be True or False")

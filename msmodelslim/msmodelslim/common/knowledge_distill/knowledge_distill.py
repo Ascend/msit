@@ -122,6 +122,27 @@ class KnowledgeDistillConfig(object):
             instance: the instance of loss function. nn.Module for PyTorch, nn.Cell for MindSpore.
         """
         check_type(name, str, param_name="name")
+
+        # check instance
+        is_valid = False
+        try:
+            import torch.nn as nn
+            if isinstance(instance, nn.Module):
+                is_valid = True
+        except ImportError:  # PyTorch未安装时跳过
+            pass
+
+        if not is_valid:  # 如果PyTorch校验未通过，检查MindSpore
+            try:
+                import mindspore.nn as nn_ms
+                if isinstance(instance, nn_ms.Cell):
+                    is_valid = True
+            except ImportError:  # MindSpore未安装时跳过
+                pass
+
+        if not is_valid:
+            raise TypeError("`instance` must be a PyTorch `nn.Module` or MindSpore `nn.Cell`. ")
+
         self.custom_loss_func[name] = instance
 
     def set_hard_label(self, weight: float, index: int = None):
