@@ -11,6 +11,8 @@ import gc
 import numpy as np
 import torch
 
+from ascend_utils.common.security import get_valid_write_path, get_valid_read_path
+
 from example.osp1_2.model.model_open_sora_plan1_2_sp import OneStepSampleArgs, TextEmbeddingsArgs
 from .schedule_optimizer import AYSOptimizer
 
@@ -58,22 +60,6 @@ class ReStepSearchConfig:
     monte_carlo_iters: int = 5
 
     num_sampling_steps: int = 50
-
-
-def check_exist_and_read_permission(path: str) -> None:
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"The specified path does not exist: {path}")
-
-    if not os.access(path, os.R_OK):
-        raise PermissionError(f"Read permission is denied for the path: {path}")
-
-
-def check_exist_and_write_permission(path: str) -> None:
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"The specified path does not exist: {path}")
-
-    if not os.access(path, os.W_OK):
-        raise PermissionError(f"Write permission is denied for the path: {path}")
 
 
 # ----------------- 适配器实现 -----------------
@@ -133,9 +119,9 @@ class ReStepAdaptor:
         Raises:
             ValueError: If any of the validations fail.
         """
-        # Check that the videos_path exists with the appropriate permissions.
-        check_exist_and_read_permission(config.videos_path)
-        check_exist_and_write_permission(config.videos_path)
+        # Check that the videos_path and save_dir exists with the appropriate permissions.
+        config.videos_path = get_valid_read_path(config.videos_path, is_dir=True)
+        config.save_dir = get_valid_write_path(config.save_dir, is_dir=True)
 
         # Validate the number of sampling steps.
         if not isinstance(config.num_sampling_steps, int) or config.num_sampling_steps < 1:

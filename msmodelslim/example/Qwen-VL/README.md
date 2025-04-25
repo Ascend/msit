@@ -30,6 +30,7 @@
 | w_bit | 权重量化bit | 8 | 大模型量化场景下，可配置为8或16； <br>大模型稀疏量化场景下，需配置为4。 |
 | device_type | device类型 | cpu | 可选值：['cpu', 'npu'] |
 | part_file_size | 量化权重文件大小 | 无限制 | 单个量化权重文件大小不超过xGB。|
+| trust_remote_code | 是否信任自定义代码 | False | 指定`trust_remote_code=True`让修改后的自定义代码文件能够正确的被加载。(请确保加载的自定义代码文件的安全性) |
 
 - 更多参数配置要求，请参考量化过程中配置的参数 [QuantConfig](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/QuantConfig.md)
   以及量化参数配置类 [Calibrator](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/Calibrator.md)
@@ -41,10 +42,11 @@
   export ASCEND_RT_VISIBLE_DEVICES=0,1,2
   export PYTORCH_NPU_ALLOC_CONF=expandable_segments:False
   ```
+- 若加载自定义模型，调用`from_pretrained`函数时要指定`trust_remote_code=True`让修改后的自定义代码文件能够正确的被加载。(请确保加载的自定义代码文件的安全性)
   
 #### 1. Qwen-VL系列
 ##### Qwen-VL W8A8量化
 生成Qwen-VL模型量化权重，antioutlier使用m2算法配置，在NPU上进行运算
   ```shell
-  python quant_qwenvl.py  --model_path {浮点权重路径} --calib_images {校准图片路径}  --save_directory {量化权重保存路径} --w_bit 8 --a_bit 8 --device_type npu
+  python quant_qwenvl.py  --model_path {浮点权重路径} --calib_images {校准图片路径}  --save_directory {量化权重保存路径} --w_bit 8 --a_bit 8 --device_type npu --trust_remote_code True
   ```

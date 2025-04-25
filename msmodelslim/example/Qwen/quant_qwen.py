@@ -10,21 +10,14 @@ parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
 sys.path.append(parent_directory)
 
 from ascend_utils.common.security.path import get_valid_write_path, get_valid_read_path
-from example.common.utils import SafeGenerator, ArgumentParser, StringArgumentValidator, MAX_KEY_LENGTH, MAX_JSON_LENGTH
+from example.common.utils import SafeGenerator, ArgumentParser, StringArgumentValidator, MAX_KEY_LENGTH, \
+    MAX_JSON_LENGTH, cmd_bool
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlier, AntiOutlierConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.layer_select import LayerSelector
 
 CPU = "cpu"
 NPU = "npu"
-
-
-def cmd_bool(cmd_arg):
-    if cmd_arg == "True":
-        return True
-    elif cmd_arg == "False":
-        return False
-    raise ValueError(f"{cmd_arg} should be True or False")
 
 
 def get_down_proj_disable_names(num_layers: int) -> list:
@@ -131,6 +124,7 @@ def parse_arguments():
                        help='Disable threshold when auto select disable names')
     parser.add_argument('--pdmix', type=cmd_bool, default=False,
                        help='use pdmix quantization type')
+    parser.add_argument('--trust_remote_code', type=cmd_bool, default=False)
     return parser.parse_args()
 
 
@@ -143,18 +137,27 @@ class Quantifier:
         device_map = CPU if self.device_type == CPU else "auto"
         self.anti_outlier_config = anti_outlier_config
         self.model_path_or_name = model_path_or_name
-        self.config = safe_generator.get_config_from_pretrained(self.model_path_or_name, trust_remote_code=True)
+        self.trust_remote_code = self.args.trust_remote_code
+
+        self.config = safe_generator.get_config_from_pretrained(
+            self.model_path_or_name,
+            trust_remote_code=self.trust_remote_code
+        )
         self.dtype = self.config.torch_dtype if self.device_type == NPU else torch.float32
         self.model = safe_generator.get_model_from_pretrained(
             self.model_path_or_name,
             low_cpu_mem_usage=True, torch_dtype=self.dtype,
             device_map=device_map,
-            trust_remote_code=True
+            trust_remote_code=self.trust_remote_code
         )
 
         tokenizer_args = kwargs.get("tokenizer_args", {})
         self.tokenizer = safe_generator.get_tokenizer_from_pretrained(
-            self.model_path_or_name, use_fast=False, trust_remote_code=True, legacy=False, **tokenizer_args
+            self.model_path_or_name,
+            use_fast=False,
+            trust_remote_code=self.trust_remote_code,
+            legacy=False,
+            **tokenizer_args
         )
         self.model_name = kwargs.get("model_name", None)
         self.quant_config = None
@@ -245,10 +248,10 @@ if __name__ == '__main__':
 
     model_path = args.model_path
     save_directory = args.save_directory
-    num_layers = checker.get_config_from_pretrained(model_path, trust_remote_code=True).num_hidden_layers
-
-
-
+    num_layers = checker.get_config_from_pretrained(
+        model_path,
+        trust_remote_code=args.trust_remote_code
+    ).num_hidden_layers
 
     anti_outlier_config_val = None
     if args.anti_method == 'm3':
@@ -314,7 +317,7 @@ if __name__ == '__main__':
     is_w8a8_dynamic = args.w_bit == 8 and args.a_bit == 8 and args.is_dynamic
     if is_w8a8_dynamic:
         quant_type = "w8a8_dynamic"
-    auto_config = checker.get_config_from_pretrained(model_path, trust_remote_code=True)
+    auto_config = checker.get_config_from_pretrained(model_path, trust_remote_code=args.trust_remote_code)
     checker.modify_config(model_path, save_directory, auto_config.torch_dtype,
                 quant_type, args)
     checker.copy_tokenizer_files(model_path, save_directory)
