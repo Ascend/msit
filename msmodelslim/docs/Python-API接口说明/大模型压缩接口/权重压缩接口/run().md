@@ -12,9 +12,9 @@ compress_result_weight, compress_result_index, compress_result_info = compressor
 | 参数名| 输入/返回值 | 含义 | 使用限制 |
 | ------ | ------ | ------ | ------ |
 | weight_transpose | 输入 |待压缩权重是否需要转置。| 可选。<br>数据类型：bool。<br>默认为False，为不需要转置。可以设置为True，为需要转置。 |
-| compress_result_weight | 输入 |压缩后的权重结果。| 数据类型：dict。 |
-| compress_result_index | 输入 |压缩后的索引结果。| 数据类型：dict。 |
-| compress_result_info | 输入 |压缩信息结果。| 数据类型：dict。 |
+| compress_result_weight | 返回值 |压缩后的权重结果。| 数据类型：dict。 |
+| compress_result_index | 返回值 |压缩后的索引结果。| 数据类型：dict。 |
+| compress_result_info | 返回值 |压缩信息结果。| 数据类型：dict。 |
 
 ### 调用示例
 - 使用weight_path参数进行权重压缩。
