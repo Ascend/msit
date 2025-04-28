@@ -389,10 +389,10 @@ class GraphAnalyze:
             logger.error("The --only_forward and --only_backward cannot exist at the same time")
             return set()
         if center_node not in gs.names_to_node:
-            logger.error(f"The node {center_node} can not be found in graph file, please check")
+            logger.error("The node %r can not be found in graph file, please check", center_node)
             return set()
 
-        logger.info(f"Begin to find dump nodes, center node {center_node}")
+        logger.info("Begin to find dump nodes, center node %r.", center_node)
         return GraphAnalyze._lookup_dump_nodes(
             args, gs, center_node, lookup_directions
         )
@@ -402,13 +402,13 @@ class GraphAnalyze:
         """Finds nodes between specified start and end names."""
 
         if start_name not in gs.names_to_output_names:
-            logger.error(f"Can not find the node {start_name}'s output node")
+            logger.error("Can not find the node %r's output node." % start_name)
             return set()
         if end_name not in gs.names_to_input_names:
-            logger.error(f"Can not find the node {end_name}'s input node")
+            logger.error("Can not find the node %r's input node." % end_name)
             return set()
 
-        logger.info(f"Begin to lookup nodes from {start_name} to {end_name}...")
+        logger.info("Begin to lookup nodes from %r to %r...", start_name, end_name)
         dump_nodes = set()
 
         nodes_to_end = {start_name}
