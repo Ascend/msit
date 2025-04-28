@@ -183,7 +183,7 @@ class ReStepAdaptor:
 
         save_dir = config.save_dir
 
-        os.makedirs(save_dir, exist_ok=True)
+        os.makedirs(save_dir, mode=0o750, exist_ok=True)
         save_file_path = os.path.join(save_dir, 'searched_schedule.txt')
         logger.info("Result will saved at: %r", save_file_path)
 

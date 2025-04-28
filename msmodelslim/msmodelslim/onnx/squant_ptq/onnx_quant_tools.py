@@ -71,7 +71,7 @@ class OnnxCalibrator(object):
             temp_om_model = os.path.splitext(os.path.basename(self.input_path))[0] + timestamp
             self.temp_onnx_path = get_valid_write_path(temp_onnx_path, extensions=None)
             self.temp_om_model = get_valid_write_path(temp_om_model, extensions=None)
-            os.makedirs(name=self.temp_onnx_path, mode=0o750)
+            os.makedirs(name=self.temp_onnx_path, mode=0o750, exist_ok=True)
             self.graph_nodes = om_observer(self.model, self.calib_data, self.quant_param_ops, self.atc_input_shape, 
                                            (self.temp_onnx_path, self.temp_om_model))
         self._set_quant()

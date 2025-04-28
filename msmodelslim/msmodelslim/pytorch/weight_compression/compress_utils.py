@@ -15,7 +15,7 @@ def pseudo_sparse(arr, ratio):
 
 def makedirs(path):
     if not os.path.exists(path):
-        os.makedirs(path, mode=0o750) 
+        os.makedirs(path, mode=0o750, exist_ok=True) 
     return path 
 
 

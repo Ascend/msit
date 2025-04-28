@@ -28,7 +28,7 @@ from opensora.models.diffusion.opensora.modeling_opensora import OpenSoraT2V
 from opensora.utils.utils import save_video_grid
 from opensora.npu_config import npu_config
 
-from ascend_utils.common.security import get_write_directory
+from ascend_utils.common.security import get_write_directory, get_valid_write_path
 from example.osp1_2.model.model_open_sora_plan1_2_sp import OpenSoraPipelineV1x2
 from msmodelslim.tools.logger import logger
 
@@ -115,16 +115,17 @@ def run_model_and_save_images(pipeline, model_path):
         if hccl_info.rank <= 0:
             if args.num_frames == 1:
                 videos = videos[:, 0].permute(0, 3, 1, 2)  # b t h w c -> b c h w
+                save_path = os.path.join(args.save_img_path, vid_name)
+                save_path = get_valid_write_path(save_path, is_dir=False)
                 save_image(videos / 255.0,
-                           os.path.join(args.save_img_path, vid_name),
+                           save_path,
                            nrow=1, normalize=True, value_range=(0, 1))  # t c h w
 
             else:
+                save_path = os.path.join(args.save_img_path, vid_name)
+                save_path = get_valid_write_path(save_path, is_dir=False)
                 imageio.mimwrite(
-                    os.path.join(
-                        args.save_img_path,
-                        vid_name
-                    ), videos[0],
+                    os.path.join(save_path), videos[0],
                     fps=args.fps, quality=6, codec='libx264',
                     output_params=['-threads', '20'])  # highest quality is 10, lowest is 0
             video_grids.append(videos)
@@ -132,10 +133,12 @@ def run_model_and_save_images(pipeline, model_path):
         video_grids = torch.cat(video_grids, dim=0)
 
         def get_file_name():
-            return os.path.join(
+            save_path = os.path.join(
                 args.save_img_path,
                 f'{args.sample_method}_gs{args.guidance_scale}_s{args.num_sampling_steps}_{checkpoint_name}.{ext}'
             )
+            save_path = get_valid_write_path(save_path, is_dir=False)
+            return save_path
 
         if args.num_frames == 1:
             save_image(video_grids / 255.0, get_file_name(),

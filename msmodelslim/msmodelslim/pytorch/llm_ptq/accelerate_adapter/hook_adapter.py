@@ -22,6 +22,7 @@ from accelerate.utils import PrefixedDataset, OffloadedWeightsLoader
 from accelerate.utils import offload_state_dict, offload_weight, save_offload_index, load_offloaded_weight
 from safetensors import safe_open
 
+from ascend_utils.common.security import get_valid_read_path, MAX_READ_FILE_SIZE_32G
 from msmodelslim.pytorch.llm_ptq.accelerate_adapter.utils import clear_device_cache, judge_module_with_accelerate
 from msmodelslim import logger as msmodelslim_logger
 from msmodelslim.pytorch.llm_ptq.accelerate_adapter.utils import HF_HOOK
@@ -126,6 +127,7 @@ class WritableOffloadedWeightsLoader(OffloadedWeightsLoader):
             return tensor
 
         weight_file = os.path.join(self.save_folder, f"{key}.dat")
+        weight_file = get_valid_read_path(weight_file, size_max=MAX_READ_FILE_SIZE_32G)
         return load_offloaded_weight(weight_file, weight_info)
 
     def update_all_keys(self):

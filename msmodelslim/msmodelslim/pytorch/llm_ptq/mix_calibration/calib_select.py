@@ -12,7 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from transformers import PreTrainedModel, AutoTokenizer, PreTrainedTokenizerBase
 from ascend_utils.common.security import json_safe_load, get_valid_path, get_valid_read_path, get_valid_write_path, \
-    SafeWriteUmask, check_type
+    SafeWriteUmask, check_type, json_safe_dump
 
 from msmodelslim.pytorch.llm_ptq.mix_calibration.dataset_processor_base import DatasetProcessorBase
 from msmodelslim import logger as msmodelslim_logger
@@ -506,9 +506,8 @@ class CalibrationData(object):
 
         if self.save_path:
             with SafeWriteUmask(umask=0o377):
-                with open(self.save_path, 'w') as file:
-                    json.dump(self.mixed_dataset, file, indent=2)
-                    msmodelslim_logger.info(f"Save mixed dataset success, save path:{self.save_path}")
+                json_safe_dump(self.mixed_dataset, self.save_path, indent=2)
+                msmodelslim_logger.info(f"Save mixed dataset success, save path:{self.save_path}")
         return self.mixed_dataset
 
     def set_sample_size(self, sample_size: dict):

@@ -234,7 +234,7 @@ class Quantifier:
             anti_outlier.process()
 
         if not os.path.exists(save_path):
-            os.mkdir(save_path)
+            os.mkdir(save_path, mode=0o750)
 
         calibrator = Calibrator(self.model, self.quant_config, calib_data=tokenized_data, disable_level=disable_level)
         calibrator.run()
@@ -304,7 +304,7 @@ if __name__ == '__main__':
         quantifier.create_quant_config(num_layers)
 
     if not os.path.exists(save_directory):
-        os.makedirs(save_directory, exist_ok=True)
+        os.makedirs(save_directory, mode=0o750, exist_ok=True)
 
     # check dst dir
     save_directory = get_valid_write_path(save_directory, is_dir=True)

@@ -7,6 +7,8 @@ import numpy as np
 from safetensors.torch import save_file
 import torch
 
+from ascend_utils.common.security import get_valid_write_path, SafeWriteUmask
+
 
 def int4_to_int8_forchatglm(i4w):
     """
@@ -203,18 +205,21 @@ class MSModelSlimWeightProcessor:
     # 储存量化权重和描述文件
     def save(self, path):
         if not os.path.exists(path):
-            os.mkdir(path)
+            os.mkdir(path, mode=0o750)
         safetensors_name = f"quant_model_weight_{self.quant_type.lower()}.safetensors"
         json_name = f"quant_model_description_{self.quant_type.lower()}.json"
         safetensors_path = os.path.join(path, safetensors_name)
         json_path = os.path.join(path, json_name)
+        safetensors_path = get_valid_write_path(safetensors_path, is_dir=False)
+        json_path = get_valid_write_path(json_path, is_dir=False)
 
         '''
         # 如果原始权重中存在内存复用，即safetensors中的tensor share memory场景，此处提供了一种简单的处理方法
         for key, value in self.modelslim_weight_dict.items():
             self.modelslim_weight_dict[key] = value.cpu().contiguous().clone()
         '''
-        save_file(self.modelslim_weight_dict, safetensors_path)
+        with SafeWriteUmask():
+            save_file(self.modelslim_weight_dict, safetensors_path)
         save_mode = stat.S_IWUSR | stat.S_IRUSR # 600
         with os.fdopen(os.open(json_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode=save_mode), 'w') as json_file:
             json.dump(self.modelslim_description_json, json_file, indent=2)

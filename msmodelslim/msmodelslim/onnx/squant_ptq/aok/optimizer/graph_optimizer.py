@@ -55,11 +55,13 @@ class GraphOptimizer:
     def delete_model(folder_path: str, model_name: str, delete_onnx: bool = True) -> None:
         if delete_onnx:
             onnx_model_path = os.path.join(folder_path, f'{model_name}.onnx')
+            onnx_model_path= get_valid_read_path(onnx_model_path, is_dir=False)
             try:
                 os.unlink(onnx_model_path)
             except FileNotFoundError:
                 pass
         om_model_path = os.path.join(folder_path, f'{model_name}.om')
+        om_model_path= get_valid_read_path(om_model_path, is_dir=False)
         try:
             os.unlink(om_model_path)
         except FileNotFoundError:
@@ -170,6 +172,7 @@ class GraphOptimizer:
         if ext in ['', '.']:
             ext = '.onnx'
             model_path = os.path.join(folder_path, model_name + ext)
+            model_path= get_valid_read_path(model_path, is_dir=False)
         model = onnx.load(model_path)
         model = shape_inference.infer_shapes(model)
         graph = model.graph
@@ -201,6 +204,7 @@ class GraphOptimizer:
         if ext in ['', '.']:
             ext = '.onnx'
             model_path = os.path.join(folder_path, model_name + ext)
+            model_path= get_valid_read_path(model_path, is_dir=False)
 
         if self._debug:
             self._logger.debug(f'Measuring inference time {model_path}')

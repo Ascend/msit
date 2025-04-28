@@ -225,7 +225,7 @@ if __name__ == '__main__':
         )
 
     if not os.path.exists(save_directory):
-        os.makedirs(save_directory, exist_ok=True)
+        os.makedirs(save_directory, mode=0o750, exist_ok=True)
 
     # check dst dir
     save_directory = get_valid_write_path(save_directory, is_dir=True)

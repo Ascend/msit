@@ -7,7 +7,7 @@ from typing import Iterable, Optional
 import numpy as np
 import onnx
 from onnx import TensorProto, helper, mapping, NodeProto, ModelProto, AttributeProto, GraphProto
-from ascend_utils.common.security import get_valid_read_path, safe_delete_path_if_exists
+from ascend_utils.common.security import get_valid_read_path, safe_delete_path_if_exists, get_valid_write_path
 
 
 def create_empty_folder(folder_name):
@@ -127,6 +127,7 @@ def onnx2om(
     input_onnx = os.path.join(model_folder, model_name+'.onnx')
     input_onnx = get_valid_read_path(input_onnx)
     output = os.path.join(om_folder, om_name)
+    output = get_valid_write_path(output, is_dir=False)
 
     if om_method == 'atc':
         command = "atc --model %s --framework 5 --output %s --soc_version %s --input_shape %s --op_select_implmode " \
@@ -497,6 +498,7 @@ def define_batch_size(model: ModelProto, default_batch_size: Optional[int] = Non
 
 def load_model(folder_path: str, model_name: str, logger) -> ModelProto:
     model_path = os.path.join(folder_path, f'{model_name}.onnx')
+    model_path = get_valid_read_path(model_path, is_dir=False)
     if not os.path.exists(model_path):
         logger.error('Error: ONNX version of model is not available!')
         raise FileNotFoundError()

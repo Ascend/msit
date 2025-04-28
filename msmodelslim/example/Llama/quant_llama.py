@@ -272,7 +272,7 @@ class Quantifier:
             anti_outlier.process()
 
         if not os.path.exists(save_path):
-            os.mkdir(save_path)
+            os.mkdir(save_path, mode=0o750)
 
         calibrator = Calibrator(self.model, self.quant_config, calib_data=tokenized_data, disable_level=disable_level)
         calibrator.run()
