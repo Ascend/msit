@@ -39,7 +39,7 @@ def get_weight_map(float_index_path):
 def get_tensor(tensor_name, safetensor_path, weight_map):
     filename = weight_map[tensor_name]
     file_path = os.path.join(safetensor_path, filename)
-    file_path= get_valid_read_path(file_path, is_dir=False)
+    file_path = get_valid_read_path(file_path, is_dir=False)
     with safe_open(file_path, framework="pt", device="cpu") as f:
         if tensor_name in f.keys():
             tensor = f.get_tensor(tensor_name)
