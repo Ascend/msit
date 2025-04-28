@@ -378,6 +378,8 @@ def to_fractal_z_3d(data: np.ndarray, ori_format: str, target_shape: Union[list,
     cin1_g = group_dict["cin1_g"]
     cout_g = group_dict["cout_g"]
     mag_factor = group_dict["mag_factor"]
+    if mag_factor == 0:
+        raise ZeroDivisionError("Parameter mag_factor is Zero, Please check!")
     cout1_g = group_dict["cout1_g"]
     weight_group = np.zeros((real_g, d, cin1_g, h, w, cout_g, c0), dtype=data.dtype)
     data = data.transpose([ori_format.index("N"), ori_format.index("C"),
