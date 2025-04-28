@@ -191,6 +191,7 @@ def add_safetensors(cfg: AddTensorsConfig):
         tensor, scale = weight_quant(tensor)
         add_tensor(tensor_name, 'W8A8_DYNAMIC', tensor)
         add_tensor(tensor_name + '_scale', 'W8A8_DYNAMIC', scale)
+        add_tensor(tensor_name + '_offset', 'W8A8_DYNAMIC', torch.zeros_like(scale))
 
     # 保存最后一个文件
     flush_tensors()
