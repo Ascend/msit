@@ -142,6 +142,6 @@ for prompt in calib_prompts:
 
 calib_data = pipe.transformer.inputs
 
-with SafeWriteUmask():
+with SafeWriteUmask(umask=0o377):
     torch.save(calib_data, "path_to_save/sd3_calib_data.pth")
 ```

@@ -218,7 +218,7 @@ class MSModelSlimWeightProcessor:
         for key, value in self.modelslim_weight_dict.items():
             self.modelslim_weight_dict[key] = value.cpu().contiguous().clone()
         '''
-        with SafeWriteUmask():
+        with SafeWriteUmask(umask=0o377):
             save_file(self.modelslim_weight_dict, safetensors_path)
         save_mode = stat.S_IWUSR | stat.S_IRUSR # 600
         with os.fdopen(os.open(json_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode=save_mode), 'w') as json_file:
