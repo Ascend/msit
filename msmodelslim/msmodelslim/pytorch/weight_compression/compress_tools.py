@@ -10,7 +10,7 @@ from tqdm import tqdm
 from safetensors.torch import save_file
 
 from ascend_utils.common.security import get_valid_read_path, get_valid_write_path, get_write_directory, \
-                SafeWriteUmask, MAX_READ_FILE_SIZE_512G, safe_delete_path_if_exists, check_type
+                SafeWriteUmask, MAX_READ_FILE_SIZE_512G, safe_delete_path_if_exists, check_type, json_safe_dump
 from msmodelslim import logger
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantModelJsonDescription, QuantType
 from .compress_config import CompressConfig
@@ -96,7 +96,8 @@ class Compressor:
         with SafeWriteUmask(umask=0o377):
             save_file(compress_weight, output_path)
         json_path = os.path.join(path, json_name)
-        compress_model_description.save(json_path)
+        with SafeWriteUmask(umask=0o377):
+            json_safe_dump(compress_model_description, json_path, indent=2)
         self.logger.info("Files saved successfully!")
 
     def run(self, weight_transpose: bool = False):

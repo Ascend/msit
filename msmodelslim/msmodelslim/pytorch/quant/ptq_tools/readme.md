@@ -20,6 +20,8 @@ import torchvision
 
 from msmodelslim.pytorch.quant.ptq_tools import QuantConfig, Calibrator
 
+from ascend_utils.common.security import SafeWriteUmask
+
 if __name__ == '__main__':
     MODEL_ARCH = "resnet50"
     SAVE_PATH = "./output"
@@ -140,5 +142,6 @@ for prompt in calib_prompts:
 
 calib_data = pipe.transformer.inputs
 
-torch.save(calib_data, "path_to_save/sd3_calib_data.pth")
+with SafeWriteUmask(umask=0o377):
+    torch.save(calib_data, "path_to_save/sd3_calib_data.pth")
 ```

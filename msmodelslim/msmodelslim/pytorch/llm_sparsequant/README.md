@@ -230,7 +230,7 @@ import numpy as np
 from msmodelslim.pytorch.weight_compression import CompressConfig, Compressor
 def make_dir(path):
     if not os.path.exists(path):
-        os.makedirs(path, mode=0o750)
+        os.makedirs(path, mode=0o750, exist_ok=True)
     return path
 
 # 准备待压缩权重文件和相关压缩配置，请根据实际情况进行修改
@@ -441,7 +441,7 @@ import numpy as np
 from msmodelslim.pytorch.weight_compression import CompressConfig, Compressor
 def make_dir(path):
     if not os.path.exists(path):
-        os.makedirs(path, mode=0o750)
+        os.makedirs(path, mode=0o750, exist_ok=True)
     return path
 
 # 准备待压缩权重文件和相关压缩配置，请根据实际情况进行修改

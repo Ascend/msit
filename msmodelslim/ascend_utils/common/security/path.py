@@ -125,7 +125,7 @@ def get_write_directory(dir_name, write_mode=0o750):
         logger.info("write directory exists, write file to directory %r", dir_name)
     else:
         logger.warning("write directory not exists, creating directory %r", dir_name)
-        os.makedirs(name=real_dir_name, mode=write_mode)
+        os.makedirs(name=real_dir_name, mode=write_mode, exist_ok=True)
     return real_dir_name
 
 
