@@ -7,7 +7,9 @@ import numpy as np
 from safetensors.torch import save_file
 import torch
 
-from ascend_utils.common.security import get_valid_write_path, SafeWriteUmask
+from ascend_utils.common.security import get_valid_write_path, SafeWriteUmask, \
+                                         get_valid_read_path, get_write_directory, json_safe_dump
+from ascend_utils.common.security.pytorch import safe_torch_load
 
 
 def int4_to_int8_forchatglm(i4w):
@@ -204,8 +206,7 @@ class MSModelSlimWeightProcessor:
 
     # 储存量化权重和描述文件
     def save(self, path):
-        if not os.path.exists(path):
-            os.mkdir(path, mode=0o750)
+        path = get_write_directory(path)
         safetensors_name = f"quant_model_weight_{self.quant_type.lower()}.safetensors"
         json_name = f"quant_model_description_{self.quant_type.lower()}.json"
         safetensors_path = os.path.join(path, safetensors_name)
@@ -220,16 +221,16 @@ class MSModelSlimWeightProcessor:
         '''
         with SafeWriteUmask(umask=0o377):
             save_file(self.modelslim_weight_dict, safetensors_path)
-        save_mode = stat.S_IWUSR | stat.S_IRUSR # 600
-        with os.fdopen(os.open(json_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode=save_mode), 'w') as json_file:
-            json.dump(self.modelslim_description_json, json_file, indent=2)
+        
+        json_safe_dump(self.modelslim_description_json, json_path, indent=2)
 
 
 if __name__ == '__main__':
     ori_weight_path = './example_model_weight/pytorch_model.bin'  # 输入开源量化权重path
     out_path = './msmodelslim_weight'  # 输出路径
-
-    ori_weight_dict = torch.load(ori_weight_path, map_location='cpu')  # 加载开源权重，请根据实际权重类型进行修改
+    
+    ori_weight_path = get_valid_read_path(ori_weight_path)
+    ori_weight_dict = safe_torch_load(ori_weight_path, map_location='cpu')  # 加载开源权重，请根据实际权重类型进行修改
     # 处理开源权重
     ms = MSModelSlimWeightProcessor(ori_weight_dict)
     # 示例权重只涉及linear层量化权重的处理，如果涉及kvcahe量化或smooth quant，请修改Processor中对应的函数并调用

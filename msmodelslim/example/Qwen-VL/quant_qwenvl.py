@@ -33,8 +33,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # check args
-    args.model_path = get_valid_read_path(args.model_path, is_dir=True, check_user_stat=False)
-    args.calib_images = get_valid_read_path(args.calib_images, is_dir=True, check_user_stat=False)
+    args.model_path = get_valid_read_path(args.model_path, is_dir=True, check_user_stat=True)
+    args.calib_images = get_valid_read_path(args.calib_images, is_dir=True, check_user_stat=True)
     args.save_directory = get_write_directory(args.save_directory, write_mode=0o750)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, 
@@ -68,6 +68,7 @@ if __name__ == '__main__':
     calib_data = []
     for i in images_list:
         imagePath = os.path.join(args.calib_images, i)
+        imagePath = get_valid_read_path(imagePath)
         query = tokenizer.from_list_format([
             {'image': imagePath}, # Either a local path or an url
             {'text': prompt},

@@ -28,7 +28,7 @@ from opensora.models.diffusion.opensora.modeling_opensora import OpenSoraT2V
 from opensora.utils.utils import save_video_grid
 from opensora.npu_config import npu_config
 
-from ascend_utils.common.security import get_write_directory, get_valid_write_path
+from ascend_utils.common.security import get_write_directory, get_valid_write_path, get_valid_read_path
 from example.osp1_2.model.model_open_sora_plan1_2_sp import OpenSoraPipelineV1x2
 from msmodelslim.tools.logger import logger
 
@@ -76,6 +76,7 @@ def run_model_and_save_images(pipeline, model_path):
     if not isinstance(args.text_prompt, list):
         args.text_prompt = [args.text_prompt]
     if len(args.text_prompt) == 1 and args.text_prompt[0].endswith('txt'):
+        args.text_prompt[0] = get_valid_read_path(args.text_prompt[0])
         text_prompt = open(args.text_prompt[0], 'r').readlines()
         args.text_prompt = [i.strip() for i in text_prompt]
 
@@ -199,6 +200,7 @@ if __name__ == "__main__":
     weight_dtype = torch.bfloat16
     device = f"npu:{torch.cuda.current_device()}"
 
+    args.ae_path = get_valid_read_path(args.ae_path, is_dir=True)
     vae = CausalVAEModelWrapper(args.ae_path)
     vae.vae = vae.vae.to(device=device, dtype=weight_dtype)
     if args.enable_tiling:
@@ -216,6 +218,7 @@ if __name__ == "__main__":
 
     vae.vae_scale_factor = ae_stride_config[args.ae]
 
+    args.cache_dir = get_write_directory(args.cache_dir)
     text_encoder = MT5EncoderModel.from_pretrained(args.text_encoder_name, 
                                                    cache_dir=args.cache_dir,
                                                    low_cpu_mem_usage=True, 
@@ -256,6 +259,7 @@ if __name__ == "__main__":
         from example.osp1_2.model.scheduler import EulerAncestralDiscreteSchedulerExample
 
         scheduler = EulerAncestralDiscreteSchedulerExample()
+        args.schedule_timestep = get_valid_read_path(args.schedule_timestep)
         with open(args.schedule_timestep, 'r') as f:
             timesteps = json.load(f)
 
@@ -265,13 +269,13 @@ if __name__ == "__main__":
         timesteps_set = None
 
     if args.dit_cache_config is not None:
+        args.dit_cache_config = get_valid_read_path(args.dit_cache_config)
         with open(args.dit_cache_config, 'r') as f:
             cache_config = json.load(f)
     else:
         cache_config = None
 
-    if not os.path.exists(args.save_img_path):
-        get_write_directory(args.save_img_path)
+    args.save_img_path = get_write_directory(args.save_img_path)
 
     if args.num_frames == 1:
         video_length = 1
@@ -283,11 +287,12 @@ if __name__ == "__main__":
     if not isinstance(args.text_prompt, list):
         args.text_prompt = [args.text_prompt]
     if len(args.text_prompt) == 1 and args.text_prompt[0].endswith('txt'):
+        args.text_prompt[0] = get_valid_read_path(args.text_prompt[0])
         text_prompt = open(args.text_prompt[0], 'r').readlines()
         args.text_prompt = [i.strip() for i in text_prompt]
 
-    save_img_path = args.save_img_path
-    full_path = args.model_path
+    args.save_img_path = get_write_directory(args.save_img_path)
+    full_path = get_valid_read_path(args.model_path, is_dir=True)
 
     pipeline = load_t2v_checkpoint(full_path)
     logger.info('load model')
@@ -305,4 +310,4 @@ if __name__ == "__main__":
 
         logger.info('using cache config: %s', str(cache_config))
 
-    run_model_and_save_images(pipeline, args.model_path)
+    run_model_and_save_images(pipeline, full_path)

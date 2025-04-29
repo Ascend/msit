@@ -99,7 +99,9 @@ def get_textvqa_calibration(textvqa_path, calib_num=30, get_all_calib=False):
     val_json = 'textvqa_val.jsonl'
     calibration_dataset = []
     
-    with open(os.path.join(textvqa_path, val_json), 'r') as file:
+    val_json_path = os.path.join(textvqa_path, val_json)
+    val_json_path = get_valid_read_path(val_json_path)
+    with open(val_json_path, 'r') as file:
         for line in file:
             line_dict = json.loads(line.strip())
             line_dict['text'] = line_dict['question']

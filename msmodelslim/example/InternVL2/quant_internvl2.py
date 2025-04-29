@@ -24,8 +24,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # check args
-    args.model_path = get_valid_read_path(args.model_path, is_dir=True, check_user_stat=False)
-    args.calib_images = get_valid_read_path(args.calib_images, is_dir=True, check_user_stat=False)
+    args.model_path = get_valid_read_path(args.model_path, is_dir=True, check_user_stat=True)
+    args.calib_images = get_valid_read_path(args.calib_images, is_dir=True, check_user_stat=True)
     args.save_directory = get_write_directory(args.save_directory, write_mode=0o750)
 
     # 1.加载模型
@@ -91,7 +91,11 @@ if __name__ == '__main__':
     disable_names.extend(llm_name)
     
     # 4.配置校准集
-    calibration_dataset = get_textvqa_calibration(args.calib_images, args.calib_num)
+    if isinstance(args.calib_num, int) and args.calib_num > 0:
+        calib_num = args.calib_num
+    else:
+        raise ValueError("calib_num should be a int number > 0")
+    calibration_dataset = get_textvqa_calibration(args.calib_images, calib_num)
     calib_data = get_tokenized_data(tokenizer, calibration_dataset, dtype=dtype)
 
     # 5.异常值抑制
