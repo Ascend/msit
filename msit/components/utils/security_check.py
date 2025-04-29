@@ -17,6 +17,7 @@ import stat
 import sys
 import re
 import shutil
+import argparse
 
 from components.utils.constants import PATH_WHITE_LIST_REGEX
 
@@ -250,3 +251,13 @@ def _check_parent_dir_safe(dir_path):
 def ms_makedirs(dir_path, **kwargs):
     _check_parent_dir_safe(dir_path)
     os.makedirs(dir_path, **kwargs)
+
+
+def check_positive_integer(value):
+    try:
+        ivalue = int(value)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"{value} is not a valid integer.") from e
+    if ivalue < 0 or ivalue > 1e6:
+        raise ValueError("%s is an invalid int value" % value)
+    return ivalue
