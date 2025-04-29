@@ -19,6 +19,7 @@ import subprocess
 from components.utils.parser import BaseCommand
 from components.utils.log import logger
 from components.debug.compare.msquickcmp.common.args_check import check_output_path_legality, check_input_path_legality
+from components.utils.security_check import check_positive_integer
 
 
 class ExpertLoadBalanceCommmand(BaseCommand):
@@ -45,7 +46,7 @@ class ExpertLoadBalanceCommmand(BaseCommand):
             '--num-redundant-expert',
             '-nre',
             dest="num_redundancy_expert",
-            type=int,
+            type=check_positive_integer,
             required=False,
             default=64,
             help="Number of redundant experts.")
@@ -54,7 +55,7 @@ class ExpertLoadBalanceCommmand(BaseCommand):
             '--num-nodes',
             '-nd',
             dest="num_nodes",
-            type=int,
+            type=check_positive_integer,
             required=False,
             default=8,
             help="Number of nodes.")
@@ -63,7 +64,7 @@ class ExpertLoadBalanceCommmand(BaseCommand):
             '--num-npus',
             '-nn',
             dest="num_npus",
-            type=int,
+            type=check_positive_integer,
             required=False,
             default=64,
             help="Number of npu.")
