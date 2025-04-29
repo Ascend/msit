@@ -55,7 +55,6 @@ def parse_arguments():
     parser.add_argument('--do_smooth', type=cmd_bool, default=False)
     parser.add_argument('--use_sigma', type=cmd_bool, default=False)
     parser.add_argument('--use_reduce_quant', type=cmd_bool, default=False)
-    parser.add_argument('--tp_size', type=int, default=1)
     parser.add_argument('--sigma_factor', type=float, default=3.0)
     parser.add_argument('--is_lowbit', type=cmd_bool, default=False)
     parser.add_argument('--mm_tensor', type=cmd_bool, default=True)

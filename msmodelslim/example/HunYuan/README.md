@@ -36,6 +36,14 @@
 | part_file_size | 量化权重文件大小 | 无限制 | 单个量化权重文件大小不超过xGB。|
 | use_kvcache_quant | 是否使用kvcache量化功能 | False | True: 使用kvcache量化功能；<br>False: 不使用kvcache量化功能。|
 | is_dynamic | 是否使用per-token动态量化功能 | False | True: 使用per-token动态量化；<br>False: 不使用per-token动态量化。 |
+| use_fa_quant | 是否使用FA3量化 | False | True: 使用FA3量化类型；<br>False: 不使用FA3量化类型。|
+| fa_amp | FA3量化场景下的自动回退的layer数量 | 0 | 数据类型为int，默认值为0。数据取值范围是大于等于0，并且小于等于模型layer数量，如果超出模型的layer数量将会取模型的最大layer数量为回退层数。 |
+| input_ids_name | 指定分词结果中输入 ID 对应的键名 | input_ids | 无 |
+| attention_mask_name | 指定分词结果中注意力掩码对应的键名 | attention_mask | 无 |
+| tokenizer_args | 加载自定义tokenizer时传入的自定义参数 | 无 | 以字典方式传入 |
+| disable_last_linear | 是否回退最后linear层 | True | True：回退最后linear层。<br>False：不回退最后linear层 |
+| model_name | 模型名称，可选参数 | None | 用于控制异常值抑制参数 |
+| use_reduce_quant | 权重量化是否是lccl all reduce量化 | False | 用于MindIE推理的标识 |
 | trust_remote_code | 是否信任自定义代码 | False | 指定`trust_remote_code=True`让修改后的自定义代码文件能够正确的被加载。(请确保加载的自定义代码文件的安全性) |
 
 - 更多参数配置要求，请参考量化过程中配置的参数 [QuantConfig](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/QuantConfig.md)
