@@ -85,8 +85,11 @@ class OpcheckLayerNormOperation(operation_test.OperationTest):
                 row_max = torch.max(dynamic_quant_x, axis=-1, keepdims=True).type(torch.float32)
                 row_min = torch.min(dynamic_quant_x, axis=-1, keepdims=True).type(torch.float32)
                 dynamic_quant_scale = (row_max - row_min) / 255
+                if dynamic_quant_scale == 0:
+                    raise ZeroDivisionError("LayerNorm Result is abnormal. Please check!")
                 dynamic_quant_offset = - (row_max + row_min) / (2 * dynamic_quant_scale)
-
+                if dynamic_quant_offset == 0:
+                    raise ZeroDivisionError("LayerNorm Result is abnormal. Please check!")
                 dynamic_quant_x = dynamic_quant_x.type(torch.float32)
                 dynamic_quant_x = dynamic_quant_x / dynamic_quant_scale
                 dynamic_quant_x = dynamic_quant_x + dynamic_quant_offset

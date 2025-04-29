@@ -164,7 +164,9 @@ class OpcheckUnpadSelfAttentionOperation(operation_test.OperationTest):
     def get_attention_params(self, q):
         q_scale = self.op_param.get("qScale", 1.0)
         qk_scale = self.op_param.get("qkScale", 1.0)
-        head_num = self.op_param.get("headNum", 0)
+        head_num = self.op_param.get("headNum", 1)
+        if head_num == 0:
+            raise ZeroDivisionError("Parameter headNum is invalid, Please check!")
         head_size = int(q.shape[1] / head_num)
         kv_head_num = self.op_param.get("kvHeadNum", 0)
         data_type = q.dtype
