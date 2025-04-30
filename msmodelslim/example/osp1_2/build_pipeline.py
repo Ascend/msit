@@ -20,6 +20,7 @@ from opensora.npu_config import npu_config
 from opensora.acceleration.parallel_states import initialize_sequence_parallel_state, get_sequence_parallel_state
 from opensora.sample.pipeline_opensora_sp import OpenSoraPipeline
 
+from ascend_utils.common.security.path import get_valid_read_path, get_write_directory
 from example.osp1_2.model.model_open_sora_plan1_2_sp import OpenSoraPipelineV1x2
 from msmodelslim.tools.logger import logger
 
@@ -104,6 +105,7 @@ def build_pipeline(args):
     initialize_sequence_parallel_state(world_size)
     weight_dtype = torch.bfloat16
     device = f"npu:{torch.cuda.current_device()}"
+    args.ae_path = get_valid_read_path(args.ae_path, is_dir=True)
     vae = CausalVAEModelWrapper(args.ae_path)
     vae.vae = vae.vae.to(device=device, dtype=weight_dtype)
     if args.enable_tiling:
@@ -121,7 +123,8 @@ def build_pipeline(args):
 
     vae.vae_scale_factor = ae_stride_config[args.ae]
 
-    text_encoder = MT5EncoderModel.from_pretrained(args.text_encoder_name, 
+    args.cache_dir = get_write_directory(args.cache_dir)
+    text_encoder = MT5EncoderModel.from_pretrained(args.text_encoder_name,
                                                    cache_dir=args.cache_dir,
                                                    low_cpu_mem_usage=True, 
                                                    torch_dtype=weight_dtype, 
@@ -161,10 +164,11 @@ def build_pipeline(args):
     if not isinstance(args.text_prompt, list):
         args.text_prompt = [args.text_prompt]
     if len(args.text_prompt) == 1 and args.text_prompt[0].endswith('txt'):
+        args.text_prompt[0] = get_valid_read_path(args.text_prompt[0])
         text_prompt = open(args.text_prompt[0], 'r').readlines()
         args.text_prompt = [i.strip() for i in text_prompt]
 
-    full_path = args.model_path
+    full_path = get_valid_read_path(args.model_path, is_dir=True)
 
     # get original pipeline
     pipeline: OpenSoraPipeline = load_t2v_checkpoint(full_path)

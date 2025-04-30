@@ -10,6 +10,8 @@ import torch
 
 from safetensors.torch import load_file, save_file
 
+from ascend_utils.common.security import get_valid_write_path, SafeWriteUmask, \
+                                         get_valid_read_path
 
 TOOL_AWQ = 'awq'
 TOOL_GPTQ = 'gptq'
@@ -185,9 +187,15 @@ if __name__ == "__main__":
     save_path = args.save_path
     w_bit = args.w_bit
     quant_tool = args.target_tool
+    
+    model_path = get_valid_read_path(args.model, size_max=0)
+    tensor_info = load_file(model_path)
 
-    tensor_info = load_file(args.model)
-    json_info = load_json_info(args.json)
+    json_path = get_valid_read_path(args.json)
+    json_info = load_json_info(json_path)
 
     vllm_weight = convert_ms_to_vllm(quant_tool, w_bit, weight_dict=tensor_info, json_dict=json_info)
-    save_file(vllm_weight, args.save_path)
+
+    save_path = get_valid_write_path(save_path)
+    with SafeWriteUmask(umask=0o377):
+        save_file(vllm_weight, save_path)

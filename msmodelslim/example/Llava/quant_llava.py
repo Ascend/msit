@@ -34,8 +34,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # check args
-    args.model_path = get_valid_read_path(args.model_path, is_dir=True, check_user_stat=False)
-    args.calib_images = get_valid_read_path(args.calib_images, is_dir=True, check_user_stat=False)
+    args.model_path = get_valid_read_path(args.model_path, is_dir=True, check_user_stat=True)
+    args.calib_images = get_valid_read_path(args.calib_images, is_dir=True, check_user_stat=True)
     args.save_directory = get_write_directory(args.save_directory, write_mode=0o750)
 
     processor = AutoProcessor.from_pretrained(args.model_path, 
@@ -65,7 +65,9 @@ if __name__ == '__main__':
     prompt = "USER: <image>\nDescribe this image in detail. ASSISTANT:"
     calib_data = []
     for i in images_list:
-        image = Image.open(os.path.join(args.calib_images, i))
+        image_path = os.path.join(args.calib_images, i)
+        image_path = get_valid_read_path(image_path)
+        image = Image.open(image_path)
         try:
             item = processor(images=image, text=prompt, return_tensors="pt").to('npu')
             calib_data.append([item.data['input_ids'], item.data['pixel_values'], item.data['attention_mask']])

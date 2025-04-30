@@ -9,7 +9,8 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
 sys.path.append(parent_directory)
 
-from ascend_utils.common.security import get_valid_write_path, get_valid_read_path, json_safe_load
+from example.common.utils import cmd_bool
+from ascend_utils.common.security import get_valid_write_path, get_valid_read_path, json_safe_load, get_write_directory
 from example.common.utils import SafeGenerator, ArgumentParser, StringArgumentValidator, MAX_KEY_LENGTH, MAX_JSON_LENGTH
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlier, AntiOutlierConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
@@ -18,14 +19,6 @@ from msmodelslim import logger
 
 CPU = "cpu"
 NPU = "npu"
-
-
-def cmd_bool(cmd_arg):
-    if cmd_arg == "True":
-        return True
-    elif cmd_arg == "False":
-        return False
-    raise ValueError(f"{cmd_arg} should be True or False")
 
 
 def get_down_proj_disable_names(num_layers: int) -> list:
@@ -304,8 +297,9 @@ if __name__ == '__main__':
         logger.info("Defaulting to 0.")
         rank: int = 0
 
-    model_path = args.model_path
-    save_directory = args.save_directory
+    model_path = get_valid_read_path(args.model_path, is_dir=True, check_user_stat=True)
+    save_directory = get_write_directory(args.save_directory, write_mode=0o750)
+
     num_layers = checker.get_config_from_pretrained(
         model_path, 
         trust_remote_code=args.trust_remote_code
@@ -336,7 +330,12 @@ if __name__ == '__main__':
     )
     tokenized_calib_data = []
     calib_file = args.calib_file
-    calib_texts = checker.load_jsonl(calib_file) if calib_file else args.calib_texts
+    if calib_file:
+        calib_file = get_valid_read_path(calib_file)
+        calib_texts = checker.load_jsonl(calib_file)
+    else:
+        calib_texts = args.calib_texts
+
     if calib_texts is not None:
         tokenized_calib_data = quantifier.get_tokenized_data(
             calib_texts,
@@ -359,6 +358,7 @@ if __name__ == '__main__':
             for data in anti_data:
                 tokenized_ant_calib_data.append([data])
         else:
+            args.anti_calib_file = get_valid_read_path(args.anti_calib_file)
             ant_calib_texts = checker.load_jsonl(args.anti_calib_file)
             if ant_calib_texts is not None:
                 tokenized_ant_calib_data = quantifier.get_batch_tokenized_data(ant_calib_texts)
@@ -370,23 +370,13 @@ if __name__ == '__main__':
     else:
         raise ValueError("disable_threshold should be a float number >= 0")
 
-    if not os.path.exists(save_directory):
-        os.makedirs(save_directory, mode=0o750, exist_ok=True)
-
-    # check dst dir
-    save_directory = get_valid_write_path(save_directory, is_dir=True)
     #为适配工具稀疏量化传入w_bit=4,a_bit=8暂时修改quant_type
     quantifier.convert(tokenized_calib_data, save_directory, args.disable_level, part_file_size=args.part_file_size, \
                        tokenized_ant_calib_data=tokenized_ant_calib_data)
-    quant_type = f"w{args.w_bit}a{args.a_bit}"
-    is_sparseCompress = args.w_bit == 4 and args.a_bit == 8 and (args.co_sparse or args.is_lowbit)
-    if is_sparseCompress:
-        quant_type = "w8a8s"
-    is_w8a8_dynamic = args.w_bit == 8 and args.a_bit == 8 and args.is_dynamic
-    if is_w8a8_dynamic:
-        quant_type = "w8a8_dynamic"
-    if quantifier.quant_config.model_quant_type == "W4A8_DYNAMIC":
-        quant_type = "w4a8_dynamic"
+    
+    # 通过 model_quant_type 获得 quant_type
+    quant_type = quantifier.quant_config.model_quant_type.lower()
+
     auto_config = checker.get_config_from_pretrained(model_path, trust_remote_code=args.trust_remote_code)
     checker.modify_config(model_path, save_directory, auto_config.torch_dtype,
                 quant_type, args)
