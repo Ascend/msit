@@ -96,8 +96,7 @@ class Compressor:
         with SafeWriteUmask(umask=0o377):
             save_file(compress_weight, output_path)
         json_path = os.path.join(path, json_name)
-        with SafeWriteUmask(umask=0o377):
-            json_safe_dump(compress_model_description, json_path, indent=2)
+        compress_model_description.save(json_path)
         self.logger.info("Files saved successfully!")
 
     def run(self, weight_transpose: bool = False):
