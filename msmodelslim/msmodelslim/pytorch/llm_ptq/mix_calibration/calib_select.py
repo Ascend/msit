@@ -506,8 +506,9 @@ class CalibrationData(object):
 
         if self.save_path:
             with SafeWriteUmask(umask=0o377):
-                json_safe_dump(self.mixed_dataset, self.save_path, indent=2)
-                msmodelslim_logger.info(f"Save mixed dataset success, save path:{self.save_path}")
+                with open(self.save_path, 'w') as file:
+                    json.dump(self.mixed_dataset, file, indent=2)
+                    msmodelslim_logger.info(f"Save mixed dataset success, save path:{self.save_path}")
         return self.mixed_dataset
 
     def set_sample_size(self, sample_size: dict):
