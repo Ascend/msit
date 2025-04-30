@@ -84,7 +84,7 @@ class AntiOutlierAdapter(object):
             raise TypeError("norm_class_name must be str, please check it.")
         if not isinstance(model, nn.Module):
             raise TypeError("model must be nn.Module, please check it.")
-        self.calib_data = [] if calib_data is None else self.check_calib_data(calib_data)
+        self.calib_data = self.check_calib_data(calib_data)
         check_type(cfg, AntiOutlierConfig, param_name="config")
 
         self.cfg = cfg
@@ -102,11 +102,6 @@ class AntiOutlierAdapter(object):
         self.model = model
 
         self.norm_linear_subgraph = None
-
-        if calib_data is None:
-            calib_data = []
-        else:
-            self.calib_data = calib_data
 
         try:
             self.init_dag()
@@ -289,9 +284,13 @@ class AntiOutlierAdapter(object):
 
     def check_calib_data(self, calib_data):
         check_type(calib_data, list, param_name='calib_data')
+        if len(calib_data) < 1:
+            raise ValueError("calib_data must not be empty.")
         for i, calib_data_item in enumerate(calib_data):
             element_not_tensor = False
             check_type(calib_data_item, (list, dict), param_name=f'calib_data[{i}]')
+            if len(calib_data_item) < 1:
+                raise ValueError("Each data in calib_data must not be empty.")
             if isinstance(calib_data_item, list):
                 for item in calib_data_item:
                     # mindspeed模型可以直接输入字符串作为校准集
@@ -334,6 +333,8 @@ class AntiOutlierAdapter(object):
                 norm_module = None
 
             linear_modules = []
+            if len(linear_names) < 1:
+                raise ValueError("DAG run failed, the generated linear_names are empty.")
             linear_name = linear_names[0]
 
             if linear_name not in act_stats.keys():
@@ -350,6 +351,8 @@ class AntiOutlierAdapter(object):
                 linear_modules.append(mod)
 
             if Multiplier is not None and norm_module is None:
+                if len(linear_modules) < 1:
+                    raise ValueError("DAG run failed, the generated linear_modules are empty.")
                 norm_module = Multiplier(
                     torch.ones_like(stats[STAT_KEY_SMOOTH_SCALE]).to(linear_modules[0].weight.device)
                 )

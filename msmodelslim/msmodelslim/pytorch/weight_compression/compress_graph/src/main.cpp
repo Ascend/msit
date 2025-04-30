@@ -49,9 +49,23 @@ int RunCompressGraph(ge::Session *session, uint8_t* data, vector<int64_t> &shape
     std::cout << "Session run compressFc graph failed." << std::endl;
     return FAILED;
   }
-
+  if (output_mm.empty()) {
+    std::cout << "Error: output_mm is empty!" << std::endl;
+    return FAILED;
+  }
+  if (output_mm.size() <= 2) {
+    std::cout << "Error: output_mm size is too small (expected >= 3, got " << output_mm.size() << ")!" << std::endl;
+    return FAILED;
+  }  
   auto infoData = reinterpret_cast<uint32_t*>(output_mm[2].GetData());
-
+  if (infoData.empty()) {
+    std::cout << "Error: infoData is empty!" << std::endl;
+    return FAILED;
+  } 
+  if (infoData.size() <= 2) {
+    std::cout << "Error: infoData size is too small (expected >= 3, got " << infoData.size() << ")!" << std::endl;
+    return FAILED;
+  } 
   constexpr uint8_t OUTPUT_WEIGHT_PATH_INDEX = 0;
   constexpr uint8_t INDEX_PATH_INDEX = 1;
   constexpr uint8_t COMPRESS_INFO_PATH_INDEX = 2;

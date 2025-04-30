@@ -146,7 +146,7 @@ class AntiOutlier(object):
             raise TypeError("norm_class_name must be str, please check it.")
         if not isinstance(model, nn.Module):
             raise TypeError("model must be nn.Module, please check it.")
-        self.calib_data = [] if calib_data is None else self.check_calib_data(calib_data)
+        self.calib_data = self.check_calib_data(calib_data)
 
         if is_model_multimodal(model):
             if cfg.anti_method != 'm2':
@@ -154,7 +154,7 @@ class AntiOutlier(object):
             else:
                 self.cfg = cfg
                 self.model = model
-                self.calib_data = calib_data
+                self.calib_data = self.check_calib_data(calib_data)
                 self.device = self.cfg.device
                 return
 
@@ -219,11 +219,6 @@ class AntiOutlier(object):
             self.norm_linear_subgraph = self.hooks[ProcessHook.GET_NORM_LINEAR_SUBGRAPH](model)
 
         self.model = model
-
-        if calib_data is None:
-            calib_data = []
-        else:
-            self.calib_data = calib_data
 
         try:
             self.init_dag()
@@ -440,9 +435,13 @@ class AntiOutlier(object):
 
     def check_calib_data(self, calib_data):
         check_type(calib_data, list, param_name='calib_data')
+        if len(calib_data) < 1:
+            raise ValueError("calib_data must not be empty.")
         for i, calib_data_item in enumerate(calib_data):
             element_not_tensor = False
             check_type(calib_data_item, (list, dict), param_name=f'calib_data[{i}]')
+            if len(calib_data_item) < 1:
+                raise ValueError("Each data in calib_data must not be empty.")
             if isinstance(calib_data_item, list):
                 for item in calib_data_item:
                     if not isinstance(item, torch.Tensor):
@@ -524,6 +523,8 @@ class AntiOutlier(object):
                 norm_module = None
 
             linear_modules = []
+            if len(linear_names) < 1:
+                raise ValueError("DAG run failed, the generated linear_names are empty.")
             linear_name = linear_names[0]
 
             if linear_name not in act_stats.keys():
@@ -552,6 +553,8 @@ class AntiOutlier(object):
                 )
 
             if Multiplier is not None and norm_module is None:
+                if len(linear_modules) < 1:
+                    raise ValueError("DAG run failed, the generated linear_modules are empty.")
                 norm_module = Multiplier(
                     torch.ones_like(stats[STAT_KEY_SMOOTH_SCALE]).to(linear_modules[0].weight.device)
                 )

@@ -84,6 +84,8 @@ class DepthScaleNetwork:
         if ori_enable_count >= new_enable_count:
             enable_list = list(range(new_enable_count))
         else:
+            if ori_enable_count == 0:
+                raise ZeroDivisionError("The ori_enable_count can not be zero!")
             floor_value = math.floor(new_enable_count / ori_enable_count)
 
             enable_list = list(itertools.chain(
