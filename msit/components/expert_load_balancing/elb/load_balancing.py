@@ -23,6 +23,7 @@ import torch
 from c2lb import lb_and_intra_layer_affinity_redundancy_deploy
 from speculative_moe import speculative_moe_algo_multi_process
 from components.utils.log import logger
+from components.utils.file_open_check import ms_open
 
 
 PREFILL = "prefill"
@@ -134,10 +135,16 @@ def merge_csv_columns(csv_path, pattern_prefix):
 
 
 def save_matrix_to_json(output_path, file_name, deployment):
-    if deployment.ndim != 3:
-        raise ValueError(f"部署矩阵必须是三维数组，但当前维度为 {deployment.ndim}D\n")
-    num_layers = deployment.shape[0]
-    num_cards = deployment.shape[1]
+    def get_ndim(obj):
+        if isinstance(obj, list):
+            return 1 + (get_ndim(obj[0]) if obj else 0)
+        return 0
+    
+    cur_dim = get_ndim(deployment)
+    if cur_dim != 3:
+        raise ValueError(f"部署矩阵必须是三维数组，但当前维度为 {cur_dim}D。")
+    num_layers = len(deployment)
+    num_cards = len(deployment[0])
 
     data = {"moe_layer_count": num_layers}
     layer_list = []
@@ -145,20 +152,42 @@ def save_matrix_to_json(output_path, file_name, deployment):
         layer = {"layer_id": i, "device_count": num_cards}
         device_list = []
         for j in range(num_cards):
-            device = {"device_id": j, "device_expert": deployment[i, j].tolist()}
+            device = {"device_id": j, "device_expert": list(deployment[i][j])}
             device_list.append(device)
         layer["device_list"] = device_list
         layer_list.append(layer)
     data["layer_list"] = layer_list
 
-    file_name = f"{output_path}/{file_name}.json"
+    file_name = os.path.join(output_path, f"{file_name}.json")
 
     # 保存为 JSON 文件
     try:
-        with open(file_name, 'w') as f:
+        with ms_open(file_name, 'w') as f:
             json.dump(data, f, indent=4)
     except Exception as e:
-        logger.error(f"保存json文件 {deployment} 时出错: {e}")
+        raise RuntimeError(f"保存json文件 {deployment} 时出错") from e
+
+
+def dump_tables(deploy_fp, d2e_tables_list, n_devices):
+    layer_list = []
+
+    for layer_idx, d2e_tables in enumerate(d2e_tables_list):
+        device_list = [
+            {"device_id": d, "device_expert": d2e_tables[layer_idx][d].tolist()} 
+            for d in range(n_devices)
+        ]
+        layer_list.append({
+            "layer_id": layer_idx,
+            "device_count": n_devices,
+            "device_list": device_list
+        })
+    json_data = {
+        "moe_layer_count": len(layer_list),
+        "layer_list": layer_list
+    }
+    logger.debug(json_data)
+    with ms_open(deploy_fp, 'w') as json_file:
+        json.dump(json_data, json_file, indent=4)
 
 
 def save_dataframes(prefill_final_df, decode_final_df, output_dir):
@@ -223,14 +252,13 @@ def process_c2lb(args, output_dir):
         try:
             num_original_expert = decode_df.shape[1]  # 第1维（列数）
             decode_np = decode_df.to_numpy()
-            lb_and_intra_layer_affinity_redundancy_deploy(
+            global_deployment = lb_and_intra_layer_affinity_redundancy_deploy(
                 decode_np, 
                 args.num_redundancy_expert, 
-                output_dir, 
-                decode_file_name,
                 args.num_npus, 
                 num_original_expert, 
             )
+            save_matrix_to_json(output_dir, decode_file_name, global_deployment)
             logger.info(f"C2LB processed decode data -> {decode_file_name}")
         except Exception as e:
             logger.error(f"Failed to process decode data: {str(e)}")
@@ -239,14 +267,13 @@ def process_c2lb(args, output_dir):
         try:
             num_original_expert = prefill_df.shape[1]  # 第1维（列数）
             prefill_np = prefill_df.to_numpy()
-            lb_and_intra_layer_affinity_redundancy_deploy(
+            global_deployment = lb_and_intra_layer_affinity_redundancy_deploy(
                 prefill_np,  
                 args.num_redundancy_expert, 
-                output_dir, 
-                prefill_file_name,
                 args.num_npus, 
                 num_original_expert,
             )
+            save_matrix_to_json(output_dir, prefill_file_name, global_deployment)
             logger.info(f"C2LB processed prefill data -> {prefill_file_name}")
         except Exception as e:
             logger.error(f"Failed to process prefill data: {str(e)}")
@@ -289,15 +316,15 @@ def process_speculative_moe(args, file_names, output_dir):
         num_original_expert = dimensions[1]
         # 处理当前文件
         try:
-            speculative_moe_algo_multi_process(
+            results = speculative_moe_algo_multi_process(
                 args.num_npus,
                 args.num_nodes,
                 num_layer,
                 num_original_expert,
                 args.num_redundancy_expert,
                 input_csv_path,
-                output_path
             )
+            dump_tables(output_path, results, args.num_npus)
             logger.info(f"Speculative MOE 处理完成: {input_file} -> {output_file_name}")
         except FileNotFoundError:
             logger.error(f"错误: 输入文件不存在 {input_csv_path}")
