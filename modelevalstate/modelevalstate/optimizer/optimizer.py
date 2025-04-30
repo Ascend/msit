@@ -25,7 +25,7 @@ import stat
 from copy import deepcopy
 
 import xmlrpc.client
-from typing import List, Tuple, Optional
+from typing import List, Dict, Tuple, Optional
 from pathlib import Path
 from math import exp, inf
 from xmlrpc.client import ServerProxy
@@ -43,10 +43,10 @@ from pyswarms.utils.plotters import plot_cost_history, plot_contour, plot_surfac
 from modelevalstate.inference.constant import IS_SLEEP_FLAG
 from modelevalstate.common import get_train_sub_path
 from modelevalstate.optimizer.config import default_support_field, PsoOptions, PerformanceIndex, OptimizerConfigField
-from modelevalstate.optimizer.config import AnalyzeTool, BenchMarkConfig, MindieConfig, settings, RUN_TIME, \
-    BenchMarkPolicy, DeployPolicy, map_param_with_value
-from modelevalstate.optimizer.analyze import analyze
-from modelevalstate.optimizer.analyze_deepseek import analyze as analyze_deepseek
+from modelevalstate.config.config import AnalyzeTool, BenchMarkConfig, MindieConfig, settings, RUN_TIME, \
+    BenchMarkPolicy, DeployPolicy, map_param_with_value, MODEL_EVAL_STATE_CONFIG_PATH, modelevalstate_config_path, \
+    CUSTOM_OUTPUT, custom_output
+from modelevalstate.optimizer.config import default_support_field, PsoOptions, PerformanceIndex, OptimizerConfigField
 from modelevalstate.optimizer.analyze_profiler import analyze as analyze_profiler
 from modelevalstate.optimizer.store import DataStorage
 from modelevalstate.optimizer.global_best_custom import CustomGlobalBestPSO
@@ -105,6 +105,8 @@ def remove_file(output_path: Path):
 
 def backup(target, bak, class_name=""):
     if not target:
+        return
+    if not bak:
         return
     if not isinstance(target, Path):
         target = Path(target)
@@ -192,8 +194,8 @@ class BenchMark:
             average_decode_throughput = common_generate_speed
         else:
             average_decode_throughput = perf_generate_token_speed
-        average_prefill_latency = first_token_time / 10 ** 6
-        average_decode_latency = decode_time / 10 ** 6
+        average_prefill_latency = first_token_time / 10 ** 3
+        average_decode_latency = decode_time / 10 ** 3
         return PerformanceIndex(average_decode_throughput=average_decode_throughput,
                                 average_prefill_latency=average_prefill_latency,
                                 average_decode_latency=average_decode_latency)
@@ -240,6 +242,8 @@ class BenchMark:
                     os.environ[k.name] = str(k.value)
                 except KeyError as e:
                     logger.error(f"Failed to set environment variable. error {e}")
+        if CUSTOM_OUTPUT not in os.environ:
+            os.environ[CUSTOM_OUTPUT] = str(custom_output)
         run_cmd = shlex.split(self.benchmark_config.command)
         try:
             self.process = subprocess.Popen(run_cmd, env=os.environ, stdout=self.run_log_fp, stderr=subprocess.STDOUT,
@@ -589,6 +593,10 @@ class Simulator:
         for k in run_params:
             if k.config_position == "env":
                 os.environ[k.name] = str(k.value)
+        if MODEL_EVAL_STATE_CONFIG_PATH not in os.environ:
+            os.environ[MODEL_EVAL_STATE_CONFIG_PATH] = str(modelevalstate_config_path)
+        if CUSTOM_OUTPUT not in os.environ:
+            os.environ[CUSTOM_OUTPUT] = str(custom_output)
         logger.debug(f"env {os.environ}")
         run_cmd = shlex.split(self.mindie_config.command)
         logger.info(f"run cmd: {run_cmd}, log path: {self.mindie_log}")
@@ -644,13 +652,13 @@ class Simulator:
 
 class Scheduler:
     def __init__(self, simulator: Simulator, benchmark: BenchMark, data_storage: DataStorage,
-                 bak_path: Optional[Path] = None, retry_number: int = 3):
+                 bak_path: Optional[Path] = None, retry_number: int = 3, wait_start_time=1800):
         self.simulator = simulator
         self.benchmark = benchmark
         self.data_storage = data_storage
         self.bak_path = bak_path
         self.retry_number = retry_number
-        self.simulate_run_info = None
+        self.wait_time = wait_start_time
 
     def back_up(self):
         if self.bak_path:
@@ -660,11 +668,12 @@ class Scheduler:
 
     def wait_simulate(self):
         logger.info("wait run mindie")
-        while True:
+        for _ in range(self.wait_time):
             time.sleep(1)
             if self.simulator.check_success():
-                break
-        logger.info(f"Successfully started the {self.simulator.process.pid} process.")
+                logger.info(f"Successfully started the {self.simulator.process.pid} process.")
+                return
+        raise TimeoutError(self.wait_time)
 
     def run_simulate(self, params: np.ndarray, params_field: Tuple[OptimizerConfigField]):
         self.benchmark.prepare()
@@ -713,7 +722,7 @@ class Scheduler:
                 continue
             return
         raise ValueError(
-            f"Failed in run_target_server, params: {self.simulate_run_info}")
+            f"Failed in run_target_server")
 
     def stop_target_server(self, del_log=True):
         self.simulator.stop(del_log)
@@ -793,7 +802,7 @@ class PSOOptimizer:
                  target_field: Optional[Tuple] = None, prefill_lam: float = 0.5, decode_lam: float = 0.5,
                  success_rate_lam: float = 0.5, prefill_constrain: float = 0.05, decode_constrain: float = 0.05,
                  success_rate_constrain: float = 1, load_history_data: Optional[List] = None,
-                 load_breakpoint: bool = False):
+                 load_breakpoint: bool = False, pso_init_kwargs: Optional[Dict] = None):
         self.scheduler = scheduler
         self.n_particles = n_particles
         self.iters = iters
@@ -810,6 +819,7 @@ class PSOOptimizer:
         self.success_rate_constrain = success_rate_constrain
         self.load_history_data = load_history_data
         self.load_breakpoint = load_breakpoint
+        self.pso_init_kwargs = pso_init_kwargs
         self.init_pos = None
         self.history_cost, self.history_pos = None, None
         if self.load_history_data and self.load_breakpoint:
@@ -938,7 +948,7 @@ class PSOOptimizer:
         optimizer = CustomGlobalBestPSO(n_particles=self.n_particles, dimensions=len(self.target_field),
                                         options=self.pso_options.model_dump(), bounds=self.constructing_bounds(),
                                         init_pos=self.init_pos, breakpoint_pos=self.history_pos,
-                                        breakpoint_cost=self.history_cost)
+                                        breakpoint_cost=self.history_cost, **self.pso_init_kwargs)
         cost, joint_vars = optimizer.optimize(self.op_func, iters=self.iters)
         logger.info(
             f"best cost {cost}, best joint_vars: "
@@ -988,7 +998,8 @@ def main(args: argparse.Namespace):
                        decode_lam=settings.decode_lam, success_rate_lam=settings.success_rate_lam,
                        decode_constrain=settings.decode_constrain, prefill_constrain=settings.prefill_constrain,
                        success_rate_constrain=settings.success_rate_constrain, load_history_data=_load_history_data,
-                       load_breakpoint=args.load_breakpoint)
+                       load_breakpoint=args.load_breakpoint,
+                       pso_init_kwargs={"ftol": settings.ftol, "ftol_iter": settings.ftol_iter})
     pso.run()
 
 
