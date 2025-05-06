@@ -188,12 +188,12 @@ def process_execution_data(data: ExecutionData) -> List[Tuple]:
                 iters.append(iter_val)
             except KeyError as e:
                 logger.error(f"缺少键 '{e}'，跳过该条目")
-        for j in range(len(rids)):
-            recv_token = req_df[req_df['http_rid'] == rids[j]]['recv_token_size'].values[0]
+        for j, rid in range(len(rids)):
+            recv_token = req_df[req_df['http_rid'] == rid]['recv_token_size'].values[0]
             total_prefill_token += recv_token
             if recv_token > max_seq_len:
                 max_seq_len = recv_token
-            req_block = index_dict.get((rids[j], iters[j]), 0)
+            req_block = index_dict.get((rid, iters[j]), 0)
             req_info = (int(recv_token), req_block, iters[j])
             total_req_info.append(req_info)
         process_req_info = tuple(total_req_info)
