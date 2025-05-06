@@ -20,6 +20,7 @@ import sqlite3
 import json
 import csv
 import ast
+from dataclasses import dataclass
 from typing import Dict, List, Tuple, Any
 import pandas as pd
 from loguru import logger
@@ -160,12 +161,19 @@ def write_csv_header(csvfile) -> None:
     ])
 
 
-def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_df: pd.DataFrame,
-                           rids_ori: List[Any], index_dict: Dict[Tuple, Any], batch_id_block_sum: Dict[int, float]) -> List[Tuple]:
+@dataclass
+class ExecutionData:
+    exec_data: List[Tuple]
+    batch_data: List[Tuple]
+    req_df: pd.DataFrame
+    rids_ori: List[Any]
+    index_dict: Dict[Tuple, Any]
+    batch_id_block_sum: Dict[int, float]
+
+
+def process_execution_data(data: ExecutionData) -> List[Tuple]:
     processed_data = []
-    for i in range(len(exec_data)):
-        exec_row = exec_data[i]
-        batch_row = batch_data[i]
+    for exec_row, batch_row in zip(exec_data, batch_data):
         total_prefill_token = 0
         max_seq_len = 0
         total_req_info = []
@@ -219,14 +227,19 @@ def write_csv_row(csvfile, row: Tuple) -> None:
     writer.writerow(row)
 
 
+@dataclass
+class ProcessedData:
+    input_path: str
+    data_by_pid: Dict[int, List[Tuple]]
+    batch_rows: List[Tuple]
+    batch_id_block_sum: Dict[int, float]
+    req_df: pd.DataFrame
+    rids_ori: List[Any]
+    index_dict: Dict[Tuple, Any]
+
+
 def save_processed_data_to_csv(
-        input_path: str,
-        data_by_pid: Dict[int, List[Tuple]],
-        batch_rows: List[Tuple],
-        batch_id_block_sum: Dict[int, float],
-        req_df: pd.DataFrame,
-        rids_ori: List[Any],
-        index_dict: Dict[Tuple, Any]
+        processed_data: ProcessedData
 ) -> None:
     output_folder = create_output_folder(input_path)
 
@@ -240,7 +253,8 @@ def save_processed_data_to_csv(
 
         with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
             write_csv_header(csvfile)
-            processed_data = process_execution_data(exec_data, batch_data, req_df, rids_ori, index_dict, batch_id_block_sum)
+            processed_data = process_execution_data(exec_data, batch_data, \
+                                                    req_df, rids_ori, index_dict, batch_id_block_sum)
             for row in processed_data:
                 write_csv_row(csvfile, row)
 
@@ -318,7 +332,6 @@ def main(args):
     except IOError as e:
         logger.error(f"无法读取输入文件: {e}")
         raise e
-        sys.exit(1)
 
     # 确保输出目录存在
     input_csv_path = os.path.join(input_path, f'output_csv')

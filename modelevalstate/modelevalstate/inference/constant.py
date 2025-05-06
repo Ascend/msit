@@ -69,8 +69,8 @@ ALL_ARCHITECTURE = (
     "bunny",
 )
 
-ALL_ARCHITECTURE_MAPPING = {architecture.lower(): f"architecture__{architecture.lower()}" for architecture in 
-                            ALL_ARCHITECTURE}
+ALL_ARCHITECTURE_MAPPING = {architecture.lower(): f"architecture__{architecture.lower()}" 
+                            for architecture in ALL_ARCHITECTURE}
 ALL_BATCH_STAGE = ("prefill", "decode")
 ALL_HIDDEN_ACT = ("silu", "gelu_pytorch_tanh", "gelu", "gelu_fast", "fastgelu")
 ALL_MODEL_TYPE = (

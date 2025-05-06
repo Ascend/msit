@@ -22,7 +22,7 @@ RUN_PATH = Path(os.getcwd())
 
 MODEL_EVAL_STATE_CONFIG_PATH = "MODEL_EVAL_STATE_CONFIG_PATH"
 modelevalstate_config_path = os.getenv(MODEL_EVAL_STATE_CONFIG_PATH) or os.getenv(MODEL_EVAL_STATE_CONFIG_PATH.lower())
-if not modelevalstate_config_path :
+if not modelevalstate_config_path:
     modelevalstate_config_path = RUN_PATH.joinpath("config.json")
 modelevalstate_config_path = Path(modelevalstate_config_path).absolute().resolve()
 
