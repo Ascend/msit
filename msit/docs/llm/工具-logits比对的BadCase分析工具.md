@@ -56,7 +56,7 @@ BoolQ_pa_batch16_tp2_full_2025_01_17_15_25_20_debug_info.csv # NPU环境下对Bo
 
 在命令行中使用：
 ```sh
-msit llm bcAnalyze -gp "BoolQ_fa_batch16_tp2_full_2025_01_17_15_34_22_debug_info.csv" -mp "BoolQ_pa_batch16_tp2_full_2025_01_17_15_25_20_debug_info.csv"
+msit llm bcanalyze -gp "BoolQ_fa_batch16_tp2_full_2025_01_17_15_34_22_debug_info.csv" -mp "BoolQ_pa_batch16_tp2_full_2025_01_17_15_25_20_debug_info.csv"
 ```
 
 获得存放在类似`msit_bad_case/analyzer/msit_bad_case_result_20250117134959.csv`路径下的`bad case`分析结果。结果中必定包含`key`列和两个`passed`列数据，以及可能包含其他列数据（例如input_token_ids、output_token_ids等），通过展示这些数据列表明bad case的结果。
