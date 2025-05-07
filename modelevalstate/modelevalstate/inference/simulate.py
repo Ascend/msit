@@ -17,7 +17,7 @@ import os
 import stat
 import time
 from pathlib import Path
-
+from loguru import logger
 import numpy as np
 import torch
 
@@ -39,8 +39,8 @@ class ServiceField:
     req_id_and_max_decode_length = None
 
 
-ServiceField.config_path = ConfigPath(settings.mindie.model_path, settings.mindie.ohe_path,
-                                      settings.mindie.static_file_dir)
+ServiceField.config_path = ConfigPath(settings.latency_model.model_path, settings.latency_model.ohe_path,
+                                      settings.latency_model.static_file_dir)
 
 
 class Simulate:
@@ -53,17 +53,17 @@ class Simulate:
                 plugin_object.eos_token_id = plugin_object.input_manager.cache_config.eos_token_id
             else:
                 plugin_object.eos_token_id = plugin_object.input_manager.cache_config.eos_token_id[0]
-            if settings.mindie.req_and_decode_file.exists():
-                with open(settings.mindie.req_and_decode_file, 'r') as f:
+            if settings.latency_model.req_and_decode_file.exists():
+                with open(settings.latency_model.req_and_decode_file, 'r') as f:
                     ServiceField.req_id_and_max_decode_length = {int(k): int(v) for k, v in json.load(f).items()}
             else:
                 ServiceField.req_id_and_max_decode_length = {}
             if not Path(ServiceField.config_path.static_file_dir).exists():
                 Path(ServiceField.config_path.static_file_dir).mkdir(parents=True)
-            static_file = StaticFile(base_path=settings.mindie.static_file_dir)
+            static_file = StaticFile(base_path=settings.latency_model.static_file_dir)
             ServiceField.fh = FileHanlder(static_file)
             ServiceField.fh.load_static_data()
-            custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=settings.mindie.ohe_path)
+            custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=settings.latency_model.ohe_path)
             custom_encoder.fit(load=True)
             ServiceField.data_processor = DataProcessor(custom_encoder)
             Simulate.first = False
@@ -151,7 +151,7 @@ class Simulate:
             if _pre_v == -1:
                 continue
             if time_sleep:
-                time.sleep(_pre_v)
+                time.sleep(_pre_v / 10 ** 6)
                 return 0
             else:
                 return _pre_v
@@ -160,6 +160,7 @@ class Simulate:
     def predict_and_save():
         res = Simulate.predict(False)
         file_path = Path(settings.benchmark.custom_collect_output_path).joinpath(f"simulate_{os.getpid()}.csv")
+        logger.debug(f"file path {file_path}")
         if file_path.exists():
             with open(file_path, "a+") as f:
                 f.write(str(res))

@@ -20,6 +20,7 @@ import sqlite3
 import json
 import csv
 import ast
+from dataclasses import dataclass
 from typing import Dict, List, Tuple, Any
 import pandas as pd
 from loguru import logger
@@ -160,12 +161,19 @@ def write_csv_header(csvfile) -> None:
     ])
 
 
-def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_df: pd.DataFrame,
-                           rids_ori: List[Any]) -> List[Tuple]:
+@dataclass
+class ExecutionData:
+    exec_data: List[Tuple]
+    batch_data: List[Tuple]
+    req_df: pd.DataFrame
+    rids_ori: List[Any]
+    index_dict: Dict[Tuple, Any]
+    batch_id_block_sum: Dict[int, float]
+
+
+def process_execution_data(data: ExecutionData) -> List[Tuple]:
     processed_data = []
-    for i in range(len(exec_data)):
-        exec_row = exec_data[i]
-        batch_row = batch_data[i]
+    for exec_row, batch_row in zip(exec_data, batch_data):
         total_prefill_token = 0
         max_seq_len = 0
         total_req_info = []
@@ -180,12 +188,13 @@ def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_
                 iters.append(iter_val)
             except KeyError as e:
                 logger.error(f"缺少键 '{e}'，跳过该条目")
-        for j in range(len(rids)):
-            recv_token = req_df[req_df['http_rid'] == rids[j]]['recv_token_size'].values[0]
+        for j, rid in range(len(rids)):
+            recv_token = req_df[req_df['http_rid'] == rid]['recv_token_size'].values[0]
             total_prefill_token += recv_token
             if recv_token > max_seq_len:
                 max_seq_len = recv_token
-            req_info = (int(recv_token), rids[j], iters[j])
+            req_block = index_dict.get((rid, iters[j]), 0)
+            req_info = (int(recv_token), req_block, iters[j])
             total_req_info.append(req_info)
         process_req_info = tuple(total_req_info)
         start = exec_row[3]
@@ -218,13 +227,19 @@ def write_csv_row(csvfile, row: Tuple) -> None:
     writer.writerow(row)
 
 
+@dataclass
+class ProcessedData:
+    input_path: str
+    data_by_pid: Dict[int, List[Tuple]]
+    batch_rows: List[Tuple]
+    batch_id_block_sum: Dict[int, float]
+    req_df: pd.DataFrame
+    rids_ori: List[Any]
+    index_dict: Dict[Tuple, Any]
+
+
 def save_processed_data_to_csv(
-        input_path: str,
-        data_by_pid: Dict[int, List[Tuple]],
-        batch_rows: List[Tuple],
-        batch_id_block_sum: Dict[int, float],
-        req_df: pd.DataFrame,
-        rids_ori: List[Any]
+        processed_data: ProcessedData
 ) -> None:
     output_folder = create_output_folder(input_path)
 
@@ -238,7 +253,8 @@ def save_processed_data_to_csv(
 
         with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
             write_csv_header(csvfile)
-            processed_data = process_execution_data(exec_data, batch_data, req_df, rids_ori)
+            processed_data = process_execution_data(exec_data, batch_data, \
+                                                    req_df, rids_ori, index_dict, batch_id_block_sum)
             for row in processed_data:
                 write_csv_row(csvfile, row)
 
@@ -252,7 +268,11 @@ def source_to_model(input_path: str):
         exec_rows = read_batch_exec_data(cursor)
         batch_rows = read_batch_data(cursor)
         req_rows = read_batch_req_data(cursor)
-
+        index_dict = []
+        for row in req_rows:
+            key = (row[1], row[3])
+            value = row[4]
+            index_dict[key] = value
         data_by_pid = group_exec_data_by_pid(exec_rows)
         batch_id_block_sum = calculate_block_sums(req_rows)
 
@@ -267,12 +287,13 @@ def source_to_model(input_path: str):
             batch_rows,
             batch_id_block_sum,
             req_df,
-            rids_ori
+            rids_ori,
+            index_dict
         )
 
     except Exception as e:
-        logger.error(f"处理过程中出错: {e}")
-        from e
+        logger.error(f"处理过程中出错: {e}") 
+        raise e
     finally:
         db_connector.close()
 
@@ -310,11 +331,9 @@ def main(args):
         source_to_model(input_path)
     except IOError as e:
         logger.error(f"无法读取输入文件: {e}")
-        from e
-        sys.exit(1)
+        raise e
 
     # 确保输出目录存在
-    output_dir = os.path.dirname(output_path)
     input_csv_path = os.path.join(input_path, f'output_csv')
     pretrain(input_csv_path, output_path)
     req_decodetimes(input_path, output_path)

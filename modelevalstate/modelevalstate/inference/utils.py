@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from functools import reduce
+from functools import reduce, lru_cache
 from typing import Tuple
 
 import numpy as np
@@ -39,6 +39,7 @@ TOTAL_PREFILL_TOKEN = "total_prefill_token"
 
 
 class PreprocessTool:
+    @lru_cache(maxsize=32)
     @staticmethod
     def generate_series(row, column):
         new_row = []

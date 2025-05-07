@@ -1,5 +1,4 @@
 {
-  "output": "/tmp/modelevalstate/simulate/output",
   "n_particles": 30,
   "iters": 100,
   "prefill_lam": 0,
@@ -10,36 +9,6 @@
   "server": [
     "http://141.61.22.87:8000"
   ],
-  "mindie": {
-    "process_name": "mindieservice",
-    "config_path": "/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json",
-    "config_bak_path": "/usr/local/Ascend/mindie/latest/mindie-service/conf/config_bak.json",
-    "work_path": "/home/ModelEvalState",
-    "command": "/usr/bin/bash ./run_mindie.sh",
-    "log_path": "/usr/local/Ascend/mindie/latest/mindie-service/logs",
-    "model_path": "/tmp/modelevalstate/simulate/model/bak/base/xgb_model.ubj",
-    "ohe_path": "/tmp/modelevalstate/simulate/model/ohe",
-    "static_file_dir": "/tmp/modelevalstate/simulate/model/deepseek_r1",
-    "req_and_decode_file": "/tmp/modelevalstate/simulate/model/req_id_and_decode_num.json"
-  },
-  "benchmark": {
-    "name": "benchmark",
-    "work_path": "/home/ModelEvalState",
-    "command": "/usr/bin/bash ./run_benchmark.sh",
-    "output_path": "/usr/local/Ascend/mindie/latest/mindie-service/instance",
-    "custom_collect_output_path": "/tmp/modelevalstate/train",
-    "custom_analysis_output_path": "/tmp/modelevalstate/output",
-    "profile_input_path": "/tmp/modelevalstate/profile_input_path",
-    "profile_output_path": "/tmp/modelevalstate/profile_output_path"
-  },
-  "data_storage": {
-    "store_dir": "/tmp/modelevalstate/simulate/output"
-  },
-  "pso_options": {
-    "c1": 0.5,
-    "c2": 0.3,
-    "w": 0.9
-  },
   "target_field": [
     {
       "name": "max_batch_size",
@@ -124,56 +93,11 @@
       "dtype": "int"
     },
     {
-      "name": "tp",
-      "config_position": "BackendConfig.ModelDeployConfig.ModelConfig.0.tp ",
-      "min": 0,
-      "max": 1,
-      "dtype": "enum",
-      "dtype_param": [
-        1,
-        2,
-        4,
-        8,
-        16
-      ]
-    },
-    {
-      "name": "dp",
-      "config_position": "BackendConfig.ModelDeployConfig.ModelConfig.0.dp ",
-      "min": 0,
-      "max": 0,
-      "dtype": "factories",
-      "dtype_param": {
-        "target_name": "tp",
-        "product": 16,
-        "dtype": "int"
-      }
-    },
-    {
-      "name": "moe_ep",
-      "config_position": "BackendConfig.ModelDeployConfig.ModelConfig.0.moe_ep ",
-      "min": 0,
-      "max": 1,
-      "dtype": "enum",
-      "dtype_param": [
-        1,
-        2,
-        4,
-        8,
-        16
-      ]
-    },
-    {
-      "name": "moe_tp",
-      "config_position": "BackendConfig.ModelDeployConfig.ModelConfig.0.moe_tp ",
-      "min": 0,
-      "max": 0,
-      "dtype": "factories",
-      "dtype_param": {
-        "target_name": "moe_ep",
-        "product": 16,
-        "dtype": "int"
-      }
+      "name": "REQUESTRATE",
+      "config_position": "env",
+      "min": 10,
+      "max": 1000,
+      "dtype": "int"
     }
   ]
 }

@@ -10,14 +10,28 @@ from typing import Any, List, Tuple, Type, Optional, Union
 
 import numpy as np
 from loguru import logger
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict, PydanticBaseSettingsSource, JsonConfigSettingsSource
 
 import modelevalstate
 
 RUN_TIME = time.strftime("%Y%m%d%H%M%S", time.localtime())
-INSTALL_PATH = Path(modelevalstate.__path__[0]).parent
+INSTALL_PATH = Path(modelevalstate.__path__[0])
 RUN_PATH = Path(os.getcwd())
+
+
+MODEL_EVAL_STATE_CONFIG_PATH = "MODEL_EVAL_STATE_CONFIG_PATH"
+modelevalstate_config_path = os.getenv(MODEL_EVAL_STATE_CONFIG_PATH) or os.getenv(MODEL_EVAL_STATE_CONFIG_PATH.lower())
+if not modelevalstate_config_path:
+    modelevalstate_config_path = RUN_PATH.joinpath("config.json")
+modelevalstate_config_path = Path(modelevalstate_config_path).absolute().resolve()
+
+CUSTOM_OUTPUT = "CUSTOM_OUTPUT"
+custom_output = os.getenv(CUSTOM_OUTPUT) or os.getenv(CUSTOM_OUTPUT.lower())
+if custom_output:
+    custom_output = Path(custom_output).resolve()
+else:
+    custom_output = RUN_PATH
 
 
 class AnalyzeTool(Enum):
@@ -92,17 +106,25 @@ class PerformanceIndex(BaseModel):
 
 class BenchMarkConfig(BaseModel):
     name: str = "benchmark"
-    work_path: Path = Path("Ascend-mindie-server_1.0.RC3_linux-aarch64")
-    command: str = (r"benchmark --DatasetPath /gsm8k --DatasetType gsm8k "
-                    r"--ModelName llama3-8b --ModelPath /data/LLM/llama3-8b --TestType client "
-                    r"--MaxOutputLen 256 --Http http://127.0.0.1:7425 "
-                    r"--ManagementHttp http://127.0.0.2:7426 --Concurrency 300 --RequestRate 20 "
-                    r"--WarmupSize 20 --Tokenizer True --SaveTokensPath output/gsm8k.csv")
-    output_path: Path = Path(r"Ascend-mindie-server_1.0.RC3_linux-aarch64/instance")
-    custom_collect_output_path: Path = Path(r"Ascend-mindie-server_1.0.RC3_linux-aarch64/simulate_logs")
-    custom_analysis_output_path: Path = Path(r"model_forward.csv")
-    profile_input_path: Path = Path("profile_input_path")
-    profile_output_path: Path = Path("profile_output_path")
+    work_path: Path = Field(default_factory=lambda: Path(os.getenv()).resolve())
+    command: str = "/usr/bin/bash ./run_benchmark.sh"
+    output_path: Path = custom_output.joinpath("instance")
+    custom_collect_output_path: Path = Field(
+        default_factory=lambda: custom_output.joinpath("/result/custom_collect_output_path").resolve(),
+        validate_default=True
+    )
+    custom_analysis_output_path: Path = Field(
+        default_factory=lambda: custom_output.joinpath("/result/custom_analysis_output_path").resolve(),
+        validate_default=True
+    )
+    profile_input_path: Path = Field(
+        default_factory=lambda: custom_output.joinpath("/result/profile_input_path").resolve(),
+        validate_default=True
+    )
+    profile_output_path: Path = Field(
+        default_factory=lambda: custom_output.joinpath("/result/profile_output_path").resolve(),
+        validate_default=True
+    )
 
     @field_validator("output_path", "custom_collect_output_path", "custom_analysis_output_path", "profile_input_path",
                      "profile_output_path")
@@ -120,36 +142,55 @@ class BenchMarkConfig(BaseModel):
 
 
 class DataStorageConfig(BaseModel):
-    store_dir: Path = Path("/data/xjt/output/")
+    store_dir: Path = Field(
+        default_factory=lambda: Path(os.getenv()).joinpath("/result/store").resolve(),
+        validate_default=True
+    )
 
     @field_validator("store_dir")
     @classmethod
     def create_path(cls, v: Path) -> Path:
         v.mkdir(parents=True, exist_ok=True)
         return v
+    
+
+class LatencyModel(BaseModel):
+    base_path: Path = Field(default_factory=lambda: custom_output.joinpath("result/latency_model").resolve())
+    model_path: Optional[Path] = Field(
+        default_factory=lambda data: data["base_path"].joinpath("bak/base/xgb_model.ubj").resolve())
+    ohe_path: Optional[Path] = Field(default_factory=lambda data: data["base_path"].joinpath("ohe").resolve())
+    static_file_dir: Optional[Path] = Field(
+        default_factory=lambda data: data["base_path"].joinpath("model_static_file").resolve(), validate_default=True)
+    req_and_decode_file: Optional[Path] = Field(
+        default_factory=lambda data: data["base_path"].joinpath("req_id_and_decode_num.json").resolve())
+
+    @field_validator("static_file_dir")
+    @classmethod
+    def validate_static_file_dir(cls, v: Optional[None]):
+        if v is None:
+            v = cls.base_path.joinpath("model_static_file")
+            v.mkdir(parents=True)
+        return v
 
 
 class MindieConfig(BaseModel):
     # 运行mindie时，要修改的mindie config
     process_name: str = "mindieservice_daemon"
-    config_path: Path = Path("./conf/config.json")
-    config_bak_path: Path = Path("./conf/config_bak.json")
-    work_path: Path = Path("Ascend-mindie-server_1.0.RC3_linux-aarch64")
-    command: str = "./bin/mindieservice_daemon"
-    log_path: Path = Path("Ascend-mindie-server_1.0.RC3_linux-aarch64/logs")
-    model_path: Path = Path(r"model/bak/base/xgb_model.ubj")
-    ohe_path: Path = Path(r"model/ohe")
-    static_file_dir: Path = Path(r"model/deepseek_r1")
-    req_and_decode_file: Path = Path("model/req_id_and_decode_num.json")
+    config_path: Path = Path("/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json")
+    config_bak_path: Path = Path("/usr/local/Ascend/mindie/latest/mindie-service/conf/config_bak.json")
+    work_path: Path = Field(default_factory=lambda: Path(os.getcwd()).resolve())
+    command: str = "/usr/bin/bash ./run_mindie.sh"
+    log_path: Path = Path("/usr/local/Ascend/mindie/latest/mindie-service/logs")
 
-    @field_validator("work_path", "config_path", "model_path", "ohe_path", "req_and_decode_file")
+
+    @field_validator("config_path")
     @classmethod
     def check_dir(cls, v: Path) -> Path:
         if not v.exists():
             logger.error(f"FileNotFound: {v}")
         return v
 
-    @field_validator("static_file_dir", "log_path")
+    @field_validator("log_path")
     @classmethod
     def create_path(cls, v: Path) -> Path:
         v.mkdir(parents=True, exist_ok=True)
@@ -199,15 +240,18 @@ class Settings(BaseSettings):
         json_file=[INSTALL_PATH.joinpath("model_eval_state.json"), Path("~/model_eval_state.json").expanduser(),
                    RUN_PATH.joinpath("model_eval_state.json"),
                    INSTALL_PATH.joinpath("config.json"), Path("~/config.json").expanduser(),
-                   RUN_PATH.joinpath("config.json")],
+                   RUN_PATH.joinpath("config.json"), modelevalstate_config_path],
         env_prefix="model_eval_state_")
-    output: Path = Path("output")
+    output: Path = Field(default_factory=lambda: Path(os.getcwd()).joinpath("result").resolve(), validate_default=True)
+    latency_model: LatencyModel = LatencyModel()
     mindie: MindieConfig = MindieConfig()
     benchmark: BenchMarkConfig = BenchMarkConfig()
     data_storage: DataStorageConfig = DataStorageConfig()
     pso_options: PsoOptions = PsoOptions()
     n_particles: int = 5
     iters: int = 10
+    ftol: float = -np.inf
+    ftol_iter: int = 1
     prefill_lam: float = 0.5  # 惩罚系数
     decode_lam: float = 0.5
     success_rate_lam: float = 0.5

@@ -55,48 +55,7 @@ ALL_OP = (
     "TopkToppSamplingOperation",
 )
 
-ALL_ASCEND_NAME = (
-    "AS31XM1X",
-    "Ascend031",
-    "Ascend035A",
-    "Ascend035B",
-    "Ascend035",
-    "Ascend310B1",
-    "Ascend310B2",
-    "Ascend310B3",
-    "Ascend310B4",
-    "Ascend310",
-    "Ascend310P1",
-    "Ascend310P3",
-    "Ascend610",
-    "Ascend610Lite",
-    "Ascend910A",
-    "Ascend910B1",
-    "Ascend910B2C",
-    "Ascend910B2",
-    "Ascend910B3",
-    "Ascend910B4-1",
-    "Ascend910B4",
-    "Ascend910B",
-    "Ascend910C1",
-    " Ascend910C2",
-    "Ascend910C3",
-    "Ascend910C4-1",
-    " Ascend910C4",
-    "Ascend910PremiumA",
-    "Ascend910ProA",
-    "Ascend910ProB",
-    "BS9SX1AA",
-    "BS9SX1AB",
-    "BS9SX1AC",
-    "BS9SX2AA",
-    "BS9SX2AB",
-    "Hi3796CV300CS",
-    "Hi3796CV300ES",
-    "MC61AM21AA",
-    "MC61AM21AB",
-    "SD3403",
-)
+
 
 ALL_ARCHITECTURE = (
     "LlamaForCausalLM",
@@ -110,7 +69,8 @@ ALL_ARCHITECTURE = (
     "bunny",
 )
 
-ALL_ARCHITECTURE_MAPPING = {architecture: f"architecture__{architecture}" for architecture in ALL_ARCHITECTURE}
+ALL_ARCHITECTURE_MAPPING = {architecture.lower(): f"architecture__{architecture.lower()}" 
+                            for architecture in ALL_ARCHITECTURE}
 ALL_BATCH_STAGE = ("prefill", "decode")
 ALL_HIDDEN_ACT = ("silu", "gelu_pytorch_tanh", "gelu", "gelu_fast", "fastgelu")
 ALL_MODEL_TYPE = (
