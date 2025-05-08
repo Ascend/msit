@@ -1,0 +1,49 @@
+#  -*- coding: utf-8 -*-
+#  Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
+#  #
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#  #
+#  http://www.apache.org/licenses/LICENSE-2.0
+#  #
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+from typing import List, Tuple
+
+from torch import nn
+
+
+class BaseModelAdapter:
+    """
+    模型适配器基类。
+    
+    该类定义了模型适配器的基本接口，包括获取模型根节点和子模块。
+    
+    子类需要实现具体的获取方法。
+    """
+
+    def __init__(self, model: nn.Module):
+        self.model = model
+
+    def get_decoder_layers(self) -> List[Tuple[str, nn.Module]]:
+        """
+        获取模型所有解码层。
+        
+        返回:
+            List[Tuple[str, nn.Module]]: 模型所有解码层
+        """
+        decoder_layers = [
+            (name, module)
+            for name, module in self.model.named_modules()
+            if "decoderlayer" in module.__class__.__name__.lower()
+        ]
+
+        if len(decoder_layers) == 0:
+            raise NotImplementedError("Can't find decoder layers in the model")
+
+        return decoder_layers
