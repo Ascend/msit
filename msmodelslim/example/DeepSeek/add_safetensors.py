@@ -10,7 +10,8 @@ from safetensors.torch import save_file
 
 from convert_fp8_to_bf16 import weight_dequant
 
-from ascend_utils.common.security import json_safe_load, json_safe_dump, get_valid_read_path, get_valid_write_path
+from ascend_utils.common.security import json_safe_load, json_safe_dump, get_valid_read_path, get_valid_write_path, \
+    MAX_READ_FILE_SIZE_512G
 from msmodelslim import logger as msmodelslim_logger
 
 
@@ -39,7 +40,7 @@ def get_weight_map(float_index_path):
 def get_tensor(tensor_name, safetensor_path, weight_map):
     filename = weight_map[tensor_name]
     file_path = os.path.join(safetensor_path, filename)
-    file_path = get_valid_read_path(file_path, is_dir=False)
+    file_path = get_valid_read_path(file_path, size_max=MAX_READ_FILE_SIZE_512G)
     with safe_open(file_path, framework="pt", device="cpu") as f:
         if tensor_name in f.keys():
             tensor = f.get_tensor(tensor_name)
