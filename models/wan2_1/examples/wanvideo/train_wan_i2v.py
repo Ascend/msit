@@ -10,13 +10,29 @@ from PIL import Image
 import numpy as np
 import json
 
+from utils.device_utils import is_npu_available
+
+if is_npu_available():
+    import torch_npu
+    from torch_npu.contrib import transfer_to_npu
+
+    torch.npu.config.allow_internal_format = False
+
 
 class I2VDataset(torch.utils.data.Dataset):
     def __init__(self, base_path, metadata_path, max_num_frames=81, frame_interval=1, num_frames=81, height=480,
                  width=832):
-        metadata = pd.read_csv(metadata_path)
-        self.path = [os.path.join(base_path, "train", file_name) for file_name in metadata["file_name"]]
-        self.text = metadata["text"].to_list()
+
+        if metadata_path.rsplit(".")[-1] == "json":
+            metadata = pd.read_json(metadata_path)
+            self.path = [os.path.join(base_path, file_path) for file_path in metadata["path"]]
+            self.text = metadata["cap"].to_list()
+        elif metadata_path.rsplit(".")[-1] == "csv":
+            metadata = pd.read_csv(metadata_path)
+            self.path = [os.path.join(base_path, "train", file_name) for file_name in metadata["file_name"]]
+            self.text = metadata["text"].to_list()
+        else:
+            raise ValueError("Only support metadata in json or csv format")
 
         self.max_num_frames = max_num_frames
         self.frame_interval = frame_interval
@@ -111,6 +127,7 @@ class LightningModelForDataProcess(pl.LightningModule):
         self.pipe.device = self.device
         if video is not None:
             prompt_emb = self.pipe.encode_prompt(text)
+            video = video.to(dtype=self.pipe.torch_dtype, device=self.pipe.device)
             latents = self.pipe.encode_video(video, **self.tiler_kwargs)[0]
             first_frame_image = Image.fromarray(np.array(first_frame_image_tensor.cpu()))
             cond_data_dict = self.pipe.encode_image(first_frame_image, num_frames=self.num_frames, height=self.height,
@@ -122,8 +139,15 @@ class LightningModelForDataProcess(pl.LightningModule):
 
 class TensorDataset(torch.utils.data.Dataset):
     def __init__(self, base_path, metadata_path, steps_per_epoch):
-        metadata = pd.read_csv(metadata_path)
-        self.path = [os.path.join(base_path, "train", file_name) for file_name in metadata["file_name"]]
+        if metadata_path.rsplit(".")[-1] == "json":
+            metadata = pd.read_json(metadata_path)
+            self.path = [os.path.join(base_path, file_name) for file_name in metadata["path"]]
+        elif metadata_path.rsplit(".")[-1] == "csv":
+            metadata = pd.read_csv(metadata_path)
+            self.path = [os.path.join(base_path, "train", file_name) for file_name in metadata["file_name"]]
+        else:
+            raise ValueError("Only support metadata in json or csv format")
+
         print(len(self.path), "videos in metadata.")
         self.path = [i + ".tensors.pth" for i in self.path if os.path.exists(i + ".tensors.pth")]
         print(len(self.path), "tensors cached in metadata.")
@@ -148,9 +172,12 @@ class LightningModelForTrain(pl.LightningModule):
                  use_gradient_checkpointing=True):
         super().__init__()
         model_manager = ModelManager(torch_dtype=torch.bfloat16, device="cpu")
-        # 将 dit_path 从字符串解析为 Python 列表
-        dit_path = json.loads(dit_path)
-        model_manager.load_models([dit_path])
+        if os.path.isfile(dit_path):
+            model_manager.load_models([dit_path])
+        else:
+            # 将 dit_path 从字符串解析为 Python 列表
+            dit_path = json.loads(dit_path)
+            model_manager.load_models([dit_path])
 
         self.pipe = WanVideoPipeline.from_model_manager(model_manager)
         self.pipe.scheduler.set_timesteps(1000, training=True)
@@ -197,10 +224,9 @@ class LightningModelForTrain(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         # Data
         latents = batch["latents"].to(self.device)
-
         prompt_emb = batch["prompt_emb"]
-        prompt_emb["context"] = [prompt_emb["context"][0][0].to(self.device)]
-        clip_fea = batch["clip_fea"].to(self.device)
+        prompt_emb["context"] = prompt_emb["context"][0].to(self.device)
+        clip_feature = batch["clip_fea"].to(self.device)
         y = batch["y"].to(self.device)
 
         # Loss
@@ -216,7 +242,7 @@ class LightningModelForTrain(pl.LightningModule):
             noise_pred = self.pipe.denoising_model()(
                 noisy_latents, timestep=timestep, **prompt_emb, **extra_input,
                 use_gradient_checkpointing=self.use_gradient_checkpointing,
-                clip_feature=clip_fea, y=y
+                clip_feature=clip_feature, y=y
             )
             loss = torch.nn.functional.mse_loss(noise_pred[..., 1:].float(), training_target[..., 1:].float())
             loss = loss * self.pipe.scheduler.training_weight(timestep)
@@ -258,6 +284,12 @@ def parse_args():
         type=str,
         default=None,
         required=True,
+        help="The path of the Dataset.",
+    )
+    parser.add_argument(
+        "--metadata_name",
+        type=str,
+        default="metadata.json",
         help="The path of the Dataset.",
     )
     parser.add_argument(
@@ -413,6 +445,13 @@ def parse_args():
         choices=["lora", "full"],
         help="Model structure to train. LoRA training or full training.",
     )
+    parser.add_argument(
+        "--gpus",
+        type=int,
+        default=1,
+        help="The number of gpu.",
+    )
+
     args = parser.parse_args()
     return args
 
@@ -420,7 +459,7 @@ def parse_args():
 def data_process(args):
     dataset = I2VDataset(
         args.dataset_path,
-        os.path.join(args.dataset_path, "metadata.csv"),
+        os.path.join(args.dataset_path, args.metadata_name),
         max_num_frames=args.num_frames,
         frame_interval=1,
         num_frames=args.num_frames,
@@ -455,7 +494,7 @@ def data_process(args):
 def train(args):
     dataset = TensorDataset(
         args.dataset_path,
-        os.path.join(args.dataset_path, "metadata.csv"),
+        os.path.join(args.dataset_path, args.metadata_name),
         steps_per_epoch=args.steps_per_epoch,
     )
     dataloader = torch.utils.data.DataLoader(
