@@ -28,7 +28,7 @@ from msmodelslim.core.runner.layer_wise_runner import (
 )
 
 
-class TestDecoderLayer(nn.Module):
+class DummyDecoderLayer(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -42,7 +42,7 @@ class SimpleModel(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.decoder = TestDecoderLayer()
+        self.decoder = DummyDecoderLayer()
 
     def forward(self, x: torch.Tensor) \
             -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:

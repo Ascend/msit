@@ -21,16 +21,14 @@ from pydantic import BaseModel
 from torch import nn
 
 from msmodelslim import logger
-
+from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config import QuantConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save.saver.factory import SaverFactory
-
-from msmodelslim.core.base.protocol import BatchProcessRequest
-from msmodelslim.quant.processor.quant.base import BaseSessionQuantConfig, FloatQuantConfig
-from msmodelslim.quant.quantizer.base.fake import BaseFakeQuantizer
 from msmodelslim.quant.processor.base import SessionBaseProcessor
 from msmodelslim.quant.processor.const import ProcessStage
+from msmodelslim.quant.processor.quant.base import BaseSessionQuantConfig, FloatQuantConfig
 from msmodelslim.quant.processor.registry import PROCESSOR_REGISTRY
+from msmodelslim.quant.quantizer.base.fake import BaseFakeQuantizer
 
 
 class SaverProcessorConfig(BaseModel):
@@ -80,9 +78,9 @@ class SaverProcessor(SessionBaseProcessor):
         for name, module in request.module.named_modules():
             full_name = f"{request.name}.{name}" if request.name != "" else name
             if isinstance(module, BaseFakeQuantizer):
-                for key, param in module.named_parameters():
-                    if not isinstance(module.cfg, BaseSessionQuantConfig):
-                        raise ValueError(f"{module.cfg} must be a subclass of BaseSessionQuantConfig")
+                if not isinstance(module.cfg, BaseSessionQuantConfig):
+                    raise ValueError(f"{module.cfg} must be a subclass of BaseSessionQuantConfig")
+                for key, param in module.state_dict().items():
                     self.saver.save(f"{full_name}.{key}", module.cfg, param)
             else:
                 for key, param in module.named_parameters(recurse=False):

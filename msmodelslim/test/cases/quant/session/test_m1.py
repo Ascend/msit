@@ -19,11 +19,6 @@ from unittest.mock import patch
 import torch
 import torch.nn as nn
 
-from test.testing_utils.mock import mock_kia_library, mock_security_library
-
-mock_kia_library()
-mock_security_library()
-
 from msmodelslim.quant.processor.anti_outlier.m1 import M1ProcessorConfig
 from msmodelslim.quant.processor.anti_outlier.m1 import smooth_ln_fcs
 from msmodelslim.quant.session.session import quant_model, SessionConfig

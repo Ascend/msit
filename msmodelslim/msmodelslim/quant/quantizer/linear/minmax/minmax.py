@@ -17,13 +17,11 @@
 from typing import Tuple, Optional
 
 import torch
-from torch import nn
 
 from msmodelslim.quant.kia.utils import fake_quantize, init_weight_quant_normal
-from msmodelslim.quant.quantizer.base.const import WeightQuantMethod, WeightQuantScope
-from msmodelslim.quant.quantizer.linear.base import BaseLinearQuantizer, BaseWeightQuantizer
-from msmodelslim.quant.quantizer.linear.base import LINEAR_QUANTIZER_REGISTRY
-from msmodelslim.quant.quantizer.linear.config import WeightQuantConfig, LinearQuantConfig
+from msmodelslim.quant.quantizer.base.const import WeightQuantScope
+from msmodelslim.quant.quantizer.linear.base import BaseWeightQuantizer
+from msmodelslim.quant.quantizer.linear.config import WeightQuantConfig
 
 
 class MinMaxWeightQuantizer(BaseWeightQuantizer):
@@ -45,7 +43,10 @@ class MinMaxWeightQuantizer(BaseWeightQuantizer):
         )
         return int_weight, dequant_weight
 
-    def quant(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None):
+    def quant(self,
+              weight: torch.Tensor,
+              bias: Optional[torch.Tensor] = None,
+              x: Optional[torch.Tensor] = None):
         return fake_quantize(weight, self.weight_scale, self.weight_offset)
 
     def forward(self,
@@ -60,17 +61,3 @@ class MinMaxWeightQuantizer(BaseWeightQuantizer):
         )
 
         return dequant_weight, bias
-
-
-@LINEAR_QUANTIZER_REGISTRY.register()
-class MinMaxLinearQuantizer(BaseLinearQuantizer):
-
-    def __init__(self, module: nn.Module, cfg: LinearQuantConfig):
-        super().__init__(module, cfg)
-
-    @staticmethod
-    def match(module: nn.Module, cfg: LinearQuantConfig) -> bool:
-        return isinstance(module, nn.Linear) and cfg.w_cfg.method == WeightQuantMethod.MINMAX
-
-    def _create_weight_quantizer(self, cfg: WeightQuantConfig) -> nn.Module:
-        return MinMaxWeightQuantizer(cfg)
