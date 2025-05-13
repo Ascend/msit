@@ -22,7 +22,7 @@ from safetensors import safe_open
 
 from msmodelslim.quant.processor.quant.w8a8 import W8A8ProcessorConfig, W8A8LinearFakeQuantizer
 from msmodelslim.quant.processor.quant.w8a8 import W8A8QuantConfig
-from msmodelslim.quant.processor.save.saver_processor import SaverProcessorConfig
+from msmodelslim.quant.processor.save.saver import SaverProcessorConfig
 from msmodelslim.quant.session.session import quant_model, SessionConfig
 
 
