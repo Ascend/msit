@@ -8,6 +8,14 @@ from peft import LoraConfig, inject_adapter_in_model
 import torchvision
 from PIL import Image
 
+from utils.device_utils import is_npu_available
+
+if is_npu_available():
+    import torch_npu
+    from torch_npu.contrib import transfer_to_npu
+
+    torch.npu.config.allow_internal_format = False
+
 
 
 class TextVideoDataset(torch.utils.data.Dataset):

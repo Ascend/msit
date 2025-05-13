@@ -22,8 +22,9 @@ try:
     SAGE_ATTN_AVAILABLE = True
 except ModuleNotFoundError:
     SAGE_ATTN_AVAILABLE = False
-    
-    
+from utils.device_utils import is_npu_available
+
+
 def flash_attention(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, num_heads: int, compatibility_mode=False):
     if compatibility_mode:
         q = rearrange(q, "b s (n d) -> b n s d", n=num_heads)
@@ -86,26 +87,77 @@ def precompute_freqs_cis(dim: int, end: int = 1024, theta: float = 10000.0):
     return freqs_cis
 
 
-def rope_apply(x, freqs, num_heads):
-    x = rearrange(x, "b s (n d) -> b s n d", n=num_heads)
-    x_out = torch.view_as_complex(x.to(torch.float64).reshape(
-        x.shape[0], x.shape[1], x.shape[2], -1, 2))
-    x_out = torch.view_as_real(x_out * freqs).flatten(2)
-    return x_out.to(x.dtype)
 
 
-class RMSNorm(nn.Module):
-    def __init__(self, dim, eps=1e-5):
-        super().__init__()
-        self.eps = eps
-        self.weight = nn.Parameter(torch.ones(dim))
+if is_npu_available():
+    import torch_npu
 
-    def norm(self, x):
-        return x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True) + self.eps)
+    def rope_apply(x, freqs, num_heads):  # fp32
+        cos, sin = torch.chunk(torch.view_as_real(freqs.to(torch.complex64)), 2,
+                               dim=-1)  # 可以放到首Block前，提前处理，减少每Block冗余计算, (32760,1,64) => [(32760,1,64,1), (32760,1,64,1)]
+        x = rearrange(x, "b s (n d) -> b s n d", n=num_heads)  # (1,32760,1536) => (1,32760,12,128)
+        B, S, N, D = x.shape
 
-    def forward(self, x):
-        dtype = x.dtype
-        return self.norm(x.float()).to(dtype) * self.weight
+        def rotate_half(x):
+            x1, x2 = torch.chunk(x.reshape((B, S, N, D // 2, 2)), 2, dim=-1)
+            return torch.cat((-x2, x1), dim=-1).reshape((B, S, N, D))
+
+        cos = cos.unsqueeze(0).expand(-1, -1, -1, -1, 2).flatten(
+            -2)  # 可以放到首Block前，提前处理，减少每Block冗余计算, (32760,1,64,1) ==> (1, 32760,1,64,1) ==> (1, 32760,12,64,2) ==> (1,32760,12,128)
+        sin = sin.unsqueeze(0).expand(-1, -1, -1, -1, 2).flatten(-2)  # 可以放到首Block前，提前处理，减少每Block冗余计算
+        res = x * cos + rotate_half(x) * sin
+        return res.flatten(2).to(x.dtype)
+
+    class RMSNorm(torch.nn.Module):
+        def __init__(self, dim: int, eps: float = 1e-6):
+            """
+            Initialize the RMSNorm normalization layer.
+
+            Args:
+                dim (int): The dimension of the input tensor.
+                eps (float, optional): A small value added to the denominator for numerical stability. Default is 1e-6.
+
+            Attributes:
+                eps (float): A small value added to the denominator for numerical stability.
+                weight (nn.Parameter): Learnable scaling parameter.
+
+            """
+            super().__init__()
+            self.eps = eps
+            self.weight = nn.Parameter(torch.ones(dim))
+
+        def forward(self, x):
+            """
+            Forward pass through the RMSNorm layer.
+
+            Args:
+                x (torch.Tensor): The input tensor.
+
+            Returns:
+                torch.Tensor: The output tensor after applying RMSNorm.
+
+            """
+            return torch_npu.npu_rms_norm(x, self.weight, epsilon=self.eps)[0]
+else:
+    def rope_apply(x, freqs, num_heads):
+        x = rearrange(x, "b s (n d) -> b s n d", n=num_heads)
+        x_out = torch.view_as_complex(x.to(torch.float64).reshape(
+            x.shape[0], x.shape[1], x.shape[2], -1, 2))
+        x_out = torch.view_as_real(x_out * freqs).flatten(2)
+        return x_out.to(x.dtype)
+
+    class RMSNorm(nn.Module):
+        def __init__(self, dim, eps=1e-5):
+            super().__init__()
+            self.eps = eps
+            self.weight = nn.Parameter(torch.ones(dim))
+
+        def norm(self, x):
+            return x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True) + self.eps)
+
+        def forward(self, x):
+            dtype = x.dtype
+            return self.norm(x.float()).to(dtype) * self.weight
 
 
 class SelfAttention(nn.Module):
@@ -286,7 +338,7 @@ class WanModel(torch.nn.Module):
     def unpatchify(self, x: torch.Tensor, grid_size: torch.Tensor):
         return rearrange(
             x, 'b (f h w) (x y z c) -> b c (f x) (h y) (w z)',
-            f=grid_size[0], h=grid_size[1], w=grid_size[2], 
+            f=grid_size[0], h=grid_size[1], w=grid_size[2],
             x=self.patch_size[0], y=self.patch_size[1], z=self.patch_size[2]
         )
 
@@ -304,20 +356,20 @@ class WanModel(torch.nn.Module):
             sinusoidal_embedding_1d(self.freq_dim, timestep))
         t_mod = self.time_projection(t).unflatten(1, (6, self.dim))
         context = self.text_embedding(context)
-        
+
         if self.has_image_input:
             x = torch.cat([x, y], dim=1)  # (b, c_x + c_y, f, h, w)
             clip_embdding = self.img_emb(clip_feature)
             context = torch.cat([clip_embdding, context], dim=1)
-        
+
         x, (f, h, w) = self.patchify(x)
-        
+
         freqs = torch.cat([
             self.freqs[0][:f].view(f, 1, 1, -1).expand(f, h, w, -1),
             self.freqs[1][:h].view(1, h, 1, -1).expand(f, h, w, -1),
             self.freqs[2][:w].view(1, 1, w, -1).expand(f, h, w, -1)
         ], dim=-1).reshape(f * h * w, 1, -1).to(x.device)
-        
+
         def create_custom_forward(module):
             def custom_forward(*inputs):
                 return module(*inputs)
@@ -348,8 +400,8 @@ class WanModel(torch.nn.Module):
     @staticmethod
     def state_dict_converter():
         return WanModelStateDictConverter()
-    
-    
+
+
 class WanModelStateDictConverter:
     def __init__(self):
         pass
@@ -430,7 +482,7 @@ class WanModelStateDictConverter:
         else:
             config = {}
         return state_dict_, config
-    
+
     def from_civitai(self, state_dict):
         if hash_state_dict_keys(state_dict) == "9269f8db9040a9d860eaca435be61814":
             config = {
