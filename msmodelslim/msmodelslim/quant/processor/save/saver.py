@@ -13,8 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from abc import abstractmethod
+from collections.abc import Callable
 from os import PathLike
-from typing import Optional
+from typing import Optional, Dict, Type
 
 from pydantic import BaseModel
 from torch import nn
@@ -43,7 +44,8 @@ class BaseSaverBackend:
         self.model = model
         self.save_cfg = save_cfg
         self.saver = self._create_saver()
-        self.process_map = {
+        self.processed_modules = set()
+        self.process_map: Dict[Type[nn.Module], Callable[[str, nn.Module], None]] = {
             W8A8LinearFakeQuantizer: self._process_w8a8_linear_fake_quantizer,
         }
 
@@ -59,10 +61,19 @@ class BaseSaverBackend:
             if is_float_module:
                 self._process_module(full_name, QuantType.FLOAT, sub_module)
 
+            self.processed_modules.add(full_name)
+
+        self.processed_modules.add(prefix)
+
     def pre_process(self):
         self.saver.pre_process()
 
     def post_process(self):
+
+        for name, module in self.model.named_modules():
+            if name not in self.processed_modules:
+                self._process_module(name, QuantType.FLOAT, module)
+
         self.saver.post_process()
 
     @abstractmethod

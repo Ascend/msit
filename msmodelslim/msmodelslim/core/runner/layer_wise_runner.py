@@ -85,7 +85,7 @@ def _generated_decoder_layer_visit_func(model: torch.nn.Module,
 
 
 def _transformers_generated_forward_func(model: torch.nn.Module,
-                                         inputs: Union[List, Tuple, Dict, torch.Tensor],
+                                         inputs: Union[List, Tuple, Dict, Any],
                                          transformer_blocks: Optional[List[Tuple[str, torch.nn.Module]]] = None,
                                          ):
     if transformer_blocks is None:
@@ -112,7 +112,7 @@ def _transformers_generated_forward_func(model: torch.nn.Module,
             model(*inputs)
         elif isinstance(inputs, dict):
             model(**inputs)
-        elif isinstance(inputs, torch.Tensor):
+        else:
             model(inputs)
     except _TransformersForwardBreak:
         pass
@@ -120,6 +120,9 @@ def _transformers_generated_forward_func(model: torch.nn.Module,
         raise e
     finally:
         handle.remove()
+        
+    if first_block_input is None:
+        raise ValueError("Can't get first block input, please check the model and input")
 
     # 循环处理每个transformer block
     current_inputs = first_block_input

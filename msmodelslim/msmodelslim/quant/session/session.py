@@ -84,7 +84,7 @@ def quant_model(model: nn.Module,
         else:
             raise ValueError(f"Unsupported stage: {stage}")
 
-        if not stage_processor.is_data_free() and session_cfg.calib_data is None:
+        if not stage_processor.is_data_free() and not session_cfg.calib_data:
             raise ValueError(f"Calib data is required for {stage} stage but not provided")
 
         stage_data = None if stage_processor.is_data_free() else session_cfg.calib_data

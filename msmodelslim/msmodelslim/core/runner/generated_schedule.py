@@ -3,8 +3,9 @@
 import abc
 from typing import Optional, List, Any, Generator
 
-import torch.nn
-from torch.utils.data import DataLoader, Subset
+import torch
+from torch import distributed as dist
+from torch.utils.data import DataLoader, DistributedSampler
 
 from msmodelslim import logger
 from msmodelslim.core.base.processor import BaseProcessor
@@ -21,12 +22,10 @@ class ProcessUnit:
 
     @staticmethod
     def _create_dataloader(dataset, rank, world_size, batch_size):
-        total_size = len(dataset)
-        per_rank_size = total_size // world_size
-        start = rank * per_rank_size
-        end = start + per_rank_size if rank != world_size - 1 else total_size
-        subset = Subset(dataset, range(start, end))
-        return DataLoader(subset, batch_size=batch_size, shuffle=False)
+        if not dist.is_initialized() or dist.get_world_size() == 1:
+            return dataset
+        sampler = DistributedSampler(dataset, shuffle=False)
+        return DataLoader(dataset, sampler=sampler, batch_size=None)
 
     @abc.abstractmethod
     def build_generators(self) -> List[Generator[ProcessRequest, Any, None]]:

@@ -73,6 +73,12 @@ class QuantPlugin:
         """
         _ = self
         return default_cfg
+    
+    def eval_model(self):
+        """评估模型
+        """
+        _ = self
+        pass
 
 
 def load_plugin(plugin_path: str, args: argparse.Namespace) -> Optional[QuantPlugin]:

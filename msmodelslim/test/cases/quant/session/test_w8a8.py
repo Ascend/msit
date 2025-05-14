@@ -135,6 +135,19 @@ class TestW8A8Quantization(unittest.TestCase):
             "[02].deq_scale": torch.float32,
             "[02].quant_bias": torch.int32
         }
+        
+        shape_check = {
+            "0.weight": (20, 10),
+            "0.input_scale": (1,),
+            "0.input_offset": (1,),
+            "0.deq_scale": (20,),
+            "0.quant_bias": (20,),
+            "2.weight": (5, 20),
+            "2.input_scale": (1,),
+            "2.input_offset": (1,),
+            "2.deq_scale": (5,),
+            "2.quant_bias": (5,)
+        }
 
         # 检查safetensor中的tensor数据类型
         with safe_open("./w8a8_model.safetensors", framework="pt") as f:
@@ -150,6 +163,18 @@ class TestW8A8Quantization(unittest.TestCase):
                 if matched_dtype is not None:
                     self.assertEqual(tensor.dtype, matched_dtype,
                                      f"Tensor {key} has incorrect dtype. Expected {matched_dtype}, got {tensor.dtype}")
+                    
+                # 根据key的模式匹配对应的shape
+                matched_shape = None
+                for pattern, expected_shape in shape_check.items():
+                    if key.endswith(pattern.replace("*", "")):
+                        matched_shape = expected_shape
+                        break
+                
+                if matched_shape is not None:
+                    self.assertEqual(tensor.shape, matched_shape,
+                                     f"Tensor {key} has incorrect shape. Expected {matched_shape}, got {tensor.shape}")
+                    
 
         os.remove("./w8a8_model.safetensors")
         os.remove("./w8a8_config.json")

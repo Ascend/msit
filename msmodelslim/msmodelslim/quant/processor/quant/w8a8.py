@@ -68,13 +68,17 @@ class W8A8LinearQuantizer(BaseLinearQuantizer):
         return cfg.a_cfg.bits == 8 and cfg.w_cfg.bits == 8 and cfg.a_cfg.scope != ActivationQuantScope.PER_TOKEN
 
     def deploy(self, *args, **kwargs) -> BaseFakeQuantizer:
-        input_scale, input_offset = self.input_quantizer.get_scale_offset()
-        weight_scale, _ = self.weight_quantizer.get_scale_offset()
-        quant_weight, _ = self.weight_quantizer.quant(self.fp_weight, self.fp_bias)
-        deq_scale = input_scale * weight_scale
-        fp_weight_bias = self.fp_bias if self.fp_bias is not None else torch.zeros_like(self.fp_weight)
-        correction = quant_weight.to(torch.float32).sum(dim=1) * input_offset.to(torch.float32)
-        quant_bias = torch.round(fp_weight_bias / deq_scale - correction).to(torch.int32)
+        with torch.device(self.module.weight.device):
+            input_scale, input_offset = self.input_quantizer.get_scale_offset()
+            input_scale = input_scale.unsqueeze(0) if input_scale.ndim == 0 else input_scale
+            input_offset = input_offset.unsqueeze(0) if input_offset.ndim == 0 else input_offset
+            weight_scale, _ = self.weight_quantizer.get_scale_offset()
+            quant_weight, _ = self.weight_quantizer.quant(self.fp_weight, self.fp_bias)
+            deq_scale = input_scale * weight_scale
+            deq_scale = deq_scale.squeeze(1) if deq_scale.ndim > 1 else deq_scale
+            fp_weight_bias = self.fp_bias if self.fp_bias is not None else torch.zeros(self.fp_weight.shape[0])
+            correction = quant_weight.to(torch.float32).sum(dim=1) * input_offset.to(torch.float32)
+            quant_bias = torch.round(fp_weight_bias / deq_scale - correction).to(torch.int32)
         return W8A8LinearFakeQuantizer(self.cfg, input_scale, input_offset, deq_scale, quant_bias, quant_weight)
 
     def _create_weight_quantizer(self, cfg: WeightQuantConfig) -> BaseWeightQuantizer:

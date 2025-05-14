@@ -44,7 +44,9 @@ def _mocked_init_weight_quant_normal(weight: torch.Tensor,
                                      hqq=False,
                                      ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """返回原始值，不进行量化"""
-    return weight, weight, torch.tensor(1.0), torch.tensor(0.0)
+    scale = torch.ones([1]) if mm_tensor else torch.ones(weight.shape[0])
+    offset = torch.zeros([1]) if mm_tensor else torch.zeros(weight.shape[0])
+    return weight, weight, scale, offset
 
 
 def _mocked_linear_quantization_params(bit: int,

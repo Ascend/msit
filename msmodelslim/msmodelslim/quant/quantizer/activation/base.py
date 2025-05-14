@@ -34,7 +34,7 @@ class StatisticsStrategy(ABC):
     """
 
     @abstractmethod
-    def update_stats(self, x: torch.Tensor, reduce_dims: list[int], keep_dims: bool = True):
+    def update_stats(self, x: torch.Tensor, reduce_dims: list[int], keep_dims: bool = False):
         """
         更新统计值。
 

@@ -15,6 +15,8 @@
 
 import argparse
 
+from torch import distributed as dist
+
 from msmodelslim.quant.processor.quant.w8a8 import W8A8QuantConfig, W8A8ProcessorConfig
 from msmodelslim.quant.processor.save.saver import SaverProcessorConfig
 from msmodelslim.quant.session import quant_model, SessionConfig
@@ -40,7 +42,11 @@ def main():
     parser = argparse.ArgumentParser(description="模型量化工具")
     parser.add_argument("-p", "--plugin_path", type=str, help="插件文件路径")
     parser.add_argument("-t", "--quant_type", type=str, help="量化类型", default="w8a8")
+    parser.add_argument("--model_path", type=str, help="模型路径")
+    parser.add_argument("--save_path", type=str, help="保存路径", default="./save")
     args = parser.parse_args()
+    
+    dist.init_process_group()
 
     plugin = load_plugin(args.plugin_path, args)
 
@@ -51,7 +57,7 @@ def main():
     }
 
     default_save_cfg = SaverProcessorConfig(
-        save_output_path=".",
+        save_output_path=args.save_path,
         safetensors_name="w8a8_model.safetensors",
         json_name="w8a8_config.json",
         save_type="safe_tensor"
@@ -77,6 +83,8 @@ def main():
     session_config.model_validate(session_config)
 
     quant_model(model, session_config)
+
+    plugin.eval_model()
 
 
 if __name__ == "__main__":

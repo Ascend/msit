@@ -19,7 +19,7 @@ import argparse
 from typing import List
 
 import torch
-from transformers import PreTrainedModel, AutoModelForCausalLM, AutoTokenizer
+from transformers import PreTrainedModel, AutoModelForCausalLM, AutoTokenizer, AutoConfig
 
 from msmodelslim.quant.session.plugin import QuantPlugin
 
@@ -28,6 +28,8 @@ class Qwen3Plugin(QuantPlugin):
 
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
+        self.config = AutoConfig.from_pretrained(args.model_path)
+        self.config.num_hidden_layers = 1
         self.model = AutoModelForCausalLM.from_pretrained(args.model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(args.model_path)
 
