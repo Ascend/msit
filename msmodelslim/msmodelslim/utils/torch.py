@@ -13,6 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import torch
 from torch import nn
 
 
@@ -53,7 +54,33 @@ def _torch_nn_module_set_submodule(self, name: str, submodule: nn.Module):
     setattr(cur_mod, tokens[-1], submodule)
 
 
-def patch_torch_nn_module():
+def _is_torch_has_get_default_device() -> bool:
+    """
+    判断torch是否具有get_default_device方法
+    """
+    return hasattr(torch, "get_default_device")
+
+
+_TORCH_DEFAULT_DEVICE = torch.device("cpu")
+
+
+def _torch_set_default_device(device: torch.device):
+    """
+    设置torch的默认设备
+    """
+    global _TORCH_DEFAULT_DEVICE
+    _TORCH_DEFAULT_DEVICE = device
+    torch.set_default_device(device)
+
+
+def _torch_get_default_device() -> torch.device:
+    """
+    获取torch的默认设备
+    """
+    return _TORCH_DEFAULT_DEVICE
+
+
+def patch_torch():
     """
     如果torch.nn.Module不具有get_submodule方法，则添加一个
     """
@@ -61,3 +88,8 @@ def patch_torch_nn_module():
         nn.Module.get_submodule = _torch_nn_module_get_submodule
     if not _is_torch_nn_module_has_set_submodule():
         nn.Module.set_submodule = _torch_nn_module_set_submodule
+    if not _is_torch_has_get_default_device():
+        original_set_default_device = torch.set_default_device
+        torch.set_default_device = lambda device: \
+            (_torch_set_default_device(device), original_set_default_device(device))[1]
+        torch.get_default_device = _torch_get_default_device

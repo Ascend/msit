@@ -30,7 +30,8 @@ class Qwen3Plugin(QuantPlugin):
         super().__init__(args)
         self.config = AutoConfig.from_pretrained(args.model_path)
         self.config.num_hidden_layers = 1
-        self.model = AutoModelForCausalLM.from_pretrained(args.model_path)
+        self.model = AutoModelForCausalLM.from_pretrained(args.model_path, config=self.config, torch_dtype="auto")
+        self.model.model.embed_tokens.to(torch.get_default_device())
         self.tokenizer = AutoTokenizer.from_pretrained(args.model_path)
 
     def load_model(self) -> PreTrainedModel:

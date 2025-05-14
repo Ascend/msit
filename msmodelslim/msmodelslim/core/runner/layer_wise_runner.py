@@ -98,13 +98,12 @@ def _transformers_generated_forward_func(model: torch.nn.Module,
     # 存储第一个transformer block的输入
     first_block_input = None
 
-    def hook_fn(module, args, kwargs):
+    def break_hook(module: nn.Module, args: Tuple[Any, ...], kwargs: Dict[str, Any]):
         nonlocal first_block_input
         first_block_input = (args, kwargs,)
         raise _TransformersForwardBreak()
 
-    # 注册pre-forward hook到第一个transformer block
-    handle = transformer_blocks[0][1].register_forward_pre_hook(hook_fn, with_kwargs=True)
+    hooks = [transformer_blocks[0][1].register_forward_pre_hook(break_hook, with_kwargs=True)]
 
     # 执行一次前向传播以获取输入
     try:
@@ -119,8 +118,9 @@ def _transformers_generated_forward_func(model: torch.nn.Module,
     except Exception as e:
         raise e
     finally:
-        handle.remove()
-        
+        for hook in hooks:
+            hook.remove()
+
     if first_block_input is None:
         raise ValueError("Can't get first block input, please check the model and input")
 

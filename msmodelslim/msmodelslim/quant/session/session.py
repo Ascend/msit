@@ -69,20 +69,21 @@ def quant_model(model: nn.Module,
     runner = _create_runner(model, model_adapter)
 
     for stage, processors in stage_processor_map.items():
-        if stage == ProcessStage.PREPARE_MODEL:
-            stage_processor = ForwardProcessorMerger(model, processors)
-        elif stage == ProcessStage.FORWARD_ANTI_OUTLIER:
-            stage_processor = ForwardProcessorMerger(model, processors)
-        elif stage == ProcessStage.BACKWARD_ANTI_OUTLIER:
-            stage_processor = BackwardProcessorMerger(model, processors)
-        elif stage == ProcessStage.FORWARD_QUANT:
-            stage_processor = ForwardProcessorMerger(model, processors)
-        elif stage == ProcessStage.BACKWARD_QUANT:
-            stage_processor = BackwardProcessorMerger(model, processors)
-        elif stage == ProcessStage.SAVE_MODEL:
-            stage_processor = ForwardProcessorMerger(model, processors)
-        else:
+        
+        if not isinstance(stage, ProcessStage):
             raise ValueError(f"Unsupported stage: {stage}")
+        
+        stage_container = {
+            ProcessStage.LOAD_MODEL: ForwardProcessorMerger,
+            ProcessStage.FORWARD_ANTI_OUTLIER: ForwardProcessorMerger,
+            ProcessStage.BACKWARD_ANTI_OUTLIER: BackwardProcessorMerger,
+            ProcessStage.FORWARD_QUANT: ForwardProcessorMerger,
+            ProcessStage.BACKWARD_QUANT: BackwardProcessorMerger,
+            ProcessStage.SAVE_MODEL: ForwardProcessorMerger,
+            ProcessStage.OFFLOAD_MODEL: ForwardProcessorMerger,
+        }
+        
+        stage_processor = stage_container[stage](model, processors)
 
         if not stage_processor.is_data_free() and not session_cfg.calib_data:
             raise ValueError(f"Calib data is required for {stage} stage but not provided")
