@@ -81,10 +81,10 @@ class Quantizer(nn.Module):
             self.logger.info("use histogram observer:%s, range_parm:%s", self.name, self.range_param)
             self.observer = HistogramObserver(qscheme=torch.per_tensor_affine)
         elif cfg.act_method == 3:
-            if self.range_param <= 50:
+            if self.range_param <= cfg.range_param:
                 self.logger.info("use histogram observer:%s, range_parm:%s", self.name, self.range_param)
                 self.observer = HistogramObserver(qscheme=torch.per_tensor_affine)
-            elif 50 < self.range_param:
+            elif cfg.range_param < self.range_param:
                 self.logger.info("use min-max observer:%s, range_parm:%s", self.name, self.range_param)
                 self.observer = StatMinMaxObserver(self.bit, self.is_signed, self.is_sym)
 

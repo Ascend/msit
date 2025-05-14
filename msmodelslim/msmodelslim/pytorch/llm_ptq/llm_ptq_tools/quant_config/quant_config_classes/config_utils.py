@@ -190,6 +190,7 @@ def check_and_generate_config_param(config):
     check_type(config.w_bit, int, param_name="w_bit")
     check_type(config.a_bit, int, param_name="a_bit")
     check_number(config.act_method, int, 1, 3, param_name="act_method")
+    check_number(config.range_param, float, 0, 100, param_name="range_param")
     check_type(config.w_method, str, param_name="w_method")
     check_element_type(config.disable_names, str, list, param_name="disable_names")
     check_type(config.mm_tensor, bool, param_name="mm_tensor")

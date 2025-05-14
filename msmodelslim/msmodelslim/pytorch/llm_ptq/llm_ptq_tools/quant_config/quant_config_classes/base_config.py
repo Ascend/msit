@@ -36,6 +36,7 @@ class BaseConfig:
                  is_dynamic: bool = False,
                  group_size: int = 64,
                  percdamp: float = 0.01,
+                 range_param: float = 50.0,
                  ):
         """
         Args:
@@ -62,6 +63,7 @@ class BaseConfig:
             is_dynamic: 是否使用动态量化，即w8a8中的activation动态生成
             group_size: per-group场景下group的大小，通常取64或128
             percdamp: GPTQ所使用的矩阵正定偏置系数,当GPTQ运行出现非正定矩阵导致的报错时可以增大该参数
+            range_param: 激活值混合minmax与直方图的阈值
         """
         # 建议在只调整下列6个参数，其余参数在对应特性的Config中设置
         self.w_bit = w_bit
@@ -89,6 +91,7 @@ class BaseConfig:
         self.open_outlier = open_outlier
         self.group_size = group_size
         self.percdamp = percdamp
+        self.range_param = range_param
         # 所有校验都置于该函数，基于入参新生成的参数也置于该函数
         check_and_generate_config_param(self)
 
