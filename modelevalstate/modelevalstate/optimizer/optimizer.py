@@ -52,8 +52,6 @@ from modelevalstate.optimizer.store import DataStorage
 from modelevalstate.optimizer.global_best_custom import CustomGlobalBestPSO
 
 _analyze_mapping = {
-    AnalyzeTool.default.value: analyze,
-    AnalyzeTool.deepseek.value: analyze_deepseek,
     AnalyzeTool.profiler.value: analyze_profiler
 }
 
@@ -265,10 +263,17 @@ class BenchMark:
             remove_file(Path(self.run_log))
 
 
-class CustomBenchMark(BenchMark):
-    def __init__(self, benchmark_config: BenchMarkConfig, analyze_tool: AnalyzeTool = AnalyzeTool.default, **kwargs):
-        super().__init__(benchmark_config=benchmark_config, **kwargs)
+class ProfilerBenchMark(BenchMark):
+    def __init__(self, benchmark_config: BenchMarkConfig, *args, analyze_tool: AnalyzeTool = AnalyzeTool.default, **kwargs):
+        super().__init__(benchmark_config, *args, **kwargs)
         self.analyze_tool = analyze_tool
+        self.profiler_cmd = ["python", "-m", "ms_service_profiler.parse",
+                             f"--input-path={self.benchmark_config.profile_input_path}",
+                             f"--output-path={self.benchmark_config.profile_output_path}"]
+        self.profiler_log = None
+        self.profiler_log_fp = None
+        self.profiler_log_offset = 0
+        self.profiler_process = None
 
     def extra_performance_index(self, *args, **kwargs):
         logger.info("extra_performance_index")
@@ -296,49 +301,6 @@ class CustomBenchMark(BenchMark):
     def backup(self, del_log=True):
         super().backup(del_log)
         backup(self.benchmark_config.custom_collect_output_path, self.bak_path, self.__class__.__name__)
-        backup(self.benchmark_config.custom_analysis_output_path, self.bak_path, self.__class__.__name__)
-
-    def prepare(self):
-        super().prepare()
-        remove_file(Path(self.benchmark_config.custom_collect_output_path))
-        remove_file(Path(self.benchmark_config.custom_analysis_output_path))
-
-    def get_performance_index(self):
-        logger.info("get_performance_index")
-        collect_path = Path(self.benchmark_config.custom_collect_output_path)
-        if not collect_path.exists():
-            raise FileNotFoundError(f"Collect path not found: {collect_path}")
-        if self.analyze_tool == AnalyzeTool.deepseek.value:
-            res = self.extra_performance_index(collect_path, self.benchmark_config.custom_analysis_output_path,
-                                               self.benchmark_config.output_path)
-            return res
-        if not collect_path.is_dir():
-            raise NotADirectoryError(f"Collect path is not a directory: {collect_path}")
-        for file in collect_path.iterdir():
-            if not file.is_dir():
-                continue
-            try:
-                res = self.extra_performance_index(self.benchmark_config.custom_analysis_output_path, file,
-                                                   self.benchmark_config.output_path)
-            except Exception as e:
-                logger.error(f"Failed in analyze. {e}")
-                continue
-            return res
-
-
-class ProfilerBenchmark(CustomBenchMark):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.profiler_cmd = ["python", "-m", "ms_service_profiler.parse",
-                             f"--input-path={self.benchmark_config.profile_input_path}",
-                             f"--output-path={self.benchmark_config.profile_output_path}"]
-        self.profiler_log = None
-        self.profiler_log_fp = None
-        self.profiler_log_offset = 0
-        self.profiler_process = None
-
-    def backup(self, del_log=True):
-        super().backup(del_log)
         backup(self.benchmark_config.profile_input_path, self.bak_path, self.__class__.__name__)
         backup(self.benchmark_config.profile_output_path, self.bak_path, self.__class__.__name__)
         if not del_log and self.profiler_log:
@@ -346,6 +308,7 @@ class ProfilerBenchmark(CustomBenchMark):
 
     def prepare(self):
         super().prepare()
+        remove_file(Path(self.benchmark_config.custom_collect_output_path))
         remove_file(Path(self.benchmark_config.profile_input_path))
         remove_file(Path(self.benchmark_config.profile_output_path))
 
@@ -407,47 +370,6 @@ class ProfilerBenchmark(CustomBenchMark):
                 self.profiler_process.kill()
         except AttributeError as e:
             logger.error(f"Failed to kill process. error {e}")
-
-
-class RPCCustomBenchMark(CustomBenchMark):
-    def __init__(self, rpc_clients, benchmark_config: BenchMarkConfig, **kwargs):
-        super().__init__(benchmark_config=benchmark_config, **kwargs)
-        self.rpc_clients = rpc_clients
-
-    def prepare(self):
-        super().prepare()
-        for rpc in self.rpc_clients:
-            rpc.remove_file(self.benchmark_config.custom_collect_output_path)
-            rpc.remove_file(self.benchmark_config.output_path)
-
-    def sync_server_file(self):
-        # 拷贝远程服务器文件到本机
-        remote_file = []
-        for rpc in self.rpc_clients:
-            remote_file.extend(rpc.get_file(self.benchmark_config.custom_collect_output_path))
-        for _file_name, file_binary in remote_file:
-            _tmp_file = Path(_file_name)
-            new_file = Path(self.benchmark_config.custom_collect_output_path).joinpath(
-                f"{_tmp_file.stem}_rpc{_tmp_file.suffix}")
-            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-            modes = stat.S_IWUSR | stat.S_IRUSR
-            try:
-                with os.fdopen(os.open(new_file, flags, modes), 'wb') as fout:
-                    fout.write(file_binary.data)
-            except FileExistsError:
-                logger.error(f"File already exists: {new_file}")
-            except PermissionError:
-                logger.error(f"Permission denied: {new_file}")
-            except AttributeError:
-                logger.error(f"Invalid file binary: {file_binary}")
-
-    def get_performance_index(self):
-        logger.info("get_performance_index")
-        self.sync_server_file()
-        collect_path = Path(self.benchmark_config.custom_collect_output_path)
-        res = self.extra_performance_index(collect_path, self.benchmark_config.custom_analysis_output_path,
-                                           self.benchmark_config.output_path)
-        return res
 
 
 class Simulator:
@@ -973,17 +895,12 @@ def main(args: argparse.Namespace):
     # 单机benchmark
     if args.benchmark_policy == BenchMarkPolicy.benchmark.value and args.deploy_policy == DeployPolicy.single.value:
         benchmark = BenchMark(settings.benchmark, bak_path=bak_path)
-    # 多机 传统benchmark
-    elif args.benchmark_policy == BenchMarkPolicy.custom_benchmark.value and \
-            args.deploy_policy == DeployPolicy.multiple.value:
-        benchmark = RPCCustomBenchMark(rpc_clients, settings.benchmark, bak_path=bak_path,
-                                       analyze_tool=args.analyze_tool)
     # profiler benchmark, profiler只能采集主节点，因此多机情况下，也是运行单个机器的实例，处理数据。
     elif args.benchmark_policy == BenchMarkPolicy.profiler_benchmark.value:
         benchmark = ProfilerBenchmark(settings.benchmark, bak_path=bak_path, analyze_tool=args.analyze_tool)
     else:
         # 默认 自定义单机
-        benchmark = CustomBenchMark(settings.benchmark, bak_path=bak_path, analyze_tool=args.analyze_tool)
+        benchmark = BenchMark(settings.benchmark, bak_path=bak_path)
     # 存储结果，只在主节点存储结果
     data_storage = DataStorage(settings.data_storage)
     # 初始化调度模块，支持单机和多机。
