@@ -60,7 +60,7 @@ def _get_module_quant_input(module):
     round_opt = False if isinstance(module, LowBitLinearQuantizer) else module.quant_weight.round_opt
 
     if hasattr(module.quant_weight, 'weight_scale_second') and \
-       hasattr(module.quant_weight, 'weight_offset_second'):
+            hasattr(module.quant_weight, 'weight_offset_second'):
         weight_scale_second = module.quant_weight.weight_scale_second
         weight_offset_second = module.quant_weight.weight_offset_second
         scale_second = weight_scale_second.cpu() if weight_scale_second is not None else None
@@ -79,8 +79,6 @@ def generate_weight_of_rms_norm_module(name, module, model_quant_type):
     anti_norm_bias: torch.Tensor = module.bias
     yield name + '.weight', QuantType.FLOAT, anti_norm_weight.clone().cpu()
     yield name + '.bias', QuantType.FLOAT, anti_norm_bias.clone().cpu()
-    yield name + '.module.weight', model_quant_type, anti_norm_weight.clone().cpu()
-    yield name + '.module.bias', model_quant_type, anti_norm_bias.clone().cpu()
 
 
 # for clean code
@@ -155,8 +153,6 @@ class ComplexQuantifier:
         anti_norm_bias: torch.Tensor = module.bias
         yield name + '.weight', QuantType.FLOAT, anti_norm_weight.clone().cpu()
         yield name + '.bias', QuantType.FLOAT, anti_norm_bias.clone().cpu()
-        yield name + '.module.weight', model_quant_type, anti_norm_weight.clone().cpu()
-        yield name + '.module.bias', model_quant_type, anti_norm_bias.clone().cpu()
 
     def generate_weight_of_linear_module(self, name, module, model_quant_type):
         if not module.quant_weight.is_enable:
@@ -248,19 +244,19 @@ class ComplexQuantifier:
                 bit = 8
             else:
                 bit = module.cfg.w_bit
-            
+
             is_scale_list = isinstance(weight_scale, list) and len(weight_scale) == 2
             is_offset_list = isinstance(weight_offset, list) and len(weight_offset) == 2
             if is_scale_list and is_offset_list:
                 # w4a8 分阶段量化，因此需要两次fake_quantize_save得到量化后的权重
                 first_quant_weight, _ = fake_quantize_save(fp_weight, weight_scale[0], weight_offset[0], bit=8,
-                                                          round_opt=round_opt, device=module.weight.device)
+                                                           round_opt=round_opt, device=module.weight.device)
                 quant_weight, _ = fake_quantize_save(first_quant_weight, weight_scale[1], weight_offset[1], bit=4,
-                                                            round_opt=round_opt, device=module.weight.device,
-                                                            group_size=module.cfg.group_size)
+                                                     round_opt=round_opt, device=module.weight.device,
+                                                     group_size=module.cfg.group_size)
             else:
                 quant_weight, _ = fake_quantize_save(fp_weight, weight_scale, weight_offset, bit=bit,
-                                                 round_opt=round_opt, device=module.weight.device,
-                                                 group_size=module.cfg.group_size)
+                                                     round_opt=round_opt, device=module.weight.device,
+                                                     group_size=module.cfg.group_size)
         res = quant_weight, fp_weight, weight_scale, weight_offset
         return res
