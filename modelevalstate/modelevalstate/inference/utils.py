@@ -39,18 +39,23 @@ TOTAL_PREFILL_TOKEN = "total_prefill_token"
 
 
 class PreprocessTool:
-    @lru_cache(maxsize=32)
+    
     @staticmethod
-    def generate_series(row, column):
-        new_row = []
-        for i in row:
-            try:
-                new_row.append(float(i))
-            except ValueError:
-                new_row.append(i)
-        return Series(new_row, index=column)
+    @lru_cache(maxsize=32)
+    def generate_data(row, column) -> tuple:
+        try:
+            new_row = [float(i) for i in row]
+        except ValueError:
+            new_row = []
+            for i in row:
+                try:
+                    new_row.append(float(i))
+                except ValueError:
+                    new_row.append(i)
+        return tuple(new_row), column
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def generate_series_with_request_info(row, column) -> Series:
         new_index = []
         new_row = []
@@ -69,6 +74,7 @@ class PreprocessTool:
         return Series(new_row, new_index)
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_all_op_execute_delta(input_data, input_index, field="execute_delta"):
         _op_count = {}
         _op_delta = {}  # op_name: [[param1size, param2size,],[第二次调用param1size,第二次调用param2size]]
@@ -96,6 +102,7 @@ class PreprocessTool:
         return _op_delta_expected
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_all_op_input_expected(input_data, input_index, field: str = "input_shape"):
         _op_count = {}
         _op_param_size = {}  # op_name: [[param1size, param2size,],[第二次调用param1size,第二次调用param2size]]
@@ -130,6 +137,7 @@ class PreprocessTool:
         return _op_param_expected
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_op_in_origin_row_index(input_data, input_index):
         _op_in_origin_row_index = {}  # 找到每个op和它在origin_row的索引
         for _op_info in enumerate(input_data):
@@ -146,6 +154,7 @@ class PreprocessTool:
         return _op_in_origin_row_index
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def generate_series_with_op_info(origin_row, origin_index) -> Series:
         new_index = []
         new_row = []
@@ -207,6 +216,7 @@ class PreprocessTool:
         return Series(new_row, index=new_index)
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_all_op_input_ratio(input_data: Tuple[Tuple], input_index: Tuple, field: str = "input_shape"):
         # 计算该op的字段，在所有采集到的op的字段中的占比。
         _sum = 0
@@ -244,6 +254,7 @@ class PreprocessTool:
         return _op_param_size_ratio
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_all_op_execute_delta_ratio(input_data: Tuple[Tuple], input_index: Tuple, field="execute_delta"):
         _sum = 0
         _op_count = {}
@@ -274,6 +285,7 @@ class PreprocessTool:
         return _op_delta_ratio
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_label_hist_value(input_ratio):
         _op_input_param_hist_ratio = {}
         for _tmp_op, _tmp_op_value in input_ratio.items():
@@ -286,6 +298,7 @@ class PreprocessTool:
         return _op_input_param_hist_ratio
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def generate_series_with_op_info_use_ratio(origin_row, origin_index) -> Series:
         new_index = []
         new_row = []
@@ -346,6 +359,7 @@ class PreprocessTool:
         return Series(new_row, index=new_index)
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def generate_series_with_struct_info(origin_row, origin_index):
         new_row = []
         for i, _value in enumerate(origin_row):
@@ -357,6 +371,7 @@ class PreprocessTool:
         return Series(new_row, index=origin_index)
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def gene_series_with_model_config(origin_row, origin_index):
         quantization_prefix_config = "quantization_config"
         default_field = ["kv_quant_type", "group_size", "reduce_quant_type"]

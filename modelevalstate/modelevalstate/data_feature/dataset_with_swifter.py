@@ -81,7 +81,7 @@ class MyDataSetWithSwifter(MyDataSet):
                 _load_data.append(df)
 
         # 提取 features 和labels
-        self.load_data = pd.concat(_load_data, axis=1)
+        self.load_data = pd.concat([_df.reset_index() for _df in _load_data], axis=1)
         self.labels = self.load_data[[self.predict_field]]
         self.features = self.load_data.drop(self.predict_field, axis=1)
         # 使用sklearn 进行 one-hot

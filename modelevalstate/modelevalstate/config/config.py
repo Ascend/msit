@@ -18,15 +18,13 @@ import modelevalstate
 RUN_TIME = time.strftime("%Y%m%d%H%M%S", time.localtime())
 INSTALL_PATH = Path(modelevalstate.__path__[0])
 RUN_PATH = Path(os.getcwd())
-
-
 MODEL_EVAL_STATE_CONFIG_PATH = "MODEL_EVAL_STATE_CONFIG_PATH"
 modelevalstate_config_path = os.getenv(MODEL_EVAL_STATE_CONFIG_PATH) or os.getenv(MODEL_EVAL_STATE_CONFIG_PATH.lower())
 if not modelevalstate_config_path:
     modelevalstate_config_path = RUN_PATH.joinpath("config.json")
 modelevalstate_config_path = Path(modelevalstate_config_path).absolute().resolve()
 
-CUSTOM_OUTPUT = "CUSTOM_OUTPUT"
+CUSTOM_OUTPUT = "MODEL_EVAL_STATE_CUSTOM_OUTPUT"
 custom_output = os.getenv(CUSTOM_OUTPUT) or os.getenv(CUSTOM_OUTPUT.lower())
 if custom_output:
     custom_output = Path(custom_output).resolve()
@@ -36,13 +34,11 @@ else:
 
 class AnalyzeTool(Enum):
     default = "default"
-    deepseek = "deepseek"
     profiler = "profiler"
 
 
 class BenchMarkPolicy(Enum):
     benchmark = "benchmark"
-    custom_benchmark = "custom_benchmark"
     profiler_benchmark = "profiler_benchmark"
 
 
@@ -113,10 +109,6 @@ class BenchMarkConfig(BaseModel):
         default_factory=lambda: custom_output.joinpath("/result/custom_collect_output_path").resolve(),
         validate_default=True
     )
-    custom_analysis_output_path: Path = Field(
-        default_factory=lambda: custom_output.joinpath("/result/custom_analysis_output_path").resolve(),
-        validate_default=True
-    )
     profile_input_path: Path = Field(
         default_factory=lambda: custom_output.joinpath("/result/profile_input_path").resolve(),
         validate_default=True
@@ -126,7 +118,7 @@ class BenchMarkConfig(BaseModel):
         validate_default=True
     )
 
-    @field_validator("output_path", "custom_collect_output_path", "custom_analysis_output_path", "profile_input_path",
+    @field_validator("output_path", "custom_collect_output_path", "profile_input_path",
                      "profile_output_path")
     @classmethod
     def create_path(cls, v: Path) -> Path:
@@ -163,7 +155,17 @@ class LatencyModel(BaseModel):
         default_factory=lambda data: data["base_path"].joinpath("model_static_file").resolve(), validate_default=True)
     req_and_decode_file: Optional[Path] = Field(
         default_factory=lambda data: data["base_path"].joinpath("req_id_and_decode_num.json").resolve())
+    cache_data: Optional[Path] = Field(
+        default_factory=lambda data: data["base_path"].joinpath("cache").resolve())
 
+    @field_validator("static_file_dir")
+    @classmethod
+    def validate_cache_data(cls, v:Optional[Path] = None):
+        if v:
+            if not Path(v).exists():
+                v.mkdir(parents=True)
+        return v
+    
     @field_validator("static_file_dir")
     @classmethod
     def validate_static_file_dir(cls, v: Optional[None]):
@@ -198,9 +200,15 @@ class MindieConfig(BaseModel):
 
 
 class PsoOptions(BaseModel):
-    c1: float = 0.5
-    c2: float = 0.3
-    w: float = 0.9
+    c1: float = 2.0
+    c2: float = 2.0
+    w: float = 1.8
+
+
+class PsoStrategy(BaseModel):
+    w: str = "exp_decay"
+    c1: str = "exp_decay"
+    c2: str = "exp_decay"
 
 
 default_support_field = [
@@ -242,12 +250,13 @@ class Settings(BaseSettings):
                    INSTALL_PATH.joinpath("config.json"), Path("~/config.json").expanduser(),
                    RUN_PATH.joinpath("config.json"), modelevalstate_config_path],
         env_prefix="model_eval_state_")
-    output: Path = Field(default_factory=lambda: Path(os.getcwd()).joinpath("result").resolve(), validate_default=True)
+    output: Path = Field(default_factory=lambda: custom_output.joinpath("result").resolve(), validate_default=True)
     latency_model: LatencyModel = LatencyModel()
     mindie: MindieConfig = MindieConfig()
     benchmark: BenchMarkConfig = BenchMarkConfig()
     data_storage: DataStorageConfig = DataStorageConfig()
     pso_options: PsoOptions = PsoOptions()
+    pso_strategy: PsoStrategy = PsoStrategy()
     n_particles: int = 5
     iters: int = 10
     ftol: float = -np.inf

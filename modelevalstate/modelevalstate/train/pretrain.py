@@ -374,6 +374,15 @@ class TrainVersion1:
         # 训练模型，将全部数据1:9分，9进行训练，1进行预测。
         fl = FileReader(file_paths)
         line_data = fl.read_lines()
+        line_data = line_data.dropna()
+
+        def replace_none(value):
+            if isinstance(value, str) and 'None' in value:
+                return None
+            return value
+        
+        line_data = line_data.applymap(replace_none)
+        line_data = line_data.dropna()
         train_data, test_data = train_test_split(line_data, test_size=0.1, shuffle=True)
         logger.info(f"train data shape {train_data.shape}")
         sp.comments = f"input files: {file_paths} \n"
@@ -568,6 +577,12 @@ def pretrain(input_path, output_path):
                         shuffle=sp.shuffle, op_algorithm=sp.op_algorithm)
     pm = PretrainModel(state_param=sp, dataset=dataset, model=model, plt_data=sp.plot_data_feature)
     TrainVersion1.simple_train(train_files, sp, pm)
+    train_data = dataset.features.copy(deep=False)
+    train_data["label"] = dataset.labels
+    _train_file = output.joinpath("cache/train_data.csv")
+    if not _train_file.parent.exists():
+        _train_file.parent.mkdir(parents=True)
+    train_data.to_csv(output.joinpath("cache/train_data.csv"), index=False)
 
 
 def main(args):

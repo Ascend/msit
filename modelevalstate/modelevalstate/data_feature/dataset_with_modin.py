@@ -14,12 +14,14 @@
 # limitations under the License.
 from typing import Optional
 
+import modin
 import modin.pandas as pd
 from loguru import logger
 from pandas import DataFrame
 
 from modelevalstate.data_feature.dataset_with_swifter import MyDataSetWithSwifter
 
+logger.info(f'modin version {getattr(modin, "__version__")}')
 
 class MyDataSetWithModin(MyDataSetWithSwifter):
 

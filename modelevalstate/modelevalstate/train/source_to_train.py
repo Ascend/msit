@@ -310,7 +310,7 @@ def req_decodetimes(input_path, output_path):
         reader = csv.DictReader(file)
         for row in reader:
             http_reqid = row['http_rid']
-            reply_token_size = int(float(row['recv_token_size']))
+            reply_token_size = int(float(row['reply_token_size']))
             data[http_reqid] = reply_token_size
 
     # 将字典写入JSON文件

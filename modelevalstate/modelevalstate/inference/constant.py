@@ -15,7 +15,7 @@
 from statistics import mean
 from enum import Enum
 
-IS_SLEEP_FLAG = "IS_SLEEP_FLAG"
+IS_SLEEP_FLAG = "MODEL_EVAL_STATE_IS_SLEEP_FLAG"
 
 ALL_OP = (
     "ActivationOperation",

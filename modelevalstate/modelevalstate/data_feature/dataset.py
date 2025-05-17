@@ -152,6 +152,14 @@ class MyDataSet:
                     else:
                         sns.histplot(df.iloc[:, i], ax=axs[i, j])
                 elif j > i:
+                    if df.columns[i].lower() == "model_execute_time" and j == i + 1:
+                        sns.histplot(df.iloc[:, i], ax=axs[i, j], bins=10000)
+                    elif df.columns[i].lower() == "model_execute_time" and j == i + 2:
+                        sns.scatterplot(x=df.reset_index().index, y=df["model_execute_time"], ax=axs[i, j])
+                    elif df.columns[j].lower() == "model_execute_time" and i == j - 1:
+                        sns.scatterplot(x=df["batch_size"], y=df["model_execute_time"], ax=axs[i, j])
+                    elif df.columns[i].lower() == "batch_size" and j == i + 1:
+                        sns.scatterplot(x=df.reset_index().index, y=df["batch_size"], ax=axs[i, j])
                     continue
                 else:
                     sns.regplot(x=df.iloc[:, i], y=df.iloc[:, j], ax=axs[i, j])
@@ -168,6 +176,10 @@ class MyDataSet:
         custom_label_encoder.fit()
         cur_batch_df = custom_label_encoder.transformer(cur_batch_df)
         try:
+            sns.scatterplot(x=cur_batch_df.reset_index().index, y=cur_batch_df["batch_size"])
+            plt.xlabel = "index"
+            plt.savefig(middle_save_path.joinpath("index_batch_size.png"))
+            plt.close()
             self.plot_custom_pairplot(cur_batch_df, middle_save_path, "batch_pairplot.png")
         except Exception as e:
             logger.error(f"analysis_batch_feature {e}")
