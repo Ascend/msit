@@ -201,14 +201,14 @@ class BenchMark:
         if first_token_time is None or decode_time is None:
             raise ValueError("Not Found first_token_time.")
         if self.throughput_type == "common":
-            average_decode_throughput = common_generate_speed
+            generate_speed = common_generate_speed
         else:
-            average_decode_throughput = perf_generate_token_speed
-        average_prefill_latency = first_token_time / 10 ** 3
-        average_decode_latency = decode_time / 10 ** 3
-        return PerformanceIndex(average_decode_throughput=average_decode_throughput,
-                                average_prefill_latency=average_prefill_latency,
-                                average_decode_latency=average_decode_latency,
+            generate_speed = perf_generate_token_speed
+        time_to_first_token = first_token_time / 10 ** 3
+        time_per_output_token = decode_time / 10 ** 3
+        return PerformanceIndex(generate_speed=generate_speed,
+                                time_to_first_token=time_to_first_token,
+                                time_per_output_token=time_per_output_token,
                                 success_rate=success_rate)
 
     def prepare(self):
@@ -296,22 +296,22 @@ class ProfilerBenchmark(BenchMark):
         if analyze_tool is None:
             raise ValueError(f"Analyze tool not found: {self.analyze_tool}")
         res = analyze_tool(*args, **kwargs)
-        first_prefill_latency = decode_latency = success_rate = None
+        time_to_first_token = time_per_output_token = success_rate = None
         if isinstance(res, tuple):
             if len(res) == 1:
-                throughput = res[0]
+                generate_speed = res[0]
             elif len(res) == 2:
-                throughput, first_prefill_latency = res
+                generate_speed, time_to_first_token = res
             elif len(res) == 3:
-                throughput, first_prefill_latency, decode_latency = res
+                generate_speed, time_to_first_token, time_per_output_token = res
             elif len(res) == 4:
-                throughput, first_prefill_latency, decode_latency, success_rate = res
+                generate_speed, time_to_first_token, time_per_output_token, success_rate = res
             else:
                 raise ValueError(f"Not Support. res: {res}")
         else:
-            throughput = res
-        return PerformanceIndex(average_decode_throughput=throughput, average_prefill_latency=first_prefill_latency,
-                                average_decode_latency=decode_latency, success_rate=success_rate)
+            generate_speed = res
+        return PerformanceIndex(generate_speed=generate_speed, time_to_first_token=time_to_first_token,
+                                time_per_output_token=time_per_output_token, success_rate=success_rate)
 
 
     def backup(self, del_log=True):
@@ -773,19 +773,11 @@ class PSOOptimizer:
         all_position = []
         all_cost = []
         for case_data in self.load_history_data:
-            throughput = prefill_latency = decode_latency = success_rate = None
-            if "average_decode_throughput" in case_data:
-                throughput = case_data["average_decode_throughput"]
-            if "average_prefill_latency" in case_data:
-                prefill_latency = case_data["average_prefill_latency"]
-            if "average_decode_latency" in case_data:
-                decode_latency = case_data["average_decode_latency"]
-            if "success_rate" in case_data:
-                success_rate = case_data["success_rate"]
-            performance_index = PerformanceIndex(average_decode_throughput=throughput,
-                                                 average_prefill_latency=prefill_latency,
-                                                 average_decode_latency=decode_latency,
-                                                 success_rate=success_rate)
+            _params = {}
+            for k in PerformanceIndex.model_fields.keys():
+                if k in case_data:
+                    _params[k] = case_data[k]
+            performance_index = PerformanceIndex(**_params)
             try:
                 _fitness = self.minimum_algorithm(performance_index)
                 logger.info(f"fitness {_fitness}")
@@ -802,19 +794,19 @@ class PSOOptimizer:
 
     def minimum_algorithm(self, performance_index: PerformanceIndex) -> float:
         try:
-            fitness = 1 / performance_index.average_decode_throughput
+            fitness = 1 / performance_index.generate_speed
         except OverflowError:
             return inf
-        if performance_index.average_prefill_latency is not None:
+        if performance_index.time_to_first_token is not None:
             _var = max(0.0, (
-                    performance_index.average_prefill_latency - self.prefill_constrain) / self.prefill_constrain)
+                    performance_index.time_to_first_token - self.prefill_constrain) / self.prefill_constrain)
             try:
                 fitness += self.prefill_lam * (exp(_var) - 1)
             except OverflowError:
                 return inf
-        if performance_index.average_decode_latency is not None:
+        if performance_index.time_per_output_token is not None:
             _decode_var = max(0.0, (
-                    performance_index.average_decode_latency - self.decode_constrain) / self.decode_constrain)
+                    performance_index.time_per_output_token - self.decode_constrain) / self.decode_constrain)
             try:
                 fitness += self.decode_lam * (exp(_decode_var) - 1)
             except OverflowError:
@@ -831,7 +823,7 @@ class PSOOptimizer:
     def op_func(self, x) -> np.ndarray:
         n_particles = x.shape[0]
         logger.info(f"Acquired n_particles: {n_particles}, value: {x}")
-        throughput = []
+        generate_speed = []
         for i in range(n_particles):
             # 调用schedule， 获取采集的数据
             try:
@@ -843,8 +835,8 @@ class PSOOptimizer:
                 logger.exception("What?!")
                 _fitness = inf
             logger.info(f"fitness {_fitness}")
-            throughput.append(_fitness)
-        return np.array(throughput)
+            generate_speed.append(_fitness)
+        return np.array(generate_speed)
 
     def constructing_bounds(self) -> Tuple[Tuple, Tuple]:
         """

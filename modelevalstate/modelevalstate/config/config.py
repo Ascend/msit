@@ -94,9 +94,9 @@ def map_param_with_value(params: np.ndarray, params_field: Tuple[OptimizerConfig
 
 
 class PerformanceIndex(BaseModel):
-    average_decode_throughput: Optional[float] = None
-    average_prefill_latency: Optional[float] = None
-    average_decode_latency: Optional[float] = None
+    generate_speed: Optional[float] = None
+    time_to_first_token: Optional[float] = None
+    time_per_output_token: Optional[float] = None
     success_rate: Optional[float] = None
 
 
