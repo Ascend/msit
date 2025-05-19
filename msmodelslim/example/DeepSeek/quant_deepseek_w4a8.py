@@ -39,11 +39,14 @@ def parse_args():
     return parser.parse_args()
 
 
-def custom_hook(model_config):
+def custom_hook(model_config, mindie_format):
     model_config["mla_quantize"] = "w8a8"
     model_config["quantize"] = "w8a8_dynamic"
     model_config["moe_quantize"] = "w4a8_dynamic"
-    model_config["model_type"] = "deepseekv2"
+    if mindie_format:
+        model_config["model_type"] = "deepseekv2"
+    else:
+        model_config["model_type"] = "deepseek_v3"
 
 
 def get_calib_dataset_batch(model_tokenizer, calib_list, batch_size, max_len=512, device="npu"):
@@ -190,7 +193,8 @@ def main():
                     part_file_size=4)
 
     custom_hooks = {
-        'config.json': functools.partial(modify_config_json, custom_hook=custom_hook)
+        'config.json': functools.partial(modify_config_json,
+                                         custom_hook=functools.partial(custom_hook, mindie_format=args.mindie_format))
     }
     copy_config_files(input_path=model_path, output_path=save_path, quant_config=w4a8_pertoken_config,
                       mindie_format=args.mindie_format, custom_hooks=custom_hooks)
