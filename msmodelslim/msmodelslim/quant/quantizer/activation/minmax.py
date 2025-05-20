@@ -26,7 +26,7 @@ class MinMaxStatistic(StatisticsStrategy):
         self.min_val = None
         self.max_val = None
 
-    def update_stats(self, x: torch.Tensor, reduce_dims: list[int], keep_dims: bool = True):
+    def update_stats(self, x: torch.Tensor, reduce_dims: list[int], keep_dims: bool = False):
 
         if self.min_val is None:
             self.min_val = torch.amin(x, dim=reduce_dims, keepdim=keep_dims)

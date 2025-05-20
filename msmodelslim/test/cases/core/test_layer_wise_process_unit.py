@@ -26,7 +26,7 @@ from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.runner.layer_wise_runner import LayerWiseProcessUnit
 
 
-class TestDecoderLayer(nn.Module):
+class DummyDecoderLayer(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -41,7 +41,7 @@ class SimpleModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.linear = nn.Linear(10, 10)
-        self.decoder = TestDecoderLayer()
+        self.decoder = DummyDecoderLayer()
 
     def forward(self, x):
         x = self.linear(x)
@@ -49,7 +49,7 @@ class SimpleModel(nn.Module):
         return x
 
 
-class TestProcessor(BaseProcessor):
+class DummyProcessor(BaseProcessor):
     """测试用的处理器，用于测试LayerWiseProcessUnit的功能"""
 
     def __init__(self, model):
@@ -67,7 +67,7 @@ class TestLayerWiseProcessUnit(unittest.TestCase):
     def setUp(self):
         """测试前的准备工作"""
         self.model = SimpleModel()
-        self.processor = TestProcessor(self.model)
+        self.processor = DummyProcessor(self.model)
 
     @patch('torch.distributed.get_rank')
     @patch('torch.distributed.get_world_size')

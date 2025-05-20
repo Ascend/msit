@@ -22,6 +22,7 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantType
 from msmodelslim.quant.processor.quant.base import LinearQuantProcessor
 from msmodelslim.quant.processor.quant.w8a8 import W8A8QuantConfig
 from msmodelslim.quant.processor.registry import PROCESSOR_REGISTRY, PROCESSOR_CONFIG_REGISTRY
+from msmodelslim.utils.config_map import ConfigMap
 
 
 class W8A8DynamicQuantConfig(W8A8QuantConfig):
@@ -38,7 +39,9 @@ class W8A8DynamicProcessorConfig(BaseModel):
 class W8A8DynamicProcessor(LinearQuantProcessor):
 
     def __init__(self, model: nn.Module, cfg: W8A8DynamicProcessorConfig):
-        super().__init__(model, cfg.cfg_map)
+        cfg.model_validate(cfg)
+        self.cfg_manager = ConfigMap[W8A8DynamicQuantConfig](cfg.cfg_map)
+        super().__init__(model, self.cfg_manager)
 
     def is_data_free(self) -> bool:
         return False

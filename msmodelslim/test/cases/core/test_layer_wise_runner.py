@@ -32,7 +32,7 @@ from msmodelslim.core.runner.layer_wise_runner import (
 )
 
 
-class TestDecoderLayer(nn.Module):
+class DummyDecoderLayer(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -47,9 +47,9 @@ class ComplexModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.linear = nn.Linear(10, 10)
-        self.decoder1 = TestDecoderLayer()
-        self.decoder2 = TestDecoderLayer()
-        self.decoder3 = TestDecoderLayer()
+        self.decoder1 = DummyDecoderLayer()
+        self.decoder2 = DummyDecoderLayer()
+        self.decoder3 = DummyDecoderLayer()
 
     def forward(self, x):
         x = self.linear(x)
@@ -73,7 +73,7 @@ class SimpleModel(nn.Module):
         return x
 
 
-class TestProcessor(BaseProcessor):
+class DummyProcessor(BaseProcessor):
     """测试用的处理器，用于测试LayerWiseRunner的功能"""
 
     def __init__(self, model, name="default"):
@@ -96,7 +96,7 @@ class TestLayerWiseRunner(unittest.TestCase):
         self.model = SimpleModel()
         self.complex_model = ComplexModel()
         self.runner = LayerWiseRunner(self.model)
-        self.processor = TestProcessor(self.model)
+        self.processor = DummyProcessor(self.model)
 
     def test_add_processor(self):
         """测试添加处理器的功能"""
@@ -175,9 +175,9 @@ class TestLayerWiseRunner(unittest.TestCase):
         complex_runner = LayerWiseRunner(self.complex_model)
 
         # 创建多个处理器
-        processor1 = TestProcessor(self.complex_model, "processor1")
-        processor2 = TestProcessor(self.complex_model, "processor2")
-        processor3 = TestProcessor(self.complex_model, "processor3")
+        processor1 = DummyProcessor(self.complex_model, "processor1")
+        processor2 = DummyProcessor(self.complex_model, "processor2")
+        processor3 = DummyProcessor(self.complex_model, "processor3")
 
         # 添加处理器到runner
         complex_runner.add_processor(processor1)
@@ -242,9 +242,9 @@ class TestLayerWiseRunner(unittest.TestCase):
         complex_runner = LayerWiseRunner(self.complex_model)
 
         # 创建多个处理器
-        processor1 = TestProcessor(self.complex_model, "processor1")
-        processor2 = TestProcessor(self.complex_model, "processor2")
-        processor3 = TestProcessor(self.complex_model, "processor3")
+        processor1 = DummyProcessor(self.complex_model, "processor1")
+        processor2 = DummyProcessor(self.complex_model, "processor2")
+        processor3 = DummyProcessor(self.complex_model, "processor3")
 
         # 创建输入数据
         input_data = torch.randn(5, 10)

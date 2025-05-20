@@ -3,6 +3,9 @@
 __all__ = ['set_logger_level']
 
 from msmodelslim.tools.logger import logger, set_logger_level
+from msmodelslim.utils.torch import patch_torch
+
+patch_torch()
 
 OLD_PACKAGE_NAME = 'modelslim'
 NEW_PACKAGE_NAME = 'msmodelslim'

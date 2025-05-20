@@ -85,7 +85,7 @@ def _generated_decoder_layer_visit_func(model: torch.nn.Module,
 
 
 def _transformers_generated_forward_func(model: torch.nn.Module,
-                                         inputs: Union[List, Tuple, Dict, torch.Tensor],
+                                         inputs: Union[List, Tuple, Dict, Any],
                                          transformer_blocks: Optional[List[Tuple[str, torch.nn.Module]]] = None,
                                          ):
     if transformer_blocks is None:
@@ -98,13 +98,12 @@ def _transformers_generated_forward_func(model: torch.nn.Module,
     # 存储第一个transformer block的输入
     first_block_input = None
 
-    def hook_fn(module, args, kwargs):
+    def break_hook(module: nn.Module, args: Tuple[Any, ...], kwargs: Dict[str, Any]):
         nonlocal first_block_input
         first_block_input = (args, kwargs,)
         raise _TransformersForwardBreak()
 
-    # 注册pre-forward hook到第一个transformer block
-    handle = transformer_blocks[0][1].register_forward_pre_hook(hook_fn, with_kwargs=True)
+    hooks = [transformer_blocks[0][1].register_forward_pre_hook(break_hook, with_kwargs=True)]
 
     # 执行一次前向传播以获取输入
     try:
@@ -112,14 +111,18 @@ def _transformers_generated_forward_func(model: torch.nn.Module,
             model(*inputs)
         elif isinstance(inputs, dict):
             model(**inputs)
-        elif isinstance(inputs, torch.Tensor):
+        else:
             model(inputs)
     except _TransformersForwardBreak:
         pass
     except Exception as e:
         raise e
     finally:
-        handle.remove()
+        for hook in hooks:
+            hook.remove()
+
+    if first_block_input is None:
+        raise ValueError("Can't get first block input, please check the model and input")
 
     # 循环处理每个transformer block
     current_inputs = first_block_input

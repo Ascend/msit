@@ -15,61 +15,15 @@
 
 import json
 import unittest
-from typing import Tuple
-from unittest.mock import patch
 
 import torch
 import torch.nn as nn
+from safetensors import safe_open
 
-from test.testing_utils.mock import mock_kia_library, mock_security_library
-
-# 在导入任何可能使用这些函数的模块之前进行mock
-def mock_init_weight_quant_normal(weight: torch.Tensor,
-                                  bits: int = 8,
-                                  is_sym=True,
-                                  is_signed: bool = True,
-                                  intergral_zp=True,
-                                  admm=None,
-                                  round_opt=False,
-                                  mm_tensor=True,
-                                  fake_quant=True,
-                                  hqq=False,
-                                  ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """返回原始值，不进行量化"""
-    return weight, weight, torch.tensor(1.0), torch.tensor(0.0)
-
-
-def mock_linear_quantization_params(bit: int, x_min: torch.Tensor, x_max: torch.Tensor, q_signed: bool, sym: bool) -> \
-        Tuple[torch.Tensor, torch.Tensor]:
-    return torch.tensor(1.0), torch.tensor(0.0)
-
-
-def mock_fake_quantize(tensor: torch.Tensor,
-                       scale: torch.Tensor,
-                       zero_point: torch.Tensor,
-                       bits: int = 8,
-                       is_signed: bool = True,
-                       round_opt: bool = False,
-                       is_fp=False,
-                       dequant=True,
-                       group_size=-1,
-                       ) -> Tuple[torch.Tensor, torch.Tensor]:
-    return tensor, tensor
-
-
-# 使用patch装饰器进行全局mock
-patch('msmodelslim.quant.kia.utils.init_weight_quant_normal', mock_init_weight_quant_normal).start()
-patch('msmodelslim.quant.kia.utils.linear_quantization_params', mock_linear_quantization_params).start()
-patch('msmodelslim.quant.kia.utils.fake_quantize', mock_fake_quantize).start()
-
-mock_kia_library()
-mock_security_library()
-
+from msmodelslim.quant.processor.quant.w8a8 import W8A8ProcessorConfig, W8A8LinearFakeQuantizer
 from msmodelslim.quant.processor.quant.w8a8 import W8A8QuantConfig
-from msmodelslim.quant.processor.quant.w8a8 import W8A8ProcessorConfig
-from msmodelslim.quant.processor.save.saver_processor import SaverProcessorConfig
+from msmodelslim.quant.processor.save.saver import SaverProcessorConfig
 from msmodelslim.quant.session.session import quant_model, SessionConfig
-from msmodelslim.quant.quantizer.linear.fake import W8A8LinearFakeQuantizer
 
 
 class TestW8A8Quantization(unittest.TestCase):
@@ -79,9 +33,9 @@ class TestW8A8Quantization(unittest.TestCase):
         """测试前的准备工作"""
         # 创建一个简单的模型
         self.model = nn.Sequential(
-            nn.Linear(10, 20),
-            nn.LayerNorm([1]),
-            nn.Linear(20, 5)
+            nn.Linear(10, 20, dtype=torch.float32),
+            nn.LayerNorm([20]),
+            nn.Linear(20, 5, dtype=torch.float32)
         )
 
         # 创建W8A8量化配置
@@ -122,6 +76,9 @@ class TestW8A8Quantization(unittest.TestCase):
 
         self.session_config.model_validate(self.session_config)
 
+        for data in self.session_config.calib_data:
+            self.model(data)
+
     def test_w8a8_quantization_basic(self):
         """测试基本的W8A8量化功能"""
         # 记录原始模型的权重
@@ -136,6 +93,10 @@ class TestW8A8Quantization(unittest.TestCase):
         # 检查伪量化成功部署
         for name, _ in original_weights:
             self.assertIsInstance(self.model.get_submodule(name), W8A8LinearFakeQuantizer)
+
+        # 检查伪量化推理
+        for data in self.session_config.calib_data:
+            self.model(data)
 
         # 验证模型文件是否被保存
         import os
@@ -166,6 +127,54 @@ class TestW8A8Quantization(unittest.TestCase):
 
         for key, value in expected_config_data.items():
             self.assertEqual(value, config_data[key])
+
+        dtype_check = {
+            "[02].weight": torch.int8,
+            "[02].input_scale": torch.float32,
+            "[02].input_offset": torch.float32,
+            "[02].deq_scale": torch.float32,
+            "[02].quant_bias": torch.int32
+        }
+        
+        shape_check = {
+            "0.weight": (20, 10),
+            "0.input_scale": (1,),
+            "0.input_offset": (1,),
+            "0.deq_scale": (20,),
+            "0.quant_bias": (20,),
+            "2.weight": (5, 20),
+            "2.input_scale": (1,),
+            "2.input_offset": (1,),
+            "2.deq_scale": (5,),
+            "2.quant_bias": (5,)
+        }
+
+        # 检查safetensor中的tensor数据类型
+        with safe_open("./w8a8_model.safetensors", framework="pt") as f:
+            for key in f.keys():
+                tensor = f.get_tensor(key)
+                # 根据key的模式匹配对应的dtype
+                matched_dtype = None
+                for pattern, expected_dtype in dtype_check.items():
+                    if key.endswith(pattern.replace("*", "")):
+                        matched_dtype = expected_dtype
+                        break
+
+                if matched_dtype is not None:
+                    self.assertEqual(tensor.dtype, matched_dtype,
+                                     f"Tensor {key} has incorrect dtype. Expected {matched_dtype}, got {tensor.dtype}")
+                    
+                # 根据key的模式匹配对应的shape
+                matched_shape = None
+                for pattern, expected_shape in shape_check.items():
+                    if key.endswith(pattern.replace("*", "")):
+                        matched_shape = expected_shape
+                        break
+                
+                if matched_shape is not None:
+                    self.assertEqual(tensor.shape, matched_shape,
+                                     f"Tensor {key} has incorrect shape. Expected {matched_shape}, got {tensor.shape}")
+                    
 
         os.remove("./w8a8_model.safetensors")
         os.remove("./w8a8_config.json")

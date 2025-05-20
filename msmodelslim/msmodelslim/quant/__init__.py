@@ -13,4 +13,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import msmodelslim.quant.processor.save.backend
+__all__ = ["quant_model", "SessionConfig"]
+
+from msmodelslim.quant.session.session import quant_model, SessionConfig

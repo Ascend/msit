@@ -23,11 +23,9 @@ from torch.nn import functional as F
 
 from msmodelslim.quant.quantizer.activation.base import ActivationQuantConfig, ActivationQuantizer
 from msmodelslim.quant.quantizer.activation.factory import ActivationQuantizerFactory
-from msmodelslim.quant.quantizer.base.const import ActivationQuantScope
 from msmodelslim.quant.quantizer.base.fake import BaseFakeQuantizer
 from msmodelslim.quant.quantizer.base.quantizer import BaseQuantizer
 from msmodelslim.quant.quantizer.linear.config import WeightQuantConfig, LinearQuantConfig
-from msmodelslim.quant.quantizer.linear.fake import W8A8LinearFakeQuantizer
 
 
 class BaseWeightQuantizer(nn.Module):
@@ -36,7 +34,7 @@ class BaseWeightQuantizer(nn.Module):
         self.cfg = cfg
 
     @abc.abstractmethod
-    def quant(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None) -> \
+    def quant(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None, x: Optional[torch.Tensor] = None) -> \
             Tuple[torch.Tensor, torch.Tensor]:
         """
         量化权重
@@ -50,7 +48,6 @@ class BaseWeightQuantizer(nn.Module):
             Tuple[torch.Tensor, torch.Tensor]: 量化后的权重和偏置
         """
         raise NotImplementedError()
-
 
     @abc.abstractmethod
     def forward(self, weight: torch.Tensor, bias: Optional[torch.Tensor] = None, x: Optional[torch.Tensor] = None) -> \
@@ -69,36 +66,23 @@ class BaseWeightQuantizer(nn.Module):
         raise NotImplementedError()
 
 
-
 class BaseLinearQuantizer(BaseQuantizer):
 
-    def __init__(self, module: nn.Module, cfg: LinearQuantConfig):
+    def __init__(self, module: nn.Linear, cfg: LinearQuantConfig):
         super().__init__(module, cfg)
         self.cfg = cfg
         self.module = module
         self.input_quantizer = self._create_input_quantizer(cfg.a_cfg)
         self.weight_quantizer = self._create_weight_quantizer(cfg.w_cfg)
 
+    @abc.abstractmethod
     def deploy(self, *args, **kwargs) -> BaseFakeQuantizer:
-        if (self.cfg.w_cfg.bits == 8 and self.cfg.a_cfg.bits == 8
-                and self.cfg.a_cfg.method != ActivationQuantScope.PER_TOKEN):
-            return self._deploy_w8a8()
-        elif (self.cfg.w_cfg.bits == 8 and self.cfg.a_cfg.bits == 8
-              and self.cfg.a_cfg.method == ActivationQuantScope.PER_TOKEN):
-            return self._deploy_w8a8_dynamic()
-        elif self.cfg.a_cfg.bits == 16:
-            return self._deploy_wxa16()
-        else:
-            raise ValueError(f"Unsupported weight and activation bits: {self.cfg.w_cfg.bits} and {self.cfg.a_cfg.bits}")
+        raise NotImplementedError()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.input_quantizer(x)
-        weight, bias = self.weight_quantizer(x)
+        weight, bias = self.weight_quantizer(self.module.weight, self.module.bias, x)
         return F.linear(x, weight, bias)
-
-    @abc.abstractmethod
-    def _create_weight_quantizer(self, cfg: WeightQuantConfig) -> BaseWeightQuantizer:
-        pass
 
     def _setup(self, module: nn.Module, cfg: LinearQuantConfig, *args, **kwargs):
         super()._setup(module, cfg, *args, **kwargs)
@@ -107,27 +91,13 @@ class BaseLinearQuantizer(BaseQuantizer):
         self.input_quantizer = self._create_input_quantizer(cfg.a_cfg)
         self.weight_quantizer = self._create_weight_quantizer(cfg.w_cfg)
 
-    def _deploy_w8a8(self) -> BaseFakeQuantizer:
-        input_scale, input_offset = self.input_quantizer.get_scale_offset()
-        weight_scale, _ = self.weight_quantizer.get_scale_offset()
-        quant_weight, _ = self.weight_quantizer.quant(self.fp_weight, self.fp_bias)
-        deq_scale = input_scale * weight_scale
-        fp_weight_bias = self.fp_bias if self.fp_bias is not None else torch.zeros_like(self.fp_weight)
-        correction = quant_weight.to(torch.float32).sum(dim=1) * input_offset.to(torch.float32)
-        quant_bias = torch.round(fp_weight_bias / deq_scale - correction).to(torch.int32)
-        return W8A8LinearFakeQuantizer(self.cfg, input_scale, input_offset, deq_scale, quant_bias, quant_weight)
-
-    def _deploy_w8a8_dynamic(self) -> BaseFakeQuantizer:
-        raise NotImplementedError()
-
-
-    def _deploy_wxa16(self) -> BaseFakeQuantizer:
-        raise NotImplementedError()
-
-
     def _create_input_quantizer(self, cfg: ActivationQuantConfig) -> ActivationQuantizer:
         _ = self
         return ActivationQuantizerFactory.create(cfg)
+
+    @abc.abstractmethod
+    def _create_weight_quantizer(self, cfg: WeightQuantConfig) -> BaseWeightQuantizer:
+        raise NotImplementedError()
 
 
 class QuantizerRegistry:

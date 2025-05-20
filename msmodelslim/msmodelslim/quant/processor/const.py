@@ -17,9 +17,10 @@ from enum import Enum
 
 
 class ProcessStage(Enum):
-    PREPARE_MODEL = "prepare_model"
+    LOAD_MODEL = "load_model"
     FORWARD_ANTI_OUTLIER = "forward_anti_outlier"
     BACKWARD_ANTI_OUTLIER = "backward_anti_outlier"
     FORWARD_QUANT = "forward_quant"
     BACKWARD_QUANT = "backward_quant"
     SAVE_MODEL = "save_model"
+    OFFLOAD_MODEL = "offload_model"
