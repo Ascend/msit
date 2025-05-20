@@ -14,15 +14,15 @@
 #  limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Tuple, Optional
+from typing import Tuple
 
 import torch
 from pydantic import BaseModel
 from torch import nn as nn
 
-from msmodelslim.utils.registry import Registry
 from msmodelslim.quant.kia.utils import fake_quantize, linear_quantization_params
 from msmodelslim.quant.quantizer.base.const import ActivationQuantMethod, ActivationQuantScope
+from msmodelslim.utils.registry import Registry
 
 
 class StatisticsStrategy(ABC):
@@ -34,7 +34,12 @@ class StatisticsStrategy(ABC):
     """
 
     @abstractmethod
-    def update_stats(self, x: torch.Tensor, reduce_dims: list[int], keep_dims: bool = False):
+    def update_stats(self,
+                     x: torch.Tensor,
+                     reduce_dims: list[int],
+                     keep_dims: bool = False,
+                     sync_stats: bool = False,
+                     ):
         """
         更新统计值。
 
@@ -43,6 +48,8 @@ class StatisticsStrategy(ABC):
         参数:
             x: 输入张量，包含需要统计的数据
             reduce_dims: 需要缩减的维度列表，指定在哪些维度上进行统计
+            keep_dims: 是否保持缩减维度
+            sync_stats: 是否在各rank间同步统计，用于分布式量化
         """
         pass
 
@@ -79,14 +86,15 @@ class BaseObserver:
     所有具体的观察者实现都应该继承此类并实现抽象方法。
     """
 
-    def __init__(self, strategy: Optional[StatisticsStrategy] = None):
+    def __init__(self, sync_stats=False):
         """
         初始化观察者。
 
         参数:
             strategy: 统计策略，用于收集和处理统计信息
         """
-        self.strategy = strategy
+        self.strategy = None
+        self.sync_stats = sync_stats
 
     def set_strategy(self, strategy: StatisticsStrategy):
         """
@@ -107,7 +115,8 @@ class BaseObserver:
             x: 输入张量，包含需要观察的数据
         """
         reduce_dims = self._get_reduce_dims(x)
-        self.strategy.update_stats(x, reduce_dims)
+        keep_dims = self._keep_dims(x)
+        self.strategy.update_stats(x, reduce_dims=reduce_dims, keep_dims=keep_dims, sync_stats=self.sync_stats)
 
     def get_stats(self):
         """
@@ -134,6 +143,19 @@ class BaseObserver:
         """
         raise NotImplementedError()
 
+    def _keep_dims(self, x: torch.Tensor) -> bool:
+        """
+        判断是否保持缩减维度。
+
+        根据输入张量的维度信息，判断是否需要保持缩减维度。
+
+        参数:
+            x: 输入张量，用于确定其维度信息
+
+        返回:
+            bool: 是否保持缩减维度
+        """
+        return False
 
 
 OBSERVER_REGISTRY = Registry[BaseObserver]()

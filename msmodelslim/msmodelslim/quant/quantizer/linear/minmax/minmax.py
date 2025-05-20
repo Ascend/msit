@@ -28,13 +28,15 @@ class MinMaxWeightQuantizer(BaseWeightQuantizer):
     def __init__(self, cfg: WeightQuantConfig):
         super().__init__(cfg)
 
-        self.register_buffer('weight_scale', torch.zeros(1))
-        self.register_buffer('weight_offset', torch.zeros(1))
+        self.register_buffer('weight_scale', None)
+        self.register_buffer('weight_offset', None)
 
     def get_scale_offset(self) -> Tuple[torch.Tensor, torch.Tensor]:
+        self._check_scale_offset()
         return self.weight_scale, self.weight_offset
 
     def get_quantized_weight_and_bias(self, weight: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        self._check_scale_offset()
         int_weight, dequant_weight = fake_quantize(
             weight,
             self.weight_scale,
@@ -47,12 +49,15 @@ class MinMaxWeightQuantizer(BaseWeightQuantizer):
               weight: torch.Tensor,
               bias: Optional[torch.Tensor] = None,
               x: Optional[torch.Tensor] = None):
-        return fake_quantize(weight, self.weight_scale, self.weight_offset)
+        self._check_scale_offset()
+        int_weight, _ = fake_quantize(weight, self.weight_scale, self.weight_offset)
+        return int_weight, bias
 
     def forward(self,
                 weight: torch.Tensor,
                 bias: Optional[torch.Tensor] = None,
                 x: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
+
         _, dequant_weight, self.weight_scale, self.weight_offset = init_weight_quant_normal(
             weight,
             bits=self.cfg.bits,
@@ -61,3 +66,7 @@ class MinMaxWeightQuantizer(BaseWeightQuantizer):
         )
 
         return dequant_weight, bias
+    
+    def _check_scale_offset(self):
+        if self.weight_scale is None or self.weight_offset is None:
+            raise RuntimeError("Weight scale and offset must be initialized before getting scale and offset")

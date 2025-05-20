@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 import torch
+from torch import distributed as dist
 
 from msmodelslim.quant.quantizer.activation.base import StatisticsStrategy, STATISTIC_STRATEGY_REGISTRY
 from msmodelslim.quant.quantizer.base.const import ActivationQuantMethod
@@ -26,7 +27,7 @@ class MinMaxStatistic(StatisticsStrategy):
         self.min_val = None
         self.max_val = None
 
-    def update_stats(self, x: torch.Tensor, reduce_dims: list[int], keep_dims: bool = False):
+    def update_stats(self, x: torch.Tensor, reduce_dims: list[int], keep_dims: bool = False, sync_stats: bool = False):
 
         if self.min_val is None:
             self.min_val = torch.amin(x, dim=reduce_dims, keepdim=keep_dims)
@@ -38,7 +39,18 @@ class MinMaxStatistic(StatisticsStrategy):
         else:
             self.max_val = torch.max(self.max_val, torch.amax(x, dim=reduce_dims, keepdim=keep_dims))
 
+        if sync_stats and dist.is_initialized():
+            dist.all_reduce(self.min_val, op=dist.ReduceOp.MIN)
+            dist.all_reduce(self.max_val, op=dist.ReduceOp.MAX)
+
     def get_stats(self) -> torch.Tensor:
+
+        if self.min_val is None or self.max_val is None:
+            raise RuntimeError(
+                "Trying to get stats but no any update_stats invoked,"
+                "maybe you are quantifying a moe expert, but this expert has never been activated."
+                "Please check your model and quant config.")
+
         return torch.stack([self.min_val, self.max_val], dim=0)
 
     def clear_stats(self):

@@ -32,6 +32,12 @@ def _mock_get_valid_write_path(path: str, extensions: Optional[str] = None) -> s
     return path
 
 
+def _mock_get_write_directory(path: str, *args, **kwargs) -> str:
+    if not os.path.exists(path):
+        os.makedirs(name=path, mode=0o750, exist_ok=True)
+    return path
+
+
 def _mocked_init_weight_quant_normal(weight: torch.Tensor,
                                      bits: int = 8,
                                      is_sym=True,
@@ -44,8 +50,9 @@ def _mocked_init_weight_quant_normal(weight: torch.Tensor,
                                      hqq=False,
                                      ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """返回原始值，不进行量化"""
-    scale = torch.ones([1]) if mm_tensor else torch.ones(weight.shape[0])
-    offset = torch.zeros([1]) if mm_tensor else torch.zeros(weight.shape[0])
+
+    scale = torch.ones([1]) if mm_tensor else torch.ones([weight.shape[0], 1])
+    offset = torch.zeros([1]) if mm_tensor else torch.zeros([weight.shape[0], 1])
     return weight, weight, scale, offset
 
 
@@ -93,3 +100,4 @@ def mock_security_library():
     sys.modules['ascend_utils.common.security.path'].json_safe_dump = _mock_json_safe_dump
     sys.modules['ascend_utils.common.security.path'].get_valid_write_path = _mock_get_valid_write_path
     sys.modules['ascend_utils.common.security.path'].get_valid_path = _mock_get_valid_write_path
+    sys.modules['ascend_utils.common.security.path'].get_write_directory = _mock_get_write_directory

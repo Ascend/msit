@@ -17,24 +17,24 @@ from enum import Enum
 
 
 class ActivationQuantMethod(Enum):
-    MINMAX = "MinMax"
-    HISTOGRAM = "Histogram"
-    CLIP_MINMAX = "ClipMinMax"
+    MINMAX = "minmax"
+    HISTOGRAM = "histogram"
+    CLIP_MINMAX = "clip_minmax"
 
 
 class ActivationQuantScope(Enum):
-    PER_TENSOR = "PerTensor"
-    PER_TOKEN = "PerToken"
-    PER_HEAD = "PerHead"
+    PER_TENSOR = "per_tensor"
+    PER_TOKEN = "per_token"
+    PER_HEAD = "per_head"
 
 
 class WeightQuantMethod(Enum):
-    MINMAX = "MinMax"
-    GPTQ = "GPTQ"
-    HQQ = "HQQ"
+    MINMAX = "minmax"
+    GPTQ = "gptq"
+    HQQ = "hqq"
 
 
 class WeightQuantScope(Enum):
-    PER_TENSOR = "PerTensor"
-    PER_CHANNEL = "PerChannel"
-    PER_GROUP = "PerGroup"
+    PER_TENSOR = "per_tensor"
+    PER_CHANNEL = "per_channel"
+    PER_GROUP = "per_group"

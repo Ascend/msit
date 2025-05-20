@@ -13,23 +13,25 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict
+from collections import OrderedDict
+from typing import List
 
 import torch
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from torch import nn
 from torch.nn import functional as F
 
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantType
 from msmodelslim.quant.processor.quant.base import LinearQuantProcessor, BaseSessionQuantConfig
 from msmodelslim.quant.processor.registry import PROCESSOR_REGISTRY, PROCESSOR_CONFIG_REGISTRY
+from msmodelslim.quant.quantizer.activation.base import ActivationQuantConfig
+from msmodelslim.quant.quantizer.base.const import ActivationQuantScope, ActivationQuantMethod
 from msmodelslim.quant.quantizer.base.const import WeightQuantMethod
 from msmodelslim.quant.quantizer.base.fake import BaseFakeQuantizer, FAKE_QUANTIZER_REGISTRY
 from msmodelslim.quant.quantizer.linear.base import BaseLinearQuantizer, BaseWeightQuantizer, LINEAR_QUANTIZER_REGISTRY
 from msmodelslim.quant.quantizer.linear.config import LinearQuantConfig, WeightQuantConfig
 from msmodelslim.quant.quantizer.linear.minmax.minmax import MinMaxWeightQuantizer
-from msmodelslim.quant.quantizer.base.const import ActivationQuantScope
-from msmodelslim.utils.config_map import ConfigMap
+from msmodelslim.utils.config_map import ConfigMap, ConfigSet
 
 
 @FAKE_QUANTIZER_REGISTRY.register_by_name('w8a8')
@@ -68,7 +70,7 @@ class W8A8LinearQuantizer(BaseLinearQuantizer):
         return cfg.a_cfg.bits == 8 and cfg.w_cfg.bits == 8 and cfg.a_cfg.scope != ActivationQuantScope.PER_TOKEN
 
     def deploy(self, *args, **kwargs) -> BaseFakeQuantizer:
-        with torch.device(self.module.weight.device):
+        with torch.device(self.fp_weight.device):
             input_scale, input_offset = self.input_quantizer.get_scale_offset()
             input_scale = input_scale.unsqueeze(0) if input_scale.ndim == 0 else input_scale
             input_offset = input_offset.unsqueeze(0) if input_offset.ndim == 0 else input_offset
@@ -87,22 +89,29 @@ class W8A8LinearQuantizer(BaseLinearQuantizer):
 
 
 class W8A8QuantConfig(BaseSessionQuantConfig, LinearQuantConfig):
-    def quant_type(self) -> QuantType:
-        return QuantType.W8A8
+    quant_type: QuantType = Field(default=QuantType.W8A8)
+    a_cfg: ActivationQuantConfig = Field(default=ActivationQuantConfig(bits=8, method=ActivationQuantMethod.MINMAX,
+                                                                       scope=ActivationQuantScope.PER_TENSOR))
+    w_cfg: WeightQuantConfig = Field(default=WeightQuantConfig(bits=8, method=WeightQuantMethod.MINMAX))
 
 
 @PROCESSOR_CONFIG_REGISTRY.register_by_name("w8a8")
 class W8A8ProcessorConfig(BaseModel):
-    cfg_map: Dict[str, W8A8QuantConfig]
+    disable_names: List[str] = Field(default=[])
+    cfg_map: OrderedDict[str, W8A8QuantConfig] = Field(default=OrderedDict())
 
 
 @PROCESSOR_REGISTRY.register_by_name("w8a8")
 class W8A8Processor(LinearQuantProcessor):
 
-    def __init__(self, model: nn.Module, cfg: W8A8ProcessorConfig):
+    def __init__(self, model: nn.Module, cfg: W8A8ProcessorConfig, **kwargs):
         cfg.model_validate(cfg)
         self.cfg_manager = ConfigMap[W8A8QuantConfig](cfg.cfg_map)
-        super().__init__(model, self.cfg_manager)
+        self.disable_set = ConfigSet[str](cfg.disable_names)
+        super().__init__(model, self.cfg_manager, self.disable_set)
+
+    def support_distributed(self) -> bool:
+        return True
 
     def is_data_free(self) -> bool:
         return False

@@ -13,23 +13,29 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from pydantic import BaseModel
+from typing import Optional
+
+from pydantic import BaseModel, Field
 from torch import nn
 
 from msmodelslim import logger
 from msmodelslim.core.base.protocol import BatchProcessRequest
-from msmodelslim.utils.config_map import ConfigMap
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantType
 from msmodelslim.quant.processor.base import SessionBaseProcessor
 from msmodelslim.quant.processor.const import ProcessStage
 from msmodelslim.quant.quantizer.linear.base import LINEAR_QUANTIZER_REGISTRY
 from msmodelslim.quant.quantizer.linear.config import LinearQuantConfig
+from msmodelslim.utils.config_map import ConfigMap, ConfigSet
 
 
 class LinearQuantProcessor(SessionBaseProcessor):
-    def __init__(self, model: nn.Module, cfg_map: ConfigMap[LinearQuantConfig]):
+    def __init__(self, model: nn.Module,
+                 cfg_map: ConfigMap[LinearQuantConfig],
+                 disable_set: Optional[ConfigSet[str]] = None,
+                 ):
         super().__init__(model)
         self.cfg_map = cfg_map
+        self.disable_set = disable_set if disable_set is not None else ConfigSet[str](set())
 
     def is_data_free(self) -> bool:
         return False
@@ -56,8 +62,13 @@ class LinearQuantProcessor(SessionBaseProcessor):
                 self.model.set_submodule(full_name, module.deploy())
 
     def _process_linear(self, full_name: str, module: nn.Linear) -> None:
+
+        if full_name in self.disable_set:
+            logger.debug(f"Linear layer {full_name} with keep float")
+            return
+
         if full_name in self.cfg_map:
-            logger.info(f"Linear layer {full_name} with use config {self.cfg_map[full_name]}")
+            logger.debug(f"Linear layer {full_name} with use config {self.cfg_map[full_name]}")
             quantizer_cls = LINEAR_QUANTIZER_REGISTRY.get_quantizer(module, self.cfg_map[full_name])
 
             if quantizer_cls is None:
@@ -69,11 +80,8 @@ class LinearQuantProcessor(SessionBaseProcessor):
 
 
 class BaseSessionQuantConfig(BaseModel):
-
-    def quant_type(self) -> QuantType:
-        return QuantType.UNKNOWN
+    quant_type: QuantType = Field(default=QuantType.UNKNOWN)
 
 
 class FloatQuantConfig(BaseSessionQuantConfig):
-    def quant_type(self) -> QuantType:
-        return QuantType.FLOAT
+    quant_type: QuantType = Field(default=QuantType.FLOAT)
