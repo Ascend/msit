@@ -23,7 +23,8 @@ from msmodelslim.quant.quantizer.activation.observer import PerTokenObserver
 class TestPerTokenObserver(unittest.TestCase):
     def setUp(self):
         self.strategy = MinMaxStatistic()
-        self.observer = PerTokenObserver(strategy=self.strategy)
+        self.observer = PerTokenObserver()
+        self.observer.set_strategy(self.strategy)
 
     def test_get_reduce_dims(self):
         x = torch.randn(2, 3, 4)

@@ -26,7 +26,8 @@ class TestActivationQuantizer(unittest.TestCase):
         )
         self.quantizer = ActivationQuantizer(config=self.config)
         self.strategy = MinMaxStatistic()
-        self.observer = PerTensorObserver(strategy=self.strategy)
+        self.observer = PerTensorObserver()
+        self.observer.set_strategy(self.strategy)
         self.quantizer.set_observer(self.observer)
         self.quantizer.set_statistics(self.strategy)
 
