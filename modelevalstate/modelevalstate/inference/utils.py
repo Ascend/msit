@@ -16,20 +16,21 @@ from functools import reduce, lru_cache
 from typing import Tuple
 
 import numpy as np
-from pandas import Series
+import pandas as pd
 
-from modelevalstate.inference.constant import (
-    ALL_OP,
-    OP_EXECUTE_DELTA_FIELD,
-    DTYPE_CATEGORY, UNDEFINED,
-    ALL_ARCHITECTURE,
-    ALL_ARCHITECTURE_MAPPING
-)
 from modelevalstate.inference.common import (
     OP_EXPECTED_FIELD_MAPPING,
     model_op_size,
     HistInfo,
     get_field_bins_count
+)
+from modelevalstate.inference.constant import (
+    ALL_OP,
+    OP_EXECUTE_DELTA_FIELD,
+    DTYPE_CATEGORY,
+    UNDEFINED,
+    ALL_ARCHITECTURE,
+    ALL_ARCHITECTURE_MAPPING
 )
 
 OUTPUT_LENGTH_FIELD = "output_length"
@@ -39,19 +40,24 @@ TOTAL_PREFILL_TOKEN = "total_prefill_token"
 
 
 class PreprocessTool:
-    @lru_cache(maxsize=32)
-    @staticmethod
-    def generate_series(row, column):
-        new_row = []
-        for i in row:
-            try:
-                new_row.append(float(i))
-            except ValueError:
-                new_row.append(i)
-        return Series(new_row, index=column)
 
     @staticmethod
-    def generate_series_with_request_info(row, column) -> Series:
+    @lru_cache(maxsize=32)
+    def generate_data(row, column) -> Tuple:
+        try:
+            new_row = [float(i) for i in row]
+        except ValueError:
+            new_row = []
+            for i in row:
+                try:
+                    new_row.append(float(i))
+                except ValueError:
+                    new_row.append(i)
+        return tuple(new_row), column
+
+    @staticmethod
+    @lru_cache(maxsize=32)
+    def generate_data_with_request_info(row, column) -> Tuple:
         new_index = []
         new_row = []
         for _index in column:
@@ -66,13 +72,35 @@ class PreprocessTool:
                 if _k < 0:
                     raise ValueError(f"Unexpected value found. label: {hist_index}, value:{_hist_value}")
             new_row.extend(_hist_value)
-        return Series(new_row, new_index)
+        return tuple(new_row), tuple(new_index)
 
     @staticmethod
+    @lru_cache(maxsize=32)
+    def generate_data_with_request_info_by_df(row, column) -> Tuple:
+        row_df = pd.concat([pd.Series([float(i) for i in _row], index=column) for _row in row], axis=1).T
+        new_row = [row_df[OUTPUT_LENGTH_FIELD].sum()]
+        new_index = [TOTAL_OUTPUT_LENGTH]
+        for _index in column:
+            hist_index = getattr(HistInfo, _index)
+            new_index.extend(hist_index["label"])
+            _value = row_df[_index].values
+            if not _value:
+                _hist_value = [0 for _ in range(len(hist_index["bins"]) - 1)]
+            else:
+                _hist_value, _ = np.histogram(_value, hist_index["bins"])
+                # check value
+                _check = [True for _k in _hist_value if _k < 0]
+                if any(_check):
+                    raise ValueError(f"Unexpected value found. label: {hist_index}, value:{_hist_value}")
+            new_row.extend(_hist_value)
+        return tuple(new_row), tuple(new_index)
+
+    @staticmethod
+    @lru_cache(maxsize=32)
     def get_all_op_execute_delta(input_data, input_index, field="execute_delta"):
         _op_count = {}
         _op_delta = {}  # op_name: [[param1size, param2size,],[第二次调用param1size,第二次调用param2size]]
-        for _op_info in enumerate(input_data):
+        for _, _op_info in enumerate(input_data):
             _tmp_op_name = _op_info[input_index.index("op_name")]
             _tmp_op_count = int(_op_info[input_index.index("call_count")])
             if _tmp_op_name not in _op_count:
@@ -96,10 +124,11 @@ class PreprocessTool:
         return _op_delta_expected
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_all_op_input_expected(input_data, input_index, field: str = "input_shape"):
         _op_count = {}
         _op_param_size = {}  # op_name: [[param1size, param2size,],[第二次调用param1size,第二次调用param2size]]
-        for _op_info in enumerate(input_data):
+        for _, _op_info in enumerate(input_data):
             _tmp_op_name = _op_info[input_index.index("op_name")]
             _tmp_op_count = int(_op_info[input_index.index("call_count")])
             if _tmp_op_name not in _op_count:
@@ -130,9 +159,10 @@ class PreprocessTool:
         return _op_param_expected
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_op_in_origin_row_index(input_data, input_index):
         _op_in_origin_row_index = {}  # 找到每个op和它在origin_row的索引
-        for _op_info in enumerate(input_data):
+        for i, _op_info in enumerate(input_data):
             for j, _op_index in enumerate(input_index):
                 if _op_index == "op_name":
                     if _op_info[j] not in ALL_OP:
@@ -146,7 +176,8 @@ class PreprocessTool:
         return _op_in_origin_row_index
 
     @staticmethod
-    def generate_series_with_op_info(origin_row, origin_index) -> Series:
+    @lru_cache(maxsize=32)
+    def generate_data_with_op_info(origin_row, origin_index) -> Tuple:
         new_index = []
         new_row = []
         _op_in_origin_row_index = PreprocessTool.get_op_in_origin_row_index(origin_row, origin_index)
@@ -204,15 +235,16 @@ class PreprocessTool:
                             if _field in k:
                                 new_row.append(_op_delta_expected[_field][_op])
 
-        return Series(new_row, index=new_index)
+        return tuple(new_row), tuple(new_index)
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_all_op_input_ratio(input_data: Tuple[Tuple], input_index: Tuple, field: str = "input_shape"):
         # 计算该op的字段，在所有采集到的op的字段中的占比。
         _sum = 0
         _op_count = {}
         _op_param_size = {}  # op_name: [[param1size, param2size,],[第二次调用param1size,第二次调用param2size]]
-        for _op_info in enumerate(input_data):
+        for _, _op_info in enumerate(input_data):
             _tmp_op_name = _op_info[input_index.index("op_name")]
             _tmp_op_count = int(_op_info[input_index.index("call_count")])
             if _tmp_op_name not in _op_count:
@@ -244,11 +276,12 @@ class PreprocessTool:
         return _op_param_size_ratio
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_all_op_execute_delta_ratio(input_data: Tuple[Tuple], input_index: Tuple, field="execute_delta"):
         _sum = 0
         _op_count = {}
         _op_delta = {}  # op_name: [[第一次执行时间，第二次执行时间]]
-        for _op_info in enumerate(input_data):
+        for _, _op_info in enumerate(input_data):
             _tmp_op_name = _op_info[input_index.index("op_name")]
             _tmp_op_count = int(_op_info[input_index.index("call_count")])
             if _tmp_op_name not in _op_count:
@@ -274,6 +307,7 @@ class PreprocessTool:
         return _op_delta_ratio
 
     @staticmethod
+    @lru_cache(maxsize=32)
     def get_label_hist_value(input_ratio):
         _op_input_param_hist_ratio = {}
         for _tmp_op, _tmp_op_value in input_ratio.items():
@@ -286,7 +320,8 @@ class PreprocessTool:
         return _op_input_param_hist_ratio
 
     @staticmethod
-    def generate_series_with_op_info_use_ratio(origin_row, origin_index) -> Series:
+    @lru_cache(maxsize=32)
+    def generate_data_with_op_info_use_ratio(origin_row, origin_index) -> Tuple:
         new_index = []
         new_row = []
         _op_in_origin_row_index = PreprocessTool.get_op_in_origin_row_index(origin_row, origin_index)
@@ -343,10 +378,11 @@ class PreprocessTool:
                         ratio_key = k.split("__")[-3:].join("__")
                         new_row.append(_op_delta_hist_ratio[_op].get(f"{_op_param_index}__{ratio_key}", 0))
 
-        return Series(new_row, index=new_index)
+        return tuple(new_row), tuple(new_index)
 
     @staticmethod
-    def generate_series_with_struct_info(origin_row, origin_index):
+    @lru_cache(maxsize=32)
+    def generate_data_with_struct_info(origin_row, origin_index) -> Tuple:
         new_row = []
         for i, _value in enumerate(origin_row):
             if "rate" in origin_index[i]:
@@ -354,10 +390,10 @@ class PreprocessTool:
                 new_row.append(float(_value) * 100)
             else:
                 new_row.append(float(_value))
-        return Series(new_row, index=origin_index)
+        return new_row, origin_index
 
     @staticmethod
-    def gene_series_with_model_config(origin_row, origin_index):
+    def generate_data_with_model_config(origin_row, origin_index) -> Tuple:
         quantization_prefix_config = "quantization_config"
         default_field = ["kv_quant_type", "group_size", "reduce_quant_type"]
         default_value = (UNDEFINED, UNDEFINED, UNDEFINED)
@@ -378,7 +414,7 @@ class PreprocessTool:
             elif v == "architectures":
                 for _arch in ALL_ARCHITECTURE:
                     new_index.append(ALL_ARCHITECTURE_MAPPING.get(_arch))
-                    new_row.append(origin_row[i].count(_arch))
+                    new_row.append([k.lower() for k in origin_row[i]].count(_arch))
             elif v == "quantize":
                 new_index.append(v)
                 if origin_row[i]:
@@ -393,4 +429,4 @@ class PreprocessTool:
                 except ValueError:
                     new_row.append(origin_row[i])
 
-        return Series(new_row, index=new_index)
+        return tuple(new_row), tuple(new_index)

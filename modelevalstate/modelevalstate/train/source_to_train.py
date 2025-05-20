@@ -13,17 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
-import sys
-from pathlib import Path
+import ast
+import csv
+import json
 import os
 import sqlite3
-import json
-import csv
-import ast
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Any
+
 import pandas as pd
 from loguru import logger
+
 from modelevalstate.train.pretrain import pretrain
 
 
@@ -171,15 +172,19 @@ class ExecutionData:
     batch_id_block_sum: Dict[int, float]
 
 
-def process_execution_data(data: ExecutionData) -> List[Tuple]:
+def process_execution_data(csv_data: ExecutionData) -> List[Tuple]:
+
     processed_data = []
-    for exec_row, batch_row in zip(exec_data, batch_data):
+    for i, _ in enumerate(csv_data.exec_data):
+        exec_row = csv_data.exec_data[i]
+        batch_row = csv_data.batch_data[i]
         total_prefill_token = 0
         max_seq_len = 0
         total_req_info = []
-        data = ast.literal_eval(rids_ori[i])
+        data = ast.literal_eval(csv_data.rids_ori[i])
         rids = []
         iters = []
+        req_df = csv_data.req_df
         for item in data:
             try:
                 rid = item['rid']
@@ -188,34 +193,33 @@ def process_execution_data(data: ExecutionData) -> List[Tuple]:
                 iters.append(iter_val)
             except KeyError as e:
                 logger.error(f"缺少键 '{e}'，跳过该条目")
-        for j, rid in range(len(rids)):
-            recv_token = req_df[req_df['http_rid'] == rid]['recv_token_size'].values[0]
+        for j, _ in enumerate(rids):
+            recv_token = req_df[req_df['http_rid'] == rids[j]]['recv_token_size'].values[0]
             total_prefill_token += recv_token
             if recv_token > max_seq_len:
                 max_seq_len = recv_token
-            req_block = index_dict.get((rid, iters[j]), 0)
-            req_info = (int(recv_token), req_block, iters[j])
+            req_blcok = csv_data.index_dict.get((rids[j], iters[j]), 0)
+            req_info = (int(recv_token), req_blcok, iters[j])
             total_req_info.append(req_info)
         process_req_info = tuple(total_req_info)
         start = exec_row[3]
         end = exec_row[4]
         model_exec = end - start
         current_batch_id = i
-        block_sum = batch_id_block_sum.get(current_batch_id + 1, 0)
+        block_sum = csv_data.batch_id_block_sum.get(current_batch_id + 1, 0)
 
         combined_row = list(exec_row) + list(batch_row) + [model_exec, block_sum, total_prefill_token, max_seq_len]
         if combined_row[10] == 'Prefill':
             combined_row[10] = 'prefill'
         else:
             combined_row[10] = 'decode'
-
         tuple_elements = (
             combined_row[10],
             combined_row[9],
-            combined_row[13],
-            int(combined_row[14]),
-            int(combined_row[15]),
-            combined_row[12]
+            combined_row[16],
+            int(combined_row[17]),
+            int(combined_row[18]),
+            combined_row[15]
         )
         combined_row = tuple([tuple_elements]) + tuple([process_req_info])
         processed_data.append(combined_row)
@@ -241,9 +245,9 @@ class ProcessedData:
 def save_processed_data_to_csv(
         processed_data: ProcessedData
 ) -> None:
-    output_folder = create_output_folder(input_path)
-
-    for pid, exec_data in data_by_pid.items():
+    output_folder = create_output_folder(processed_data.input_path)
+    batch_rows = processed_data.batch_rows
+    for pid, exec_data in processed_data.data_by_pid.items():
         current_batch_index = 0
         batch_data = process_batch_data(exec_data, batch_rows, current_batch_index)
 
@@ -253,9 +257,10 @@ def save_processed_data_to_csv(
 
         with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
             write_csv_header(csvfile)
-            processed_data = process_execution_data(exec_data, batch_data, \
-                                                    req_df, rids_ori, index_dict, batch_id_block_sum)
-            for row in processed_data:
+            an_data = ExecutionData(exec_data, batch_data, processed_data.req_df, processed_data.rids_ori, 
+                                    processed_data.index_dict, processed_data.batch_id_block_sum)
+            feature_data = process_execution_data(an_data)
+            for row in feature_data:
                 write_csv_row(csvfile, row)
 
 
@@ -268,7 +273,7 @@ def source_to_model(input_path: str):
         exec_rows = read_batch_exec_data(cursor)
         batch_rows = read_batch_data(cursor)
         req_rows = read_batch_req_data(cursor)
-        index_dict = []
+        index_dict = {}
         for row in req_rows:
             key = (row[1], row[3])
             value = row[4]
@@ -280,19 +285,17 @@ def source_to_model(input_path: str):
         req_df = pd.read_csv(csv_file, header=0)
 
         rids_ori = fetch_rids_from_db(ori_db_path)
-
-        save_processed_data_to_csv(
-            input_path,
+        csv_data = ProcessedData(input_path,
             data_by_pid,
             batch_rows,
             batch_id_block_sum,
             req_df,
             rids_ori,
-            index_dict
-        )
+            index_dict)
+        save_processed_data_to_csv(csv_data)
 
     except Exception as e:
-        logger.error(f"处理过程中出错: {e}") 
+        logger.error(f"处理过程中出错: {e}")
         raise e
     finally:
         db_connector.close()
@@ -310,7 +313,7 @@ def req_decodetimes(input_path, output_path):
         reader = csv.DictReader(file)
         for row in reader:
             http_reqid = row['http_rid']
-            reply_token_size = int(float(row['recv_token_size']))
+            reply_token_size = int(float(row['reply_token_size']))
             data[http_reqid] = reply_token_size
 
     # 将字典写入JSON文件
@@ -332,7 +335,6 @@ def main(args):
     except IOError as e:
         logger.error(f"无法读取输入文件: {e}")
         raise e
-
     # 确保输出目录存在
     input_csv_path = os.path.join(input_path, f'output_csv')
     pretrain(input_csv_path, output_path)

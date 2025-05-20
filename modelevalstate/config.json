@@ -1,9 +1,9 @@
 {
-  "n_particles": 30,
-  "iters": 100,
+  "n_particles": 10,
+  "iters": 5,
   "prefill_lam": 0,
   "decode_lam": 0,
-  "prefill_constrain": 0.5,
+  "prefill_constrain": 10,
   "decode_constrain": 0.05,
   "float_range_in_best_particle": 0.1,
   "server": [

@@ -18,25 +18,112 @@
 2. 获取训练好的模型及编码器。
 
 功能：
-1. 预测v1版本的数据。参考： demo_predict_v1
+1. 预测v1版本的数据。参考： example
 
 
 """
-import sys
 import os
-
-current_dir = os.path.dirname(os.path.dirname(__file__))
-if current_dir not in sys.path:
-    sys.path.append(0, current_dir)
-
-from typing import Tuple
+import queue
+import signal
+import time
+from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
+from threading import Thread
+from typing import List, Optional, Tuple, Sequence
 
+import pandas as pd
 import xgboost
+from loguru import logger
+from pandas import DataFrame
+from xgboost import DMatrix
 
-from modelevalstate.inference.dataset import InputData, DataProcessor, CustomLabelEncoder, preset_category_data
+from modelevalstate.config.config import settings
 from modelevalstate.inference.data_format_v1 import BatchField, RequestField, ConfigPath
+from modelevalstate.inference.dataset import InputData, DataProcessor, CustomLabelEncoder, preset_category_data
 from modelevalstate.inference.file_reader import FileHanlder, StaticFile
+
+sub_thread = None
+predict_queue = queue.Queue()
+
+
+class CachePredict:
+    def __init__(self, data_path: Path, data: Optional[DataFrame] = None, label_name: str = "label"):
+        self.label_name = label_name
+        self.data_path = data_path
+        self.data = None
+        self.label = None
+        if data is not None:
+            self.label = data[label_name]
+            self.data = data.drop(label_name, axis=1)
+        elif data_path and data_path.exists():
+            read_datas = [pd.read_csv(_child) for _child in data_path.iterdir()]
+            if read_datas:
+                data = pd.concat(read_datas)
+                self.label = data[label_name]
+                self.data = data.drop(label_name, axis=1)
+        self.new_data = None
+        self.new_label = None
+        self.output = data_path.joinpath(f"train_{os.getpid()}_{datetime.today().isoformat()}.csv")
+        if not self.output.parent.exists():
+            self.output.parent.mkdir(parents=True)
+
+    def update(self, data: List, label: float):
+        _compare_data = [round(k) for k in data]
+        if self.data is not None:
+            history_exists = (round(self.data) == _compare_data).all(axis=1).any()
+            if history_exists:
+                return
+
+        if self.new_data is None and self.new_label is None:
+            if self.data is None:
+                self.new_data = pd.DataFrame([data])
+                self.new_label = pd.Series([label], name=self.label_name)
+            else:
+                self.new_data = pd.DataFrame([data], columns=self.data.columns)
+                self.new_label = pd.Series([label], name=self.label.name)
+            return
+        current_exists = (round(self.new_data) == _compare_data).all(axis=1).any()
+        if current_exists:
+            return
+        self.new_data.loc[len(self.new_data)] = {k: v for k, v in zip(self.new_data.columns, data)}
+        self.new_label.loc[len(self.new_label)] = label
+
+    def save(self):
+        if self.new_data is None and self.new_label is None:
+            return
+        data = self.new_data.copy()
+        data[self.new_label.name] = self.new_label
+        data.to_csv(self.output, index=False)
+
+
+def update_cache(cache_predict: Optional[CachePredict], persistent_threshold: int = 100):
+    while True:
+        flag = False
+        items = []
+        while not predict_queue.empty():
+            items.append(predict_queue.get())
+        for res in items:
+            if res is None:
+                flag = True
+                break
+            cache_predict.update(*res)
+        if cache_predict.new_data is not None and len(cache_predict.new_data) > persistent_threshold:
+            cache_predict.save()
+        if flag:
+            break
+        time.sleep(1)
+    cache_predict.save()
+
+
+def signal_handler(signum, frame):
+    predict_queue.put(None)
+    if sub_thread:
+        sub_thread.join()
+
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 
 class XGBStateEvaluate:
@@ -44,19 +131,66 @@ class XGBStateEvaluate:
     1. 预处理数据
     2. 进行预测
     """
+    _instance = None
+    _initialized = False
 
-    def __init__(self, xgb_model_path: Path, dataprocessor: DataProcessor):
-        self.xgb_model_path = xgb_model_path
-        self.prefill_type = "prefill"
-        self.decode_type = "decode"
-        self.xgb_model = self.load_model(self.xgb_model_path)
-        self.data_processor = dataprocessor
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(XGBStateEvaluate, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, xgb_model_path: Path, dataprocessor: DataProcessor, cache_data: Optional[Path] = None):
+        if not XGBStateEvaluate._initialized:
+            self.xgb_model_path = xgb_model_path
+            self.prefill_type = "prefill"
+            self.decode_type = "decode"
+            cache = None
+            if cache_data:
+                global sub_thread
+                cache, cache_predict = self.load_cache_predict(cache_data)
+                sub_thread = Thread(target=update_cache, args=(cache_predict,))
+                sub_thread.start()
+            self.xgb_model = self.load_model(self.xgb_model_path, cache)
+            self.data_processor = dataprocessor
+            XGBStateEvaluate._initialized = True
+
 
     @staticmethod
-    def load_model(model_path):
-        _model = xgboost.Booster()
+    def load_model(model_path, cache: Optional[Sequence[DMatrix]] = None):
+        # 获取当前在那个gpu上
+        try:
+            import torch
+            import torch_npu
+            params = {"device": f"gpu:{torch.npu.current_device()}"}
+        except ImportError:
+            params = {}
+        _model = xgboost.Booster(params=params, cache=cache)
         _model.load_model(model_path)
         return _model
+
+    @staticmethod
+    def load_cache_predict(cache_data: Optional[Path] = None):
+        cache = None
+        read_datas = []
+        if cache_data and cache_data.exists():
+            for _child in cache_data.iterdir():
+                try:
+                    _df = pd.read_csv(_child)
+                    read_datas.append(_df)
+                except (FileNotFoundError, pd.errors.EmptyDataError, RuntimeError) as e:
+                    logger.error("Failed in read cache data. cache data {}, child {}, error: {}",
+                                 cache_data, _child, e)
+        if read_datas:
+            data = pd.concat(read_datas)
+            _label = "label"
+            if _label not in data.columns:
+                _label = data.columns[-1]
+            label = data[_label]
+            cache = (xgboost.DMatrix(data.drop(_label, axis=1), label),)
+            cache_predict = CachePredict(cache_data, data, label_name=_label)
+        else:
+            cache_predict = CachePredict(settings.latency_model.cache_data)
+        return cache, cache_predict
 
     def predict(self, input_data: InputData) -> Tuple[float, float]:
         """
@@ -69,7 +203,10 @@ class XGBStateEvaluate:
         stage = input_data.batch_field.batch_stage.lower()
         line_info = self.data_processor.preprocessor(input_data)
         # 2. 进行预测
-        res = self.xgb_model.predict(xgboost.DMatrix(line_info, feature_names=self.xgb_model.feature_names))[0].item()
+        res = self.xgb_model.predict(xgboost.DMatrix([line_info, ], feature_names=self.xgb_model.feature_names))[
+            0].item()
+        if sub_thread:
+            predict_queue.put_nowait((line_info, res))
         _up = _ud = -1
         if stage == self.prefill_type:
             _up = res
@@ -82,7 +219,7 @@ class XGBStateEvaluate:
 
 # 接口提供三个参数1个batch字段，1个request字段，1个config 字段。
 
-
+@lru_cache(maxsize=32)
 def predict_v1(batch_info: BatchField, request_info: Tuple[RequestField, ...], config_path: ConfigPath):
     # 读取其他字段数据
     static_file = StaticFile(base_path=config_path.static_file_dir)
@@ -99,7 +236,7 @@ def predict_v1(batch_info: BatchField, request_info: Tuple[RequestField, ...], c
         model_config_field=fh.model_config_info,
         mindie_field=fh.mindie_info,
         env_field=fh.env_info,
-        hardware_field=fh.hardware,
+        hardware_field=fh.hardware
     )
     # 进行预测
     custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=config_path.ohe_path)
@@ -113,11 +250,12 @@ def predict_v1(batch_info: BatchField, request_info: Tuple[RequestField, ...], c
 
 
 def predict_v1_with_cache(
-    batch_info: BatchField,
-    request_info: Tuple[RequestField, ...],
-    config_path: ConfigPath,
-    fh: FileHanlder,
-    data_processor: DataProcessor,
+        batch_info: BatchField,
+        request_info: Tuple[RequestField, ...],
+        config_path: ConfigPath,
+        fh: FileHanlder,
+        data_processor: DataProcessor,
+        **kwargs
 ):
     # 组合为input data
     input_data = InputData(
@@ -132,122 +270,7 @@ def predict_v1_with_cache(
         env_field=fh.env_info,
         hardware_field=fh.hardware,
     )
-    xgb_state_eval = XGBStateEvaluate(xgb_model_path=config_path.model_path, dataprocessor=data_processor)
+    xgb_state_eval = XGBStateEvaluate(xgb_model_path=config_path.model_path, dataprocessor=data_processor, **kwargs)
     # 预测
     res = xgb_state_eval.predict(input_data)
     return res
-
-
-def demo_predict_v1():
-    """
-    使用：
-    1. 先调用inference/generate_env_hardware.py，生成env.json和hardware。json
-    2. 将env.json和hardware.json放到模型的静态文件目录下。例如llama3-8b-12-13
-    3. 再启动仿真程序调用predict_v1函数。
-
-    """
-    batch_field = BatchField("decode", 20, 20.0, 580.0, 29.0)
-    request_field = (
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-    )
-    config_path = ConfigPath(
-        Path(r".\PyProject\state_eval\tmp\pd_content\train\151\bak\base\xgb_model.ubj"),
-        Path(r".\PyProject\state_eval\tmp\pd_content\train\151\ohe"),
-        Path(r".\PyProject\state_eval\tmp\pd_content\train\151\deepseek_r1"),
-    )
-    batch_field = BatchField("prefill", 20, 20.0, 580.0, 29.0)
-
-
-def demo_predict_v1_with_cache():
-    batch_field = BatchField("decode", 20, 20.0, 580.0, 29.0)
-    request_field = (
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-    )
-    config_path = ConfigPath(
-        Path(r".\PyProject\state_eval\tmp\pd_content\train\114\bak\base\xgb_model.ubj"),
-        Path(r".\PyProject\state_eval\tmp\pd_content\train\114\ohe"),
-        Path(r".\PyProject\state_eval\tmp\pd_content\train\114\llama3-8b"),
-    )
-    static_file = StaticFile(base_path=config_path.static_file_dir)
-    fh = FileHanlder(static_file)
-    fh.load_static_data()
-    custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=config_path.ohe_path)
-    custom_encoder.fit(load=True)
-    data_processor = DataProcessor(custom_encoder)
-    batch_field = BatchField("prefill", 20, 20.0, 580.0, 29.0)
-
-
-def demo_predict_v1_with_cache_with_simple_data_processor():
-    batch_field = BatchField("decode", 20, 20.0, 580.0, 29.0)
-    request_field = (
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-        RequestField(29.0, 1, 2),
-    )
-    config_path = ConfigPath(
-        Path(r".\PyProject\state_eval\tmp\pd_content\train\155\bak\base\xgb_model.ubj"),
-        Path(r".\PyProject\state_eval\tmp\pd_content\train\155\ohe"),
-        Path(r".\PyProject\ModelEvalState\data\v1.0.0\deepseek_r1_forward_0"),
-    )
-    static_file = StaticFile(base_path=config_path.static_file_dir)
-    fh = FileHanlder(static_file)
-    fh.load_static_data()
-    custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=config_path.ohe_path)
-    custom_encoder.fit(load=True)
-    data_processor = DataProcessor(custom_encoder)
-    batch_field = BatchField("prefill", 20, 20.0, 580.0, 29.0)

@@ -16,44 +16,35 @@ import argparse
 import atexit
 import json
 import os
+import re
 import shlex
-import subprocess
 import shutil
-import time
-import tempfile
 import stat
-from copy import deepcopy
-
+import subprocess
+import tempfile
+import time
 import xmlrpc.client
-from typing import List, Dict, Tuple, Optional
-from pathlib import Path
+from copy import deepcopy
 from math import exp, inf
+from pathlib import Path
+from typing import Any, Dict, List, Tuple, Optional
 from xmlrpc.client import ServerProxy
-import psutil
-import matplotlib.pyplot as plt
+
 import numpy as np
 import pandas as pd
-from pyswarms.base.base_single import SwarmOptimizer
+import psutil
 from loguru import logger
-from pyswarms.utils.functions import single_obj as fx
-from pyswarms.utils.plotters.formatters import Mesher
-from pyswarms.utils.plotters.formatters import Designer
-from pyswarms.utils.plotters import plot_cost_history, plot_contour, plot_surface
 
-from modelevalstate.inference.constant import IS_SLEEP_FLAG
 from modelevalstate.common import get_train_sub_path
-from modelevalstate.optimizer.config import default_support_field, PsoOptions, PerformanceIndex, OptimizerConfigField
-from modelevalstate.config.config import AnalyzeTool, BenchMarkConfig, MindieConfig, settings, RUN_TIME, \
-    BenchMarkPolicy, DeployPolicy, map_param_with_value, MODEL_EVAL_STATE_CONFIG_PATH, modelevalstate_config_path, \
+from modelevalstate.config.config import AnalyzeTool, BenchMarkConfig, MindieConfig, settings, BenchMarkPolicy, \
+    DeployPolicy, map_param_with_value, MODEL_EVAL_STATE_CONFIG_PATH, modelevalstate_config_path, \
     CUSTOM_OUTPUT, custom_output
-from modelevalstate.optimizer.config import default_support_field, PsoOptions, PerformanceIndex, OptimizerConfigField
+from modelevalstate.config.config import default_support_field, PsoOptions, PerformanceIndex, OptimizerConfigField
 from modelevalstate.optimizer.analyze_profiler import analyze as analyze_profiler
-from modelevalstate.optimizer.store import DataStorage
 from modelevalstate.optimizer.global_best_custom import CustomGlobalBestPSO
+from modelevalstate.optimizer.store import DataStorage
 
 _analyze_mapping = {
-    AnalyzeTool.default.value: analyze,
-    AnalyzeTool.deepseek.value: analyze_deepseek,
     AnalyzeTool.profiler.value: analyze_profiler
 }
 
@@ -158,6 +149,7 @@ class BenchMark:
         self.run_log_offset = None
         self.run_log_fp = None
         self.process = None
+        self.pattern = re.compile(r"\s*(\d+\.?\d*)\s*\%")
 
     def backup(self, del_log=True):
         backup(self.benchmark_config.output_path, self.bak_path, self.__class__.__name__)
@@ -170,11 +162,29 @@ class BenchMark:
         first_token_time = None
         perf_generate_token_speed = None
         decode_time = None
+        success_rate = None
         for file in output_path.iterdir():
             if "result_common" in file.name:
                 try:
                     df = pd.read_csv(file)
-                    common_generate_speed = float(df["GenerateSpeed"][0].split()[0])
+                    if "OutputGenerateSpeed" in df.columns:
+                        _generate_speed = df["OutputGenerateSpeed"][0]
+                    else:
+                        _generate_speed = df["GenerateSpeed"][0]
+                    if isinstance(_generate_speed, str):
+                        common_generate_speed = float(_generate_speed.split()[0])
+                    elif isinstance(_generate_speed,
+                                    (int, float, np.int64, np.int32, np.float64, np.float32, np.float16)):
+                        common_generate_speed = _generate_speed
+                    else:
+                        raise TypeError(f"GenerateSpeed: {_generate_speed}, type: {type(_generate_speed)}")
+                    req_returnd = df["Returned"][0]
+                    if not req_returnd:
+                        continue
+                    _m_res = self.pattern.search(req_returnd)
+                    if not _m_res:
+                        continue
+                    success_rate = float(_m_res.group(1)) / 100
                 except (KeyError, AttributeError) as e:
                     logger.error(f"Failed in get GenerateSpeed. error: {e}")
                 continue
@@ -184,24 +194,26 @@ class BenchMark:
                     first_token_time = float(df["FirstTokenTime"][0].split()[0])
                     perf_generate_token_speed = float(df["GeneratedTokenSpeed"][0].split()[0])
                     decode_time = float(df["DecodeTime"][0].split()[0])
-                except (AttributeError, KeyError):
-                    logger.error(f"Failed in get FirstTokenTime or GeneratedTokenSpeed. error: {e}")
+                except (AttributeError, KeyError) as e:
+                    logger.error("Failed in get FirstTokenTime or GeneratedTokenSpeed. error: {}", e)
         if common_generate_speed is None and perf_generate_token_speed is None:
             raise ValueError("Not Found common_generate_speed or perf_generate_token_speed.")
         if first_token_time is None or decode_time is None:
             raise ValueError("Not Found first_token_time.")
         if self.throughput_type == "common":
-            average_decode_throughput = common_generate_speed
+            generate_speed = common_generate_speed
         else:
-            average_decode_throughput = perf_generate_token_speed
-        average_prefill_latency = first_token_time / 10 ** 3
-        average_decode_latency = decode_time / 10 ** 3
-        return PerformanceIndex(average_decode_throughput=average_decode_throughput,
-                                average_prefill_latency=average_prefill_latency,
-                                average_decode_latency=average_decode_latency)
+            generate_speed = perf_generate_token_speed
+        time_to_first_token = first_token_time / 10 ** 3
+        time_per_output_token = decode_time / 10 ** 3
+        return PerformanceIndex(generate_speed=generate_speed,
+                                time_to_first_token=time_to_first_token,
+                                time_per_output_token=time_per_output_token,
+                                success_rate=success_rate)
 
     def prepare(self):
         remove_file(Path(self.benchmark_config.output_path))
+        remove_file(Path(self.benchmark_config.custom_collect_output_path))
 
     def check_success(self, print_log=False):
         if self.run_log:
@@ -230,7 +242,7 @@ class BenchMark:
     def run(self, run_params: Tuple[OptimizerConfigField]):
         # 启动测试
         logger.info("Start the benchmark test.")
-        self.run_log_fp, self.run_log = tempfile.mkstemp(prefix="modelevalstate")
+        self.run_log_fp, self.run_log = tempfile.mkstemp(prefix="modelevalstate_benchmark")
         self.run_log_offset = 0
         if self.benchmark_config.work_path:
             cwd = self.benchmark_config.work_path
@@ -265,70 +277,11 @@ class BenchMark:
             remove_file(Path(self.run_log))
 
 
-class CustomBenchMark(BenchMark):
-    def __init__(self, benchmark_config: BenchMarkConfig, analyze_tool: AnalyzeTool = AnalyzeTool.default, **kwargs):
-        super().__init__(benchmark_config=benchmark_config, **kwargs)
+class ProfilerBenchmark(BenchMark):
+    def __init__(self, benchmark_config: BenchMarkConfig, *args, analyze_tool: AnalyzeTool = AnalyzeTool.default,
+                 **kwargs):
+        super().__init__(benchmark_config, *args, **kwargs)
         self.analyze_tool = analyze_tool
-
-    def extra_performance_index(self, *args, **kwargs):
-        logger.info("extra_performance_index")
-        analyze_tool = _analyze_mapping.get(self.analyze_tool)
-        if analyze_tool is None:
-            raise ValueError(f"Analyze tool not found: {self.analyze_tool}")
-        res = analyze_tool(*args, **kwargs)
-        first_prefill_latency = decode_latency = success_rate = None
-        if isinstance(res, tuple):
-            if len(res) == 1:
-                throughput = res[0]
-            elif len(res) == 2:
-                throughput, first_prefill_latency = res
-            elif len(res) == 3:
-                throughput, first_prefill_latency, decode_latency = res
-            elif len(res) == 4:
-                throughput, first_prefill_latency, decode_latency, success_rate = res
-            else:
-                raise ValueError(f"Not Support. res: {res}")
-        else:
-            throughput = res
-        return PerformanceIndex(average_decode_throughput=throughput, average_prefill_latency=first_prefill_latency,
-                                average_decode_latency=decode_latency, success_rate=success_rate)
-
-    def backup(self, del_log=True):
-        super().backup(del_log)
-        backup(self.benchmark_config.custom_collect_output_path, self.bak_path, self.__class__.__name__)
-        backup(self.benchmark_config.custom_analysis_output_path, self.bak_path, self.__class__.__name__)
-
-    def prepare(self):
-        super().prepare()
-        remove_file(Path(self.benchmark_config.custom_collect_output_path))
-        remove_file(Path(self.benchmark_config.custom_analysis_output_path))
-
-    def get_performance_index(self):
-        logger.info("get_performance_index")
-        collect_path = Path(self.benchmark_config.custom_collect_output_path)
-        if not collect_path.exists():
-            raise FileNotFoundError(f"Collect path not found: {collect_path}")
-        if self.analyze_tool == AnalyzeTool.deepseek.value:
-            res = self.extra_performance_index(collect_path, self.benchmark_config.custom_analysis_output_path,
-                                               self.benchmark_config.output_path)
-            return res
-        if not collect_path.is_dir():
-            raise NotADirectoryError(f"Collect path is not a directory: {collect_path}")
-        for file in collect_path.iterdir():
-            if not file.is_dir():
-                continue
-            try:
-                res = self.extra_performance_index(self.benchmark_config.custom_analysis_output_path, file,
-                                                   self.benchmark_config.output_path)
-            except Exception as e:
-                logger.error(f"Failed in analyze. {e}")
-                continue
-            return res
-
-
-class ProfilerBenchmark(CustomBenchMark):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.profiler_cmd = ["python", "-m", "ms_service_profiler.parse",
                              f"--input-path={self.benchmark_config.profile_input_path}",
                              f"--output-path={self.benchmark_config.profile_output_path}"]
@@ -336,6 +289,30 @@ class ProfilerBenchmark(CustomBenchMark):
         self.profiler_log_fp = None
         self.profiler_log_offset = 0
         self.profiler_process = None
+
+    def extra_performance_index(self, *args, **kwargs):
+        logger.info("extra_performance_index")
+        analyze_tool = _analyze_mapping.get(self.analyze_tool)
+        if analyze_tool is None:
+            raise ValueError(f"Analyze tool not found: {self.analyze_tool}")
+        res = analyze_tool(*args, **kwargs)
+        time_to_first_token = time_per_output_token = success_rate = None
+        if isinstance(res, tuple):
+            if len(res) == 1:
+                generate_speed = res[0]
+            elif len(res) == 2:
+                generate_speed, time_to_first_token = res
+            elif len(res) == 3:
+                generate_speed, time_to_first_token, time_per_output_token = res
+            elif len(res) == 4:
+                generate_speed, time_to_first_token, time_per_output_token, success_rate = res
+            else:
+                raise ValueError(f"Not Support. res: {res}")
+        else:
+            generate_speed = res
+        return PerformanceIndex(generate_speed=generate_speed, time_to_first_token=time_to_first_token,
+                                time_per_output_token=time_per_output_token, success_rate=success_rate)
+
 
     def backup(self, del_log=True):
         super().backup(del_log)
@@ -369,7 +346,7 @@ class ProfilerBenchmark(CustomBenchMark):
                 f"Failed in run benchmark. return code: {self.process.returncode}. ")
 
     def start_profiler(self):
-        self.profiler_log_fp, self.profiler_log = tempfile.mkstemp(prefix="modelevalstate")
+        self.profiler_log_fp, self.profiler_log = tempfile.mkstemp(prefix="modelevalstate_profiler")
         self.profiler_log_offset = 0
         if not os.path.exists(self.benchmark_config.work_path):
             raise FileNotFoundError(f"Work path not found: {self.benchmark_config.work_path}")
@@ -407,47 +384,6 @@ class ProfilerBenchmark(CustomBenchMark):
                 self.profiler_process.kill()
         except AttributeError as e:
             logger.error(f"Failed to kill process. error {e}")
-
-
-class RPCCustomBenchMark(CustomBenchMark):
-    def __init__(self, rpc_clients, benchmark_config: BenchMarkConfig, **kwargs):
-        super().__init__(benchmark_config=benchmark_config, **kwargs)
-        self.rpc_clients = rpc_clients
-
-    def prepare(self):
-        super().prepare()
-        for rpc in self.rpc_clients:
-            rpc.remove_file(self.benchmark_config.custom_collect_output_path)
-            rpc.remove_file(self.benchmark_config.output_path)
-
-    def sync_server_file(self):
-        # 拷贝远程服务器文件到本机
-        remote_file = []
-        for rpc in self.rpc_clients:
-            remote_file.extend(rpc.get_file(self.benchmark_config.custom_collect_output_path))
-        for _file_name, file_binary in remote_file:
-            _tmp_file = Path(_file_name)
-            new_file = Path(self.benchmark_config.custom_collect_output_path).joinpath(
-                f"{_tmp_file.stem}_rpc{_tmp_file.suffix}")
-            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-            modes = stat.S_IWUSR | stat.S_IRUSR
-            try:
-                with os.fdopen(os.open(new_file, flags, modes), 'wb') as fout:
-                    fout.write(file_binary.data)
-            except FileExistsError:
-                logger.error(f"File already exists: {new_file}")
-            except PermissionError:
-                logger.error(f"Permission denied: {new_file}")
-            except AttributeError:
-                logger.error(f"Invalid file binary: {file_binary}")
-
-    def get_performance_index(self):
-        logger.info("get_performance_index")
-        self.sync_server_file()
-        collect_path = Path(self.benchmark_config.custom_collect_output_path)
-        res = self.extra_performance_index(collect_path, self.benchmark_config.custom_analysis_output_path,
-                                           self.benchmark_config.output_path)
-        return res
 
 
 class Simulator:
@@ -584,7 +520,7 @@ class Simulator:
         return False
 
     def start_server(self, run_params: Tuple[OptimizerConfigField]):
-        self.mindie_log_fp, self.mindie_log = tempfile.mkstemp(prefix="modelevalstate")
+        self.mindie_log_fp, self.mindie_log = tempfile.mkstemp(prefix="modelevalstate_mindie")
         self.mindie_log_offset = 0
         if self.mindie_config.work_path:
             cwd = self.mindie_config.work_path
@@ -617,7 +553,7 @@ class Simulator:
     def stop(self, del_log=True):
         logger.info("Stop mindie simulator process")
         if self.bak_path:
-            self.backup(del_log)
+            self.backup()
         close_file_fp(self.mindie_log_fp)
         if del_log:
             remove_file(self.mindie_log)
@@ -659,13 +595,14 @@ class Scheduler:
         self.bak_path = bak_path
         self.retry_number = retry_number
         self.wait_time = wait_start_time
+        self.current_back_path = None
         self.simulate_run_info = None
 
     def back_up(self):
         if self.bak_path:
-            _cur_bak_path = get_train_sub_path(self.bak_path)
-            self.simulator.bak_path = _cur_bak_path
-            self.benchmark.bak_path = _cur_bak_path
+            self.current_back_path = get_train_sub_path(self.bak_path)
+            self.simulator.bak_path = self.current_back_path
+            self.benchmark.bak_path = self.current_back_path
 
     def wait_simulate(self):
         logger.info("wait run mindie")
@@ -675,6 +612,7 @@ class Scheduler:
                 logger.info(f"Successfully started the {self.simulator.process.pid} process.")
                 return
         raise TimeoutError(self.wait_time)
+
 
     def run_simulate(self, params: np.ndarray, params_field: Tuple[OptimizerConfigField]):
         self.benchmark.prepare()
@@ -704,6 +642,7 @@ class Scheduler:
                 self.run_simulate(params, params_field)
             except Exception as e:
                 logger.error(f"Failed in Mindie Running. error: {e}， mindie log {self.simulator.mindie_log}")
+                logger.exception("What?!")
                 self.stop_target_server(del_log=False)
                 continue
             time.sleep(1)
@@ -711,6 +650,7 @@ class Scheduler:
                 self.benchmark.run(tuple(self.simulate_run_info))
             except Exception as e:
                 logger.error(f"Failed in Benchmark Running. error: {e}, benchmark log {self.benchmark.run_log}")
+                logger.exception("What?!")
                 self.stop_target_server(del_log=False)
                 continue
             time.sleep(1)
@@ -720,6 +660,7 @@ class Scheduler:
                 self.stop_target_server(del_log=False)
                 logger.error(f"Failed in monitoring status. error: {e}, mindie log {self.simulator.mindie_log}, "
                              f"benchmark log {self.benchmark.run_log}")
+                logger.exception("What?!")
                 continue
             return
         raise ValueError(
@@ -741,19 +682,22 @@ class Scheduler:
         logger.info("Start run in scheduler.")
         self.back_up()
         self.simulate_run_info = map_param_with_value(params, params_field)
+        error_info = None
+        del_log = True
+        performance_index = PerformanceIndex()
         try:
             self.run_target_server(params, params_field)
             time.sleep(1)
             performance_index = self.benchmark.get_performance_index()
         except Exception as e:
             logger.error(f"Failed running. bak path: {self.simulator.bak_path}")
-            self.data_storage.save(PerformanceIndex(), tuple(self.simulate_run_info), self.benchmark.benchmark_config,
-                                   error=e)
-            self.stop_target_server(del_log=False)
-            raise e
+            error_info = e
+            del_log = False
         self.data_storage.save(performance_index, tuple(self.simulate_run_info), self.benchmark.benchmark_config,
-                               error=None)
-        self.stop_target_server()
+                               error=error_info, bakcup=self.current_back_path)
+        self.stop_target_server(del_log)
+        if error_info:
+            raise error_info
         return performance_index
 
 
@@ -825,42 +769,16 @@ class PSOOptimizer:
         self.history_cost, self.history_pos = None, None
         if self.load_history_data and self.load_breakpoint:
             self.history_pos, self.history_cost = self.computer_fitness()
-        elif self.load_history_data:
-            self.init_pos = self.custom_init_pos()
-
-    def custom_init_pos(self) -> Optional[np.ndarray]:
-        _all_pos, _all_cost = self.computer_fitness()
-        if not _all_pos or not _all_cost:
-            return None
-        _fitness = min(_all_cost)
-        best_init_pos = np.array(_all_pos[_all_cost.index(_fitness)])
-        logger.info(f"history best init pos: {best_init_pos}, fitness: {_fitness}")
-        lb, ub = [i * (1 - settings.float_range_in_best_particle) for i in best_init_pos], [
-            i * (1 + settings.float_range_in_best_particle) for i in best_init_pos]
-        min_bounds = np.full((self.n_particles, len(self.target_field)), lb)
-        max_bounds = np.full((self.n_particles, len(self.target_field)), ub)
-        pos = np.random.uniform(
-            low=min_bounds, high=max_bounds, size=(self.n_particles, len(self.target_field))
-        )
-        return pos
 
     def computer_fitness(self) -> Tuple:
         all_position = []
         all_cost = []
         for case_data in self.load_history_data:
-            throughput = prefill_latency = decode_latency = success_rate = None
-            if "average_decode_throughput" in case_data:
-                throughput = case_data["average_decode_throughput"]
-            if "average_prefill_latency" in case_data:
-                prefill_latency = case_data["average_prefill_latency"]
-            if "average_decode_latency" in case_data:
-                decode_latency = case_data["average_decode_latency"]
-            if "success_rate" in case_data:
-                success_rate = case_data["success_rate"]
-            performance_index = PerformanceIndex(average_decode_throughput=throughput,
-                                                 average_prefill_latency=prefill_latency,
-                                                 average_decode_latency=decode_latency,
-                                                 success_rate=success_rate)
+            _params = {}
+            for k in PerformanceIndex.model_fields.keys():
+                if k in case_data:
+                    _params[k] = case_data[k]
+            performance_index = PerformanceIndex(**_params)
             try:
                 _fitness = self.minimum_algorithm(performance_index)
                 logger.info(f"fitness {_fitness}")
@@ -877,19 +795,19 @@ class PSOOptimizer:
 
     def minimum_algorithm(self, performance_index: PerformanceIndex) -> float:
         try:
-            fitness = 1 / performance_index.average_decode_throughput
+            fitness = 1 / performance_index.generate_speed
         except OverflowError:
             return inf
-        if performance_index.average_prefill_latency is not None:
+        if performance_index.time_to_first_token is not None:
             _var = max(0.0, (
-                    performance_index.average_prefill_latency - self.prefill_constrain) / self.prefill_constrain)
+                    performance_index.time_to_first_token - self.prefill_constrain) / self.prefill_constrain)
             try:
                 fitness += self.prefill_lam * (exp(_var) - 1)
             except OverflowError:
                 return inf
-        if performance_index.average_decode_latency is not None:
+        if performance_index.time_per_output_token is not None:
             _decode_var = max(0.0, (
-                    performance_index.average_decode_latency - self.decode_constrain) / self.decode_constrain)
+                    performance_index.time_per_output_token - self.decode_constrain) / self.decode_constrain)
             try:
                 fitness += self.decode_lam * (exp(_decode_var) - 1)
             except OverflowError:
@@ -906,7 +824,7 @@ class PSOOptimizer:
     def op_func(self, x) -> np.ndarray:
         n_particles = x.shape[0]
         logger.info(f"Acquired n_particles: {n_particles}, value: {x}")
-        throughput = []
+        generate_speed = []
         for i in range(n_particles):
             # 调用schedule， 获取采集的数据
             try:
@@ -918,8 +836,8 @@ class PSOOptimizer:
                 logger.exception("What?!")
                 _fitness = inf
             logger.info(f"fitness {_fitness}")
-            throughput.append(_fitness)
-        return np.array(throughput)
+            generate_speed.append(_fitness)
+        return np.array(generate_speed)
 
     def constructing_bounds(self) -> Tuple[Tuple, Tuple]:
         """
@@ -932,19 +850,6 @@ class PSOOptimizer:
             _max.append(_field.max)
         return (tuple(_min), tuple(_max))
 
-    def visualization(self, optimizer: SwarmOptimizer):
-        plot_cost_history(cost_history=optimizer.cost_history)
-        plt.savefig(settings.output.joinpath(f"cost_history_{RUN_TIME}.png"))
-        plt.close()
-        m = Mesher(func=fx.sphere)
-        animation = plot_contour(pos_history=optimizer.pos_history, mesher=m, mark=(0, 0))
-        animation.save(settings.output.joinpath(f"pos_history_{RUN_TIME}.gif"), writer="pillow")
-        pos_history_3d = m.compute_history_3d(optimizer.pos_history)
-        d = Designer(limits=[(-1, 1), (-1, 1), (-0.1, 1)], label=['x-axis', 'y-axis', 'z-axis'])
-        animation_3d = plot_surface(pos_history=pos_history_3d, mesher=m, designer=d, mark=(0, 0, 0))
-        animation_3d.save(str(settings.output.joinpath(f"pos_history_3d_{RUN_TIME}.gif").resolve()),
-                          writer="pillow", )
-
     def run(self):
         optimizer = CustomGlobalBestPSO(n_particles=self.n_particles, dimensions=len(self.target_field),
                                         options=self.pso_options.model_dump(), bounds=self.constructing_bounds(),
@@ -954,13 +859,12 @@ class PSOOptimizer:
         logger.info(
             f"best cost {cost}, best joint_vars: "
             f"{[self.target_field[i].format_func(k) for i, k in enumerate(joint_vars)]}")
-        self.visualization(optimizer)
 
 
 def main(args: argparse.Namespace):
     simulator = Simulator(settings.mindie)
     bak_path = None
-    if args.back_up:
+    if args.backup:
         bak_path = settings.output.joinpath("bak")
         if not bak_path.exists():
             bak_path.mkdir(parents=True)
@@ -973,17 +877,12 @@ def main(args: argparse.Namespace):
     # 单机benchmark
     if args.benchmark_policy == BenchMarkPolicy.benchmark.value and args.deploy_policy == DeployPolicy.single.value:
         benchmark = BenchMark(settings.benchmark, bak_path=bak_path)
-    # 多机 传统benchmark
-    elif args.benchmark_policy == BenchMarkPolicy.custom_benchmark.value and \
-            args.deploy_policy == DeployPolicy.multiple.value:
-        benchmark = RPCCustomBenchMark(rpc_clients, settings.benchmark, bak_path=bak_path,
-                                       analyze_tool=args.analyze_tool)
     # profiler benchmark, profiler只能采集主节点，因此多机情况下，也是运行单个机器的实例，处理数据。
     elif args.benchmark_policy == BenchMarkPolicy.profiler_benchmark.value:
-        benchmark = ProfilerBenchmark(settings.benchmark, bak_path=bak_path, analyze_tool=args.analyze_tool)
+        benchmark = ProfilerBenchmark(settings.benchmark, bak_path=bak_path, analyze_tool=AnalyzeTool.profiler)
     else:
         # 默认 自定义单机
-        benchmark = CustomBenchMark(settings.benchmark, bak_path=bak_path, analyze_tool=args.analyze_tool)
+        benchmark = BenchMark(settings.benchmark, bak_path=bak_path)
     # 存储结果，只在主节点存储结果
     data_storage = DataStorage(settings.data_storage)
     # 初始化调度模块，支持单机和多机。
@@ -992,7 +891,10 @@ def main(args: argparse.Namespace):
     else:
         scheduler = Scheduler(simulator, benchmark, data_storage, bak_path=bak_path)
     _load_history_data = None
-    if args.load_history:
+    _load_history = None
+    if args.load_breakpoint:
+        _load_history = True
+    if _load_history:
         _load_history_data = data_storage.load_history_position(settings.data_storage.store_dir)
     pso = PSOOptimizer(scheduler, n_particles=settings.n_particles, iters=settings.iters,
                        prefill_lam=settings.prefill_lam, target_field=settings.target_field,
@@ -1007,19 +909,14 @@ def main(args: argparse.Namespace):
 parser = argparse.ArgumentParser(prog='optimizer')
 parser.add_argument("-b", "--benchmark_policy", default=BenchMarkPolicy.profiler_benchmark.value,
                     choices=[k.value for k in list(BenchMarkPolicy)],
-                    help="Whether to use custom performance indicators or mindie performance indicators. "
-                         "Benchmark and custom_benchmark are supported.")
-parser.add_argument("-lh", "--load_history", default=False, action="store_true",
-                    help="Indicates whether to customize the initial location based on historical records.")
+                    help="Whether to use custom performance indicators or mindie performance indicators.")
 parser.add_argument("-lb", "--load_breakpoint", default=False, action="store_true",
                     help="Continue from where the last optimization was aborted.")
 parser.add_argument("-d", "--deploy_policy", default=DeployPolicy.single.value,
                     choices=[k.value for k in list(DeployPolicy)],
                     help="Indicates whether the multi-node running policy is used.")
-parser.add_argument("--back_up", default=False, action="store_false",
+parser.add_argument("--backup", default=False, action="store_true",
                     help="Whether to back up data.")
-parser.add_argument("-a", "--analyze_tool", default=AnalyzeTool.profiler.value,
-                    choices=[k.value for k in list(AnalyzeTool)], help="Tool of data to be analyze")
 
 if __name__ == '__main__':
     _args = parser.parse_args()

@@ -39,6 +39,7 @@ class PatchPluginManager(PluginManager):
                 Simulate.init(self)
         except Exception as e:
             logger.error(f"Failed in simulate init. error {e}")
+            logger.exception("what?!")
             raise e
 
     @timer.track_time_async('generate_token')
@@ -56,6 +57,7 @@ class PatchPluginManager(PluginManager):
                 Simulate.generate_features(self, input_metadata, cache_ids)
         except Exception as e:
             logger.error(f"Failed in generate features, error {e}")
+            logger.exception("what?!")
             raise e
         if collect_flag:
             prof.attr("blocks", [int(x) for x in np.count_nonzero(input_metadata.block_tables > -1, axis=1)])
@@ -64,9 +66,14 @@ class PatchPluginManager(PluginManager):
 
         prof = span_start("forward", True)
         if (simulate_flag or optimizer_flag) and ServiceField.batch_field:
-            Simulate.predict_and_save()
-            result = Simulate.generate_logits(input_metadata.block_tables.shape[0],
+            try:
+                Simulate.predict_and_save()
+                result = Simulate.generate_logits(input_metadata.block_tables.shape[0],
                                               self.model_wrapper.config.vocab_size, self.model_wrapper.device)
+            except Exception as e:
+                logger.error(f"Failed in generate features, error {e}")
+                logger.exception("what?!")
+                raise e
         else:
             if ENV.framework_backend == BackendType.ATB:
                 if (self.plugin_list and "mtp" not in self.plugin_list) or self.is_mix_model:
@@ -91,6 +98,12 @@ class PatchPluginManager(PluginManager):
         draft_filtered_logits = self.sample_preprocess_manager(logits, sampling_metadata, input_metadata)
         sampling_output = self.generator_backend.sample(draft_filtered_logits, sampling_metadata)
         span_end(prof)
+        if (simulate_flag or optimizer_flag) and ServiceField.batch_field:
+            try:
+                Simulate.update_token(self, input_metadata, cache_ids, sampling_output)
+            except Exception as e:
+                logger.exception("what?!")
+                raise e
 
         prof = span_start("postprocess")
         generation_output = self.postprocess(

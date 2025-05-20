@@ -22,7 +22,7 @@ import pandas as pd
 from pandas import DataFrame
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 
-from modelevalstate.inference.constant import DTYPE_CATEGORY, ALL_ASCEND_NAME, ALL_HIDDEN_ACT, ALL_MODEL_TYPE, \
+from modelevalstate.inference.constant import DTYPE_CATEGORY, ALL_HIDDEN_ACT, ALL_MODEL_TYPE, \
     ALL_QUANTIZE, \
     ALL_KV_QUANT_TYPE, ALL_GROUP_SIZE, ALL_REDUCE_QUANT_TYPE, ALL_BATCH_STAGE
 from modelevalstate.inference.data_format_v1 import BatchField, RequestField, ModelOpField, ModelStruct, ModelConfig, \
@@ -53,7 +53,6 @@ class CategoryInfo:
 
 preset_category_data = [
     CategoryInfo("batch_stage", Path("batch_stage_ohe.pkl"), ALL_BATCH_STAGE),
-    CategoryInfo("soc_name", Path("soc_name_ohe.pkl"), ALL_ASCEND_NAME),
     CategoryInfo("hidden_act", Path("hidden_act_ohe.pkl"), ALL_HIDDEN_ACT),
     CategoryInfo("model_type", Path("model_type_ohe.pkl"), ALL_MODEL_TYPE),
     CategoryInfo("torch_dtype", Path("torch_dtype_ohe.pkl"), DTYPE_CATEGORY),
@@ -74,11 +73,14 @@ class CustomOneHotEncoder:
             for _one_hot in self.one_hots:
                 _one_hot.ohe_path = save_dir.joinpath(_one_hot.ohe_path)
         self.one_hot_encoders: List[OneHotEncoder] = []
+        self.first = True
 
     def fit(self, load: bool = False):
         self.one_hot_encoders = []
         for _one_hot in self.one_hots:
             if load:
+                if not _one_hot.ohe_path.exists():
+                    continue
                 with open(_one_hot.ohe_path, "rb") as f:
                     _cur_one_hot = pickle.load(f)
             else:
@@ -91,18 +93,48 @@ class CustomOneHotEncoder:
             with open(_one_hot.ohe_path, "wb") as f:
                 pickle.dump(self.one_hot_encoders[i], f)
 
+    def update_encoders(self, columns):
+        if self.first:
+            new_one_hot_encoders = []
+            new_one_hosts = []
+            for i, v in enumerate(self.one_hot_encoders):
+                _one_hot_info = self.one_hots[i]
+                if _one_hot_info.name in columns:
+                    new_one_hot_encoders.append(v)
+                    new_one_hosts.append(_one_hot_info)
+            self.one_hot_encoders = new_one_hot_encoders
+            self.one_hots = new_one_hosts
+            self.first = False
+
     def transformer(self, x: DataFrame):
+        self.update_encoders(x.columns)
         for i, _one_hot_encoder in enumerate(self.one_hot_encoders):
             _one_hot_info = self.one_hots[i]
-            if _one_hot_info.name not in x.columns:
-                continue
             encode_value = _one_hot_encoder.transform(x[_one_hot_info.name].values.reshape(-1, 1)).toarray()
             _encode_df = pd.DataFrame(encode_value,
                                       columns=[f"{_one_hot_info.name}__{i}" for k in _one_hot_encoder.categories_ for i
                                                in k])
             x = pd.concat([_encode_df, x], axis=1)
             x = x.drop(_one_hot_info.name, axis=1)
+
         return x
+
+    def transformer_optimize(self, data: List, data_column: List):
+        self.update_encoders(data_column)
+        for i, _one_hot_encoder in enumerate(self.one_hot_encoders):
+            _one_hot_info = self.one_hots[i]
+            _col_index = data_column.index(_one_hot_info.name)
+            encode_value = _one_hot_encoder.transform([data[_col_index], ])
+            _new_column = [
+                f"{_one_hot_info.name}__{i}" 
+                for k in _one_hot_encoder.categories_ 
+                for i in k
+            ]
+            data.pop(_col_index)
+            data_column.pop(_col_index)
+            data = [*encode_value, *data]
+            data_column = [*_new_column, *data_column]
+        return data, data_column
 
 
 class CustomLabelEncoder:
@@ -115,11 +147,16 @@ class CustomLabelEncoder:
             for _category in self.category_info:
                 _category.ohe_path = save_dir.joinpath(_category.ohe_path)
         self.category_encoders: List[LabelEncoder] = []
+        self.first = True
+        self.encode_cache = {}
+
 
     def fit(self, load: bool = False):
         self.category_encoders = []
         for _cate_info in self.category_info:
             if load:
+                if not _cate_info.ohe_path.exists():
+                    continue
                 with open(_cate_info.ohe_path, "rb") as f:
                     _cur_encoder = pickle.load(f)
             else:
@@ -132,14 +169,40 @@ class CustomLabelEncoder:
             with open(_cate_info.ohe_path, "wb") as f:
                 pickle.dump(self.category_encoders[i], f)
 
+    def update_encoders(self, columns):
+        if self.first:
+            new_category_encoders = []
+            new_category_info = []
+            for i, v in enumerate(self.category_encoders):
+                _cate_info = self.category_info[i]
+                if _cate_info.name in columns:
+                    new_category_encoders.append(v)
+                    new_category_info.append(_cate_info)
+            self.category_encoders = new_category_encoders
+            self.category_info = new_category_info
+            self.first = False
+
     def transformer(self, x: DataFrame):
+        self.update_encoders(x.columns)
         for i, _cate_encoder in enumerate(self.category_encoders):
             _cate_info = self.category_info[i]
-            if _cate_info.name not in x.columns:
-                continue
             encode_value = _cate_encoder.transform(x[_cate_info.name].values)
             x[_cate_info.name] = encode_value
         return x
+
+    def transformer_optimize(self, data: List, data_column: List):
+        self.update_encoders(data_column)
+        for i, _cate_encoder in enumerate(self.category_encoders):
+            _cate_info = self.category_info[i]
+            _col_index = data_column.index(_cate_info.name)
+            _cache = (_cate_info.name, data[_col_index])
+            if _cache in self.encode_cache:
+                data[_col_index] = self.encode_cache.get(_cache)
+            else:
+                encode_value = _cate_encoder.transform([data[_col_index], ])
+                data[_col_index] = encode_value[0]
+                self.encode_cache[_cache] = data[_col_index]
+        return data, data_column
 
 
 class DataProcessor:
@@ -147,38 +210,53 @@ class DataProcessor:
         self.custom_encoder = custom_encoder
 
     def preprocessor(self, input_data: InputData) -> np.ndarray:
-        v, col = PreprocessTool.generate_data(input_data.batch_field, BATCH_FIELD)
-        batch_df = pd.DataFrame((v,), columns=col)
-        v, col = PreprocessTool.generate_data_with_request_info(input_data.request_field, REQUEST_FIELD)
-        request_df = pd.DataFrame((v,), columns=col)
-        batch_df[TOTAL_OUTPUT_LENGTH] = request_df[TOTAL_OUTPUT_LENGTH]
-        batch_df[TOTAL_SEQ_LENGTH] = batch_df[TOTAL_PREFILL_TOKEN] + batch_df[TOTAL_OUTPUT_LENGTH]
-        request_df = request_df.drop(TOTAL_OUTPUT_LENGTH, axis=1)
-        _load_data = [batch_df, request_df]
+        batch_v, batch_col = PreprocessTool.generate_data(input_data.batch_field, BATCH_FIELD)
+        request_v, request_col = PreprocessTool.generate_data_with_request_info(input_data.request_field, REQUEST_FIELD)
+        for i, v in enumerate(request_col):
+            if v == TOTAL_OUTPUT_LENGTH:
+                batch_v = [*batch_v, request_v[i]]
+                batch_col = [*batch_col, TOTAL_OUTPUT_LENGTH]
+                request_v = list(request_v)
+                request_v.pop(i)
+                request_col = list(request_col)
+                request_col.pop(i)
+                break
+        total_seq_length = 0
+        for i, v in enumerate(batch_col):
+            if v in (TOTAL_PREFILL_TOKEN, TOTAL_OUTPUT_LENGTH):
+                total_seq_length += batch_v[i]
+
+        batch_v.append(total_seq_length)
+        batch_col.append(TOTAL_SEQ_LENGTH)
+
+        load_value = [*batch_v, *request_v]
+        load_col = [*batch_col, *request_col]
+
         if input_data.model_op_field:
             v, col = PreprocessTool.generate_data_with_op_info(input_data.model_op_field, MODEL_OP_FIELD)
-            model_op_df = pd.DataFrame((v,), columns=col)
-            _load_data.append(model_op_df)
+            load_value.extend(v)
+            load_col.extend(col)
         if input_data.model_struct_field:
             v, col = PreprocessTool.generate_data_with_struct_info(input_data.model_struct_field,
                                                                    MODEL_STRUCT_FIELD)
-            model_struct_df = pd.DataFrame((v,), columns=col)
-            _load_data.append(model_struct_df)
+            load_value.extend(v)
+            load_col.extend(col)
         if input_data.model_config_field:
             v, col = PreprocessTool.generate_data_with_model_config(input_data.model_config_field,
                                                                     MODEL_CONFIG_FIELD)
-            model_config_df = pd.DataFrame((v,), columns=col)
-            _load_data.append(model_config_df)
+            load_value.extend(v)
+            load_col.extend(col)
         if input_data.mindie_field:
             v, col = PreprocessTool.generate_data(input_data.mindie_field, MINDIE_FIELD)
-            mindie_df = pd.DataFrame((v,), columns=col)
-            _load_data.append(mindie_df)
+            load_value.extend(v)
+            load_col.extend(col)
         if input_data.env_field:
             v, col = PreprocessTool.generate_data(input_data.env_field, ENV_FIELD)
-            _load_data.append(pd.DataFrame((v,), columns=col))
+            load_value.extend(v)
+            load_col.extend(col)
         if input_data.hardware_field:
             v, col = PreprocessTool.generate_data(input_data.hardware_field, HARDWARE_FIELD)
-            _load_data.append(pd.DataFrame((v,), columns=col))
-        feature_df = pd.concat(_load_data, axis=1)
-        feature_df = self.custom_encoder.transformer(feature_df)
-        return feature_df.values
+            load_value.extend(v)
+            load_col.extend(col)
+        load_value, _ = self.custom_encoder.transformer_optimize(load_value, load_col)
+        return load_value

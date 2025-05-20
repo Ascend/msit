@@ -23,7 +23,7 @@ _patch_dir = Path(__file__).absolute().expanduser().parent.resolve()
 
 
 class Patch2rc1:
-    mindie_llm = "2.0rc1"
+    mindie_llm = "2.0"
     mindie_llm_low = "2.0a9"
 
     @staticmethod
@@ -32,9 +32,10 @@ class Patch2rc1:
         _c_v_up = version.parse(Patch2rc1.mindie_llm)
         _c_v_low = version.parse(Patch2rc1.mindie_llm_low)
         if _c_v_low < _t_v <= _c_v_up:
-            return True
+            pass
         else:
-            return False
+            logger.warning("The version may not match.")
+        return True
 
     @staticmethod
     def patch():
@@ -45,9 +46,9 @@ class Patch2rc1:
         if not plugin_manager_file.exists():
             raise FileNotFoundError(plugin_manager_file)
         # 读取文件，检查是否已经打过补丁
-        with open(plugin_manager_file, "r") as f:
+        with open(plugin_manager_file, "r", encoding="utf-8") as f:
             data = f.readlines()
-        with open(_patch_dir.joinpath("plugin_manager_patch_2rc1.patch"), "r") as f:
+        with open(_patch_dir.joinpath("plugin_manager_patch.patch"), "r", encoding="utf-8") as f:
             patch_data = f.readlines()
         i = 0
         diff_flag = True
@@ -55,8 +56,10 @@ class Patch2rc1:
             # 原来的代码
             if i == 0 and _o_row != patch_data[0]:
                 continue
+            if i >= len(patch_data):
+                break
             # 发现有补丁代码
-            elif _o_row == patch_data[i]:
+            if _o_row == patch_data[i]:
                 i += 1
                 diff_flag = False
             else:
@@ -74,4 +77,3 @@ class Patch2rc1:
 
 if __name__ == '__main__':
     Patch2rc1.patch()
-
