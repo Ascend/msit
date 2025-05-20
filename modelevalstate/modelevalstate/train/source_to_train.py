@@ -257,7 +257,8 @@ def save_processed_data_to_csv(
 
         with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
             write_csv_header(csvfile)
-            an_data = ExecutionData(exec_data, batch_data, processed_data.req_df, processed_data.rids_ori, processed_data.index_dict,processed_data.batch_id_block_sum)
+            an_data = ExecutionData(exec_data, batch_data, processed_data.req_df, processed_data.rids_ori, 
+                                    processed_data.index_dict, processed_data.batch_id_block_sum)
             feature_data = process_execution_data(an_data)
             for row in feature_data:
                 write_csv_row(csvfile, row)
