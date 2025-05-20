@@ -48,7 +48,7 @@ except ImportError as e:
     warn(f"Failed from .patch_manager import Patch2rc1. error: {e}")
 
 try:
-    from .plugin_simulate_patch_2rc1 import Patch2rc1
+    from .plugin_simulate_patch import Patch2rc1
 
     simulate_patch_elegant.append(Patch2rc1)
     optimize_patch_elegant.append(Patch2rc1)
