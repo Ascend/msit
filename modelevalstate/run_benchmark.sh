@@ -7,8 +7,8 @@ benchmark --DatasetPath "/benchmark_data" \
   --ModelPath "/data/llama3-8b"  \
   --TestType client \
   --MaxOutputLen 256 \
-  --Http http://127.0.0.1:8025 \
-  --ManagementHttp http://127.0.0.1:8026 \
+  --Http http://127.0.0.1:1025 \
+  --ManagementHttp http://127.0.0.1:1026 \
   --Concurrency $CONCURRENCY \
   --RequestRate $REQUESTRATE \
   --WarmupSize 0

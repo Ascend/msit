@@ -73,6 +73,7 @@ def get_module_version(module_name):
     try:
         # 方法1：直接导入模块
         # fix
+        import importlib
         module = importlib.import_module(module_name)
         if hasattr(module, "__version__"):
             return module.__version__
