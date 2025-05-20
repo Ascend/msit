@@ -121,16 +121,16 @@ class BenchMarkConfig(BaseModel):
     @field_validator("output_path", "custom_collect_output_path", "profile_input_path",
                      "profile_output_path")
     @classmethod
-    def create_path(cls, v: Path) -> Path:
-        v.mkdir(parents=True, exist_ok=True)
-        return v
+    def create_path(cls, path: Path) -> Path:
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     @field_validator("work_path")
     @classmethod
-    def check_dir(cls, v: Path) -> Path:
-        if not v.exists():
-            logger.error(f"FileNotFound: {v}")
-        return v
+    def check_dir(cls, path: Path) -> Path:
+        if not path.exists():
+            logger.error(f"FileNotFound: {path}")
+        return path
 
 
 class DataStorageConfig(BaseModel):
@@ -141,9 +141,9 @@ class DataStorageConfig(BaseModel):
 
     @field_validator("store_dir")
     @classmethod
-    def create_path(cls, v: Path) -> Path:
-        v.mkdir(parents=True, exist_ok=True)
-        return v
+    def create_path(cls, path: Path) -> Path:
+        path.mkdir(parents=True, exist_ok=True)
+        return path
     
 
 class LatencyModel(BaseModel):
@@ -160,19 +160,19 @@ class LatencyModel(BaseModel):
 
     @field_validator("static_file_dir")
     @classmethod
-    def validate_cache_data(cls, v: Optional[Path] = None):
-        if v:
-            if not Path(v).exists():
-                v.mkdir(parents=True)
-        return v
+    def validate_cache_data(cls, path: Optional[Path] = None):
+        if path:
+            if not Path(path).exists():
+                path.mkdir(parents=True)
+        return path
     
     @field_validator("static_file_dir")
     @classmethod
-    def validate_static_file_dir(cls, v: Optional[None]):
-        if v is None:
-            v = cls.base_path.joinpath("model_static_file")
-            v.mkdir(parents=True)
-        return v
+    def validate_static_file_dir(cls, path: Optional[None]):
+        if path is None:
+            path = cls.base_path.joinpath("model_static_file")
+            path.mkdir(parents=True)
+        return path
 
 
 class MindieConfig(BaseModel):
@@ -187,16 +187,16 @@ class MindieConfig(BaseModel):
 
     @field_validator("config_path")
     @classmethod
-    def check_dir(cls, v: Path) -> Path:
-        if not v.exists():
-            logger.error(f"FileNotFound: {v}")
-        return v
+    def check_dir(cls, path: Path) -> Path:
+        if not path.exists():
+            logger.error(f"FileNotFound: {path}")
+        return path
 
     @field_validator("log_path")
     @classmethod
-    def create_path(cls, v: Path) -> Path:
-        v.mkdir(parents=True, exist_ok=True)
-        return v
+    def create_path(cls, path: Path) -> Path:
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
 
 class PsoOptions(BaseModel):
@@ -284,9 +284,9 @@ class Settings(BaseSettings):
 
     @field_validator("output")
     @classmethod
-    def create_path(cls, v: Path) -> Path:
-        v.mkdir(parents=True, exist_ok=True)
-        return v
+    def create_path(cls, path: Path) -> Path:
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
 
 settings = Settings()
