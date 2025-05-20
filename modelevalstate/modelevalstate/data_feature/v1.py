@@ -48,7 +48,8 @@ MODEL_CONFIG_FIELD = (
 ModelConfig = namedtuple("ModelConfig", MODEL_CONFIG_FIELD)
 
 
-BATCH_FIELD = ("batch_stage", "batch_size", "total_need_blocks", "total_prefill_token", "max_seq_len", "model_execute_time")
+BATCH_FIELD = ("batch_stage", "batch_size", "total_need_blocks", "total_prefill_token", "max_seq_len", \
+               "model_execute_time")
 BATCH_FILE_FIELD = ("ibis_batchid", *BATCH_FIELD, "req_info")
 BatchField = namedtuple("BatchField", BATCH_FIELD)
 BatchFileField = namedtuple("BatchFileField", BATCH_FILE_FIELD)
@@ -129,7 +130,7 @@ class FileReader:
                     # 读取完所有文件结束
                     break
                 file_path = self.file_paths[self.current_file_index]
-                if self.num_lines == math.inf:
+                if math.isclose(self.num_lines, math.inf):
                     df = pd.read_csv(file_path, skiprows=self.current_line_index)
                     lines.append(df)
                     # 继续读取下一个文件

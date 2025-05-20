@@ -596,6 +596,7 @@ class Scheduler:
         self.retry_number = retry_number
         self.wait_time = wait_start_time
         self.current_back_path = None
+        self.simulate_run_info = None
 
     def back_up(self):
         if self.bak_path:

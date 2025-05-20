@@ -23,6 +23,7 @@ from modelevalstate.data_feature.dataset_with_swifter import MyDataSetWithSwifte
 
 logger.info(f'modin version {getattr(modin, "__version__")}')
 
+
 class MyDataSetWithModin(MyDataSetWithSwifter):
 
     def preprocess_dispatch(self, lines_data: Optional[DataFrame] = None):

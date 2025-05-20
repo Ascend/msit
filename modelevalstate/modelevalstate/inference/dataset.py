@@ -125,7 +125,11 @@ class CustomOneHotEncoder:
             _one_hot_info = self.one_hots[i]
             _col_index = data_column.index(_one_hot_info.name)
             encode_value = _one_hot_encoder.transform([data[_col_index], ])
-            _new_column = [f"{_one_hot_info.name}__{i}" for k in _one_hot_encoder.categories_ for i in k]
+            _new_column = [
+                f"{_one_hot_info.name}__{i}" 
+                for k in _one_hot_encoder.categories_ 
+                for i in k
+            ]
             data.pop(_col_index)
             data_column.pop(_col_index)
             data = [*encode_value, *data]
@@ -199,6 +203,7 @@ class CustomLabelEncoder:
                 data[_col_index] = encode_value[0]
                 self.encode_cache[_cache] = data[_col_index]
         return data, data_column
+
 
 class DataProcessor:
     def __init__(self, custom_encoder: Optional[Union[CustomOneHotEncoder, CustomLabelEncoder]] = None):

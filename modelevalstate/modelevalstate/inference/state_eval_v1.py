@@ -120,7 +120,6 @@ def signal_handler(signum, frame):
     predict_queue.put(None)
     if sub_thread:
         sub_thread.join()
-    exit(0)
 
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -160,7 +159,8 @@ class XGBStateEvaluate:
     def load_model(model_path, cache: Optional[Sequence[DMatrix]] = None):
         # 获取当前在那个gpu上
         try:
-            import torch, torch_npu
+            import torch
+            import torch_npu
             params = {"device": f"gpu:{torch.npu.current_device()}"}
         except ImportError:
             params = {}

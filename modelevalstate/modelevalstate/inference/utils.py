@@ -84,7 +84,7 @@ class PreprocessTool:
             hist_index = getattr(HistInfo, _index)
             new_index.extend(hist_index["label"])
             _value = row_df[_index].values
-            if not len(_value):
+            if not _value:
                 _hist_value = [0 for _ in range(len(hist_index["bins"]) - 1)]
             else:
                 _hist_value, _ = np.histogram(_value, hist_index["bins"])
@@ -100,7 +100,7 @@ class PreprocessTool:
     def get_all_op_execute_delta(input_data, input_index, field="execute_delta"):
         _op_count = {}
         _op_delta = {}  # op_name: [[param1size, param2size,],[第二次调用param1size,第二次调用param2size]]
-        for i, _op_info in enumerate(input_data):
+        for _, _op_info in enumerate(input_data):
             _tmp_op_name = _op_info[input_index.index("op_name")]
             _tmp_op_count = int(_op_info[input_index.index("call_count")])
             if _tmp_op_name not in _op_count:
@@ -128,7 +128,7 @@ class PreprocessTool:
     def get_all_op_input_expected(input_data, input_index, field: str = "input_shape"):
         _op_count = {}
         _op_param_size = {}  # op_name: [[param1size, param2size,],[第二次调用param1size,第二次调用param2size]]
-        for i, _op_info in enumerate(input_data):
+        for _, _op_info in enumerate(input_data):
             _tmp_op_name = _op_info[input_index.index("op_name")]
             _tmp_op_count = int(_op_info[input_index.index("call_count")])
             if _tmp_op_name not in _op_count:
@@ -244,7 +244,7 @@ class PreprocessTool:
         _sum = 0
         _op_count = {}
         _op_param_size = {}  # op_name: [[param1size, param2size,],[第二次调用param1size,第二次调用param2size]]
-        for i, _op_info in enumerate(input_data):
+        for _, _op_info in enumerate(input_data):
             _tmp_op_name = _op_info[input_index.index("op_name")]
             _tmp_op_count = int(_op_info[input_index.index("call_count")])
             if _tmp_op_name not in _op_count:
@@ -281,7 +281,7 @@ class PreprocessTool:
         _sum = 0
         _op_count = {}
         _op_delta = {}  # op_name: [[第一次执行时间，第二次执行时间]]
-        for i, _op_info in enumerate(input_data):
+        for _, _op_info in enumerate(input_data):
             _tmp_op_name = _op_info[input_index.index("op_name")]
             _tmp_op_count = int(_op_info[input_index.index("call_count")])
             if _tmp_op_name not in _op_count:
@@ -340,7 +340,7 @@ class PreprocessTool:
                     new_index.append(k)
                     new_row.append(v)
             else:
-                for k, v in _cur_op_default.items():
+                for k, _ in _cur_op_default.items():
                     new_index.append(k)
                     _op_index_on_origin_rows = _op_in_origin_row_index[_op]
                     if "op_name" in k:

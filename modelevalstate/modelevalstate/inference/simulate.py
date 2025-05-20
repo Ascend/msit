@@ -36,6 +36,7 @@ from modelevalstate.inference.state_eval_v1 import predict_v1_with_cache
 
 predict_queue = queue.Queue()
 
+
 class ServiceField:
     batch_field = None
     request_field = None
@@ -106,7 +107,6 @@ def signal_handler(signum, frame):
     predict_queue.put(None)
     if sub_thread:
         sub_thread.join()
-    exit(0)
 
 
 file_log = FileLogger(Path(settings.benchmark.custom_collect_output_path).joinpath(f"simulate_{os.getpid()}.csv"))

@@ -160,7 +160,7 @@ class LatencyModel(BaseModel):
 
     @field_validator("static_file_dir")
     @classmethod
-    def validate_cache_data(cls, v:Optional[Path] = None):
+    def validate_cache_data(cls, v: Optional[Path] = None):
         if v:
             if not Path(v).exists():
                 v.mkdir(parents=True)
