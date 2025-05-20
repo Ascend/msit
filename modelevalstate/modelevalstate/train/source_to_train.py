@@ -165,7 +165,7 @@ def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_
                            index_dict: Dict[Tuple, Any], batch_id_block_sum: Dict[int, float]) -> List[Tuple]:
 
     processed_data = []
-    for i in range(len(exec_data)):
+    for i, value in enumerate(exec_data):
         exec_row = exec_data[i]
         batch_row = batch_data[i]
         total_prefill_token = 0
@@ -182,7 +182,7 @@ def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_
                 iters.append(iter_val)
             except KeyError as e:
                 logger.error(f"缺少键 '{e}'，跳过该条目")
-        for j in range(len(rids)):
+        for j, vol in enumerate(rids):
             recv_token = req_df[req_df['http_rid'] == rids[j]]['recv_token_size'].values[0]
             total_prefill_token += recv_token
             if recv_token > max_seq_len:
