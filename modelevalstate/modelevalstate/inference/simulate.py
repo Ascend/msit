@@ -197,7 +197,7 @@ class Simulate:
     @staticmethod
     def update_token(plugin_object, input_metadata, cached_ids, sampling_output):
         output_len_count = plugin_object.input_manager.cache.output_len_count[cached_ids]
-        for i, value in enumerate(sampling_output.token_ids):
+        for i, _ in enumerate(sampling_output.token_ids):
             _cur_out_len = output_len_count[i]
             if input_metadata.batch_request_ids[i] not in ServiceField.req_id_and_max_decode_length:
                 continue

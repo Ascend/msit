@@ -19,6 +19,7 @@ import json
 import os
 import sqlite3
 from pathlib import Path
+from dataclasses import dataclass
 from typing import Dict, List, Tuple, Any
 
 import pandas as pd
@@ -161,19 +162,29 @@ def write_csv_header(csvfile) -> None:
     ])
 
 
-def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_df: pd.DataFrame, rids_ori: List[Any],
-                           index_dict: Dict[Tuple, Any], batch_id_block_sum: Dict[int, float]) -> List[Tuple]:
+@dataclass
+class ExecutionData:
+    exec_data: List[Tuple]
+    batch_data: List[Tuple]
+    req_df: pd.DataFrame
+    rids_ori: List[Any]
+    index_dict: Dict[Tuple, Any]
+    batch_id_block_sum: Dict[int, float]
+
+
+def process_execution_data(csv_data: ExecutionData) -> List[Tuple]:
 
     processed_data = []
-    for i, value in enumerate(exec_data):
-        exec_row = exec_data[i]
-        batch_row = batch_data[i]
+    for i, _ in enumerate(csv_data.exec_data):
+        exec_row = csv_data.exec_data[i]
+        batch_row = csv_data.batch_data[i]
         total_prefill_token = 0
         max_seq_len = 0
         total_req_info = []
-        data = ast.literal_eval(rids_ori[i])
+        data = ast.literal_eval(csv_data.rids_ori[i])
         rids = []
         iters = []
+        req_df = csv_data.req_df
         for item in data:
             try:
                 rid = item['rid']
@@ -182,12 +193,12 @@ def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_
                 iters.append(iter_val)
             except KeyError as e:
                 logger.error(f"缺少键 '{e}'，跳过该条目")
-        for j, vol in enumerate(rids):
+        for j, _ in enumerate(rids):
             recv_token = req_df[req_df['http_rid'] == rids[j]]['recv_token_size'].values[0]
             total_prefill_token += recv_token
             if recv_token > max_seq_len:
                 max_seq_len = recv_token
-            req_blcok = index_dict.get((rids[j], iters[j]), 0)
+            req_blcok = csv_data.index_dict.get((rids[j], iters[j]), 0)
             req_info = (int(recv_token), req_blcok, iters[j])
             total_req_info.append(req_info)
         process_req_info = tuple(total_req_info)
@@ -195,7 +206,7 @@ def process_execution_data(exec_data: List[Tuple], batch_data: List[Tuple], req_
         end = exec_row[4]
         model_exec = end - start
         current_batch_id = i
-        block_sum = batch_id_block_sum.get(current_batch_id + 1, 0)
+        block_sum = csv_data.batch_id_block_sum.get(current_batch_id + 1, 0)
 
         combined_row = list(exec_row) + list(batch_row) + [model_exec, block_sum, total_prefill_token, max_seq_len]
         if combined_row[10] == 'Prefill':
@@ -220,18 +231,23 @@ def write_csv_row(csvfile, row: Tuple) -> None:
     writer.writerow(row)
 
 
-def save_processed_data_to_csv(
-        input_path: str,
-        data_by_pid: Dict[int, List[Tuple]],
-        batch_rows: List[Tuple],
-        batch_id_block_sum: Dict[int, float],
-        req_df: pd.DataFrame,
-        rids_ori: List[Any],
-        index_dict: Dict[Tuple, Any]
-) -> None:
-    output_folder = create_output_folder(input_path)
+@dataclass
+class ProcessedData:
+    input_path: str
+    data_by_pid: Dict[int, List[Tuple]]
+    batch_rows: List[Tuple]
+    batch_id_block_sum: Dict[int, float]
+    req_df: pd.DataFrame
+    rids_ori: List[Any]
+    index_dict: Dict[Tuple, Any]
 
-    for pid, exec_data in data_by_pid.items():
+
+def save_processed_data_to_csv(
+        processed_data: ProcessedData
+) -> None:
+    output_folder = create_output_folder(processed_data.input_path)
+    batch_rows = processed_data.batch_rows
+    for pid, exec_data in processed_data.data_by_pid.items():
         current_batch_index = 0
         batch_data = process_batch_data(exec_data, batch_rows, current_batch_index)
 
@@ -241,9 +257,9 @@ def save_processed_data_to_csv(
 
         with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
             write_csv_header(csvfile)
-            processed_data = process_execution_data(exec_data, batch_data, req_df, rids_ori, index_dict,
-                                                    batch_id_block_sum)
-            for row in processed_data:
+            an_data = ExecutionData(exec_data, batch_data, processed_data.req_df, processed_data.rids_ori, processed_data.index_dict,processed_data.batch_id_block_sum)
+            feature_data = process_execution_data(an_data)
+            for row in feature_data:
                 write_csv_row(csvfile, row)
 
 
@@ -268,16 +284,14 @@ def source_to_model(input_path: str):
         req_df = pd.read_csv(csv_file, header=0)
 
         rids_ori = fetch_rids_from_db(ori_db_path)
-
-        save_processed_data_to_csv(
-            input_path,
+        csv_data = ProcessedData(input_path,
             data_by_pid,
             batch_rows,
             batch_id_block_sum,
             req_df,
             rids_ori,
-            index_dict
-        )
+            index_dict)
+        save_processed_data_to_csv(csv_data)
 
     except Exception as e:
         logger.error(f"处理过程中出错: {e}")
