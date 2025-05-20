@@ -56,7 +56,7 @@ class PreprocessTool:
 
     @staticmethod
     @lru_cache(maxsize=32)
-    def generate_series_with_request_info(row, column) -> Series:
+    def generate_data_with_request_info(row, column) -> Series:
         new_index = []
         new_row = []
         for _index in column:

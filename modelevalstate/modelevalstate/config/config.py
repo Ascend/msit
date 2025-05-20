@@ -102,7 +102,7 @@ class PerformanceIndex(BaseModel):
 
 class BenchMarkConfig(BaseModel):
     name: str = "benchmark"
-    work_path: Path = Field(default_factory=lambda: Path(os.getenv()).resolve())
+    work_path: Path = Field(default_factory=lambda: Path(os.getcwd()).resolve())
     command: str = "/usr/bin/bash ./run_benchmark.sh"
     output_path: Path = custom_output.joinpath("instance")
     custom_collect_output_path: Path = Field(
@@ -135,7 +135,7 @@ class BenchMarkConfig(BaseModel):
 
 class DataStorageConfig(BaseModel):
     store_dir: Path = Field(
-        default_factory=lambda: Path(os.getenv()).joinpath("/result/store").resolve(),
+        default_factory=lambda: Path(os.getcwd()).joinpath("result/store").resolve(),
         validate_default=True
     )
 
