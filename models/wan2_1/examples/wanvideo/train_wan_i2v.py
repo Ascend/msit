@@ -18,6 +18,11 @@ if is_npu_available():
 
     torch.npu.config.allow_internal_format = False
 
+        ### SP 通信适配
+    from wan.acceleration.parallel_states import initialize_sequence_parallel_state, \
+        destroy_sequence_parallel_group, get_sequence_parallel_state, set_sequence_parallel_state, \
+            set_sequence_parallel_size, get_sequence_parallel_group, get_sequence_parallel_size 
+    import torch.distributed as dist
 
 class I2VDataset(torch.utils.data.Dataset):
     def __init__(self, base_path, metadata_path, max_num_frames=81, frame_interval=1, num_frames=81, height=480,
@@ -75,7 +80,6 @@ class I2VDataset(torch.utils.data.Dataset):
                 first_frame_image = frame
             frame = self.crop_and_resize(frame)
             frame = frame_process(frame)
-            # print("new", frame.shape)
             frames.append(frame)
         reader.close()
 
@@ -156,9 +160,9 @@ class TensorDataset(torch.utils.data.Dataset):
         self.steps_per_epoch = steps_per_epoch
 
     def __getitem__(self, index):
-        data_id = torch.randint(0, len(self.path), (1,))[0]
+        data_id = torch.randint(0, len(self.path), (1,))[0] # 精度对齐
         data_id = (data_id + index) % len(self.path)  # For fixed seed.
-        path = self.path[data_id]
+        path = self.path[index % len(self.path)]
         data = torch.load(path, weights_only=True, map_location="cpu")
         return data
 
@@ -222,6 +226,14 @@ class LightningModelForTrain(pl.LightningModule):
                 param.data = param.to(torch.float32)
 
     def training_step(self, batch, batch_idx):
+        # 初始化序列并行子通信组
+        if ARGS.sequence_context_parallelism_size > 1 and get_sequence_parallel_group() is None:
+            print(f"---------------SP序列并行策略: 开启, SP_SIZE: {ARGS.sequence_context_parallelism_size}------------------")
+            sp_size = ARGS.sequence_context_parallelism_size # 假设你想要的 SP size 是 2（根据你硬件配置决定）
+            initialize_sequence_parallel_state(sp_size)
+            set_sequence_parallel_state(True)
+            set_sequence_parallel_size(sp_size)
+
         # Data
         latents = batch["latents"].to(self.device)
         prompt_emb = batch["prompt_emb"]
@@ -451,9 +463,16 @@ def parse_args():
         default=1,
         help="The number of gpu.",
     )
+    parser.add_argument(
+        "--sequence_context_parallelism_size",
+        type=int,
+        default=1,
+        help="sequence_context_parallelism_size",
+    )
 
     args = parser.parse_args()
     return args
+
 
 
 def data_process(args):
@@ -491,17 +510,98 @@ def data_process(args):
     trainer.test(model, dataloader)
 
 
+from torch.utils.data.distributed import DistributedSampler
+
+def init_distributed():
+    if not dist.is_initialized():
+        dist.init_process_group(backend='nccl', init_method='env://')
+
+class DistributedSequenceParallelismSampler(DistributedSampler):
+    def __init__(self, dataset,  cp_size=2, shuffle=False):
+
+        self.dataset = dataset
+        # print("SP序列并行暂不支持数据shuffle")
+        self.shuffle = shuffle
+        self.epoch = 0
+        
+        # 获取并行信息 # 右侧数据为预设 4卡 CP2 情况
+        self.world_size = dist.get_world_size()  # 总GPU数 (4)
+        self.rank = dist.get_rank()             # 当前GPU rank (0-3)
+        self.cp_size = cp_size                        # CP组大小 (2)
+        self.cp_group = self.rank // self.cp_size  # CP组号 (0或1)
+        self.tot_cp_groups_num = self.world_size // self.cp_size # CP 组的数量
+        
+        # 计算总批次数和分配方案
+        self.total_batches = len(dataset)
+        self.batches_per_group = (self.total_batches + 1) // 2  # 向上取整
+
+
+        if cp_size > 1:
+            """开启SP序列并行"""
+            # ========== 断言检查区块 ==========
+            assert torch.distributed.is_initialized(), "必须首先初始化分布式环境"
+            assert cp_size > 0, f"CP组大小必须为正数，当前为{cp_size}"
+            assert cp_size > 0 and shuffle==False, f"开启SP并行的场景下,暂不支持开shuffle"
+            assert self.world_size % cp_size == 0, (
+                f"GPU总数{self.world_size}必须能被cp_size={cp_size}整除，"
+                f"当前余数为{self.world_size % cp_size}"
+            )
+            assert len(dataset) >= self.world_size // cp_size, (
+                f"数据集大小{len(dataset)}不能小于CP组数量{self.world_size//cp_size}，"
+                "否则会导致部分GPU无数据"
+            )
+            # ================================
+
+    def __iter__(self):
+        # 生成交替分配的批次索引
+        indices = []
+
+        if self.cp_size == 1: 
+            """不开启CP情况的处理"""
+            for global_idx in range(len(self.dataset)):
+                if global_idx % self.world_size == self.rank:
+                    indices.append(global_idx)
+        else:
+            """开启CP情况的处理"""
+            # 情况1: 总CP组数=1 (数据并行模式)
+            if self.tot_cp_groups_num == 1:
+                indices = list(range(len(self.dataset)))
+            
+            # 情况2: 多CP组交替分配
+            else:
+                for global_idx in range(len(self.dataset)):
+                    assigned_group = global_idx % self.tot_cp_groups_num
+                    if assigned_group == (self.rank // self.cp_size):
+                        indices.append(global_idx)
+            
+        return iter(indices)
+
+    def __len__(self):
+        return self.batches_per_group
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch 
+
+
 def train(args):
+    init_distributed()
+    if args.sequence_context_parallelism_size <= 1 \
+            and get_sequence_parallel_group() is None: 
+        print("---------------SP序列并行策略: 未开启------------------")
+
     dataset = TensorDataset(
         args.dataset_path,
         os.path.join(args.dataset_path, args.metadata_name),
         steps_per_epoch=args.steps_per_epoch,
     )
+    cp_sp_parallelism_sampler = DistributedSequenceParallelismSampler(dataset, \
+                                cp_size=args.sequence_context_parallelism_size, shuffle=False) # 支持cp_sp的sampler，暂不支持shuffle
+
     dataloader = torch.utils.data.DataLoader(
         dataset,
-        shuffle=True,
         batch_size=1,
-        num_workers=args.dataloader_num_workers
+        num_workers=args.dataloader_num_workers,
+        sampler=cp_sp_parallelism_sampler
     )
     model = LightningModelForTrain(
         dit_path=args.dit_path,
@@ -517,18 +617,18 @@ def train(args):
         max_epochs=args.max_epochs,
         accelerator="gpu",
         devices="auto",
-        num_nodes=args.gpus,
         precision="bf16",
-        strategy=args.training_strategy,
+        strategy=args.training_strategy, 
         default_root_dir=args.output_path,
         accumulate_grad_batches=args.accumulate_grad_batches,
-        callbacks=[pl.pytorch.callbacks.ModelCheckpoint(save_top_k=-1)]
+        callbacks=[pl.pytorch.callbacks.ModelCheckpoint(save_top_k=-1)], # trainer里原配置
     )
     trainer.fit(model, dataloader)
 
-
+ARGS = []
 if __name__ == '__main__':
     args = parse_args()
+    ARGS = args
     if args.task == "data_process":
         data_process(args)
     elif args.task == "train":

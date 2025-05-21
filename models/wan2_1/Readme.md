@@ -93,7 +93,7 @@ data/example_dataset/
 ## t2v-1.3B, 8卡
 
 ```shell
-bash scripts/train_full_1.3B_8p.sh
+bash scripts/train_i2v_full_1.3B_8p.sh
 ```
 
 
@@ -103,5 +103,11 @@ bash scripts/train_full_1.3B_8p.sh
 在主节点与副节点执行如下命令：注意  MATER_ADDR与NODE_RANK修改
 
 ```
-bash scripts/train_full_14B_32p.sh
+bash scripts/train_i2v_full_14B_32p.sh
+```
+
+## i2v-14B, 8卡, 开启序列并行[SP2]
+
+```
+bash scripts/train_i2v_full_14B_sp2_8p.sh
 ```
