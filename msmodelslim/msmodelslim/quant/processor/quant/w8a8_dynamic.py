@@ -71,7 +71,9 @@ class W8A8DynamicLinearQuantizer(BaseLinearQuantizer):
 
     def deploy(self, *args, **kwargs) -> BaseFakeQuantizer:
         with torch.device(self.fp_weight.device):
-            quant_weight, bias = self.weight_quantizer.forward(self.fp_weight, self.fp_bias)
+            if not self.forward_called:
+                self.weight_quantizer.forward(self.fp_weight, self.fp_bias)
+            quant_weight, bias = self.weight_quantizer.quant(self.fp_weight, self.fp_bias)
             weight_scale, weight_offset = self.weight_quantizer.get_scale_offset()
         return W8A8DynamicLinearFakeQuantizer(self.cfg, weight_scale, weight_offset, quant_weight, bias)
 
