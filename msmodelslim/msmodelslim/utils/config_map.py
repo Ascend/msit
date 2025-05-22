@@ -13,16 +13,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
 import fnmatch
+from collections import OrderedDict
 from collections.abc import Mapping
-from typing import Dict, Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, Set, List
 
 T = TypeVar('T')
 
 
 class ConfigMap(Generic[T], Mapping):
-    def __init__(self, cfg_map: Dict[str, T]):
-        self.cfg_map: Dict[str, Any] = cfg_map if cfg_map is not None else {}
+    def __init__(self, cfg_map: OrderedDict[str, T]):
+        self.cfg_map: OrderedDict[str, Any] = cfg_map
 
     def __getitem__(self, key: str) -> T:
         if key in self.cfg_map:
@@ -45,3 +47,22 @@ class ConfigMap(Generic[T], Mapping):
 
     def __len__(self):
         return len(self.cfg_map)
+
+
+class ConfigSet(Generic[T], Set):
+    def __init__(self, cfg_list: List[T]):
+        self.cfg_set = OrderedDict().fromkeys(cfg_list)
+
+    def __contains__(self, key: T) -> bool:
+        if key in self.cfg_set:
+            return True
+        for pattern in self.cfg_set:
+            if fnmatch.fnmatchcase(key, pattern):
+                return True
+        return False
+
+    def __iter__(self):
+        return iter(self.cfg_set)
+
+    def __len__(self):
+        return len(self.cfg_set)

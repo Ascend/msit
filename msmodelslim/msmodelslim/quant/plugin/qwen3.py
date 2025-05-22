@@ -16,11 +16,14 @@
 
 
 import argparse
-from typing import List
+from typing import List, Dict
 
 import torch
+from pydantic import BaseModel
 from transformers import PreTrainedModel, AutoModelForCausalLM, AutoTokenizer, AutoConfig
 
+from ST.onnx_squant.onnx_squant_unet.run import disable_names
+from msmodelslim.quant import W8A8ProcessorConfig, W8A8QuantConfig, W8A8DynamicProcessorConfig, W8A8DynamicQuantConfig
 from msmodelslim.quant.session.plugin import QuantPlugin
 
 
@@ -29,13 +32,46 @@ class Qwen3Plugin(QuantPlugin):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
         self.config = AutoConfig.from_pretrained(args.model_path)
-        self.config.num_hidden_layers = 1
+        self.config.num_hidden_layers = args.layer_count if args.layer_count > 0 else self.config.num_hidden_layers
+        self.is_moe = "moe" in self.config.model_type
         self.model = AutoModelForCausalLM.from_pretrained(args.model_path, config=self.config, torch_dtype="auto")
         self.model.model.embed_tokens.to(torch.get_default_device())
         self.tokenizer = AutoTokenizer.from_pretrained(args.model_path)
+        self.default_calib = [
+            "What's your name?",
+            "How old are you?",
+            "Are you OK?"
+        ]
 
     def load_model(self) -> PreTrainedModel:
         return self.model
 
     def load_calib_data(self) -> List[torch.Tensor]:
-        return [self.tokenizer(self.args.calib_path, return_tensors="pt")]
+        return [self.tokenizer(prompt, return_tensors="pt").data for prompt in self.default_calib]
+
+    def load_default_quant_cfg(self) -> Dict[str, BaseModel]:
+        if self.is_moe:
+            return {
+                "w8a8": W8A8ProcessorConfig(
+                    cfg_map={
+                        "model.layers.*.self_attn.*": W8A8QuantConfig()
+                    },
+                ),
+                "w8a8_dynamic": W8A8DynamicProcessorConfig(
+                    cfg_map={
+                        "model.layers.*.mlp.*": W8A8DynamicQuantConfig()
+                    },
+                    disable_names=[
+                        "model.layers.*.mlp.gate"
+                    ]
+                )
+            }
+        else:
+            return {
+                "w8a8": W8A8ProcessorConfig(
+                    cfg_map={
+                        "*": W8A8QuantConfig()
+                    },
+                    disable_names=["model.layers.*.mlp.down_proj"]
+                )
+            }

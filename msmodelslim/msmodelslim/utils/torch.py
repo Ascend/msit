@@ -70,7 +70,6 @@ def _torch_set_default_device(device: torch.device):
     """
     global _TORCH_DEFAULT_DEVICE
     _TORCH_DEFAULT_DEVICE = device
-    torch.set_default_device(device)
 
 
 def _torch_get_default_device() -> torch.device:

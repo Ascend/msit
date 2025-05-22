@@ -47,7 +47,7 @@ class TestMinMaxStatistic(unittest.TestCase):
 
         # 测试只缩减第一个维度
         self.statistic = MinMaxStatistic()  # 重置统计对象
-        self.statistic.update_stats(x, reduce_dims=[0])
+        self.statistic.update_stats(x, reduce_dims=[0], keep_dims=True)
         stats = self.statistic.get_stats()
         # 形状为[2, 1, 2, 2]，其中第一个维度是min/max，第二个维度是keepdim后的维度
         self.assertEqual(stats.shape, (2, 1, 2, 2))
@@ -57,7 +57,7 @@ class TestMinMaxStatistic(unittest.TestCase):
 
         # 测试只缩减第二个维度
         self.statistic = MinMaxStatistic()  # 重置统计对象
-        self.statistic.update_stats(x, reduce_dims=[1])
+        self.statistic.update_stats(x, reduce_dims=[1], keep_dims=True)
         stats = self.statistic.get_stats()
         # 形状为[2, 2, 1, 2]，其中第一个维度是min/max，第三个维度是keepdim后的维度
         self.assertEqual(stats.shape, (2, 2, 1, 2))
@@ -67,7 +67,7 @@ class TestMinMaxStatistic(unittest.TestCase):
 
         # 测试只缩减第三个维度
         self.statistic = MinMaxStatistic()  # 重置统计对象
-        self.statistic.update_stats(x, reduce_dims=[2])
+        self.statistic.update_stats(x, reduce_dims=[2], keep_dims=True)
         stats = self.statistic.get_stats()
         # 形状为[2, 2, 2, 1]，其中第一个维度是min/max，第四个维度是keepdim后的维度
         self.assertEqual(stats.shape, (2, 2, 2, 1))
@@ -77,7 +77,7 @@ class TestMinMaxStatistic(unittest.TestCase):
 
         # 测试缩减多个维度
         self.statistic = MinMaxStatistic()  # 重置统计对象
-        self.statistic.update_stats(x, reduce_dims=[0, 2])
+        self.statistic.update_stats(x, reduce_dims=[0, 2], keep_dims=True)
         stats = self.statistic.get_stats()
         # 形状为[2, 1, 2, 1]，其中第一个维度是min/max，第二和第四个维度是keepdim后的维度
         self.assertEqual(stats.shape, (2, 1, 2, 1))
@@ -87,7 +87,7 @@ class TestMinMaxStatistic(unittest.TestCase):
 
         # 测试不缩减任何维度
         self.statistic = MinMaxStatistic()  # 重置统计对象
-        self.statistic.update_stats(x, reduce_dims=[])
+        self.statistic.update_stats(x, reduce_dims=[], keep_dims=True)
         stats = self.statistic.get_stats()
         # 形状为[2, 1, 1, 1]，其中第一个维度是min/max，后面是keepdim后的维度
         self.assertEqual(stats.shape, (2, 1, 1, 1))

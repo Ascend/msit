@@ -14,6 +14,8 @@
 #  limitations under the License.
 
 import json
+import os
+import tempfile
 import unittest
 
 import torch
@@ -31,6 +33,11 @@ class TestW8A8Quantization(unittest.TestCase):
 
     def setUp(self):
         """测试前的准备工作"""
+
+        self.temp_dir = tempfile.mkdtemp()
+        self.temp_dir = os.path.realpath(self.temp_dir)
+        self.assertTrue(os.path.exists(self.temp_dir))
+
         # 创建一个简单的模型
         self.model = nn.Sequential(
             nn.Linear(10, 20, dtype=torch.float32),
@@ -39,18 +46,7 @@ class TestW8A8Quantization(unittest.TestCase):
         )
 
         # 创建W8A8量化配置
-        self.w8a8_config = W8A8QuantConfig(
-            w_cfg=dict(
-                bits=8,
-                symmetric=True,
-                per_channel=True
-            ),
-            a_cfg=dict(
-                bits=8,
-                symmetric=True,
-                per_channel=False
-            )
-        )
+        self.w8a8_config = W8A8QuantConfig()
 
         W8A8QuantConfig.model_validate(self.w8a8_config)
 
@@ -63,7 +59,7 @@ class TestW8A8Quantization(unittest.TestCase):
                     }
                 ),
                 "save": SaverProcessorConfig(
-                    save_output_path=".",
+                    save_output_path=self.temp_dir,
                     safetensors_name="w8a8_model.safetensors",
                     json_name="w8a8_config.json",
                     save_type="safe_tensor"
@@ -78,6 +74,10 @@ class TestW8A8Quantization(unittest.TestCase):
 
         for data in self.session_config.calib_data:
             self.model(data)
+
+    def tearDown(self):
+        pass
+        # shutil.rmtree(self.temp_dir)
 
     def test_w8a8_quantization_basic(self):
         """测试基本的W8A8量化功能"""
@@ -100,11 +100,11 @@ class TestW8A8Quantization(unittest.TestCase):
 
         # 验证模型文件是否被保存
         import os
-        self.assertTrue(os.path.exists("./w8a8_model.safetensors"))
-        self.assertTrue(os.path.exists("./w8a8_config.json"))
+        self.assertTrue(os.path.exists(os.path.join(self.temp_dir, "w8a8_model-00001-of-00001.safetensors")))
+        self.assertTrue(os.path.exists(os.path.join(self.temp_dir, "w8a8_config.json")))
 
         # 检查json内容
-        with open("./w8a8_config.json", "r") as f:
+        with open(os.path.join(self.temp_dir, "w8a8_config.json"), "r") as f:
             config_data = json.load(f)
 
         expected_config_data = {
@@ -135,7 +135,7 @@ class TestW8A8Quantization(unittest.TestCase):
             "[02].deq_scale": torch.float32,
             "[02].quant_bias": torch.int32
         }
-        
+
         shape_check = {
             "0.weight": (20, 10),
             "0.input_scale": (1,),
@@ -150,7 +150,7 @@ class TestW8A8Quantization(unittest.TestCase):
         }
 
         # 检查safetensor中的tensor数据类型
-        with safe_open("./w8a8_model.safetensors", framework="pt") as f:
+        with safe_open(os.path.join(self.temp_dir, "w8a8_model-00001-of-00001.safetensors"), framework="pt") as f:
             for key in f.keys():
                 tensor = f.get_tensor(key)
                 # 根据key的模式匹配对应的dtype
@@ -163,21 +163,17 @@ class TestW8A8Quantization(unittest.TestCase):
                 if matched_dtype is not None:
                     self.assertEqual(tensor.dtype, matched_dtype,
                                      f"Tensor {key} has incorrect dtype. Expected {matched_dtype}, got {tensor.dtype}")
-                    
+
                 # 根据key的模式匹配对应的shape
                 matched_shape = None
                 for pattern, expected_shape in shape_check.items():
                     if key.endswith(pattern.replace("*", "")):
                         matched_shape = expected_shape
                         break
-                
+
                 if matched_shape is not None:
                     self.assertEqual(tensor.shape, matched_shape,
                                      f"Tensor {key} has incorrect shape. Expected {matched_shape}, got {tensor.shape}")
-                    
-
-        os.remove("./w8a8_model.safetensors")
-        os.remove("./w8a8_config.json")
 
 
 if __name__ == '__main__':

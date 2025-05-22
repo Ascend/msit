@@ -9,3 +9,11 @@ patch_torch()
 
 OLD_PACKAGE_NAME = 'modelslim'
 NEW_PACKAGE_NAME = 'msmodelslim'
+
+try:
+    import torch_npu
+
+    logger.info(f"torch_npu.__version__: {torch_npu.__version__}")
+    from torch_npu.contrib import transfer_to_npu
+except ImportError:
+    pass

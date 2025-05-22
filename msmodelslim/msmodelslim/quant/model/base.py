@@ -17,8 +17,10 @@ from typing import List, Tuple
 
 from torch import nn
 
+from msmodelslim.quant.processor.anti_outlier.base import SmoothAdapter
 
-class BaseModelAdapter:
+
+class BaseModelAdapter(SmoothAdapter):
     """
     模型适配器基类。
     

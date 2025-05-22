@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from msmodelslim.pytorch.llm_ptq.anti_outlier.config import AntiOutlierConfig
-
+from msmodelslim.pytorch.llm_ptq.anti_outlier.graph_utils import NormBias
 
 @lru_cache(maxsize=None)
 def get_kia_smooth_ln_fcs() -> Callable:

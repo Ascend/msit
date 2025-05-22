@@ -12,16 +12,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import argparse
 import importlib.util
 import os
 import sys
-import argparse
 from abc import abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
+from pydantic import BaseModel
 from torch import nn
 
-from msmodelslim.quant.processor.quant.w8a8 import W8A8ProcessorConfig
 from msmodelslim.quant.processor.save.saver import SaverProcessorConfig
 
 
@@ -31,7 +31,7 @@ class QuantPlugin:
     该类定义了量化插件必须实现的接口。插件开发者需要继承此类并实现必要的方法
     来完成模型加载、校准数据加载等操作。
     """
-    
+
     def __init__(self, args: argparse.Namespace):
         self.args = args
 
@@ -53,14 +53,8 @@ class QuantPlugin:
         """
         raise NotImplementedError("Plugin must implement load_calib_data method")
 
-    def load_quant_cfg(self, default_cfg: W8A8ProcessorConfig) -> W8A8ProcessorConfig:
-        """加载配置
-
-        Args:
-            default_cfg: 默认配置
-        """
-        _ = self
-        return default_cfg
+    def load_default_quant_cfg(self) -> Dict[str, BaseModel]:
+        raise NotImplementedError()
 
     def get_save_cfg(self, default_cfg: Optional[SaverProcessorConfig] = None) -> Optional[SaverProcessorConfig]:
         """获取保存配置
@@ -73,7 +67,7 @@ class QuantPlugin:
         """
         _ = self
         return default_cfg
-    
+
     def eval_model(self):
         """评估模型
         """

@@ -14,11 +14,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 import torch
 
+from msmodelslim.quant.quantizer.activation.base import BaseObserver
 from msmodelslim.quant.quantizer.activation.base import OBSERVER_REGISTRY
-from msmodelslim.quant.quantizer.activation.base import StatisticsStrategy, BaseObserver
 from msmodelslim.quant.quantizer.base.const import ActivationQuantScope
 
 
@@ -31,6 +30,9 @@ class PerTensorObserver(BaseObserver):
     该类观察者会对输入张量的所有维度进行统计，得到一个全局的统计结果。
     适用于需要对整个张量进行统一统计的场景。
     """
+
+    def __init__(self):
+        super().__init__(sync_stats=True)
 
     def _get_reduce_dims(self, x: torch.Tensor) -> list[int]:
         """
@@ -56,7 +58,7 @@ class PerAxisObserver(BaseObserver):
     适用于需要对张量的特定维度进行独立统计的场景。
     """
 
-    def __init__(self, strategy: StatisticsStrategy, axis: int):
+    def __init__(self, axis: int):
         """
         初始化按轴统计的观察者。
         
@@ -64,7 +66,7 @@ class PerAxisObserver(BaseObserver):
             strategy: 统计策略，用于收集和处理统计信息
             axis: 需要保留的轴，其他轴将被缩减
         """
-        super().__init__(strategy)
+        super().__init__()
         self.axis = axis
 
     def _get_reduce_dims(self, x: torch.Tensor) -> list[int]:
@@ -91,7 +93,7 @@ class PerHeadObserver(PerAxisObserver):
     适用于需要对注意力机制中的头进行独立统计的场景。
     """
 
-    def __init__(self, strategy: StatisticsStrategy, axis: int = 1):
+    def __init__(self, axis: int = 1):
         """
         初始化按头统计的观察者。
         
@@ -99,7 +101,7 @@ class PerHeadObserver(PerAxisObserver):
             strategy: 统计策略，用于收集和处理统计信息
             axis: 头维度，默认为1
         """
-        super().__init__(strategy, axis)
+        super().__init__(axis)
 
 
 @OBSERVER_REGISTRY.register(ActivationQuantScope.PER_TOKEN.value)
@@ -111,6 +113,18 @@ class PerTokenObserver(PerTensorObserver):
     适用于需要对每个Token进行独立统计的场景。
     """
 
+    def __init__(self):
+        super().__init__()
+        self.sync_stats = False
+
     def update(self, x: torch.Tensor):
+        """
+        更新观察者的统计信息。
+
+        根据输入张量和内部确定的缩减维度，更新统计策略的状态。
+
+        参数:
+            x: 输入张量，包含需要观察的数据
+        """
         self.strategy.clear_stats()
         super().update(x)

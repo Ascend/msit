@@ -17,8 +17,8 @@ from typing import Dict, List
 
 from transformers import PreTrainedModel
 
+from msmodelslim.quant.model.base import BaseModelAdapter
 from msmodelslim.quant.model.registry import MODEL_ADAPTER_REGISTRY
-from msmodelslim.quant.processor.anti_outlier.base import SmoothAdapter
 
 _DEEPSEEK_V2_MODEL_TYPES = [
     "deepseek_v2",
@@ -32,11 +32,10 @@ _DEEPSEEK_V2_MODEL_TYPES = [
 @MODEL_ADAPTER_REGISTRY.register_by_name("deepseek_v2")
 @MODEL_ADAPTER_REGISTRY.register_by_name("deepseekv3")
 @MODEL_ADAPTER_REGISTRY.register_by_name("deepseek_v3")
-class DeepSeekAdapter(SmoothAdapter):
+class DeepSeekAdapter(BaseModelAdapter):
 
     def __init__(self, model: PreTrainedModel):
-        super().__init__()
-        self.model = model
+        super().__init__(model)
 
     @staticmethod
     def is_deepseek_v2_chat(model: PreTrainedModel):

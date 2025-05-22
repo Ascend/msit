@@ -29,6 +29,9 @@ class SessionBaseProcessor(BaseProcessor):
     def __init__(self, model: nn.Module):
         super().__init__(model)
 
+    def support_distributed(self) -> bool:
+        return False
+
     @abc.abstractmethod
     def is_data_free(self) -> bool:
         raise NotImplementedError()

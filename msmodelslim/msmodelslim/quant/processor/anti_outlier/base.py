@@ -19,6 +19,7 @@ from typing import Dict, List, Any, Tuple
 
 from torch import nn as nn
 
+from ascend_utils.common.utils import CallParams
 from msmodelslim import logger
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.pytorch.llm_ptq.anti_outlier.graph_utils import extract_dag
@@ -47,7 +48,7 @@ class SmoothAdapter:
         获取模型全局的用于进行Smooth处理的Norm->Linear子图
         """
 
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def get_global_linear_linear_smooth_pair(self) -> Dict[str, List[str]]:
@@ -55,7 +56,7 @@ class SmoothAdapter:
         获取模型全局的用于进行Smooth处理的Linear->Linear子图
         """
 
-        pass
+        raise NotImplementedError()
 
 
 @PROCESSOR_REGISTRY.register_by_name("m1")
@@ -102,11 +103,13 @@ class BaseSmoothProcessor(SessionBaseProcessor):
 
         try:
             global_smooth_pair = self.adapter.get_global_norm_linear_smooth_pair()
-            return global_smooth_pair
+            layer_prefix = f"{prefix}." if prefix != "" else ""
+            return {key: value for key, value in global_smooth_pair.items() if key.startswith(layer_prefix)}
         except (AttributeError, NotImplementedError) as e:
             logger.warning(f"No global smooth pair found, use dag based layer-wise smooth pair instead")
             return self._extract_layer_wise_norm_linear_smooth_pair(prefix, module,
-                                                                    dummy_input[0] if dummy_input else None)
+                                                                    CallParams(*dummy_input[0], **dummy_input[1])
+                                                                    if dummy_input else None)
         except Exception as e:
             raise e
 
