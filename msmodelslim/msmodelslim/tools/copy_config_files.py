@@ -7,7 +7,7 @@ from ascend_utils.common.security import safe_copy_file, json_safe_dump, json_sa
     get_valid_write_path
 
 
-def copy_json(src_path: str, dst_path: str, quant_config):
+def copy_file(src_path: str, dst_path: str, quant_config):
     safe_copy_file(src_path, dst_path)
 
 
@@ -37,7 +37,7 @@ FILE_HOOKS = {
     'config.json': modify_config_json,
 }
 
-DEFAULT_FILE_HOOKS = copy_json
+DEFAULT_FILE_HOOKS = copy_file
 
 
 def copy_config_files(input_path, output_path, quant_config, custom_hooks=None):
@@ -49,13 +49,13 @@ def copy_config_files(input_path, output_path, quant_config, custom_hooks=None):
     @param custom_hooks: 自定义处理函数字典 {'file_name': hook} hook(src_path: str, dst_path: str, quant_config: QuantConfig)
     """
     for file in os.listdir(input_path):
-        if not file.endswith('.json'):
+        if not (file.endswith('.json') or file.endswith('.py')):
             continue
 
         if any((file.endswith(subfix) for subfix in EXCLUDING_SUBFIX_LIST)):
             continue
 
-        src_path = get_valid_read_path(os.path.join(input_path, file), extensions='.json')
+        src_path = get_valid_read_path(os.path.join(input_path, file), extensions=['.json', '.py'])
         dst_path = get_valid_write_path(os.path.join(output_path, file))
 
         if custom_hooks and file in custom_hooks:

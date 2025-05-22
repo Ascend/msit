@@ -42,13 +42,64 @@ def parse_args():
     parser.add_argument('--dynamic', action='store_true', help="Dynamic Quantization")
     parser.add_argument('--disable_anti', action='store_true', help="No AntiOutlier")
     parser.add_argument('--quant_mtp', action='store_true', help="MTP W8A8DYNAMIC Quantization")
+    parser.add_argument('--cloud_vllm', action='store_true', help="Cloud Vllm Format")
     return parser.parse_args()
 
 
-def custom_hook(model_config):
-    model_config["mla_quantize"] = "w8a8"
-    model_config["quantize"] = "w8a8_dynamic"
-    model_config["model_type"] = "deepseekv2"
+def custom_hook(model_config, cloud_vllm=False):
+    if not cloud_vllm:
+        model_config["mla_quantize"] = "w8a8"
+        model_config["quantize"] = "w8a8_dynamic"
+        model_config["model_type"] = "deepseekv2"
+        return
+
+    model_config["model_type"] = "deepseek_v3"
+    ignore_list = [
+        f'model.layers.{i}.self_attn.kv_b_proj'
+        for i in range(61)
+    ]
+    ignore_list.append('lm_head')
+    # cloud vllm format
+    model_config['quantization_config'] = {
+        "config_groups": {
+            "group_0": {
+                "input_activations": {
+                    "actorder": None,
+                    "block_structure": None,
+                    "dynamic": True,
+                    "group_size": None,
+                    "num_bits": 8,
+                    "observer": "memoryless",
+                    "observer_kwargs": {},
+                    "strategy": "token",
+                    "symmetric": True,
+                    "type": "int"
+                },
+                "output_activations": None,
+                "targets": [
+                    "Linear"
+                ],
+                "weights": {
+                    "actorder": None,
+                    "block_structure": None,
+                    "dynamic": False,
+                    "group_size": None,
+                    "num_bits": 8,
+                    "observer": "minmax",
+                    "observer_kwargs": {},
+                    "strategy": "channel",
+                    "symmetric": True,
+                    "type": "int"
+                },
+            },
+        },
+        "format": "int-quantized",
+        "global_compression_ratio": 1.5943962512751308,
+        "ignore": ignore_list,
+        "kv_cache_scheme": None,
+        "quant_method": "compressed-tensors",
+        "quantization_status": "compressed",
+    }
 
 
 def get_calib_dataset_batch(model_tokenizer, calib_list, batch_size, device="npu"):
@@ -157,7 +208,8 @@ def main():
                     part_file_size=4)
 
     custom_hooks = {
-        'config.json': functools.partial(modify_config_json, custom_hook=custom_hook)
+        'config.json': functools.partial(modify_config_json,
+                                         custom_hook=functools.partial(custom_hook, cloud_vllm=args.cloud_vllm))
     }
     copy_config_files(input_path=model_path, output_path=save_path, quant_config=quant_config,
                       custom_hooks=custom_hooks)
