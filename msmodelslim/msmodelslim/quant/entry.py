@@ -15,6 +15,7 @@
 
 import argparse
 import os
+import time
 from typing import Dict, Any
 
 import torch
@@ -115,6 +116,8 @@ def _cleanup_distributed(rank: int, world_size: int, args: argparse.Namespace):
 
 
 def _main(args: argparse.Namespace):
+    start_time = time.time()
+
     if args.debug:
         set_logger_level("debug")
 
@@ -152,6 +155,13 @@ def _main(args: argparse.Namespace):
     quant_model(model, session_config)
 
     plugin.eval_model()
+
+    if dist.is_initialized():
+        dist.barrier()
+
+    if not dist.is_initialized() or dist.get_rank() == 0:
+        end_time = time.time()
+        logger.info(f"量化总耗时: {end_time - start_time:.2f}秒")
 
 
 def _dist_main(rank: int, world_size: int, args: argparse.Namespace):

@@ -42,6 +42,7 @@ def get_kia_linear_quantization_params() -> Callable:
 def linear_quantization_params(bit: int, 
                                x_min: torch.Tensor, 
                                x_max: torch.Tensor,
+                               intergral_zero_point: bool,
                                q_signed: bool, 
                                sym: bool) -> Tuple[torch.Tensor, torch.Tensor]:
     """
@@ -51,13 +52,14 @@ def linear_quantization_params(bit: int,
         bit: 量化的位数
         x_min: 最小值
         x_max: 最大值
+        intergral_zero_point: 是否使用整数偏移
         q_signed: 是否是有符号量化
         sym: 是否是对称量化
     
     返回值:
         Tuple[torch.Tensor, torch.Tensor]: 分别是量化缩放因子，量化零点
     """
-    return get_kia_linear_quantization_params()(bit, x_min, x_max, q_signed, sym)
+    return get_kia_linear_quantization_params()(bit, x_min, x_max, intergral_zero_point, q_signed, sym)
 
 
 def fake_quantize(tensor: torch.Tensor,

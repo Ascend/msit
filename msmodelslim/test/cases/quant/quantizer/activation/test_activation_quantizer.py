@@ -38,7 +38,7 @@ class TestActivationQuantizer(unittest.TestCase):
         self.strategy.max_val = torch.tensor(255.0)
         mock_linear_quantization_params.return_value = (torch.tensor(0.0), torch.tensor(0.0))
         scale, zero_point = self.quantizer.get_scale_offset()
-        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(0.0), torch.tensor(255.0), True, False)
+        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(0.0), torch.tensor(255.0), True, True, False)
 
     @patch('msmodelslim.quant.quantizer.activation.base.fake_quantize')
     @patch('msmodelslim.quant.quantizer.activation.base.linear_quantization_params')
@@ -53,7 +53,7 @@ class TestActivationQuantizer(unittest.TestCase):
         output = self.quantizer(x)
 
         # 验证linear_quantization_params被正确调用
-        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(1.0), torch.tensor(4.0), True, False)
+        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(1.0), torch.tensor(4.0), True, True, False)
 
         # 验证fake_quantize被正确调用
         mock_fake_quantize.assert_called_once_with(x, torch.tensor(0.0), torch.tensor(0.0), 8, True)
@@ -79,7 +79,7 @@ class TestActivationQuantizer(unittest.TestCase):
         output = self.quantizer(x)
 
         # 验证linear_quantization_params被正确调用
-        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(-10.0), torch.tensor(10.0), True, False)
+        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(-10.0), torch.tensor(10.0), True, True, False)
 
         # 验证fake_quantize被正确调用
         mock_fake_quantize.assert_called_once_with(x, torch.tensor(0.0), torch.tensor(0.0), 8, True)
@@ -103,7 +103,7 @@ class TestActivationQuantizer(unittest.TestCase):
         output = self.quantizer(x)
 
         # 验证linear_quantization_params被正确调用
-        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(2.0), torch.tensor(8.0), True, False)
+        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(2.0), torch.tensor(8.0), True, True, False)
 
         # 验证fake_quantize被正确调用
         mock_fake_quantize.assert_called_once_with(x, torch.tensor(0.0), torch.tensor(0.0), 8, True)
@@ -130,7 +130,7 @@ class TestActivationQuantizer(unittest.TestCase):
         output = self.quantizer(x)
 
         # 验证linear_quantization_params被正确调用
-        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(-5.0), torch.tensor(5.0), True, False)
+        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(-5.0), torch.tensor(5.0), True, True, False)
 
         # 验证fake_quantize被正确调用
         mock_fake_quantize.assert_called_once_with(x, torch.tensor(0.0), torch.tensor(0.0), 8, True)
@@ -157,7 +157,7 @@ class TestActivationQuantizer(unittest.TestCase):
         output = self.quantizer(x)
 
         # 验证linear_quantization_params被正确调用
-        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(0.0), torch.tensor(10.0), True, False)
+        mock_linear_quantization_params.assert_called_once_with(8, torch.tensor(0.0), torch.tensor(10.0), True, True, False)
 
         # 验证fake_quantize被正确调用
         mock_fake_quantize.assert_called_once_with(x, torch.tensor(0.0), torch.tensor(0.0), 8, True)

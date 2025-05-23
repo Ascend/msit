@@ -185,7 +185,7 @@ class ActivationQuantizer(nn.Module):
 
     def get_scale_offset(self) -> Tuple[torch.Tensor, torch.Tensor]:
         min_val, max_val = self.statistics.get_stats()
-        scale, zero_point = linear_quantization_params(self.config.bits, min_val, max_val, self.config.signed,
+        scale, zero_point = linear_quantization_params(self.config.bits, min_val, max_val, True, self.config.signed,
                                                        self.config.symmetric)
         return scale, zero_point
 
