@@ -16,13 +16,14 @@
 
 
 import argparse
+import json
+import os
 from typing import List, Dict
 
 import torch
 from pydantic import BaseModel
 from transformers import PreTrainedModel, AutoModelForCausalLM, AutoTokenizer, AutoConfig
 
-from ST.onnx_squant.onnx_squant_unet.run import disable_names
 from msmodelslim.quant import W8A8ProcessorConfig, W8A8QuantConfig, W8A8DynamicProcessorConfig, W8A8DynamicQuantConfig
 from msmodelslim.quant.session.plugin import QuantPlugin
 
@@ -37,11 +38,19 @@ class Qwen3Plugin(QuantPlugin):
         self.model = AutoModelForCausalLM.from_pretrained(args.model_path, config=self.config, torch_dtype="auto")
         self.model.model.embed_tokens.to(torch.get_default_device())
         self.tokenizer = AutoTokenizer.from_pretrained(args.model_path)
-        self.default_calib = [
-            "What's your name?",
-            "How old are you?",
-            "Are you OK?"
-        ]
+        self.default_calib = self.load_jsonl(args.calib_file, args.calib_key)
+    
+    @staticmethod
+    def load_jsonl(dataset_path, key_name='inputs_pretokenized'):
+        dataset = []
+        with os.fdopen(os.open(dataset_path, os.O_RDONLY, 0o600),
+                    'r', encoding='utf-8') as file:
+            lines = file.readlines()
+            for line in lines:
+                data = json.loads(line)
+                text = data.get(key_name, line)
+                dataset.append(text)
+        return dataset
 
     def load_model(self) -> PreTrainedModel:
         return self.model

@@ -27,6 +27,8 @@ def main():
     parser.add_argument("-t", "--quant_type", type=str, help="量化类型", default="w8a8")
     parser.add_argument("--model_path", type=str, required=True, help="模型路径")
     parser.add_argument("--save_path", type=str, help="保存路径", default="./save")
+    parser.add_argument("--calib_file", type=str, help="校准文件路径", required=True)
+    parser.add_argument("--calib_key", type=str, help="校准文件key", default="inputs_pretokenized")
     parser.add_argument("--dev_type", type=str, help="设备类型", default="npu")
     parser.add_argument("--offload_dev_type", type=str, help="offload设备类型", default="meta")
     parser.add_argument("--debug", action="store_true", help="是否开启debug模式")
