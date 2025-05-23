@@ -85,7 +85,7 @@ class W8A8DynamicLinearQuantizer(BaseLinearQuantizer):
         if x.numel() > 0:
             x = self.input_quantizer(x)
         if not self.forward_called:
-            self.dequant_weight, self.dequant_bias = self.weight_quantizer.forward(self.module.weight, self.module.bias)
+            self.dequant_weight, self.dequant_bias = self.weight_quantizer.forward(self.fp_weight, self.fp_bias)
             self.forward_called = True
         return F.linear(x, self.dequant_weight, self.dequant_bias)
 
