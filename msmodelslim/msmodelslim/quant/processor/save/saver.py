@@ -36,11 +36,11 @@ from msmodelslim.utils.registry import Registry
 @PROCESSOR_CONFIG_REGISTRY.register_by_name("save")
 class SaverProcessorConfig(BaseModel):
     save_output_path: Optional[str] = None
-    safetensors_name: Optional[str] = None
-    json_name: Optional[str] = None
+    safetensors_name: Optional[str] = Field(default="quant_model_weights.safetensors")
+    json_name: Optional[str] = Field(default="quant_model_description.json")
     save_type: Optional[str] = Field(default="safe_tensor")
     part_file_size: Optional[int] = Field(default=4)
-    model_quant_type: Optional[str] = Field(default="w8a8")
+    quant_type: Optional[str] = Field(default="w8a8")
 
 
 class BaseSaverBackend:

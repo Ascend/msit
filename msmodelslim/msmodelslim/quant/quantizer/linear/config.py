@@ -15,19 +15,30 @@
 
 from pydantic import BaseModel
 
-from msmodelslim.quant.quantizer.activation.base import ActivationQuantConfig
-from msmodelslim.quant.quantizer.base.const import WeightQuantMethod, WeightQuantScope
+from msmodelslim.quant.quantizer.activation.base import ActQuantConfig
+from msmodelslim.quant.quantizer.base.const import QuantMethod, QuantScope
 
 
-class WeightQuantConfig(BaseModel):
+class WeightQuantBaseConfig(BaseModel):
     bits: int = 8
-    method: WeightQuantMethod = WeightQuantMethod.MINMAX
-    scope: WeightQuantScope = WeightQuantScope.PER_CHANNEL
-    group_size: int = -1
     symmetric: bool = True
     signed: bool = True
 
 
+class WeightQuantMethodConfig(BaseModel):
+    type: QuantMethod = QuantMethod.MINMAX
+
+
+class WeightQuantScopeConfig(BaseModel):
+    type: QuantScope = QuantScope.PER_CHANNEL
+
+
+class WeightQuantConfig(BaseModel):
+    base: WeightQuantBaseConfig
+    scope: WeightQuantScopeConfig
+    method: WeightQuantMethodConfig
+
+
 class LinearQuantConfig(BaseModel):
-    a_cfg: ActivationQuantConfig
+    a_cfg: ActQuantConfig
     w_cfg: WeightQuantConfig

@@ -13,28 +13,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-#  -*- coding: utf-8 -*-
-#  Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
-#  #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#  #
-#  http://www.apache.org/licenses/LICENSE-2.0
-#  #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-
 import json
 
 import pytest
 import torch
 import torch.nn as nn
+from pydantic import ValidationError
 
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantType
+from msmodelslim.quant import W8A8DynamicQuantConfig
 from msmodelslim.quant.processor.quant.w8a8 import (
     W8A8LinearFakeQuantizer,
     W8A8LinearQuantizer,
@@ -42,34 +29,22 @@ from msmodelslim.quant.processor.quant.w8a8 import (
     W8A8ProcessorConfig,
     W8A8QuantConfig
 )
-from msmodelslim.quant.quantizer.activation.base import ActivationQuantConfig
-from msmodelslim.quant.quantizer.base.const import WeightQuantMethod, ActivationQuantMethod
-from msmodelslim.quant.quantizer.linear.config import LinearQuantConfig, WeightQuantConfig
-
-
-#  -*- coding: utf-8 -*-
-#  Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
-#  #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#  #
-#  http://www.apache.org/licenses/LICENSE-2.0
-#  #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
+from msmodelslim.quant.quantizer.activation.base import ActQuantConfig, ActQuantBaseConfig
+from msmodelslim.quant.quantizer.activation.minmax import ActMinMaxConfig
+from msmodelslim.quant.quantizer.activation.observer import PerTensorConfig
+from msmodelslim.quant.quantizer.base.const import QuantMethod, QuantScope
+from msmodelslim.quant.quantizer.linear.config import (
+    WeightQuantConfig,
+    WeightQuantBaseConfig,
+    WeightQuantMethodConfig,
+    WeightQuantScopeConfig
+)
 
 
 class TestW8A8LinearFakeQuantizer:
     @pytest.fixture
     def fake_quantizer(self):
-        cfg = LinearQuantConfig(
-            w_cfg=WeightQuantConfig(bits=8, method=WeightQuantMethod.MINMAX),
-            a_cfg=ActivationQuantConfig(bits=8, method=ActivationQuantMethod.MINMAX)
-        )
+        cfg = W8A8QuantConfig()
         input_scale = torch.tensor([1.0])
         input_offset = torch.tensor([0.0])
         deq_scale = torch.tensor([1.0])
@@ -99,20 +74,14 @@ class TestW8A8LinearQuantizer:
 
     @pytest.fixture
     def quant_config(self):
-        return LinearQuantConfig(
-            w_cfg=WeightQuantConfig(bits=8, method=WeightQuantMethod.MINMAX),
-            a_cfg=ActivationQuantConfig(bits=8, method=ActivationQuantMethod.MINMAX)
-        )
+        return W8A8QuantConfig()
 
     def test_match(self, linear_module, quant_config):
         # 测试匹配条件
         assert W8A8LinearQuantizer.match(linear_module, quant_config)
 
         # 测试不匹配的情况
-        wrong_config = LinearQuantConfig(
-            w_cfg=WeightQuantConfig(bits=4, method=WeightQuantMethod.MINMAX),
-            a_cfg=ActivationQuantConfig(bits=8, method=ActivationQuantMethod.MINMAX)
-        )
+        wrong_config = W8A8DynamicQuantConfig()
         assert not W8A8LinearQuantizer.match(linear_module, wrong_config)
 
     def test_deploy(self, linear_module, quant_config):
@@ -133,10 +102,7 @@ class TestW8A8Processor:
 
     @pytest.fixture
     def processor_config(self):
-        quant_config = W8A8QuantConfig(
-            w_cfg=WeightQuantConfig(bits=8, method=WeightQuantMethod.MINMAX),
-            a_cfg=ActivationQuantConfig(bits=8, method=ActivationQuantMethod.MINMAX)
-        )
+        quant_config = W8A8QuantConfig()
         return W8A8ProcessorConfig(
             cfg_map={"0": quant_config, "1": quant_config}
         )
@@ -154,10 +120,7 @@ class TestW8A8Processor:
 
 class TestW8A8QuantConfig:
     def test_quant_type(self):
-        config = W8A8QuantConfig(
-            w_cfg=WeightQuantConfig(bits=8, method=WeightQuantMethod.MINMAX),
-            a_cfg=ActivationQuantConfig(bits=8, method=ActivationQuantMethod.MINMAX)
-        )
+        config = W8A8QuantConfig()
         assert config.quant_type == QuantType.W8A8
 
 
@@ -165,8 +128,16 @@ class TestW8A8ProcessorConfig:
     @pytest.fixture
     def quant_config(self):
         return W8A8QuantConfig(
-            w_cfg=WeightQuantConfig(bits=8, method=WeightQuantMethod.MINMAX),
-            a_cfg=ActivationQuantConfig(bits=8, method=ActivationQuantMethod.MINMAX)
+            w_cfg=WeightQuantConfig(
+                base=WeightQuantBaseConfig(bits=8),
+                method=WeightQuantMethodConfig(type=QuantMethod.MINMAX),
+                scope=WeightQuantScopeConfig(type=QuantScope.PER_CHANNEL)
+            ),
+            a_cfg=ActQuantConfig(
+                base=ActQuantBaseConfig(bits=8),
+                method=ActMinMaxConfig(),
+                scope=PerTensorConfig()
+            )
         )
 
     def test_processor_config_initialization(self, quant_config):
@@ -199,48 +170,38 @@ class TestW8A8ProcessorConfig:
         # 测试 JSON 序列化
         config = W8A8ProcessorConfig(cfg_map={"0": quant_config})
         json_str = config.model_dump_json()
-        config_dict = json.loads(json_str)
-
-        # 验证 JSON 结构
-        assert "cfg_map" in config_dict
-        assert "0" in config_dict["cfg_map"]
-        assert "w_cfg" in config_dict["cfg_map"]["0"]
-        assert "a_cfg" in config_dict["cfg_map"]["0"]
-
-        # 验证配置值
-        w_cfg = config_dict["cfg_map"]["0"]["w_cfg"]
-        a_cfg = config_dict["cfg_map"]["0"]["a_cfg"]
-        assert w_cfg["bits"] == 8
-        assert w_cfg["method"] == WeightQuantMethod.MINMAX.value
-        assert a_cfg["bits"] == 8
-        assert a_cfg["method"] == WeightQuantMethod.MINMAX.value
+        data = json.loads(json_str)
+        assert "cfg_map" in data
+        assert "0" in data["cfg_map"]
+        w_cfg = data["cfg_map"]["0"]["w_cfg"]
+        a_cfg = data["cfg_map"]["0"]["a_cfg"]
+        assert w_cfg["method"]["type"] == QuantMethod.MINMAX.value
+        assert a_cfg["method"]["type"] == QuantMethod.MINMAX.value
 
     def test_processor_config_json_deserialization(self, quant_config):
         # 准备测试数据
-        json_str = '''{
-            "cfg_map": {
-                "0": {
-                    "w_cfg": {
-                        "bits": 8,
-                        "method": "minmax"
-                    },
-                    "a_cfg": {
-                        "bits": 8,
-                        "method": "minmax"
-                    }
-                }
-            },
-            "disable_names": [
-                "abc"
-            ]
-        }'''
+        config = W8A8ProcessorConfig(cfg_map={"0": quant_config})
+        json_str = config.model_dump_json()
+        # 反序列化
+        new_config = W8A8ProcessorConfig.model_validate_json(json_str)
+        assert isinstance(new_config, W8A8ProcessorConfig)
+        assert "0" in new_config.cfg_map
+        assert new_config.cfg_map["0"].w_cfg.method.type == QuantMethod.MINMAX
 
-        # 测试 JSON 反序列化
-        config = W8A8ProcessorConfig.model_validate_json(json_str)
-        assert "0" in config.cfg_map
-        assert isinstance(config.cfg_map["0"], W8A8QuantConfig)
-        assert config.cfg_map["0"].w_cfg.bits == 8
-        assert config.cfg_map["0"].w_cfg.method == WeightQuantMethod.MINMAX
-        assert config.cfg_map["0"].a_cfg.bits == 8
-        assert config.cfg_map["0"].a_cfg.method == ActivationQuantMethod.MINMAX
-        assert config.disable_names == ["abc"]
+    def test_processor_config_json_deserialization_with_extra_data(self, quant_config):
+        # 准备测试数据
+        config = W8A8ProcessorConfig(cfg_map={"0": quant_config})
+        json_str = config.model_dump_json()
+        W8A8ProcessorConfig.model_validate_json(json_str)
+
+        json_obj = json.loads(json_str)
+        json_obj["extra_field"] = "extra_value"
+        json_str = json.dumps(json_obj)
+
+        # 反序列化并验证错误信息
+        with pytest.raises(ValidationError) as exc_info:
+            W8A8ProcessorConfig.model_validate_json(json_str)
+
+        # 验证错误信息中是否包含 extra_field
+        error_msg = str(exc_info.value)
+        assert "extra_field" in error_msg, "验证失败是因为多余的 extra_field 字段"

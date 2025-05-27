@@ -19,7 +19,7 @@ from typing import Tuple, Optional
 import torch
 
 from msmodelslim.quant.kia.utils import fake_quantize, init_weight_quant_normal
-from msmodelslim.quant.quantizer.base.const import WeightQuantScope
+from msmodelslim.quant.quantizer.base.const import QuantScope
 from msmodelslim.quant.quantizer.linear.base import BaseWeightQuantizer
 from msmodelslim.quant.quantizer.linear.config import WeightQuantConfig
 
@@ -57,16 +57,15 @@ class MinMaxWeightQuantizer(BaseWeightQuantizer):
                 weight: torch.Tensor,
                 bias: Optional[torch.Tensor] = None,
                 x: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
-
         _, dequant_weight, self.weight_scale, self.weight_offset = init_weight_quant_normal(
             weight,
-            bits=self.cfg.bits,
-            mm_tensor=self.cfg.scope == WeightQuantScope.PER_TENSOR,
+            bits=self.cfg.base.bits,
+            mm_tensor=self.cfg.scope.type == QuantScope.PER_TENSOR,
             fake_quant=True
         )
 
         return dequant_weight, bias
-    
+
     def _check_scale_offset(self):
         if self.weight_scale is None or self.weight_offset is None:
             raise RuntimeError("Weight scale and offset must be initialized before getting scale and offset")

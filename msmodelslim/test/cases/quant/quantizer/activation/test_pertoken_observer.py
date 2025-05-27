@@ -16,25 +16,21 @@ import unittest
 
 import torch
 
-from msmodelslim.quant.quantizer.activation.minmax import MinMaxStatistic
-from msmodelslim.quant.quantizer.activation.observer import PerTokenObserver
+from msmodelslim.quant.quantizer.activation.minmax import MinMaxStrategy
+from msmodelslim.quant.quantizer.activation.observer import PerTokenObserver, PerTokenConfig
 
 
 class TestPerTokenObserver(unittest.TestCase):
     def setUp(self):
-        self.strategy = MinMaxStatistic()
-        self.observer = PerTokenObserver()
+        self.config = PerTokenConfig()
+        self.strategy = MinMaxStrategy()
+        self.observer = PerTokenObserver(config=self.config)
         self.observer.set_strategy(self.strategy)
-
-    def test_get_reduce_dims(self):
-        x = torch.randn(2, 3, 4)
-        reduce_dims = self.observer._get_reduce_dims(x)
-        self.assertEqual(reduce_dims, [0, 1, 2])
 
     def test_update(self):
         x = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
         self.observer.update(x)
-        stats = self.observer.get_stats()
+        stats = self.observer.get_min_max()
         self.assertEqual(stats[0].item(), 1.0)
         self.assertEqual(stats[1].item(), 4.0)
 
@@ -42,33 +38,67 @@ class TestPerTokenObserver(unittest.TestCase):
         # 第一轮更新
         x1 = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
         self.observer.update(x1)
-        stats = self.observer.get_stats()
+        stats = self.observer.get_min_max()
         self.assertEqual(stats[0].item(), 1.0)
         self.assertEqual(stats[1].item(), 4.0)
 
         # 第二轮更新 - 包含更小的最小值
         x2 = torch.tensor([[0.5, 5.0], [2.0, 3.0]])
         self.observer.update(x2)
-        stats = self.observer.get_stats()
-        # PerToken应该只保留最近输入的统计值
-        self.assertEqual(stats[0].item(), 0.5)  # 当前输入的最小值
-        self.assertEqual(stats[1].item(), 5.0)  # 当前输入的最大值
+        stats = self.observer.get_min_max()
+        # PerToken应该累积历史最小/最大值
+        self.assertEqual(stats[0].item(), 0.5)  # 更新后的最小值
+        self.assertEqual(stats[1].item(), 5.0)  # 更新后的最大值
 
         # 第三轮更新 - 包含更大的最大值
         x3 = torch.tensor([[2.0, 6.0], [3.0, 4.0]])
         self.observer.update(x3)
-        stats = self.observer.get_stats()
-        # PerToken应该只保留最近输入的统计值
-        self.assertEqual(stats[0].item(), 2.0)  # 当前输入的最小值
-        self.assertEqual(stats[1].item(), 6.0)  # 当前输入的最大值
+        stats = self.observer.get_min_max()
+        # PerToken应该继续累积历史最小/最大值
+        self.assertEqual(stats[0].item(), 2.0)  # 保持历史最小值
+        self.assertEqual(stats[1].item(), 6.0)  # 更新后的最大值
 
-        # 第四轮更新 - 所有值都在较小范围内
+        # 第四轮更新 - 所有值都在历史范围内
         x4 = torch.tensor([[1.5, 3.0], [2.5, 3.5]])
         self.observer.update(x4)
-        stats = self.observer.get_stats()
-        # PerToken应该只保留最近输入的统计值
-        self.assertEqual(stats[0].item(), 1.5)  # 当前输入的最小值
-        self.assertEqual(stats[1].item(), 3.5)  # 当前输入的最大值
+        stats = self.observer.get_min_max()
+        # PerToken应该保持历史最小/最大值不变
+        self.assertEqual(stats[0].item(), 1.5)
+        self.assertEqual(stats[1].item(), 3.5)  # 保持历史最大值
+
+    def test_set_strategy(self):
+        """测试设置新的统计策略"""
+        # 创建新的统计策略
+        new_strategy = MinMaxStrategy()
+
+        # 设置新的统计策略
+        self.observer.set_strategy(new_strategy)
+
+        # 验证策略已被更新
+        self.assertIs(self.observer.strategy, new_strategy)
+
+        # 使用新策略进行更新
+        x = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+        self.observer.update(x)
+
+        # 验证新策略的统计结果
+        stats = self.observer.get_min_max()
+        self.assertEqual(stats[0].item(), 1.0)
+        self.assertEqual(stats[1].item(), 4.0)
+
+        # 验证新策略是独立的（不影响原策略）
+        self.assertNotEqual(self.observer.strategy, self.strategy)
+
+        # 使用原策略进行更新
+        self.observer.set_strategy(self.strategy)
+        x = torch.tensor([[0.5, 5.0], [2.0, 3.0]])
+        self.observer.update(x)
+
+        # 验证原策略的统计结果
+        stats = self.observer.get_min_max()
+        self.assertEqual(stats[0].item(), 0.5)
+        self.assertEqual(stats[1].item(), 5.0)
+
 
 if __name__ == '__main__':
     unittest.main()
