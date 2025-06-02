@@ -17,6 +17,7 @@ import json
 import csv
 from collections import namedtuple
 from glob import glob
+from dataclasses import dataclass
 
 from msservice_advisor.profiling_analyze.utils import TARGETS, LOG_LEVELS, SUGGESTION_TYPES
 from msservice_advisor.profiling_analyze.utils import str_ignore_case, logger, set_log_level
@@ -49,6 +50,25 @@ TARGETS_MAP = {
 }
 
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
+
+
+@dataclass
+class ProfilingParameters:
+    target: str
+    target_metrics: str
+    input_token_num: int
+    output_token_num: int
+    tp: int
+
+    @classmethod
+    def extract_from_args(cls, args):
+        return cls(
+            target=args.target,
+            target_metrics=args.target_metrics,
+            input_token_num=args.input_token_num,
+            output_token_num=args.output_token_num,
+            tp=args.tp
+        )
 
 
 """ parse_benchmark_instance """
@@ -143,7 +163,7 @@ def parse_mindie_server_config(service_config_path):
 """ analyze """
 
 
-def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
+def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, params: ProfilingParameters):
     import msservice_advisor.profiling_analyze
     from msservice_advisor.profiling_analyze.register import REGISTRY, ANSWERS
 
@@ -151,7 +171,7 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
     logger.info("<think>")
     for name, analyzer in REGISTRY.items():
         logger.info(name)
-        analyzer(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics)
+        analyzer(mindie_service_config, benchmark_instance, mindie_server_log_path, params)
     logger.info("</think>")
 
     logger.info("")
@@ -164,6 +184,21 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, t
                 logger.info(f"[reason] {reason}")
                 logger.info("")
     logger.info("</answer>")
+
+
+""" check_positive_integer """
+
+
+def check_positive_integer(value):
+    try:
+        value = int(value)
+    except Exception as e:
+        raise ValueError(f"'{value}' cannot convert to a positive integer.") from e
+    
+    if value < 0:
+        raise ValueError(f"'{value}' is not a positive integer.")
+    
+    return value
 
 
 """ arg_parse """
@@ -204,6 +239,19 @@ def arg_parse(argv):
         action='store_true',
         help="control to show the plot",
     )
+
+    parser.add_argument(
+        "-in", "--input_token_num", type=check_positive_integer, default=0, help="input token number"
+    )
+
+    parser.add_argument(
+        "-out", "--output_token_num", type=check_positive_integer, default=0, help="output token number"
+    )
+
+    parser.add_argument(
+        "-tp", "--tp", type=check_positive_integer, default=0, help="tp"
+    )
+
     return parser.parse_known_args(argv)[0]
 
 
@@ -216,10 +264,11 @@ def main():
         plt = None
         
     args = arg_parse(sys.argv)
+    profiling_params = ProfilingParameters.extract_from_args(args)
     set_log_level(args.log_level)
     benchmark_instance = parse_benchmark_instance(args.instance_path)
     mindie_service_config, mindie_server_log_path = parse_mindie_server_config(args.service_config_path)
-    analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, args.target, args.target_metrics)
+    analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, profiling_params)
     
     if not args.show:
         return

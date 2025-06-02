@@ -34,7 +34,7 @@ def get_dict_value_by_pos(dict_value, target_pos):
 
 
 @register_analyze()
-def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
+def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_server_log_path, profiling_params):
     npu_mem_size_pos = "BackendConfig:ModelDeployConfig:ModelConfig:0:npuMemSize"
     npu_mem_size = get_dict_value_by_pos(mindie_service_config, npu_mem_size_pos)
     if npu_mem_size is not None and npu_mem_size != -1:
@@ -48,7 +48,8 @@ def num_mem_size_checker(mindie_service_config, benchmark_instance, mindie_serve
 
 
 @register_analyze()
-def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_server_log_path, target, target_metrics):
+def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_server_log_path, profiling_params):
+    target = profiling_params.target
     results_per_request = benchmark_instance.get("results_per_request").values()
     prefill_latencies = np.array([ii["latency"][0] for ii in results_per_request if len(ii.get("latency", [])) > 0])
 

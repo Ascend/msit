@@ -176,7 +176,7 @@ def get_predict_image(results):
 
 
 @register_analyze()
-def find_best_batch_size(config, benchmark, output_log, limit, target_metrics):
+def find_best_batch_size(config, benchmark, output_log, profiling_params):
     if "results_per_request" not in benchmark:
         return
 
