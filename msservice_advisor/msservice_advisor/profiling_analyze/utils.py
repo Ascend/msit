@@ -11,13 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
+from pathlib import Path
 import logging
 from collections import namedtuple
 
 TARGETS = namedtuple("TARGETS", ["FirstTokenTime", "Throughput"])("FirstTokenTime", "Throughput")
 _SUGGESTION_TYPES = ["env", "system", "config"]
 SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTION_TYPES)
+MAX_FILE_ITER_TIME = 10000
+MAX_FILE_SIZE = 10
+BYTES_TO_GB = 1024**3
 
 LOG_LEVELS = {
     "debug": logging.DEBUG,
@@ -69,3 +73,42 @@ def set_logger(msit_logger):
 
 logger = logging.getLogger("msservice_advisor_logger")
 set_logger(logger)
+
+
+def vaild_readable_directory(path):
+    if not os.path.exists(path):
+        raise FileExistsError(f"Path '{path}' does not exist.")
+    if not os.path.isdir(path):
+        raise ValueError(f"Path '{path}' is not a directory.")
+    if not os.access(path, os.R_OK):
+        raise PermissionError(f"Directory '{path}' is not readable.")
+
+
+def vaild_readable_file(path):
+    path = Path(path)
+    if not path.exists():
+        raise FileExistsError(f"path '{path}' does not exist.")
+
+    if not os.access(path, os.R_OK):
+        raise PermissionError(f"path '{path}' is not readable.")
+    
+    file_size = path.stat().st_size
+    if file_size > MAX_FILE_SIZE * BYTES_TO_GB:
+        raise ValueError(f"path '{path}' cannot exceed {MAX_FILE_SIZE}GB.")
+    return path
+
+
+def get_directory_size(path):
+    iter_time = 0
+    total_size = 0
+    for dirpath, _, filename in os.walk(path):
+        for f in filename:
+            if iter_time > MAX_FILE_ITER_TIME:
+                raise ValueError(f"path '{path}' iter times cannot exceed {MAX_FILE_ITER_TIME}.")
+            iter_time += 1
+
+            fp = os.path.join(dirpath, f)
+            if not os.path.islink(fp):
+                total_size += os.path.getsize(fp)
+
+    return total_size / BYTES_TO_GB
