@@ -28,14 +28,15 @@ def get_benchmark_token_num(benchmark, info_name):
     return int(float(token_num))
 
 
-def extract_req_input_info(benchmark, input_params):
+def extract_token_num(benchmark, input_params):
     """
         获取请求输入参数：
         input_token_num: 输入长度。优先从用户输入中获取; 用户未输入从benchmark中获取。
-        avg_token_num: 输入平均长度。优先从benchmark中获取; 未获取到则与用户输入相等。
+        avg_token_num: 平均输出长度。优先从benchmark中获取; 未获取到则与用户输入相等。
     """
-    avg_token_num = input_params.input_token_num
-    input_token_num = input_params.input_token_num
+    # get from benchmark
+    avg_token_num = 0
+    input_token_num = 0
     try:
         input_token_num = get_benchmark_token_num(benchmark, 'InputTokens')
         avg_token_num = get_benchmark_token_num(benchmark, 'GeneratedTokens')
@@ -43,10 +44,13 @@ def extract_req_input_info(benchmark, input_params):
         logger.warning(f"Extract request input info from benchmark failed due to {e}, "
             "please check or try to specifying the input length.")
 
+    # get from user input
     if input_params.input_token_num > 0:
         input_token_num = input_params.input_token_num
+    if input_params.output_token_num > 0:
+        avg_token_num = input_params.output_token_num
 
-    logger.info(f"input_token_num: {input_token_num}, avg_token_num: {avg_token_num}")
+    logger.info(f"input_token_num: {input_token_num}, avg_output_token_num: {avg_token_num}")
     return input_token_num, avg_token_num
 
 
@@ -78,7 +82,7 @@ def get_model_config_info(model_configs, tp, npu_device_ids):
     return tp, model_weight_path
 
 
-def get_server_config_params(server_config, args):
+def extract_server_config_params(server_config, args):
     """
         获取mindie-server config.json中的参数信息
         output_token_num: 请求输出长度。优先从用户输入中获取; 用户未输入等于conf中的maxIterTimes。
@@ -87,7 +91,7 @@ def get_server_config_params(server_config, args):
         npu_device_ids: 使用npu的卡号。从config中的npuDeviceIds获取。
         model_weight_path: 使用的模型权重路径, 从conf中的modelWeightPath获取。
         npu_mem_size: 单卡预留给kvcache的显存, 单位GB, 从conf中的npuMemSize获取。获取为-1则需要重新计算显存大小。
-        sp: Sequence Parallelism策略, 对Sequence进行切分, 从conf中的sp获取, 默认不一定配置。
+        sp: Sequence Parallelism策略, 对Sequence进行切分, 从conf中的sp获取, 若未配置默认为1。
     """
     output_token_num = args.output_token_num
     tp = args.tp
@@ -110,11 +114,11 @@ def get_server_config_params(server_config, args):
         tp=tp,
         model_weight_path=model_weight_path,
         npu_mem_size=model_configs.get('npuMemSize', 0),
-        sp=model_configs.get('sp', 0)
+        sp=model_configs.get('sp', 1)
     )
 
 
-def get_model_config_params(model_weight_path):
+def extract_model_config_params(model_weight_path):
     """
         获取模型参数信息，及模型权重文件总大小
     """
@@ -268,7 +272,7 @@ def cal_npu_mem_size(server_params, model_weight_size):
     """
         优先从mindie-server config.json的npuMemSize获取, 若该值非法, 则使用公式计算
         计算显存公式：
-        Floor[(单卡可用显存 - 权重/TP) * 系数]
+        Floor[(单卡可用显存 - 权重/NPU卡数) * 系数]
     """
     # get from mindie server config, GB
     npu_mem_size = server_params['npu_mem_size']
@@ -279,15 +283,15 @@ def cal_npu_mem_size(server_params, model_weight_size):
     # calulate npu available memory size
     npu_available_mem = get_available_npu_memory(server_params['npu_device_ids'])
 
-    tp = server_params['tp']
-    if tp == 0:
-        raise ValueError(f"tp cannot be zeor")
+    npu_num = len(server_params['npu_device_ids'])
+    if npu_num == 0:
+        raise ValueError(f"used npu number cannot be 0")
 
     fixed_coefficent = 0.8
-    npu_mem_size = (npu_available_mem - model_weight_size / tp) * fixed_coefficent
+    npu_mem_size = (npu_available_mem - model_weight_size / npu_num) * fixed_coefficent
     npu_mem_size = max(math.floor(npu_mem_size), 0)
 
-    logger.debug(f"npu_memory_size: {npu_mem_size}GB")
+    logger.info(f"npu_memory_size: {npu_mem_size}GB")
     return npu_mem_size
 
 
@@ -368,20 +372,22 @@ def cal_max_batch_size_range(
     total_block_num: int,
     max_block: int,
     min_block: int,
-    avg_block: int
+    avg_block: int,
+    sp: int
 ):
     """
-        最小maxBatchSize = Floor[Total Block Num/所需最大Block Num]
-        最大maxBatchSize = Floor[Total Block Num/所需最小Block Num]
-        平均maxBatchSize = Floor[Total Block Num/所需平均Block Num]
+        最小maxBatchSize = Floor[Total Block Num/(所需最大Block Num/SP)]
+        最大maxBatchSize = Floor[Total Block Num/(所需最小Block Num/SP)]
+        平均maxBatchSize = Floor[Total Block Num/(所需平均Block Num/SP)]
     """
     if any(arg <= 0 for arg in locals().values()):
         return 0, 0, 0
     
+    logger.debug(f"sp: {sp}")
     return (
-        total_block_num // max_block, # min
-        total_block_num // min_block, # max
-        total_block_num // avg_block  # avg
+        total_block_num // math.ceil(max_block / sp), # min
+        total_block_num // math.ceil(min_block / sp), # max
+        total_block_num // math.ceil(avg_block / sp)  # avg
     )
 
 
@@ -399,19 +405,19 @@ def write_to_answer(min_batch, max_batch, avg_batch):
 
 @register_analyze()
 def find_max_batch_size_range(server_config, benchmark, output_log, input_params):
-    # get input info from benchmark
-    input_token_num, avg_token_num = extract_req_input_info(benchmark, input_params)
+    # get input token number and average output token num
+    input_token_num, avg_token_num = extract_token_num(benchmark, input_params)
 
     # get server info from server config.json
     try:
-        server_params = get_server_config_params(server_config, input_params)
+        server_params = extract_server_config_params(server_config, input_params)
     except Exception as e:
         logger.warning(f"Skip npu memory analyze due to {e}, please check mindie-server config permission or content.")
         return
     
     # get model info from model config.json
     try:
-        model_params, model_weight_size = get_model_config_params(server_params["model_weight_path"])
+        model_params, model_weight_size = extract_model_config_params(server_params["model_weight_path"])
     except Exception as e:
         logger.warning(f"Skip npu memory analyze due to invaild model weight. {e}")
         return
@@ -431,7 +437,8 @@ def find_max_batch_size_range(server_config, benchmark, output_log, input_params
     logger.info(f"max_block_num:{max_block}  min_block_num:{min_block}  avg_block_num:{avg_block}")
 
     # caculate max_batch_size
-    min_batch, max_batch, avg_batch = cal_max_batch_size_range(total_block_num, max_block, min_block, avg_block)
+    min_batch, max_batch, avg_batch = cal_max_batch_size_range(
+        total_block_num, max_block, min_block, avg_block, server_params['sp'])
     logger.info(f"max_batch_size:{max_batch}  min_batch_size:{min_batch}  avg_batch_size:{avg_batch}")
 
     write_to_answer(min_batch, max_batch, avg_batch)
