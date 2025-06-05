@@ -15,6 +15,7 @@
 
 from torch import nn
 
+from msmodelslim import logger
 from msmodelslim.core.base.protocol import BatchProcessRequest
 
 
@@ -49,9 +50,11 @@ class BaseProcessor:
         返回:
             List[ProcessControl]: 处理控制选项列表，指导后续处理流程
         """
+        logger.info(f"Start running processor {self.__class__.__name__} for {request.name}")
         self.preprocess(request)
         self._run_forward_if_need(request)
         self.postprocess(request)
+        logger.info(f"End running processor {self.__class__.__name__} for {request.name}")
 
     def pre_run(self) -> None:
         pass

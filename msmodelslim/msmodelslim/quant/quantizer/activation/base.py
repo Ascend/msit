@@ -14,18 +14,37 @@
 #  limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Tuple, Optional
 
 import torch
 from pydantic import BaseModel
-from torch import nn as nn
+from torch import distributed as dist
 
-from msmodelslim.quant.kia.utils import fake_quantize, linear_quantization_params
-from msmodelslim.quant.quantizer.base.const import ActivationQuantMethod, ActivationQuantScope
+from msmodelslim.quant.quantizer.base.const import QuantMethod, QuantScope
 from msmodelslim.utils.registry import Registry
 
 
-class StatisticsStrategy(ABC):
+class ActQuantMethodConfig(BaseModel):
+    type: QuantMethod
+
+
+class ActQuantScopeConfig(BaseModel):
+    type: QuantScope
+
+
+class ActQuantBaseConfig(BaseModel):
+    bits: int = 8
+    signed: bool = True
+    symmetric: bool = False
+
+
+class ActQuantConfig(BaseModel):
+    base: ActQuantBaseConfig
+    scope: ActQuantScopeConfig
+    method: ActQuantMethodConfig
+
+
+class ObserverStrategy(ABC):
     """
     统计策略的抽象基类，定义了更新和获取统计值的基本接口。
 
@@ -34,48 +53,53 @@ class StatisticsStrategy(ABC):
     """
 
     @abstractmethod
-    def update_stats(self,
-                     x: torch.Tensor,
-                     reduce_dims: list[int],
-                     keep_dims: bool = False,
-                     sync_stats: bool = False,
-                     ):
+    def update(self, x: torch.Tensor):
         """
         更新统计值。
 
-        根据输入张量和指定的缩减维度，更新内部统计状态。
+        根据输入张量，更新内部统计状态。
 
         参数:
-            x: 输入张量，包含需要统计的数据
-            reduce_dims: 需要缩减的维度列表，指定在哪些维度上进行统计
-            keep_dims: 是否保持缩减维度
-            sync_stats: 是否在各rank间同步统计，用于分布式量化
+            x: 输入张量，待统计数据
         """
         pass
 
     @abstractmethod
-    def get_stats(self) -> torch.Tensor:
+    def get_min_max(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        获取统计结果。
+        获取最小值和最大值。
+        
+        返回:
+            tuple: 包含最小值和最大值的元组
+                min_val: 最小值, 形状为 (1,)
+                max_val: 最大值, 形状为 (1,)
+        """
+        pass
 
-        返回当前统计策略计算得到的统计值。
+    @abstractmethod
+    def reset(self):
+        """
+        重置统计。
+        """
+        pass
+
+    def update_with_group(self, x: torch.Tensor, group: dist.ProcessGroup):
+        """
+        分布式量化时，在指定进程组中更新统计值。
+
+        参数:
+            x: 输入张量，待统计数据
+            group: 通信组，用于同步更新统计信息的进程组
 
         返回:
-            torch.Tensor: 统计结果张量
+            tuple: 包含最小值和最大值的元组
+                min_val: 最小值, 形状为 (1,)
+                max_val: 最大值, 形状为 (1,)
         """
-        pass
-
-    @abstractmethod
-    def clear_stats(self):
-        """
-        清除统计状态。
-
-        重置统计状态，为下一次统计做准备。
-        """
-        pass
+        raise NotImplementedError(f"{self.__class__.__name__} does not support update_with_group method.")
 
 
-STATISTIC_STRATEGY_REGISTRY = Registry[StatisticsStrategy]()
+OBSERVER_STRATEGY_REGISTRY = Registry[ObserverStrategy]()
 
 
 class BaseObserver:
@@ -86,7 +110,7 @@ class BaseObserver:
     所有具体的观察者实现都应该继承此类并实现抽象方法。
     """
 
-    def __init__(self, sync_stats=False):
+    def __init__(self):
         """
         初始化观察者。
 
@@ -94,9 +118,8 @@ class BaseObserver:
             strategy: 统计策略，用于收集和处理统计信息
         """
         self.strategy = None
-        self.sync_stats = sync_stats
 
-    def set_strategy(self, strategy: StatisticsStrategy):
+    def set_strategy(self, strategy: ObserverStrategy):
         """
         设置统计策略。
 
@@ -105,7 +128,7 @@ class BaseObserver:
         """
         self.strategy = strategy
 
-    def update(self, x: torch.Tensor):
+    def update(self, x: torch.Tensor, sync: bool = False, group: Optional[dist.ProcessGroup] = None):
         """
         更新观察者的统计信息。
 
@@ -113,84 +136,25 @@ class BaseObserver:
 
         参数:
             x: 输入张量，包含需要观察的数据
+            sync: 是否同步更新统计信息
+            group: 通信组，用于同步更新统计信息的进程组
         """
-        reduce_dims = self._get_reduce_dims(x)
-        keep_dims = self._keep_dims(x)
-        self.strategy.update_stats(x, reduce_dims=reduce_dims, keep_dims=keep_dims, sync_stats=self.sync_stats)
 
-    def get_stats(self):
+        if sync:
+            self.strategy.update_with_group(x, group)
+        else:
+            self.strategy.update(x)
+
+    def get_min_max(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         获取观察者收集的统计信息。
 
         返回统计策略计算得到的统计结果。
 
         返回:
-            dict: 包含统计指标名称和对应值的字典
+            tuple: 包含最小值和最大值的元组
         """
-        return self.strategy.get_stats()
-
-    def _get_reduce_dims(self, x: torch.Tensor) -> list[int]:
-        """
-        获取需要缩减的维度列表。
-
-        此方法由子类实现，用于指定在哪些维度上进行统计。
-
-        参数:
-            x: 输入张量，用于确定其维度信息
-
-        返回:
-            list[int]: 需要缩减的维度列表
-        """
-        raise NotImplementedError()
-
-    def _keep_dims(self, x: torch.Tensor) -> bool:
-        """
-        判断是否保持缩减维度。
-
-        根据输入张量的维度信息，判断是否需要保持缩减维度。
-
-        参数:
-            x: 输入张量，用于确定其维度信息
-
-        返回:
-            bool: 是否保持缩减维度
-        """
-        return False
+        return self.strategy.get_min_max()
 
 
 OBSERVER_REGISTRY = Registry[BaseObserver]()
-
-
-class ActivationQuantConfig(BaseModel):
-    bits: int = 8
-    method: ActivationQuantMethod = ActivationQuantMethod.MINMAX
-    scope: ActivationQuantScope = ActivationQuantScope.PER_TENSOR
-    symmetric: bool = False
-    signed: bool = True
-
-
-class ActivationQuantizer(nn.Module):
-    def __init__(self, config: ActivationQuantConfig):
-        super().__init__()
-        self.config = config
-        self.statistics = None
-        self.observer = None
-
-    def set_observer(self, observer: BaseObserver):
-        self.observer = observer
-
-    def set_statistics(self, statistics: StatisticsStrategy):
-        self.statistics = statistics
-        self.observer.set_strategy(self.statistics)
-
-    def get_scale_offset(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        min_val, max_val = self.statistics.get_stats()
-        scale, zero_point = linear_quantization_params(self.config.bits, min_val, max_val, self.config.signed,
-                                                       self.config.symmetric)
-        return scale, zero_point
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        self.observer.update(x)
-        scale, zero_point = self.get_scale_offset()
-        _, dequant_x = fake_quantize(x, scale, zero_point, self.config.bits, self.config.signed)
-        return dequant_x

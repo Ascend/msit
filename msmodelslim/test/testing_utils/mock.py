@@ -59,6 +59,7 @@ def _mocked_init_weight_quant_normal(weight: torch.Tensor,
 def _mocked_linear_quantization_params(bit: int,
                                        x_min: torch.Tensor,
                                        x_max: torch.Tensor,
+                                       intergral_zero_point: bool,
                                        q_signed: bool,
                                        sym: bool) -> Tuple[torch.Tensor, torch.Tensor]:
     return torch.tensor(1.0), torch.tensor(0.0)

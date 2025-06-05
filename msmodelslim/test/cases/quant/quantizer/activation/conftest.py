@@ -1,5 +1,6 @@
 #  -*- coding: utf-8 -*-
-#  Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
+#  -*- coding: utf-8 -*-
+#  Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
 #  #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,20 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from enum import Enum
 
+from testing_utils.mock import mock_kia_library, mock_security_library
 
-class QuantMethod(Enum):
-    MINMAX = "minmax"
-    HISTOGRAM = "histogram"
-    CLIP_MINMAX = "clip_minmax"
-    GPTQ = "gptq"
-    HQQ = "hqq"
-
-
-class QuantScope(Enum):
-    PER_TENSOR = "per_tensor"
-    PER_TOKEN = "per_token"
-    PER_CHANNEL = "per_channel"
-    PER_AXIS = "per_axis"
-    PER_GROUP = "per_group"
+mock_kia_library()
+mock_security_library()

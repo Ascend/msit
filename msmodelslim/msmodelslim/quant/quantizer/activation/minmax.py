@@ -13,37 +13,50 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import Tuple
+
 import torch
 from torch import distributed as dist
 
-from msmodelslim.quant.quantizer.activation.base import StatisticsStrategy, STATISTIC_STRATEGY_REGISTRY
-from msmodelslim.quant.quantizer.base.const import ActivationQuantMethod
+from msmodelslim.quant.quantizer.activation.base import ObserverStrategy, OBSERVER_STRATEGY_REGISTRY, \
+    ActQuantMethodConfig
+from msmodelslim.quant.quantizer.base.const import QuantMethod
 
 
-@STATISTIC_STRATEGY_REGISTRY.register(ActivationQuantMethod.MINMAX.value)
-class MinMaxStatistic(StatisticsStrategy):
+class ActMinMaxConfig(ActQuantMethodConfig):
+    type: QuantMethod = QuantMethod.MINMAX
 
-    def __init__(self):
+
+@OBSERVER_STRATEGY_REGISTRY.register(QuantMethod.MINMAX.value)
+class MinMaxStrategy(ObserverStrategy):
+
+    def __init__(self, config: ActMinMaxConfig = ActMinMaxConfig()):
+        self.config = config
         self.min_val = None
         self.max_val = None
 
-    def update_stats(self, x: torch.Tensor, reduce_dims: list[int], keep_dims: bool = False, sync_stats: bool = False):
+    def update(self, x: torch.Tensor):
 
         if self.min_val is None:
-            self.min_val = torch.amin(x, dim=reduce_dims, keepdim=keep_dims)
+            self.min_val = torch.min(x)
         else:
-            self.min_val = torch.min(self.min_val, torch.amin(x, dim=reduce_dims, keepdim=keep_dims))
+            self.min_val = torch.min(self.min_val, torch.min(x))
 
         if self.max_val is None:
-            self.max_val = torch.amax(x, dim=reduce_dims, keepdim=keep_dims)
+            self.max_val = torch.max(x)
         else:
-            self.max_val = torch.max(self.max_val, torch.amax(x, dim=reduce_dims, keepdim=keep_dims))
+            self.max_val = torch.max(self.max_val, torch.max(x))
 
-        if sync_stats and dist.is_initialized():
-            dist.all_reduce(self.min_val, op=dist.ReduceOp.MIN)
-            dist.all_reduce(self.max_val, op=dist.ReduceOp.MAX)
+    def update_with_group(self, x: torch.Tensor, group: dist.ProcessGroup):
+        self.update(x)
 
-    def get_stats(self) -> torch.Tensor:
+        if not dist.is_initialized():
+            raise RuntimeError("MinMaxStrategy's update_with_group requires distributed enabled")
+
+        dist.all_reduce(self.min_val, op=dist.ReduceOp.MIN, group=group)
+        dist.all_reduce(self.max_val, op=dist.ReduceOp.MAX, group=group)
+
+    def get_min_max(self) -> Tuple[torch.Tensor, torch.Tensor]:
 
         if self.min_val is None or self.max_val is None:
             raise RuntimeError(
@@ -51,8 +64,8 @@ class MinMaxStatistic(StatisticsStrategy):
                 "maybe you are quantifying a moe expert, but this expert has never been activated."
                 "Please check your model and quant config.")
 
-        return torch.stack([self.min_val, self.max_val], dim=0)
+        return self.min_val, self.max_val
 
-    def clear_stats(self):
+    def reset(self):
         self.min_val = None
         self.max_val = None

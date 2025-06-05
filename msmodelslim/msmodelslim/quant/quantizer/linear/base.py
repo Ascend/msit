@@ -21,8 +21,8 @@ from pydantic import BaseModel
 from torch import nn
 from torch.nn import functional as F
 
-from msmodelslim.quant.quantizer.activation.base import ActivationQuantConfig, ActivationQuantizer
-from msmodelslim.quant.quantizer.activation.factory import ActivationQuantizerFactory
+from msmodelslim.quant.quantizer.activation.base import ActQuantConfig
+from msmodelslim.quant.quantizer.activation.quantizer import ActivationQuantizer
 from msmodelslim.quant.quantizer.base.fake import BaseFakeQuantizer
 from msmodelslim.quant.quantizer.base.quantizer import BaseQuantizer
 from msmodelslim.quant.quantizer.linear.config import WeightQuantConfig, LinearQuantConfig
@@ -82,7 +82,7 @@ class BaseLinearQuantizer(BaseQuantizer):
     2. 然后使用 weight_quantizer 对权重进行量化和反量化
     3. 最后使用量化后的权重和偏置进行线性运算
     
-    尽管它持有一个 nn.Linear 实例，以及 input_quantizer 和 weight_quantizer，
+    尽管它持有 input_quantizer 和 weight_quantizer，
     但它仍被视为模型树中的叶节点，为此我们重写了 named_modules 方法。
     """
 
@@ -101,10 +101,14 @@ class BaseLinearQuantizer(BaseQuantizer):
         """
         if memo is None:
             memo = set()
-        if self not in memo:
-            if remove_duplicate:
-                memo.add(self)
-            yield prefix, self
+
+        if self.input_quantizer is not None:
+            memo.add(self.input_quantizer)
+
+        if self.weight_quantizer is not None:
+            memo.add(self.weight_quantizer)
+
+        return super().named_modules(memo, prefix, remove_duplicate)
 
     @abc.abstractmethod
     def deploy(self, *args, **kwargs) -> BaseFakeQuantizer:
@@ -145,7 +149,7 @@ class BaseLinearQuantizer(BaseQuantizer):
         self.input_quantizer = self._create_input_quantizer(cfg.a_cfg)
         self.weight_quantizer = self._create_weight_quantizer(cfg.w_cfg)
 
-    def _create_input_quantizer(self, cfg: ActivationQuantConfig) -> ActivationQuantizer:
+    def _create_input_quantizer(self, cfg: ActQuantConfig) -> ActivationQuantizer:
         """
         创建输入量化器
         
@@ -156,7 +160,7 @@ class BaseLinearQuantizer(BaseQuantizer):
             ActivationQuantizer: 创建的输入量化器
         """
         _ = self
-        return ActivationQuantizerFactory.create(cfg)
+        return ActivationQuantizer.from_config(cfg)
 
     @abc.abstractmethod
     def _create_weight_quantizer(self, cfg: WeightQuantConfig) -> BaseWeightQuantizer:

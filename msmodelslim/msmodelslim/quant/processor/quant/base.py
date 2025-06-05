@@ -15,7 +15,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from torch import nn
 
 from msmodelslim import logger
@@ -80,6 +80,7 @@ class LinearQuantProcessor(SessionBaseProcessor):
 
 
 class BaseSessionQuantConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     quant_type: QuantType = Field(default=QuantType.UNKNOWN)
 
 

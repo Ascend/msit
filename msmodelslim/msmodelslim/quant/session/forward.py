@@ -17,6 +17,7 @@ from typing import List
 
 from torch import nn
 
+from msmodelslim import logger
 from msmodelslim.core.base.processor import BaseProcessor
 from msmodelslim.core.base.protocol import BatchProcessRequest
 
@@ -29,18 +30,20 @@ class ForwardProcessorMerger(BaseProcessor):
     def __init__(self, model: nn.Module, processors: List[BaseProcessor]):
         super().__init__(model)
         self.processors = processors
+        self.processor_names = [processor.__class__.__name__ for processor in processors]
 
     def process(self, request: BatchProcessRequest) -> None:
 
         """
         合并多个前向量化处理器，用于减少模型推理的次数。
         """
-
+        logger.info(f"Start forward merger for {request.name} with {self.processor_names}")
         for processor in self.processors:
             processor.preprocess(request)
         self._run_forward_if_need(request)
         for processor in self.processors:
             processor.postprocess(request)
+        logger.info(f"End forward merger for {request.name} with {self.processor_names}")
 
     def pre_run(self) -> None:
         for processor in self.processors:

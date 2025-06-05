@@ -17,19 +17,21 @@ from collections import OrderedDict
 from typing import List
 
 import torch
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from torch import nn
 from torch.nn import functional as F
 
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantType
 from msmodelslim.quant.processor.quant.base import LinearQuantProcessor, BaseSessionQuantConfig
 from msmodelslim.quant.processor.registry import PROCESSOR_REGISTRY, PROCESSOR_CONFIG_REGISTRY
-from msmodelslim.quant.quantizer.activation.base import ActivationQuantConfig
-from msmodelslim.quant.quantizer.base.const import ActivationQuantScope, ActivationQuantMethod
-from msmodelslim.quant.quantizer.base.const import WeightQuantMethod
+from msmodelslim.quant.quantizer.activation.base import ActQuantConfig, ActQuantBaseConfig
+from msmodelslim.quant.quantizer.activation.minmax import ActMinMaxConfig
+from msmodelslim.quant.quantizer.activation.observer import PerTensorConfig
+from msmodelslim.quant.quantizer.base.const import QuantScope, QuantMethod
 from msmodelslim.quant.quantizer.base.fake import BaseFakeQuantizer, FAKE_QUANTIZER_REGISTRY
 from msmodelslim.quant.quantizer.linear.base import BaseLinearQuantizer, BaseWeightQuantizer, LINEAR_QUANTIZER_REGISTRY
-from msmodelslim.quant.quantizer.linear.config import LinearQuantConfig, WeightQuantConfig
+from msmodelslim.quant.quantizer.linear.config import LinearQuantConfig, WeightQuantConfig, WeightQuantBaseConfig, \
+    WeightQuantMethodConfig, WeightQuantScopeConfig
 from msmodelslim.quant.quantizer.linear.minmax.minmax import MinMaxWeightQuantizer
 from msmodelslim.utils.config_map import ConfigMap, ConfigSet
 
@@ -67,7 +69,7 @@ class W8A8LinearQuantizer(BaseLinearQuantizer):
 
     @staticmethod
     def match(module: nn.Module, cfg: LinearQuantConfig) -> bool:
-        return cfg.a_cfg.bits == 8 and cfg.w_cfg.bits == 8 and cfg.a_cfg.scope != ActivationQuantScope.PER_TOKEN
+        return isinstance(cfg, W8A8QuantConfig)
 
     def deploy(self, *args, **kwargs) -> BaseFakeQuantizer:
         with torch.device(self.fp_weight.device):
@@ -84,21 +86,39 @@ class W8A8LinearQuantizer(BaseLinearQuantizer):
         return W8A8LinearFakeQuantizer(self.cfg, input_scale, input_offset, deq_scale, quant_bias, quant_weight)
 
     def _create_weight_quantizer(self, cfg: WeightQuantConfig) -> BaseWeightQuantizer:
-        if cfg.method == WeightQuantMethod.MINMAX:
+        if cfg.method.type == QuantMethod.MINMAX:
             return MinMaxWeightQuantizer(cfg)
+        else:
+            raise ValueError(f"Unsupported quant method: {cfg.method.type} for {self.__class__.__name__} quantizer")
 
 
 class W8A8QuantConfig(BaseSessionQuantConfig, LinearQuantConfig):
-    quant_type: QuantType = Field(default=QuantType.W8A8)
-    a_cfg: ActivationQuantConfig = Field(default=ActivationQuantConfig(bits=8, method=ActivationQuantMethod.MINMAX,
-                                                                       scope=ActivationQuantScope.PER_TENSOR))
-    w_cfg: WeightQuantConfig = Field(default=WeightQuantConfig(bits=8, method=WeightQuantMethod.MINMAX))
+    quant_type: QuantType = Field(
+        default=QuantType.W8A8
+    )
+
+    a_cfg: ActQuantConfig = Field(
+        default=ActQuantConfig(
+            base=ActQuantBaseConfig(),
+            method=ActMinMaxConfig(),
+            scope=PerTensorConfig()
+        )
+    )
+
+    w_cfg: WeightQuantConfig = Field(
+        default=WeightQuantConfig(
+            base=WeightQuantBaseConfig(bits=8),
+            method=WeightQuantMethodConfig(type=QuantMethod.MINMAX),
+            scope=WeightQuantScopeConfig(type=QuantScope.PER_CHANNEL)
+        )
+    )
 
 
 @PROCESSOR_CONFIG_REGISTRY.register_by_name("w8a8")
 class W8A8ProcessorConfig(BaseModel):
-    disable_names: List[str] = Field(default=[])
-    cfg_map: OrderedDict[str, W8A8QuantConfig] = Field(default=OrderedDict())
+    model_config = ConfigDict(extra="forbid")
+    disable_names: List[str] = Field(default=[], description="要禁用的模块名称列表")
+    cfg_map: OrderedDict[str, W8A8QuantConfig] = Field(default=OrderedDict(), description="配置映射字典")
 
 
 @PROCESSOR_REGISTRY.register_by_name("w8a8")

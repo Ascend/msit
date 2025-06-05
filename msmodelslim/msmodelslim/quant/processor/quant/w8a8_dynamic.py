@@ -22,15 +22,16 @@ from torch import nn
 from torch.nn import functional as F
 
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantType
-from msmodelslim.quant.processor.quant.base import LinearQuantProcessor
-from msmodelslim.quant.processor.quant.w8a8 import W8A8QuantConfig
+from msmodelslim.quant.processor.quant.base import LinearQuantProcessor, BaseSessionQuantConfig
 from msmodelslim.quant.processor.registry import PROCESSOR_REGISTRY, PROCESSOR_CONFIG_REGISTRY
-from msmodelslim.quant.quantizer.activation.base import ActivationQuantConfig
-from msmodelslim.quant.quantizer.base.const import WeightQuantMethod, ActivationQuantScope, ActivationQuantMethod, \
-    WeightQuantScope
+from msmodelslim.quant.quantizer.activation.base import ActQuantConfig, ActQuantBaseConfig
+from msmodelslim.quant.quantizer.activation.minmax import ActMinMaxConfig
+from msmodelslim.quant.quantizer.activation.observer import PerTokenConfig
+from msmodelslim.quant.quantizer.base.const import QuantScope, QuantMethod
 from msmodelslim.quant.quantizer.base.fake import BaseFakeQuantizer, FAKE_QUANTIZER_REGISTRY
 from msmodelslim.quant.quantizer.linear.base import LINEAR_QUANTIZER_REGISTRY, BaseLinearQuantizer, BaseWeightQuantizer
-from msmodelslim.quant.quantizer.linear.config import LinearQuantConfig, WeightQuantConfig
+from msmodelslim.quant.quantizer.linear.config import LinearQuantConfig, WeightQuantConfig, WeightQuantBaseConfig, \
+    WeightQuantMethodConfig, WeightQuantScopeConfig
 from msmodelslim.quant.quantizer.linear.minmax.minmax import MinMaxWeightQuantizer
 from msmodelslim.utils.config_map import ConfigMap, ConfigSet
 
@@ -67,7 +68,7 @@ class W8A8DynamicLinearQuantizer(BaseLinearQuantizer):
 
     @staticmethod
     def match(module: nn.Module, cfg: LinearQuantConfig) -> bool:
-        return cfg.a_cfg.bits == 8 and cfg.w_cfg.bits == 8 and cfg.a_cfg.scope == ActivationQuantScope.PER_TOKEN
+        return isinstance(cfg, W8A8DynamicQuantConfig)
 
     def deploy(self, *args, **kwargs) -> BaseFakeQuantizer:
         with torch.device(self.fp_weight.device):
@@ -78,27 +79,40 @@ class W8A8DynamicLinearQuantizer(BaseLinearQuantizer):
         return W8A8DynamicLinearFakeQuantizer(self.cfg, weight_scale, weight_offset, quant_weight, bias)
 
     def _create_weight_quantizer(self, cfg: WeightQuantConfig) -> BaseWeightQuantizer:
-        if cfg.method == WeightQuantMethod.MINMAX:
+        if cfg.method.type == QuantMethod.MINMAX:
             return MinMaxWeightQuantizer(cfg)
+        else:
+            raise ValueError(f"Unsupported quant method: {cfg.method.type} for {self.__class__.__name__} quantizer")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.numel() > 0:
             x = self.input_quantizer(x)
         if not self.forward_called:
-            self.dequant_weight, self.dequant_bias = self.weight_quantizer.forward(self.module.weight, self.module.bias)
+            self.dequant_weight, self.dequant_bias = self.weight_quantizer.forward(self.fp_weight, self.fp_bias)
             self.forward_called = True
         return F.linear(x, self.dequant_weight, self.dequant_bias)
 
 
-class W8A8DynamicQuantConfig(W8A8QuantConfig):
-    a_cfg: ActivationQuantConfig = Field(default=ActivationQuantConfig(bits=8,
-                                                                       method=ActivationQuantMethod.MINMAX,
-                                                                       scope=ActivationQuantScope.PER_TOKEN))
-    w_cfg: WeightQuantConfig = Field(default=WeightQuantConfig(bits=8,
-                                                               method=WeightQuantMethod.MINMAX,
-                                                               scope=WeightQuantScope.PER_CHANNEL))
+class W8A8DynamicQuantConfig(BaseSessionQuantConfig, LinearQuantConfig):
+    quant_type: QuantType = Field(
+        default=QuantType.W8A8_DYNAMIC
+    )
 
-    quant_type: QuantType = Field(default=QuantType.W8A8_DYNAMIC)
+    a_cfg: ActQuantConfig = Field(
+        default=ActQuantConfig(
+            base=ActQuantBaseConfig(),
+            method=ActMinMaxConfig(),
+            scope=PerTokenConfig()
+        )
+    )
+
+    w_cfg: WeightQuantConfig = Field(
+        default=WeightQuantConfig(
+            base=WeightQuantBaseConfig(bits=8),
+            method=WeightQuantMethodConfig(type=QuantMethod.MINMAX),
+            scope=WeightQuantScopeConfig(type=QuantScope.PER_CHANNEL)
+        )
+    )
 
 
 @PROCESSOR_CONFIG_REGISTRY.register_by_name("w8a8_dynamic")
