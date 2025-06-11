@@ -17,7 +17,7 @@ from msmodelslim import logger
 
 
 @dataclass
-class AgbCacheInputs:
+class AgbCacheInputs_flux:
     hidden_states: torch.Tensor
     encoder_hidden_states: Optional[torch.Tensor] = None
     pooled_projections: Optional[torch.Tensor] = None
@@ -32,9 +32,9 @@ class AgbCacheInputs:
     controlnet_blocks_repeat: bool = False
 
 
-def agbcache_4_forward(
+def agbcache_4_flux_forward(
     self,
-    inputs: AgbCacheInputs
+    inputs: AgbCacheInputs_flux
 ) -> Union[torch.FloatTensor, Transformer2DModelOutput]:
     hidden_states = inputs.hidden_states
     encoder_hidden_states = inputs.encoder_hidden_states
@@ -322,8 +322,9 @@ def agbcache_4_forward(
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, default="black-forest-labs/FLUX.1-dev")
-    parser.add_argument('--save_path', type=str, default="black-forest-labs/FLUX.1-dev")
+    parser.add_argument('--model_path', type=str, default="./FLUX.1-dev")
+    parser.add_argument('--save_path', type=str, default="./generated_images")
+    parser.add_argument('--enable_agbcache', type=bool, default=True)
     parser.add_argument('--num_inference_steps', type=int, default=50)
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--prompt', type=str, default="An image of a squirrel in Picasso style")
@@ -332,13 +333,13 @@ if __name__ == '__main__':
     parser.add_argument('--device_type', type=str, choices=["cpu", "npu"], default="npu")
     args = parser.parse_args()
     
-    FluxTransformer2DModel.forward = agbcache_4_forward
+    FluxTransformer2DModel.forward = agbcache_4_flux_forward
     model_path = get_valid_read_path(args.model_path, is_dir=True, check_user_stat=False)
     pipeline = DiffusionPipeline.from_pretrained(args.model_path, torch_dtype=torch.float16)
     pipeline.enable_model_cpu_offload()
 
     # AGBCache parameters setting
-    pipeline.transformer.__class__.enable_agbcache = True
+    pipeline.transformer.__class__.enable_agbcache = args.enable_agbcache
     pipeline.transformer.__class__.cnt = 0
     pipeline.transformer.__class__.num_steps = args.num_inference_steps
     pipeline.transformer.__class__.rel_l1_thresh = args.rel_l1_thresh
