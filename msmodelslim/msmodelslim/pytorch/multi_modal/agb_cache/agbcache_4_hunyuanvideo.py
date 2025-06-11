@@ -21,7 +21,7 @@ from msmodelslim import logger
 
 
 @dataclass
-class AgbCacheInputs_hunyuanvideo:
+class AgbCacheInputsHunYuanVideo:
     x: torch.Tensor
     t: torch.Tensor
     text_states: Optional[torch.Tensor] = None
@@ -35,7 +35,7 @@ class AgbCacheInputs_hunyuanvideo:
 
 def agbcache_4_hunyuanvideo_forward(
     self,
-    inputs: AgbCacheInputs_hunyuanvideo
+    inputs: AgbCacheInputsHunYuanVideo
     ) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
         x = inputs.x
         t = inputs.t

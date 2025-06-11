@@ -17,7 +17,7 @@ from msmodelslim import logger
 
 
 @dataclass
-class AgbCacheInputs_flux:
+class AgbCacheInputsFlux:
     hidden_states: torch.Tensor
     encoder_hidden_states: Optional[torch.Tensor] = None
     pooled_projections: Optional[torch.Tensor] = None
@@ -34,7 +34,7 @@ class AgbCacheInputs_flux:
 
 def agbcache_4_flux_forward(
     self,
-    inputs: AgbCacheInputs_flux
+    inputs: AgbCacheInputsFlux
 ) -> Union[torch.FloatTensor, Transformer2DModelOutput]:
     hidden_states = inputs.hidden_states
     encoder_hidden_states = inputs.encoder_hidden_states
