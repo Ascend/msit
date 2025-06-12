@@ -54,38 +54,38 @@ void processCSV(int device_id) {
     while (std::getline(file, line)) {
         std::stringstream ss(line);
         std::string utilization_str, hbm_str, power_str;
-	std::getline(ss, utilization_str, ',');
+	    std::getline(ss, utilization_str, ',');
         std::getline(ss, hbm_str, ',');
         std::getline(ss, power_str, ',');
-	int utils = std::stoi(utilization_str);
-	if (utils==0 && !start){
-		continue;
-	}
-	start = true;
+        int utils = std::stoi(utilization_str);
+        if (utils==0 && !start){
+            continue;
+        }
+	    start = true;
         if (utils == 0) {
-		zero_count++;
-		zero_data.push_back({utilization_str, hbm_str, power_str});
-	}else if (utils!=0 && zero_count > 10) {
-	    writeCSV(file_count,device_id, current_data);
+            zero_count++;
+            zero_data.push_back({utilization_str, hbm_str, power_str});
+        }else if (utils!=0 && zero_count > 10) {
+            writeCSV(file_count,device_id, current_data);
 
-        // 重置计数器和当前数据
-        zero_count = 0;
-        current_data.clear();
-	    zero_data.clear();
-        file_count++;
-	    std::vector<std::string> row = {utilization_str, hbm_str, power_str};
+            // 重置计数器和当前数据
+            zero_count = 0;
+            current_data.clear();
+            zero_data.clear();
+            file_count++;
+            std::vector<std::string> row = {utilization_str, hbm_str, power_str};
             current_data.push_back(row);
         }else{
-		if (zero_count>0){
-			for (const auto& row : zero_data) {
-				current_data.push_back(row);
-			}
-			zero_count = 0; 
-			zero_data.clear();
-		}
-        std::vector<std::string> row = {utilization_str, hbm_str, power_str};
-        current_data.push_back(row);
-	}
+            if (zero_count>0){
+                for (const auto& row : zero_data) {
+                    current_data.push_back(row);
+                }
+                zero_count = 0; 
+                zero_data.clear();
+            }
+            std::vector<std::string> row = {utilization_str, hbm_str, power_str};
+            current_data.push_back(row);
+        }
 	
     }
 

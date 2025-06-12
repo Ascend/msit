@@ -44,50 +44,49 @@ int main(int argc, char ** argv)
     	std::cout << "--------------------------------------" << std::endl;
 
     	for (int id = 0; id < card_count; ++id) {
-		int card_id = card_id_list[id];
-		int device_id = 0;
+			int card_id = card_id_list[id];
+			int device_id = 0;
 
-		int input_type = 2;
-		unsigned int utilization_rate = 0;
-		int ret_utilization = dcmi_get_device_utilization_rate(card_id, device_id, input_type, &utilization_rate);
-        	//struct dcmi_memory_info_stru pdevice_memory_info = {0};
-		//int ret_hbm = dcmi_get_memory_info(card_id, device_id, &pdevice_memory_info);
+			int input_type = 2;
+			unsigned int utilization_rate = 0;
+			int ret_utilization = dcmi_get_device_utilization_rate(card_id, device_id, input_type, &utilization_rate);
+			//struct dcmi_memory_info_stru pdevice_memory_info = {0};
+			//int ret_hbm = dcmi_get_memory_info(card_id, device_id, &pdevice_memory_info);
 
-		struct dcmi_hbm_info device_hbm_info = {0};
-		int ret_hbm = dcmi_get_device_hbm_info(card_id, device_id, &device_hbm_info);
-	
-		int power = 0;
-		int ret_power = dcmi_get_device_power_info(card_id, device_id, &power);
+			struct dcmi_hbm_info device_hbm_info = {0};
+			int ret_hbm = dcmi_get_device_hbm_info(card_id, device_id, &device_hbm_info);
 		
-		//std::cout << ret_utilization << std::endl;
-		//std::cout << ret_hbm << std::endl;
-		//std::cout << ret_power << std::endl;	
-		if (ret_utilization == 0 && ret_hbm == 0 && ret_power == 0) {
-            		std::cout << std::setw(10) << card_id << std::setw(10) << utilization_rate << std::setw(10) << device_hbm_info.memory_usage << std::setw(10) << std::fixed << std::setprecision(1) << power / 10.0  << std::endl;
-        	} else if(ret_utilization!=0) {
-            		std::cerr << "Error: Unable to get utilization rate for card " << card_id << std::endl;
-        	}else if (ret_hbm!=0){
-	    		std::cerr << "Error: Unable to get hbm info for card " << card_id << std::endl;
-		}else{
-	    		std::cerr << "Error: Unable to get power info for card " << card_id << std::endl;
-		}
-
-		string dir_path = "record";
-		mkdir(dir_path.data(),0755);
-
-		std::ofstream file(dir_path + "/device_" + std::to_string(card_id) + ".csv", std::ios::app);
-		if (file.is_open()) {
-			if (file.tellp() == 0) {
-				file << "utilization,HBM,power\n";
+			int power = 0;
+			int ret_power = dcmi_get_device_power_info(card_id, device_id, &power);
+			
+			//std::cout << ret_utilization << std::endl;
+			//std::cout << ret_hbm << std::endl;
+			//std::cout << ret_power << std::endl;	
+			if (ret_utilization == 0 && ret_hbm == 0 && ret_power == 0) {
+				std::cout << std::setw(10) << card_id << std::setw(10) << utilization_rate << std::setw(10) << device_hbm_info.memory_usage << std::setw(10) << std::fixed << std::setprecision(1) << power / 10.0  << std::endl;
+			} else if(ret_utilization!=0) {
+				std::cerr << "Error: Unable to get utilization rate for card " << card_id << std::endl;
+			}else if (ret_hbm!=0){
+				std::cerr << "Error: Unable to get hbm info for card " << card_id << std::endl;
+			}else{
+				std::cerr << "Error: Unable to get power info for card " << card_id << std::endl;
 			}
-        
-        		file << utilization_rate << ","
-             		     << device_hbm_info.memory_usage << ","
-             		     << std::fixed << std::setprecision(1) << power/10.0 << "\n";
-        		file.close();
-    		} else {
-        		std::cerr << "Error: Unable to open file for device " << device_id << std::endl;
-    		}
+
+			string dir_path = "record";
+			mkdir(dir_path.data(),0755);
+
+			std::ofstream file(dir_path + "/device_" + std::to_string(card_id) + ".csv", std::ios::app);
+			if (file.is_open()) {
+				if (file.tellp() == 0) {
+					file << "utilization,HBM,power\n";
+				}
+				file << utilization_rate << ","
+					<< device_hbm_info.memory_usage << ","
+					<< std::fixed << std::setprecision(1) << power/10.0 << "\n";
+				file.close();
+			} else {
+				std::cerr << "Error: Unable to open file for device " << device_id << std::endl;
+			}
     	}
     }
     return ret;
