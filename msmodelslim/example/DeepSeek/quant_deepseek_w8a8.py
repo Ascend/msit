@@ -52,7 +52,10 @@ def custom_hook(model_config, cloud_vllm=False):
         model_config["quantize"] = "w8a8_dynamic"
         model_config["model_type"] = "deepseekv2"
         return
-
+    if cloud_vllm:
+        model_config['num_hidden_layers'] = 62
+        model_config['architectures'] = "DeepseekV3Fusion"
+    
     model_config["model_type"] = "deepseek_v3"
     ignore_list = [
         f'model.layers.{i}.self_attn.kv_b_proj'
