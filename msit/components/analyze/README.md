@@ -67,5 +67,8 @@ msit analyze -gm /tmp/test.onnx -o /tmp/out
 | is_supported | 算子是否支持，TRUE：支持，FALSE：不支持，可能原因包含算子不被当前硬件平台支持、算子定义不符合约束条件或算子输入为空，具体原因请参考details字段。 |
 | details      | 算子支持情况问题描述，包括算子是否支持，算子定义是否符合约束条件、输入是否为空 |
 
+## 工具详细介绍
+- 工具详细介绍请见[analyze工具详细介绍](../../examples/cli/analyze/)
+
 ## FAQ
 - 使用过程中出现问题可先行查阅[FAQ](FAQ.md)
