@@ -20,12 +20,12 @@ python infer_analyze.py --data-path="xxxx" --output-path="xxxx"
 | 拆解后的序号 | Prefill/Decode | 拆解并呈现prefill和decode时间                                |
 ![Sheet 1](img/prefill_and_decode_time.png)
 ### 3.2 time statistics
-| Index          | Core Type | 功能描述            |
-|----------------|-----------|-----------------|
-| 选取耗时最大/最新/中位数的Prefill/Decode | 拆分算子类型    | 拆解并呈现timeline总览 |
+| Index                        | Core Type | 功能描述            |
+|------------------------------|-----------|-----------------|
+| 选取耗时最大/最小/中位数的Prefill/Decode | 拆分算子类型    | 拆解并呈现timeline总览 |
 ![Sheet 2](img/time_statistics.png)
 ### 3.3 op statistics
-| Index          | Type   | 功能描述      |
-|----------------|--------|-----------|
-| 选取耗时最大/最新/中位数的Prefill/Decode | 拆分具体算子 | 拆解并呈现算子总览 |
+| Index                        | Type   | 功能描述      |
+|------------------------------|--------|-----------|
+| 选取耗时最大/最小/中位数的Prefill/Decode | 拆分具体算子 | 拆解并呈现算子总览 |
 ![Sheet 3](img/op_statistics.png)

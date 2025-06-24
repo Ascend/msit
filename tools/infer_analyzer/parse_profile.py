@@ -59,7 +59,7 @@ class ProfileParser:
         self.op_data['time_diff'] = self.op_data['Start Time(us)'].shift(-1) - self.op_data['Start Time(us)'] - self.op_data[
             'Duration(us)']
         conditions = [
-            self.op_data['Name'].str.contains(r"^(?:lcoc|lcom|lccl)).*[_0-9]$", case=False, na=False),
+            self.op_data['Name'].str.contains(r"^(?:lcoc|lcom|lccl).*[_0-9]$", case=False, na=False),
             self.op_data['Name'].str.contains(r'matmul', case=False, na=False),
             self.op_data['Name'].str.contains(r'attention', case=False, na=False),
             self.op_data['Name'].str.contains(r'tensormove', case=False, na=False),
