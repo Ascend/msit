@@ -8,7 +8,7 @@
 - W8A8量化：Qwen-7B，Qwen-14B，Qwen1.5-14B，Qwen1.5-32B，Qwen2-7B，Qwen2-72B，Qwen2.5-7B，Qwen2.5-14B，Qwen2.5-32B，Qwen3-14B，Qwen3-32B，QwQ-32B
 - W8A16量化：QWen-72B，Qwen1.5-72B，Qwen1.5-110B，Qwen2-72B
 - W4A4 Flatquant Dynamic量化：Qwen3-32B
-- 稀疏量化：Qwen1.5-14B，Qwen2-7B，Qwen2-72B，Qwen2.5-7B，Qwen2.5-14B，QwenCode2.5-7B, QwQ-32B
+- 稀疏量化：Qwen1.5-14B，Qwen2-7B，Qwen2-72B，Qwen2.5-7B，Qwen2.5-14B，QwenCode2.5-7B，QwQ-32B，Qwen3-8B，Qwen3-14B，Qwen3-32B
 - KV cache量化：Qwen2-72B
 - Attention 量化：Qwen2.5-72B
 
@@ -32,6 +32,7 @@
 ##### Qwen3
 - [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B/tree/main)
 - [Qwen3-14B](https://huggingface.co/Qwen/Qwen3-14B/tree/main)
+- [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main)
 ##### QWQ
 - [QwQ-32B](https://modelscope.cn/models/Qwen/QwQ-32B)
 
@@ -235,6 +236,15 @@
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8 --trust_remote_code True
   ```
+
+##### Qwen3-32B 稀疏量化
+
+该模型的量化支持已经集成至[一键量化](https://gitee.com/ascend/msit/blob/master/msmodelslim/msmodelslim/app/naive_quantization/readme.md)。
+
+  ```shell
+  msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8s --trust_remote_code True
+  ```
+
 ##### Qwen3-32b W4A4 Flatquant Dynamic量化 
   ```shell
   python3 w4a4.py --model_path {浮点权重路径} --save_directory {w4a4量化权重路径} --calib_file ../common/wiki.jsonl --trust_remote_code True
@@ -245,6 +255,21 @@
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-14B --quant_type w8a8 --trust_remote_code True
+  ```
+##### Qwen3-14B 稀疏量化
+
+该模型的量化支持已经集成至[一键量化](https://gitee.com/ascend/msit/blob/master/msmodelslim/msmodelslim/app/naive_quantization/readme.md)。
+
+  ```shell
+  msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-14B --quant_type w8a8s --trust_remote_code True
+  ```
+
+##### Qwen3-8B 稀疏量化
+
+该模型的量化支持已经集成至[一键量化](https://gitee.com/ascend/msit/blob/master/msmodelslim/msmodelslim/app/naive_quantization/readme.md)。
+
+  ```shell
+  msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-8B --quant_type w8a8s --trust_remote_code True
   ```
 
 #### QWQ 系列
