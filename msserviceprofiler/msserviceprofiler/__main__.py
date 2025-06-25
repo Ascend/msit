@@ -36,7 +36,7 @@ def main():
     analyze.arg_parse(subparsers)
     split.arg_parse(subparsers)
     compare.arg_parse(subparsers)
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
     # run
     if hasattr(args, "func"):
