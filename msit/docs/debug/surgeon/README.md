@@ -369,7 +369,7 @@ auto-optimizer主要通过graph_optimizer、graph_refactor接口提供ONNX模型
 
 ### 命令格式说明
 
-auto-optimizer工具可通过auto_optimizer可执行文件方式启动，若安装工具时未提示Python的HATH变量问题，或手动将Python安装可执行文件的目录加入PATH变量，则可以直接使用如下命令格式：
+auto-optimizer工具可通过auto_optimizer可执行文件方式启动，若安装工具时未提示Python的PATH变量问题，或手动将Python安装可执行文件的目录加入PATH变量，则可以直接使用如下命令格式：
 
 ```bash
 auto_optimizer <COMMAND> [OPTIONS] [ARGS]

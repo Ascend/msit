@@ -5,11 +5,11 @@
 - For details about the usage restrictions of the tool, please visit: [CANN Community Edition/Restrictions (Only for Inference Scenarios)](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/60RC1alphaX/developmenttools/devtool/atlasaccuracy_16_0035.html).
 
 ### Environment Setup
-- Set up an operating and development environment powered by Ascend AI Processors including driver / firmware / CANN, refering [Ascend Documentation](https://www.hiascend.com/en/document)
+- Set up an operating and development environment powered by Ascend AI Processors including driver / firmware / CANN, referring [Ascend Documentation](https://www.hiascend.com/en/document)
 - Install Python 3.7.5.
-- Install benchmark tool, refering [ais_bench](https://gitee.com/ascend/msit/tree/master/msit/components/benchmark/README.md)
-- **ONNX related python packges** `pip3 install onnxruntime onnx numpy`, If the installation of dependent modules fails using the pip command, it is recommended to execute the command **pip3 install --upgrade pip** to avoid installation failure due to low pip version.
-- **TensorFlow related python packges**, refering [Centos7.6 installing tensorflow1.15.0](https://bbs.huaweicloud.com/blogs/181055).
+- Install benchmark tool, referring [ais_bench](https://gitee.com/ascend/msit/tree/master/msit/components/benchmark/README.md)
+- **ONNX related python packages** `pip3 install onnxruntime onnx numpy`, If the installation of dependent modules fails using the pip command, it is recommended to execute the command **pip3 install --upgrade pip** to avoid installation failure due to low pip version.
+- **TensorFlow related python packages**, referring [Centos7.6 installing tensorflow1.15.0](https://bbs.huaweicloud.com/blogs/181055).
 
 ### Usage
 - Getting this package by downloading zip package or `git clone`:
@@ -33,16 +33,16 @@
   python3 main.py -m /home/HwHiAiUser/onnx_prouce_data/resnet_offical.onnx -om /home/HwHiAiUser/onnx_prouce_data/model/resnet50.om \
   -c /usr/local/Ascend/ascend-toolkit/latest -o /home/HwHiAiUser/result/test
   ```
-  - `-om, –offline-model-path` Path of the offline model (.om) adapted to the Ascend AI Processor.
+  - `-om, --offline-model-path` Path of the offline model (.om) adapted to the Ascend AI Processor.
   - `-m, --model-path` Path of the original model (.pb or .onnx). Currently, only .pb and .onnx models are supported.
-  - `-c，–-cann-path` (Optional) CANN installation path, defaulted to `/usr/local/Ascend/ascend-toolkit/latest`
-  - `-o, –output-path` (Optional) Output path, defaulted to the current directory.
+  - `-c, --cann-path` (Optional) CANN installation path, defaulted to `/usr/local/Ascend/ascend-toolkit/latest`
+  - `-o, --output-path` (Optional) Output path, defaulted to the current directory.
 - **With model input specified**. **The pathes used here need to be absolute pathes**.
   ```sh
   python3 main.py -m /home/HwHiAiUser/onnx_prouce_data/resnet_offical.onnx -om /home/HwHiAiUser/onnx_prouce_data/model/resnet50.om \
   -i /home/HwHiAiUser/result/test/input_0.bin -c /usr/local/Ascend/ascend-toolkit/latest -o /home/HwHiAiUser/result/test
   ```
-  - `-i，–input-path` Path of model input data, which is generated based on model inputs by default. Separate model inputs with commas (,), for example, `/home/input_0.bin, /home/input_1.bin`. This scenario will automatically perform group batch based on the file size and the actual input size of the model, but it is necessary to ensure that the shape of the data, except for the batch size, is consistent with the model input.
+  - `-i, --input-path` Path of model input data, which is generated based on model inputs by default. Separate model inputs with commas (,), for example, `/home/input_0.bin, /home/input_1.bin`. This scenario will automatically perform group batch based on the file size and the actual input size of the model, but it is necessary to ensure that the shape of the data, except for the batch size, is consistent with the model input.
 
 ### Analysis Result Description
 ```sh
@@ -135,12 +135,12 @@ Used to distinguish between different actual inputs of models in dynamic shapes,
 | -i, --input-path                         | Path of model input data, which is generated based on model inputs by default. Separate model inputs with commas (,), for example, **/home/input\_0.bin, /home/input\_1.bin**. | No       |
 | -c, --cann-path                          | CANN installation path, If no path is specified, it will be obtained from the system environment variable `ASCEND_TOOLKIT_HOME`. If the variable does not exist, the default path will be **/usr/local/Ascend/ascend-toolkit/latest**. | No       |
 | -o, --output-path                        | Output path, defaulted to the current directory | No       |
-| -s，--input-shape                         | Shape information of model inputs. Separate multiple nodes with semicolons, for example, **input_name1:1,224,224,3;input_name2:3,300**. By default, this option is left blank. **input_name** must be the node name in the network model before model conversion. | No       |
-| -d，--device                              | Specify running device [0,255], default 0. | No       |
+| -s, --input-shape                         | Shape information of model inputs. Separate multiple nodes with semicolons, for example, **input_name1:1,224,224,3;input_name2:3,300**. By default, this option is left blank. **input_name** must be the node name in the network model before model conversion. | No       |
+| -d, --device                              | Specify running device [0,255], default 0. | No       |
 | --output-nodes                           | Output node specified by the user. Separate multiple nodes with semicolons, for example, **node_name1:0;node_name2:1;node_name3:0**. | No       |
-| --output-size                            | Specify the output size of the model. If there are several outputs, set several values. In the dynamic shape scenario, the output size of the acquired model may be 0. The user needs to estimate a more appropriate value according to the input shape to apply for memory. Multiple output sizes are separated by English semicolons (,), such as "10000,10000,10000"。 | No       |
+| --output-size                            | Specify the output size of the model. If there are several outputs, set several values. In the dynamic shape scenario, the output size of the acquired model may be 0. The user needs to estimate a more appropriate value according to the input shape to apply for memory. Multiple output sizes are separated by English semicolons (,), such as "10000,10000,10000". | No       |
 | --advisor           | Whether print advisor info on the end of execution | No    |
-| -dr，--dymShape-range     | Dynamic shape range parameter. If this argument used, then all shapes list included in the argument will be considered into accuracy compare.（only support onnx model）<br/> For example:input_name1:1,3,200\~224,224-230;input_name2:1,300<br/> input_name must be the node name in the network model before model conversion; "\~" represents the range, a\~b\~c meaning [a: b :c]; "-" represents the exact value. | No  |
+| -dr, --dymShape-range     | Dynamic shape range parameter. If this argument used, then all shapes list included in the argument will be considered into accuracy compare. (only support onnx model) <br/> For example:input_name1:1,3,200\~224,224-230;input_name2:1,300<br/> input_name must be the node name in the network model before model conversion; "\~" represents the range, a\~b\~c meaning [a: b :c]; "-" represents the exact value. | No  |
 | --dump                   | Whether compare the accuracy of all the operation nodes output. Default True.(only support onnx model)<br/> For example: --dump False           | No  |
 | --convert                 | Support om comparison result file data format from bin file to npy file, the generated npy file directory is ./dump_data/npu/{timestamp_bin2npy} folder. For example: --convert True | No    |
 

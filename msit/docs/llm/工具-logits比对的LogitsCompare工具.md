@@ -51,7 +51,7 @@ msit llm logitscmp -gp {golden_logits_path} -mp {my_logits_path}  -cs {cosine_si
 | l1_norm           | L1_Norm的比对结果                                  |
 | ulp_max_diff      | 两个Logits最大值之间的误差绝对值                    |
 | ulp               | 最大Logits的数值精度的最小单元                      |
-| passed            | 两个Logits比对是否通过，TURE表示通过，FALSE表示失败  |
+| passed            | 两个Logits比对是否通过 TRUE 表示通过，FALSE表示失败  |
 | cmp_fail_reason   | 两个Logits无法进行比对的原因                        |
 
 具体实例：

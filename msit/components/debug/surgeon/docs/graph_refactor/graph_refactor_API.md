@@ -358,6 +358,6 @@ combined_graph = OnnxGraph.concat_graph(
 | op.inputs                     | 可读写属性，用 `List[str]` 表示算子节点输入列表              |
 | op.outputs                    | 可读写属性，用 `List[str]` 表示算子节点输出列表              |
 | op.attrs                      | 可读写属性，用 `Dict[str, object]` 表示算子节点属性          |
-| op.domian                     | 可读写属性，用 `str` 表示算子的 domain                       |
+| op.domain                     | 可读写属性，用 `str` 表示算子的 domain                       |
 | op.get_input_id(input_name)   | 方法，`input_name` 为算子节点的某个输入名称，返回该输入对应的下标 |
 | op.get_output_id(output_name) | 方法，`output_name` 为算子节点的某个输出名称，返回该输出对应的下标 |

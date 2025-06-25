@@ -3,7 +3,7 @@
 v0.2.0版本的新特性包括：
 
 - 支持保存加速库layer拓扑信息（由msit llm dump --type layer开启）
-- 支持保存模型cpu性能信息（由msit llm dump --type cpu_profiling开启)
+- 支持保存模型cpu性能信息（由msit llm dump --type cpu_profiling开启）
 - 支持保存加速库base算子信息（算子信息由msit llm dump --type op开启；kernel算子信息由msit llm dump --type kernel开启）
 
 ## Dump 特性
