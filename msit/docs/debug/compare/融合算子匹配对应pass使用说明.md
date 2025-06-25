@@ -32,6 +32,7 @@
     |-f, --fusion-after-model | 是 | str，开启融合的模型json文件 |
     |-cf, --fusion-before-model | 是 | str，关闭融合的模型json文件 |
     |-o, --output-path | 否 | str，输出目录，默认是当前目录 |
+    |-fn, --fusion-node-switch | 否 | 开关参数，是否只输出融合算子的比对结果，默认为True |
 
 
 ## 3 输出结果说明
