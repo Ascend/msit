@@ -70,7 +70,7 @@
   ```sh
   export SERVICE_PROF_CONFIG_PATH=ms_service_profiler_config.json
   ```
-- **服务端拉起 vLLM 服务，以 `Qwen/Qwen-3B` 为例，使用时以实际启动方式为准**
+- **服务端启动 vLLM 服务，以 `Qwen/Qwen-3B` 为例，使用时以实际启动方式为准**
   ```sh
   python3 -m vllm.entrypoints.openai.api_server --model Qwen/Qwen-3B --max-model-len=4096 --trust-remote-code
   ```
@@ -94,7 +94,7 @@
   | ---------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
   | Enqueue, Dequeue | 表示请求入队、出队   | rid: 请求ID, QueueSize：当前队列大小, scope：队列名称，通常含有waiting、running队列                                                |
   | BatchSchedule    | 表示调度信息         | rid: 当前调度batch中的请求ID列表, QueueSize：当前队列大小, iter_size:当前迭代返回token长度                                         |
-  | ReqState         | 表示请求状态变化信息 | rid: 请求ID, WAITING+ 等待 / RUNNING+ 执行 / FINIEHED+ 结束：请求状态名，值为1表示当前状态，值为-1表示前一状态，值为+1表示后一状态 |
+  | ReqState         | 表示请求状态变化信息 | rid: 请求ID, WAITING+ 等待 / RUNNING+ 执行 / FINISHED+ 结束：请求状态名，值为1表示当前状态，值为-1表示前一状态，值为+1表示后一状态 |
 
 - **kv cache 数据**
 

@@ -63,7 +63,7 @@
     ```sh
     msprechecker precheck
     ```
-    随后会在终端出现打屏信息，如果有环境变量的检查项，则在当前目录下生成配置建议环境变量的 `msprechecker_env.sh` 文件
+    随后会在终端出现打印信息，如果有环境变量的检查项，则在当前目录下生成配置建议环境变量的 `msprechecker_env.sh` 文件
   - K8S 部署时指定 user_config.json 检查和 mindie_env.json 的检查
     ```sh
     msprechecker precheck -user user_config.json --mindie_env_config_path mindie_env.json
@@ -98,7 +98,7 @@
 
     - 第一块为 MindIE 服务化配置，即当前环境 MindIE 服务化 config.json 参数
     - 第二块为环境变量，为当前终端所有环境变量值
-    - 第三块为网络配置，包括 hccl 连通校验的信息
+    - 第三块为网络配置，包括 HCCL 连通校验的信息
     - 第四块为系统配置，包括系统信息、内核发行版、CANN 驱动信息、是否为虚拟机以及是否开启 CPU 高性能
 ## 比对快速使用
   - 在进行比对前，请确保使用预检工具落盘两个或多个文件，单个文件无法比对。以下示例假设存在两个落盘文件，路径为 `path_a` 和 `path_b`，则您可以使用如下命令进行比对
@@ -107,7 +107,7 @@
     ```
     其中 `compare` 表明我们使用比对功能，`-d` 为参数 `--dump_file_path` 的缩写，也可以使用 `--dump_file_path` 进行比对，后接两个或多个文件路径，性能预检工具会一起执行比对，展示差异
 ## 比对结果说明
-  - 如果两个或多个落盘文件没有差异，则会在终端出现如下打屏信息：
+  - 如果两个或多个落盘文件没有差异，则会在终端出现如下打印信息：
     ```bash
     msprechecker_logger - INFO - == compare start ==
     msprechecker_logger - INFO - No difference found
@@ -147,7 +147,7 @@ a:
 - `type` 支持：`eq`, `lt`, `le`, `gt`, `ge`, `ne` 或者 `==`, `<`, `<=`, `>`, `>=`, `!=`
 - `value` 支持：`+`, `-`, `*`, `/`, `//`, `**`, `()`，还支持字段引用 `${}`, 版本符号 `Version{}` 以及权限符号 `FilePerm{}`
 - `reason` 支持任意字符串
-- `severity` 支持：`low`, `medium`, `high`，不填写默认 `high`。其中，`low` 显示为 `[RECOMMAND]`；`medium` 显示为 `[WARNING]`；`high` 显示为 `[NOK]`
+- `severity` 支持：`low`, `medium`, `high`，不填写默认 `high`。其中，`low` 显示为 `[RECOMMEND]`；`medium` 显示为 `[WARNING]`；`high` 显示为 `[NOK]`
 
 ### 字段引用
 对于比较嵌套较深的配置文件，遇到不同字段相互关联的场景时，创建校验规则是一个挑战。预检工具支持 **字段引用** 语法，允许用户通过 `${}` 的语法来引用其他位置的字段值。比如，有如下配置文件
