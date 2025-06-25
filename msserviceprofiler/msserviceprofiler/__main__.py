@@ -16,26 +16,6 @@ import argparse
 from pathlib import Path
 
 
-def validate_param_name(args, args_value):
-    if 'prefill_rid' not in args:
-        return
-    valid_params = {
-        '--input-path', '--output-path', '--log-level',
-        '--prefill-batch-size', '--decode-batch-size',
-        '--prefill-number', '--decode-number',
-        '--prefill-rid', '--decode-rid'
-    }
-    for param_name in args_value:
-        if "=" in param_name:
-            param_name = param_name.split("=")[0].strip()
-        else:
-            param_name = param_name.split()[0]
-        if param_name in valid_params:
-            continue
-        else:
-            raise argparse.ArgumentError(None, f"Unknown parameter {param_name}")
-
-
 def main():
     from msserviceprofiler.ms_service_profiler_ext import compare, split, analyze
     from msserviceprofiler.msservice_advisor import advisor
@@ -56,8 +36,7 @@ def main():
     analyze.arg_parse(subparsers)
     split.arg_parse(subparsers)
     compare.arg_parse(subparsers)
-    args, args_value = parser.parse_known_args()
-    validate_param_name(args, args_value)
+    args = parser.parse_args()
 
     # run
     if hasattr(args, "func"):
