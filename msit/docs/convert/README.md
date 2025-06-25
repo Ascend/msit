@@ -3,19 +3,19 @@
 ## 简介
 convert模型转换工具依托ATC（Ascend Tensor Compiler），AOE（Ascend Optimization Engine），MindIE（Mind Inference Engine）推理引擎，提供由ONNX、TensorFlow、Caffe、MindSpore模型至om模型的转换及调优功能。
 
-* ATC（Ascend Tensor Compiler）
+* ATC (Ascend Tensor Compiler)
 > 昇腾张量编译器（Ascend Tensor Compiler，简称ATC）是异构计算架构CANN体系下的模型转换工具， 它可以将开源框架的网络模型以及Ascend IR定义的单算子描述文件（json格式）转换为昇腾AI处理器支持的.om格式离线模型。
 >
 > 模型转换过程中，ATC会进行算子调度优化、权重数据重排、内存使用优化等具体操作，对原始的深度学习模型进行进一步的调优，从而满足部署场景下的高性能需求，使其能够高效执行在昇腾AI处理器上。
 >
 > [更多说明](https://www.hiascend.com/document/detail/zh/canncommercial/80RC22/devaids/auxiliarydevtool/atlasatc_16_0005.html)
-* AOE（Ascend Optimization Engine）
+* AOE (Ascend Optimization Engine)
 > AOE（Ascend Optimization Engine）是一款自动调优工具，作用是充分利用有限的硬件资源，以满足算子和整网的性能要求。
 >
 > AOE通过生成调优策略、编译、在运行环境上验证的闭环反馈机制，不断迭代出更优的调优策略，最终得到最佳的调优策略，从而可以更充分利用硬件资源，不断提升网络的性能，达到最优的效果。
 >
 > [更多说明](https://www.hiascend.com/document/detail/zh/canncommercial/80RC22/devaids/auxiliarydevtool/auxiliarydevtool_0014.html)
-* MindIE（Mind Inference Engine）
+* MindIE (Mind Inference Engine)
 > MindIE是华为昇腾针对AI全场景业务的推理加速套件。通过分层开放AI能力，支撑用户多样化的AI业务需求，使能百模千态，释放昇腾硬件设备算力。其中MindIE-RT（Ascend MindIE Runtime）能够将不同的深度学习框架（PyTorch、ONNX等）上完成训练的算法模型统一为计算图表示，具备多粒度模型优化、整图下发以及推理部署等功能。
 >
 > [更多说明](https://www.hiascend.com/document/detail/zh/mindie/100/whatismindie/mindie_what_0001.html)

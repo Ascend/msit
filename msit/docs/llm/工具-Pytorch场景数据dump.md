@@ -58,7 +58,7 @@ DumpConfig(dump_path=None, token_range=None, seed=None)
 **原型**：
 
 ```Python
-register_hook(model, config, hook_type=”dump_data”)
+register_hook(model, config, hook_type="dump_data")
 ```
 
 | 参数名    | 含义           | 使用说明                                                | 是否必填 |

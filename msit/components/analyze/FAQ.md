@@ -12,7 +12,7 @@
 2023-06-16 09:24:28,326 INFO : try to convert model to om finished.
 2023-06-16 09:24:29,190 ERROR : load opp data failed, err:exec fast_query shell failed, err:2023-06-16 09:24:29 [ERROR] The input path may be insecure because it does not belong to you.
 .
-2023-06-16 09:24:29,247 INFO : analysis result has bean written in out/result.csv.
+2023-06-16 09:24:29,247 INFO : analysis result has been written in out/result.csv.
 2023-06-16 09:24:29,247 INFO : number of abnormal operators: 13.
 2023-06-16 09:24:29,248 INFO : analyze model finished.
 

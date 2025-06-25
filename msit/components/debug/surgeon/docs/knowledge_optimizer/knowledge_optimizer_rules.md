@@ -52,7 +52,7 @@ graph TD
     end
 ```
 
-如图所示，slice0和slice1被合并为combined_slice，他们的切片参数被合并为combined_slice的切片参数。
+如图所示，slice0和slice1被合并为combined_slice，它们的切片参数被合并为combined_slice的切片参数。
 
 ---
 
@@ -119,7 +119,7 @@ graph TD
 2. MatMul和Reshape算子的第二个输入必须是常数即Initializer，否则无法进行判断。
 3. 子图中除了PreNode和PostNode节点外，均不能有额外的输出节点
 
-示意图内的分支有两种，他们的区别是Gather算子后是否为transpose算子，在拆分后，Gather算子被消除，因此如果Gather算子前后均为Transpose算子，则这两个Transpose算子可以合并成一个，否则不需要特殊处理。
+示意图内的分支有两种，它们的区别是Gather算子后是否为transpose算子，在拆分后，Gather算子被消除，因此如果Gather算子前后均为Transpose算子，则这两个Transpose算子可以合并成一个，否则不需要特殊处理。
 
 ---
 
@@ -494,7 +494,7 @@ graph TD
 graph TD
     subgraph After
         subgraph "Subgraph"
-            V2(VaradicNode) .->|1+| V2
+            V2(VariadicNode) .->|1+| V2
         end
         P2[PreNode] --> C3("Cast {to: dst_type}")
         C3 --> V2
@@ -504,7 +504,7 @@ graph TD
 
     subgraph Before
         subgraph "Subgraph "
-            V1(VaradicNode) .->|1+| V1
+            V1(VariadicNode) .->|1+| V1
         end
         P1[PreNode] --> V1
         V1 --> O1[PostNode]
@@ -719,7 +719,7 @@ graph TD
 		maskadd(Add)
 		softmax(Softmax)
 		scorevmm(MatMul)
-		transe(Tanspose)
+		transe(Transpose)
 		mme(MatMul)
 		adde(Add)
 		endadd(Add)

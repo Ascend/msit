@@ -16,7 +16,7 @@
 容器方式安装目前提供了Ubuntu 18.04的docker镜像。在`<msit_project_root_path>/msit/components/debug/compare`目录下运行以下命令以构建镜像：
 ```shell
 docker build \
---build-arg CANN_TOOLKIT_PATH=Ascend-cann-tookit<version+arch>.run \
+--build-arg CANN_TOOLKIT_PATH=Ascend-cann-toolkit<version+arch>.run \
 --build-arg CANN_AMCT_PATH=Ascend-cann-amct<version+arch>.tar.gz \ 
 --build-arg CAFFE_SRC=caffe-ascend-amct.zip \
 --build-arg UBUNTU_X86_ARCHIVE=http://.*archive.ubuntu.com \
@@ -34,9 +34,9 @@ docker build \
 2、若出现以下报错：
 ```
 Err:1 http://repo.huaweicloud.com/ubuntu-ports focal InRelease
-  Temporary failure resoving 'repo.huaweicloud.com'
+  Temporary failure resolving 'repo.huaweicloud.com'
 Err:2 http://repo.huaweicloud.com/ubuntu-ports focal-updates InRelease
-  Temporary failure resoving 'repo.huaweicloud.com'
+  Temporary failure resolving 'repo.huaweicloud.com'
 ```
 则参照下述代码位置，添加环境变量：  
 ```
@@ -60,7 +60,7 @@ RUN groupadd HwHiAiUser && useradd -rm -d /home/HwHiAiUser -s /bin/bash -g HwHiA
 ```
 wget --no-check-certificate ${PYTHON_PATH}
 ```
-4、请将Ascend-cann-tookit<version+arch>.run改为实际上的toolkit路径(必须是相对路径)  
+4、请将Ascend-cann-toolkit<version+arch>.run改为实际上的toolkit路径(必须是相对路径)  
 5、从这个[仓库](https://github.com/lenLRX/caffe)下载zip[代码](https://github.com/lenLRX/caffe/archive/refs/heads/ascend-amct.zip),得到的zip包叫ascend-amct.zip或caffe-ascend-amct.zip  
 6、从[这里](https://support.huawei.com/enterprise/zh/ascend-computing/cann-pid-251168373/software)下载amct的包Ascend-cann-amct_5.1.RC1.1_linux-aarch64.tar.gz(注意下载对应需要的版本如：X86，aarch64等)  
 7、构建docker镜像, 其中要求:
@@ -194,7 +194,7 @@ compare功能可以直接通过msit命令行形式启动精度对比。启动方
 # TFDebugRunner使用说明
 
 ## 简介
-- 此脚本用于dump TensorFlow1.x框架下.pb模型在GPU上的算子输出数据，基于TensorFlow Debugging工具（tf_debug)。
+- 此脚本用于dump TensorFlow1.x框架下.pb模型在GPU上的算子输出数据，基于TensorFlow Debugging工具（tf_debug）。
 - 此功能包含在msit debug dump中，直接运行该脚本较复杂，不建议直接使用
 
 ## 工具安装

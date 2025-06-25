@@ -12,7 +12,7 @@ msit llm dump --exec "bash run.sh patches/models/modeling_xxx.py"
 | -sd，--only-save-desc          | 只保存tensor描述信息开关，默认为否。使用方式：-sd       | 否    |
 | -ids，--save-operation-ids | 选择dump指定索引的tensor，默认为空，全量dump。使用方式：-ids 24_1,2_3_5     | 否    |
 | -er，--execute-range          | 指定dump的token轮次范围，区间左右全闭，可以支持多个区间序列，默认为第0次，使用方式：-er 1,3 或 -er 3,5,7,7（代表区间[3,5],[7,7],也就是第3，4，5，7次token。）| 否    |
-| -child，--save-operation-child | 选择是否dump所有子操作的tensor数据，仅使用ids场景下有效，默认为true。使用方式：-child True| 否    |
+| -child，--save-operation-child | 选择是否dump所有子操作的tensor数据，仅使用ids场景下有效，默认为True。使用方式：-child True| 否    |
 | -time，--save-time         | 选择保存的时间节点，取值[0,1,2]，0代表保存执行前(before)，1代表保存执行后(after)，2代表前后都保存。默认保存after。使用方式：-time 0  | 否    |
 | -opname，--operation-name        | 指定需要dump的算子类型，支持模糊指定，如selfattention只需要填写self。使用方式：-opname self | 否    |
 | -tiling，--save-tiling           | 选择是否需要保存tiling数据，默认为false。使用方式：-tiling                | 否    |

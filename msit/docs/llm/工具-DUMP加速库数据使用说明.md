@@ -68,8 +68,8 @@ Dump 默认落盘路径 `{DUMP_DIR}`在当前目录下，如果指定 output 目
 
 注：`{device_id}`为设备号；`{PID}`为进程号；`{TID}`为 `token_id`；`{TIMESTAMP}`为时间戳；`{executeCount}`为 `operation`运行次数。
 
-- tensor 信息，具体路径是 `{DUMP_DIR}/msit_dump_{TIMESTAMP}/tensors/{device_id}_{PID}/{TID}`目录下(使用老版本的 cann 包可能导致 tensor 落盘路径不同）。
-- stats 统计量信息，具体路径是 `{DUMP_DIR}/msit_dump_{TIMESTAMP}/tensors/{device_id}_{PID}/{TID}`目录下(同`tensor 信息`落盘位置）。
+- tensor 信息，具体路径是 `{DUMP_DIR}/msit_dump_{TIMESTAMP}/tensors/{device_id}_{PID}/{TID}`目录下（使用老版本的 cann 包可能导致 tensor 落盘路径不同）。
+- stats 统计量信息，具体路径是 `{DUMP_DIR}/msit_dump_{TIMESTAMP}/tensors/{device_id}_{PID}/{TID}`目录下（同`tensor 信息`落盘位置）。
 - layer 信息，具体路径是 `{DUMP_DIR}/msit_dump_{TIMESTAMP}/layer/{PID}`目录下。
 - model 信息，具体路径是 `{DUMP_DIR}/msit_dump_{TIMESTAMP}/model/{PID}`目录下。注：由于 model 由 layer 组合而成，因此使用 model 时，默认同时会落盘 layer 信息。
 - onnx 落盘位置和 model、layer 相同的目录。（落盘onnx文件格式为 xxx.onnx）

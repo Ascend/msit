@@ -29,7 +29,7 @@ msit debug surgeon concat -g1 sub1.onnx -g2 sub2.onnx -io "g1_out1,g2_in1;g1_out
 输出示例如下：
 
 ```bash
-2023-07-19 10:45:31,237 - 984068 - msit_debug_logger - WARNING - Cant merge two graphs with overlapping names. Found repeated nodes names：conv4_10/x1/bn_1_QuantizeLinear,Add
+2023-07-19 10:45:31,237 - 984068 - msit_debug_logger - WARNING - Cant merge two graphs with overlapping names. Found repeated nodes names: conv4_10/x1/bn_1_QuantizeLinear,Add
 _nc_rename_45_quant,conv4_24/x1/bn_1_QuantizeLinear,Add_nc_rename_257_quant,concat_4_7_1_DequantizeLinear,Add_nc_rename_415_quant,BatchNormalization_nc_rename_453,Add_nc
 _rename_67_quant...
 2023-07-19 10:45:31,240 - 984068 - msit_debug_logger - INFO - A prefix `pre_` will be added to graph1
