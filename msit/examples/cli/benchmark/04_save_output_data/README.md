@@ -142,4 +142,4 @@ benchmark推理工具执行后，打屏输出结果示例如下：
 | batchsize             | 批大小。本工具不一定能准确识别当前样本的batchsize，建议通过--batch-size参数进行设置。 |
 
 ## FAQ
-使用出现问题时，可参考[FAQ](https://gitee.com/ascend/msit/wikis/benchmark_FAQ/msit%20benchmark%20%E5%AE%89%E8%A3%85%E9%97%AE%E9%A2%98FAQ)
+使用出现问题时，可参考[FAQ](https://gitee.com/ascend/msit/wikis/benchmark_FAQ/ait%20benchmark%20%E5%AE%89%E8%A3%85%E9%97%AE%E9%A2%98FAQ)

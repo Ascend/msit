@@ -59,7 +59,7 @@ msit benchmark --om-model /home/model/resnet50_v1.om --output ./output --dump 1
                 }
     }
     ```
-    更多性能参数配置请依据CANN包种类（商用版或社区版）分别参见《[CANN 商用版：开发工具指南/性能数据采集（acl.json配置文件方式）](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0058.html)》和《[CANN 社区版：开发工具指南/性能数据采集（acl.json配置文件方式）](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC2alpha002/devaids/auxiliarydevtool/atlasprofiling_16_0058.html)》中的参数配置详细描述
+    更多性能参数配置请依据CANN包种类（商用版或社区版）分别参见《CANN商用版 性能调优工具用户指南》中的“性能数据其它采集方式 > [使用acl.json配置文件采集性能数据](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/devaids/devtools/profiling/atlasprofiling_16_0054.html)”章节、《CANN社区版 性能调优工具用户指南》中的“性能数据其它采集方式 > [使用acl.json配置文件采集性能数据](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/82RC1alpha002/devaids/Profiling/atlasprofiling_16_0054.html)”章节中的参数配置详细描述。
 
   + 通过dump采集算子的输出
 
@@ -78,11 +78,11 @@ msit benchmark --om-model /home/model/resnet50_v1.om --output ./output --dump 1
     }
     ```
 
-    更多dump配置请参见《[CANN 开发工具指南/准备离线模型dump数据文件](https://www.hiascend.com/document/detail/zh/canncommercial/63RC1/devtools/auxiliarydevtool/atlasaccuracy_16_0030.html)》中的“精度比对工具>比对数据准备>推理场景数据准备>准备离线模型dump数据文件”章节。
+    更多dump配置请参见《CANN 精度调试工具用户指南》中的“NPU vs NPU（离线推理） > [准备离线模型dump数据文件](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/devaids/devtools/modelaccuracy/atlasaccuracy_16_0028.html)”章节。
 
-- 通过该方式进行profiler采集时，如果配置了环境变量`export MSIT_NO_MSPROF_MODE=1`，输出的性能数据文件需要参见《[CANN 开发工具指南/数据解析与导出/导出性能数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC22/devaids/auxiliarydevtool/atlasprofiling_16_0032.html)》，将性能数据解析并导出在mindstudio_profiler_output目录下的文件。
-- 通过该方式进行profiler采集时，如果**没有**配置环境变量`MSIT_NO_MSPROF_MODE=1`，benchmark会将acl.json中与profiler相关的参数解析成msprof命令，调用msprof采集性能数据，msprof输出的文件含义参考[性能数据采集（msprof命令行方式）](https://www.hiascend.com/document/detail/zh/canncommercial/63RC1/devtools/auxiliarydevtool/atlasprofiling_16_0040.html)。
-- 如果acl.json文件中同时配置了profiler和dump参数，需要要配置环境变量`export MSIT_NO_MSPROF_MODE=1`保证同时采集
+- 通过该方式进行profiler采集时，如果配置了环境变量`export MSIT_NO_MSPROF_MODE=1`，需参考《CANN 性能调优工具用户指南》中的“使用msprof命令解析与导出性能数据 > [解析并导出性能数据](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/devaids/devtools/profiling/atlasprofiling_16_0021.html)”章节，将输出的性能数据文件解析并导出为mindstudio_profiler_output目录下的文件。
+- 通过该方式进行profiler采集时，如果**没有**配置环境变量`MSIT_NO_MSPROF_MODE=1`，benchmark会将acl.json中与profiler相关的参数解析成msprof命令，调用msprof采集性能数据，msprof输出的文件含义参见《CANN 性能调优工具用户指南》中的“性能数据文件参考 > [总体说明](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/devaids/devtools/profiling/atlasprofiling_16_0057.html)”章节。
+- 如果acl.json文件中同时配置了profiler和dump参数，需要要配置环境变量`export MSIT_NO_MSPROF_MODE=1`保证同时采集。
 
 示例命令：
   ```bash
@@ -106,8 +106,8 @@ msit benchmark --om-model /home/model/resnet50_v1.om --output ./output --dump 1
     - 若命令不存在，则msprof层面会报错，benchmark层面不检查命令内容合法性。
     - 若环境配置了MSIT_NO_MSPROF_MODE=1，则使用--profiler参数采集性能数据时调用的是benchmark构造的默认acl.json文件。
 
-- msprof命令不存在或环境配置了MSIT_NO_MSPROF_MODE=1情况下，采集的性能数据文件未自动解析。参考《[CANN 开发工具指南/数据解析与导出/导出性能数据](https://www.hiascend.com/document/detail/zh/canncommercial/80RC22/devaids/auxiliarydevtool/atlasprofiling_16_0032.html)》，将性能数据解析并导出在mindstudio_profiler_output目录下的文件。
-- 更多性能数据采集参数介绍请参见《[CANN 开发工具指南/性能数据采集（msprof命令行方式）](https://www.hiascend.com/document/detail/zh/canncommercial/63RC1/devtools/auxiliarydevtool/atlasprofiling_16_0041.html)》。
+- msprof命令不存在或环境配置了MSIT_NO_MSPROF_MODE=1情况下，采集的性能数据文件未自动解析。参考《CANN 性能调优工具用户指南》中的“使用msprof命令解析与导出性能数据 > [解析并导出性能数据](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/devaids/devtools/profiling/atlasprofiling_16_0021.html)”章节，将性能数据解析并导出为mindstudio_profiler_output目录下的文件。
+- 更多性能数据采集参数介绍请参见《CANN 性能调优工具用户指南》中的“使用msprof命令采集性能数据 > [msprof采集通用命令](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/devaids/devtools/profiling/atlasprofiling_16_0010.html)”章节。
 
 ### 2.2 `--profiler` `--dump` 和 `--acl-json-path` 混合使用说明
 
@@ -116,4 +116,4 @@ msit benchmark --om-model /home/model/resnet50_v1.om --output ./output --dump 1
   + --profiler和--dump可以分别使用，但不能同时启用。
 
 ## FAQ
-使用出现问题时，可参考[FAQ](https://gitee.com/ascend/msit/wikis/benchmark_FAQ/msit%20benchmark%20%E5%AE%89%E8%A3%85%E9%97%AE%E9%A2%98FAQ)
+使用出现问题时，可参考[FAQ](https://gitee.com/ascend/msit/wikis/benchmark_FAQ/ait%20benchmark%20%E5%AE%89%E8%A3%85%E9%97%AE%E9%A2%98FAQ)

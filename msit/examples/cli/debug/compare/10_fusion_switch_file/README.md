@@ -8,7 +8,7 @@
 
 
 
-默认关闭，开启使用方式：`--fusion-switch-file ./fusion_switch.cfg`，其中[fusion_switch.cfg]为昇腾融合规则配置文件，配置方法参见：[关闭融合规则](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/developmentguide/appdevg/aclcppdevg/aclcppdevg_000105.html)
+默认关闭，开启使用方式：`--fusion-switch-file ./fusion_switch.cfg`，其中[fusion_switch.cfg]为昇腾融合规则配置文件，配置方法参见：[关闭融合规则](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/developmentguide/appdevg/aclcppdevg/aclcppdevg_000105.html)
 
 **注意**：
 - 使用时请勿关闭`--dump`，不要开启`--custom-op`、`--locat`、`--single-op`等高级功能，[-gm，--golden-model]入参必须为.onnx模型
