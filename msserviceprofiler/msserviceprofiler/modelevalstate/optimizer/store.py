@@ -17,7 +17,6 @@ import shlex
 from pathlib import Path
 from typing import Optional, List, Tuple
 
-import pandas as pd
 from loguru import logger
 
 from msserviceprofiler.modelevalstate.config.config import (
@@ -27,6 +26,7 @@ from msserviceprofiler.modelevalstate.config.config import (
     PerformanceIndex,
     OptimizerConfigField
 )
+from msserviceprofiler.msguard.security.io import read_csv_s
 
 
 class DataStorage:
@@ -45,7 +45,7 @@ class DataStorage:
         history_data = []
         for file in sorted([f for f in load_dir.iterdir() if f.is_file()], key=lambda x: x.stat().st_ctime):
             if file.name.startswith("data_storage") and file.suffix == ".csv":
-                data = pd.read_csv(file).to_dict(orient="records")
+                data = read_csv_s(file).to_dict(orient="records")
                 history_data.extend(data)
         if not history_data:
             return None

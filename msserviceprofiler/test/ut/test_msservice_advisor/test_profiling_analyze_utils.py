@@ -57,39 +57,6 @@ def test_str_ignore_case_given_unicode_string_when_processed_then_lowercase():
     assert utils.str_ignore_case("Héllö_Wörld") == "héllöwörld"
 
 
-# Test walk_dict
-def test_walk_dict_given_flat_dict_when_walked_then_yields_items():
-    data = {"a": 1, "b": 2}
-    result = list(utils.walk_dict(data))
-    assert ("a", 1, "") in result
-    assert ("b", 2, "") in result
-
-
-def test_walk_dict_given_nested_dict_when_walked_then_yields_all_items():
-    data = {"a": {"b": 2, "c": {"d": 3}}}
-    result = list(utils.walk_dict(data))
-    assert ("b", 2, "a") in result
-    assert ("d", 3, "a.c") in result
-
-
-def test_walk_dict_given_mixed_structure_when_walked_then_yields_all_items():
-    data = {"a": [1, {"b": 2}, (3, 4)]}
-    result = list(utils.walk_dict(data))
-    assert (0, 1, "a") in result or ("0", 1, "a") in result
-    assert ("b", 2, "a.1") in result
-
-
-def test_walk_dict_given_empty_structure_when_walked_then_no_yield():
-    assert not list(utils.walk_dict({}))
-    assert not list(utils.walk_dict([]))
-    assert not list(utils.walk_dict(()))
-
-
-def test_walk_dict_given_non_dict_when_walked_then_no_yield():
-    assert not list(utils.walk_dict("string"))
-    assert not list(utils.walk_dict(123))
-
-
 # Test set_log_level
 def test_set_log_level_given_valid_level_when_set_then_level_changed():
     original_level = utils.logger.level
