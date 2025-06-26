@@ -44,4 +44,4 @@ msit benchmark -om pth_resnet50.onnx --backend trtexec --perf 1
 | Total GPU Compute Time| 所有执行的 GPU 计算时间的总和。 |
 
 ## FAQ
-使用出现问题时，可参考[FAQ](https://gitee.com/ascend/msit/wikis/benchmark_FAQ/msit%20benchmark%20%E5%AE%89%E8%A3%85%E9%97%AE%E9%A2%98FAQ)
+使用出现问题时，可参考[FAQ](https://gitee.com/ascend/msit/wikis/benchmark_FAQ/ait%20benchmark%20%E5%AE%89%E8%A3%85%E9%97%AE%E9%A2%98FAQ)

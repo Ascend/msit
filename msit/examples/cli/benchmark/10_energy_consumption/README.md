@@ -46,4 +46,4 @@ msit benchmark --om-model ./pth_resnet50_bs1.om --device 0 --energy-consumption 
 其中结果最后展示指定Device所对应的NPU ID进行模型推理所消耗的能耗数据energy consumption(J)，单位为焦耳(J)。
 
 ## FAQ
-使用出现问题时，可参考[FAQ](https://gitee.com/ascend/msit/wikis/benchmark_FAQ/msit%20benchmark%20%E5%AE%89%E8%A3%85%E9%97%AE%E9%A2%98FAQ)
+使用出现问题时，可参考[FAQ](https://gitee.com/ascend/msit/wikis/benchmark_FAQ/ait%20benchmark%20%E5%AE%89%E8%A3%85%E9%97%AE%E9%A2%98FAQ)

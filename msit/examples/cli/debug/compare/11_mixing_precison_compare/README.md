@@ -3,7 +3,7 @@
 ## 介绍
 使用ATC工具在转换离线模型时可以选择不同的浮点精度模式。为了排查在不同精度模式下算子产生的精度问题，可以直接将不同精度模式下产生的.om模型进行精度比对。
 
-在ATC转换中设置模型的浮点精度具体可以参照[ATC工具使用指南--precision_mode_v2](https://www.hiascend.com/document/detail/zh/canncommercial/800/devaids/devtools/atc/atlasatcparam_16_0069.html)
+在ATC转换中设置模型的浮点精度具体可以参照[ATC工具使用指南--precision_mode_v2](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/devaids/devtools/atc/atlasatcparam_16_0069.html)。
 
 
 ## 运行示例
