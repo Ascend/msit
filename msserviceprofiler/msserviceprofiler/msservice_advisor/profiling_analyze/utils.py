@@ -143,7 +143,7 @@ def read_csv(file_path):
     logger.info(f"Reading CSV file: {file_path}")
     result = {}
     try:
-        with open(file_path, mode="r", newline="", encoding="utf-8") as ff:
+        with open_s(file_path, mode="r", newline="", encoding="utf-8") as ff:
             reader = csv.DictReader(ff)
             if not reader.fieldnames:
                 logger.error(f"CSV file {file_path} has no headers or is empty.")
@@ -166,7 +166,7 @@ def read_csv(file_path):
 def read_json(file_path):
     logger.info(f"Reading JSON file: {file_path}")
     try:
-        with open(file_path, mode="r", encoding="utf-8") as ff:
+        with open_s(file_path, mode="r", encoding="utf-8") as ff:
             result = json.load(ff)
             if not isinstance(result, dict):
                 logger.error(f"JSON file {file_path} does not contain a JSON object.")
