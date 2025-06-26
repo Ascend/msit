@@ -21,8 +21,8 @@ class Generator:
         self.sheet1 = self.op_data[["Index", "Stage", "Start Time(ms)", "Duration(ms)", "Duration Ratio"]][
             self.op_data["Split"]]
 
-        if self.batch_data is not None and len(self.op_data) == len(self.batch_data):
-            self.op_data["Batch Size"] = self.batch_data["batch_size"].tolist()
+        if self.batch_data is not None and len(self.sheet1) == len(self.batch_data):
+            self.sheet1["Batch Size"] = self.batch_data["batch_size"].tolist()
 
     def _time_statistics(self, lst):
         def overlap(laped_df):
@@ -141,54 +141,60 @@ class Generator:
             logger.error(e)
             sys.exit(0)
 
-
     def _choose_stage(self):
         idx_list = []
         name_list = []
-        if not self.op_data[self.op_data["Stage"] == "decode"].empty:
-            max_decode = self.op_data[self.op_data["Stage"] == "decode"]['Duration(ms)'].idxmax()  # 最大值的索引
-            min_decode = self.op_data[self.op_data["Stage"] == "decode"]['Duration(ms)'].idxmin()  # 最小值的索引
+        for stage in ["Decode","Prefill"]:
+            stage_low=stage.lower()
 
-            median_decode = self.op_data[self.op_data["Stage"] == "decode"]['Duration(ms)'].median()
-            self.op_data['diff'] = np.abs(self.op_data['Duration(ms)'] - median_decode)
-            mid_decode = self.op_data[self.op_data["Stage"] == "decode"]['diff'].idxmin()
+            if not self.op_data[self.op_data["Stage"] == stage_low].empty:
+                filtered= self.op_data[self.op_data["Stage"] == stage_low]['Duration(ms)'].dropna()
 
-            max_idx = self.op_data.loc[max_decode, "Index"]
-            min_idx = self.op_data.loc[min_decode, "Index"]
-            mid_idx = self.op_data.loc[mid_decode, "Index"]
+                sorted_filtered = filtered.sort_values().reset_index()
+                filtered_length = len(sorted_filtered)
 
-            idx_list.extend([max_decode, min_decode, mid_decode])
-            name_list.extend([f"Maximum Decode(No.{max_idx})", f"Minium Decode(No.{min_idx})",
-                              f"Medium Decode(No.{mid_idx})"])
+                min_pos = 0
+                max_pos = filtered_length - 1
+                mid_pos = int(round(filtered_length * 0.5))
+                q25_pos = int(round(filtered_length * 0.25))
+                q75_pos = int(round(filtered_length * 0.75))
 
-        if not self.op_data[self.op_data["Stage"] == "prefill"].empty:
-            max_prefill = self.op_data[self.op_data["Stage"] == "prefill"]['Duration(ms)'].idxmax()  # 最大值的索引
-            min_prefill = self.op_data[self.op_data["Stage"] == "prefill"]['Duration(ms)'].idxmin()  # 最小值的索引
+                min_idx = sorted_filtered.iloc[min_pos]['index']
+                max_idx = sorted_filtered.iloc[max_pos]['index']
+                mid_idx = sorted_filtered.iloc[mid_pos]['index']
+                q25_idx = sorted_filtered.iloc[q25_pos]['index']
+                q75_idx = sorted_filtered.iloc[q75_pos]['index']
 
-            median_prefill = self.op_data[self.op_data["Stage"] == "prefill"]['Duration(ms)'].median()
-            self.op_data['diff'] = np.abs(self.op_data['Duration(ms)'] - median_prefill)
-            mid_prefill = self.op_data[self.op_data["Stage"] == "prefill"]['diff'].idxmin()
-            idx_list.extend([max_prefill, min_prefill, mid_prefill])
+                max_num = self.op_data.loc[max_idx, "Index"]
+                min_num = self.op_data.loc[min_idx, "Index"]
+                mid_num = self.op_data.loc[mid_idx, "Index"]
+                q25_num = self.op_data.loc[q25_idx, "Index"]
+                q75_num = self.op_data.loc[q75_idx, "Index"]
 
-            max_idx = self.op_data.loc[max_prefill, "Index"]
-            min_idx = self.op_data.loc[min_prefill, "Index"]
-            mid_idx = self.op_data.loc[mid_prefill, "Index"]
+                if filtered_length==1:
+                    idx_list.append(min_idx)
+                    name_list.append(f"Only {stage}(No.{min_num})")
+                elif filtered_length<=5:
+                    idx_list.extend([max_idx, mid_idx ,min_idx])
+                    name_list.extend([f"Maximum {stage}(No.{max_num})",
+                                      f"Q2(Medium) {stage}(No.{mid_num})", f"Minium {stage}(No.{min_num})"])
+                else:
+                    idx_list.extend([max_idx, q75_idx,mid_idx, q25_idx,min_idx])
+                    name_list.extend([f"Maximum {stage}(No.{max_num})",f"Q3 {stage}(No.{q75_num})",
+                                      f"Q2(Medium) {stage}(No.{mid_num})", f"Q1 {stage}(No.{q25_num})",
+                                      f"Minium {stage}(No.{min_num})"])
 
-            idx_list.extend([max_prefill, min_prefill, mid_prefill])
-            name_list.extend([f"Maximum Prefill(No.{max_idx})", f"Minium Prefill(No.{min_idx})",
-                              f"Medium Prefill(No.{mid_idx})"])
 
         split_indices = self.op_data[self.op_data['Split']].index.tolist()
-
         result = []
 
         for idx, name in zip(idx_list, name_list):
             for i, val in enumerate(split_indices):
                 if val == idx:
                     if i == 0:
-                        temp = self.op_data.loc[0:val + 1].reset_index().copy()
+                        temp = self.op_data.iloc[0:val + 1].reset_index().copy()
                     else:
-                        temp = self.op_data.loc[split_indices[i - 1]:val + 1].reset_index().copy()
+                        temp = self.op_data.iloc[split_indices[i - 1] + 1:val + 1].reset_index().copy()
                     result.append((temp, name))
 
         return result
