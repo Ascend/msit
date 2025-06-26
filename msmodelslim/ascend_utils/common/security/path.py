@@ -164,7 +164,8 @@ def json_safe_load(path, extensions="json", size_max=MAX_READ_FILE_SIZE_4G, key_
     path = get_valid_read_path(path, extensions, size_max, check_user_stat)
     with open(path) as json_file:
         raw_dict = json.load(json_file)
-    check_dict_character(raw_dict, key_max_len)
+    if isinstance(raw_dict, dict):
+        check_dict_character(raw_dict, key_max_len)
     return raw_dict
 
 
@@ -180,7 +181,8 @@ def yaml_safe_dump(obj, path, extensions=("yml", "yaml"), check_user_stat=True):
 
 
 def json_safe_dump(obj, path, indent=None, extensions="json", check_user_stat=True):
-    check_dict_character(obj)
+    if isinstance(obj, dict):
+        check_dict_character(obj)
     write_path = get_valid_write_path(path, extensions, check_user_stat)
 
     default_mode = stat.S_IWUSR | stat.S_IRUSR  # 600

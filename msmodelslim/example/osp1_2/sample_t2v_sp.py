@@ -28,7 +28,7 @@ from opensora.models.diffusion.opensora.modeling_opensora import OpenSoraT2V
 from opensora.utils.utils import save_video_grid
 from opensora.npu_config import npu_config
 
-from ascend_utils.common.security import get_write_directory, get_valid_write_path, get_valid_read_path
+from ascend_utils.common.security import get_write_directory, get_valid_write_path, get_valid_read_path, json_safe_load
 from example.osp1_2.model.model_open_sora_plan1_2_sp import OpenSoraPipelineV1x2
 from msmodelslim.tools.logger import logger
 
@@ -111,6 +111,7 @@ def run_model_and_save_images(pipeline, model_path):
                           timesteps=timesteps_set
                           ).images
 
+        os.umask(0o037)
         vid_name = (f'{args.sample_method}_{index}_{checkpoint_name}'
                     f'_gs{args.guidance_scale}_s{args.num_sampling_steps}.{ext}')
         if hccl_info.rank <= 0:
@@ -141,14 +142,15 @@ def run_model_and_save_images(pipeline, model_path):
             save_path = get_valid_write_path(save_path, is_dir=False)
             return save_path
 
+        output_path = get_file_name()
+
         if args.num_frames == 1:
-            save_image(video_grids / 255.0, get_file_name(),
+            save_image(video_grids / 255.0, output_path,
                        nrow=math.ceil(math.sqrt(len(video_grids))), normalize=True, value_range=(0, 1))
         else:
             video_grids = save_video_grid(video_grids)
-            imageio.mimwrite(get_file_name(), video_grids, fps=args.fps, quality=6)
+            imageio.mimwrite(output_path, video_grids, fps=args.fps, quality=6)
 
-        output_path = get_file_name()
         logger.info('concat video file saved at: %s', output_path)
 
 
@@ -219,6 +221,7 @@ if __name__ == "__main__":
     vae.vae_scale_factor = ae_stride_config[args.ae]
 
     args.cache_dir = get_write_directory(args.cache_dir)
+    args.text_encoder_name = get_valid_read_path(args.text_encoder_name, is_dir=True)
     text_encoder = MT5EncoderModel.from_pretrained(args.text_encoder_name, 
                                                    cache_dir=args.cache_dir,
                                                    low_cpu_mem_usage=True, 
@@ -260,8 +263,7 @@ if __name__ == "__main__":
 
         scheduler = EulerAncestralDiscreteSchedulerExample()
         args.schedule_timestep = get_valid_read_path(args.schedule_timestep)
-        with open(args.schedule_timestep, 'r') as f:
-            timesteps = json.load(f)
+        timesteps = json_safe_load(args.schedule_timestep, extensions='txt')
 
         timesteps_set = [x * 1000 for x in timesteps][::-1]
         logger.info('set timesteps_set to %s', str(timesteps_set))
@@ -270,8 +272,7 @@ if __name__ == "__main__":
 
     if args.dit_cache_config is not None:
         args.dit_cache_config = get_valid_read_path(args.dit_cache_config)
-        with open(args.dit_cache_config, 'r') as f:
-            cache_config = json.load(f)
+        cache_config = json_safe_load(args.dit_cache_config)
     else:
         cache_config = None
 

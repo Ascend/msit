@@ -37,7 +37,6 @@ def get_args():
     parser.add_argument("--ae", type=str, default='CausalVAEModel_4x8x8')
     parser.add_argument("--ae_path", type=str, default='CausalVAEModel_4x8x8')
     parser.add_argument("--text_encoder_name", type=str, default='DeepFloyd/t5-v1_1-xxl')
-    parser.add_argument("--save_img_path", type=str, default="./sample_videos/t2v")
     parser.add_argument("--guidance_scale", type=float, default=7.5)
     parser.add_argument("--sample_method", type=str, default="PNDM")
     parser.add_argument("--num_sampling_steps", type=int, default=50)
@@ -124,6 +123,7 @@ def build_pipeline(args):
     vae.vae_scale_factor = ae_stride_config[args.ae]
 
     args.cache_dir = get_write_directory(args.cache_dir)
+    args.text_encoder_name = get_valid_read_path(args.text_encoder_name, is_dir=True)
     text_encoder = MT5EncoderModel.from_pretrained(args.text_encoder_name,
                                                    cache_dir=args.cache_dir,
                                                    low_cpu_mem_usage=True, 

@@ -9,6 +9,8 @@ from diffusers import StableDiffusion3Pipeline
 from torch import nn
 from tqdm import tqdm
 
+from ascend_utils.common.security.pytorch import safe_torch_load
+from ascend_utils.common.security import get_valid_read_path, get_write_directory
 from msmodelslim.quant import quant_model, SessionConfig
 from msmodelslim.quant import W8A8ProcessorConfig, W8A8QuantConfig, SaveProcessorConfig
 
@@ -33,6 +35,11 @@ def parse_args(namespace=None):
 
     args = parser.parse_args(namespace=namespace)
 
+    args.sd3_model_path = get_valid_read_path(args.sd3_model_path, is_dir=True)
+    args.prompt_path = get_valid_read_path(args.prompt_path, is_dir=False)
+    args.save_path = get_write_directory(args.save_path)
+    args.quant_weight_save_folder = get_write_directory(args.quant_weight_save_folder)
+    args.quant_dump_calib_folder = get_write_directory(args.quant_dump_calib_folder)
     return args
 
 
@@ -125,7 +132,7 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
 
     # ***************************** 启动量化 *****************************
     # 加载校准数据
-    calib_dataset = torch.load(dump_data_path, map_location=f'npu:{get_rank()}')
+    calib_dataset = safe_torch_load(dump_data_path, map_location=f'npu:{get_rank()}')
 
     def get_w8a8_cfg():
         _cfg = SessionConfig(
