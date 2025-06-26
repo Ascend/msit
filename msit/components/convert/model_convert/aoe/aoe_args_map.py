@@ -172,10 +172,6 @@ aoe_args = [
         DESC: 'Set enable small channel. 0(default): disable; 1: enable',
     },
     {
-        NAME: '--enable_compress_weight',
-        DESC: 'Enable compress weight. true: enable; false(default): disable'
-    },
-    {
         NAME: '--compress_weight_conf',
         DESC: 'Config file to compress weight.'
     },
