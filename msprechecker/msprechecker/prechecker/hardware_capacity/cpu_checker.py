@@ -15,6 +15,7 @@ import os
 import time
 
 import yaml
+from msguard.security import open_s
 
 from msprechecker.prechecker.register import PrecheckerBase, show_check_result, CheckResult
 from msprechecker.prechecker.utils import logger, SimpleProgressBar
@@ -30,7 +31,7 @@ class CPUChecker(PrecheckerBase):
         # 读取矩阵参数
         env_check_dir = os.path.dirname(__file__)
         yaml_file = os.path.join(env_check_dir, "matmul_shape.yaml")
-        with open(yaml_file, "r") as f:
+        with open_s(yaml_file, "r") as f:
             shape_dict = yaml.safe_load(f)
         batch_size = shape_dict["cpu_check"]["batch_size"]
         seq_len = shape_dict["cpu_check"]["seq_len"]

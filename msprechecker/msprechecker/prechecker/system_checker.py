@@ -14,6 +14,9 @@
 
 import os
 import platform
+
+from msguard.security import open_s
+
 from msprechecker.prechecker.register import register_checker, GroupPrechecker, PrecheckerBase
 from msprechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
 from msprechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger, run_shell_command
@@ -64,7 +67,7 @@ class SystemInfoCollect(PrecheckerBase):
         ascend_toolkit_home = os.getenv("ASCEND_TOOLKIT_HOME")
         ascend_toolkit_version_file = os.path.join(ascend_toolkit_home, "version.cfg") if ascend_toolkit_home else None
         if ascend_toolkit_version_file and os.path.exists(ascend_toolkit_version_file):
-            with open(ascend_toolkit_version_file) as ff:
+            with open_s(ascend_toolkit_version_file) as ff:
                 for line in ff.readlines():
                     if "=" in line:
                         ascend_toolkit_version = line.split("=")[-1].strip()
@@ -74,7 +77,7 @@ class SystemInfoCollect(PrecheckerBase):
         mies_install_path = os.getenv("MIES_INSTALL_PATH")
         mindie_version_file = os.path.join(mies_install_path, "version.info") if mies_install_path else None
         if mindie_version_file and os.path.exists(mindie_version_file):
-            with open(mindie_version_file) as ff:
+            with open_s(mindie_version_file) as ff:
                 for line in ff.readlines():
                     if "Ascend-mindie-service" in line and ":" in line:
                         mindie_version = line.split(":")[-1].strip()
@@ -141,7 +144,7 @@ class DriverVersionChecker(PrecheckerBase):
             return None
 
         version = ""
-        with open(DRIVER_VERSION_PATH) as ff:
+        with open_s(DRIVER_VERSION_PATH) as ff:
             for line in ff.readlines():
                 if "Version=" in line:
                     version = line.strip().split("=")[-1]
@@ -201,7 +204,7 @@ class VirtualMachineChecker(PrecheckerBase):
             return None
 
         is_virtual_machine = False
-        with open(CPUINFO_PATH) as ff:
+        with open_s(CPUINFO_PATH) as ff:
             for line in ff.readlines():
                 if "hypervisor" in line:
                     is_virtual_machine = True
@@ -236,7 +239,7 @@ class TransparentHugepageChecker(PrecheckerBase):
             return None
 
         is_transparent_hugepage_enable, additional_msg = False, ""
-        with open(TRANSPARENT_HUGEPAGE_PATH) as ff:
+        with open_s(TRANSPARENT_HUGEPAGE_PATH) as ff:
             for line in ff.readlines():
                 if "[always]" in line:
                     is_transparent_hugepage_enable = True
@@ -276,7 +279,7 @@ class CpuHighPerformanceChecker(PrecheckerBase):
             if not os.path.exists(cur_governor_path) or not os.access(cur_governor_path, os.R_OK):
                 continue
 
-            with open(cur_governor_path, "r") as ff:
+            with open_s(cur_governor_path, "r") as ff:
                 for line in ff.readlines():
                     if line.strip() == "performance":
                         is_performances.append(True)

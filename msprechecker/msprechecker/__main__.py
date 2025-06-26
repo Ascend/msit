@@ -18,6 +18,8 @@ import time
 import argparse
 import tempfile
 
+from msguard.security import open_s
+
 from msprechecker.prechecker import CHECKERS, CHECKER_INFOS_STR
 from msprechecker.prechecker.utils import logger, set_log_level
 from msprechecker.prechecker.utils import LOG_LEVELS, RUN_MODES, CHECKER_TYPES
@@ -123,7 +125,7 @@ def load_yaml(yaml_file_path):
         return None
     if not os.path.exists(yaml_file_path):
         return None
-    with open(yaml_file_path) as ff:
+    with open_s(yaml_file_path) as ff:
         contents = yaml.safe_load(ff)
     return contents
 
@@ -150,7 +152,7 @@ def run_env_dump(
         all_envs[name] = envs
 
     if dump_file_path is not None:
-        with open(dump_file_path, "w") as f:
+        with open_s(dump_file_path, "w") as f:
             json.dump(all_envs, f, indent=2)
 
         logger.info(f"dump file saved to: {dump_file_path}")
@@ -165,7 +167,7 @@ def run_compare(dump_file_paths=None, **kwargs):
     env_infos = []
     env_names = []
     for dump_file_path in dump_file_paths:
-        with open(dump_file_path, "r") as f:
+        with open_s(dump_file_path, "r") as f:
             env_infos.append(json.load(f))
             env_names.append(dump_file_path)
 

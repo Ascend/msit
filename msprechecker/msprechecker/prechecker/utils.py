@@ -23,6 +23,8 @@ import time
 import re
 from collections import namedtuple
 
+from msguard.security import open_s
+
 
 _RUN_MODES = ["precheck", "dump", "compare", "distribute_compare"]
 RUN_MODES = namedtuple("RUN_MODES", _RUN_MODES)(*_RUN_MODES)
@@ -162,7 +164,7 @@ def get_version_info(mindie_service_path):
         return {}
 
     version_info = {}
-    with open(version_path) as f:
+    with open_s(version_path) as f:
         for line in f:
             line_split = line.split(":")
             key, value = line_split[0], line_split[-1]
@@ -177,7 +179,7 @@ set_logger(logger)
 
 def read_csv(file_path):
     result = {}
-    with open(file_path, mode="r", newline="", encoding="utf-8") as ff:
+    with open_s(file_path, mode="r", newline="", encoding="utf-8") as ff:
         for row in csv.DictReader(ff):
             for kk, vv in row.items():
                 result.setdefault(kk, []).append(vv)
@@ -185,7 +187,7 @@ def read_csv(file_path):
 
 
 def read_json(file_path):
-    with open(file_path) as ff:
+    with open_s(file_path) as ff:
         try:
             result = json.load(ff)
         except json.JSONDecodeError:

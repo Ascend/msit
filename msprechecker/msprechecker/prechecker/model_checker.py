@@ -16,6 +16,8 @@ import os
 import glob
 import hashlib
 
+from msguard.security import open_s
+
 from msprechecker.prechecker.register import PrecheckerBase, show_check_result, CheckResult
 from msprechecker.prechecker.utils import logger, get_model_path_from_mindie_config
 from msprechecker.prechecker.utils import is_deepseek_model
@@ -59,7 +61,7 @@ def _hash_file_sampled(sha256_hash, file, total_size, num_blocks, block_size):
 def update_hash256(sha256_hash, file_path, total_size, num_blocks, block_size):
     block_size = min(block_size, total_size)
     
-    with open(file_path, "rb") as file:
+    with open_s(file_path, "rb") as file:
         if _should_hash_entire_file(num_blocks, total_size, block_size):
             _hash_file_sequentially(sha256_hash, file, block_size)
         else:

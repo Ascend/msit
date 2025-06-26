@@ -16,6 +16,7 @@ import os
 from collections import defaultdict
 
 import yaml
+from msguard.security import open_s
 
 from msprechecker.prechecker.register import PrecheckerBase, show_check_result, CheckResult, check_file_permission
 from msprechecker.prechecker.utils import (
@@ -151,7 +152,7 @@ class K8SCheckerBase(ConfigCheckerBase):
         if config_path is None or not os.path.isfile(config_path):
             return {}
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open_s(config_path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f)
         except yaml.YAMLError as e:
             raise ValueError(f"Invalid YAML in config file: {e}") from e

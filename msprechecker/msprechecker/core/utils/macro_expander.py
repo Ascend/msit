@@ -18,27 +18,27 @@ from typing import Any, Dict
 
 class MacroExpander:
     DOT = "."
-    VAR_REGEX = re.compile(r"\$\{(.+?)\}")
-    VERSION_REGEX = re.compile(r"Version\{(.+?)\}")
-    FILE_PERM_REGEX = re.compile(r"FilePerm\{(.+?)\}")
+    VAR_REGEX = re.compile(r"\$\{([\w_.]+?)\}")
+    VERSION_REGEX = re.compile(r"Version\{([\w_.]+?)\}")
+    FILE_PERM_REGEX = re.compile(r"FilePerm\{([\w_.]+?)\}")
 
 
     def __init__(self, config_source: Dict[str, Any], context_path: str) -> None:
         self.config_source = config_source
         self.context_path = context_path
-    
+
     @staticmethod
     def _expand_version(match_object: re.Match):
         version_str = match_object.group(1)
 
         return f"Version({version_str})"
-    
+
     @staticmethod
     def _expand_file_perm(match_object: re.Match):
         perm_bit = match_object.group(1)
 
         return f"FilePerm({perm_bit})"
-    
+
     def expand(self, expr: Any):
         if isinstance(expr, dict):
             return {k: self.expand(v) for k, v in expr.items()}
