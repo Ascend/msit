@@ -56,7 +56,7 @@ def __init__(self, model, tokenizer, dataset, batch_size, hardware_type,
 其中
   + model: 待测试模型，需支持使用 Transformers 库进行加载
   + tokenizer: 与 model 配套的 tokenizer
-  + dataset: 待测试数据集，当前支持 ceval_0_shot、ceval_5_shot、boolq、humaneval、mmlu、truthfulqa
+  + dataset: 待测试数据集，当前支持 boolq、humaneval、mmlu、truthfulqa
   + hardware_type: 当前**仅**支持传入"npu"
   + tokenizer_return_type_id: 当输入 Bert 类型接口时需要传入 True，具体可以根据接口运行的反馈来确定
   + shot: 精度测试时使用的shot值，当前只对mmlu数据集生效
@@ -71,22 +71,6 @@ def test(self):
 |-- dataset
     |-- boolq
     |   `-- dev.jsonl
-    |-- ceval_0_shot
-    |   |-- val
-    |       |-- Humanities
-    |       |   `-- *.jsonl
-    |       |-- Other
-    |       |   `-- *.jsonl
-    |       |-- STEM
-    |       |   `-- *.jsonl
-    |       `-- Social_Science
-    |           `-- *.jsonl
-    |-- ceval_5_shot
-    |   |-- subject_mapping.json
-    |   `-- val
-    |       |-- accountant_val.csv
-    |       |-- ...
-    |       `-- veterinary_medicine_val.csv
     |-- mmlu
     |   |-- subject_mapping.json
     |   |-- dev
@@ -100,7 +84,6 @@ def test(self):
 请保持文件夹名称与结构一致  
 数据集下载链接：
 ```
-https://huggingface.co/datasets/ceval/ceval-exam
 https://huggingface.co/datasets/google/boolq
 https://huggingface.co/datasets/openai/openai_humaneval
 https://huggingface.co/datasets/cais/mmlu
