@@ -84,3 +84,14 @@ msit/components/transplt/tools/update_link/src/web_crawler.py,https://www.hiasce
 msit/components/debug/compare/Dockerfile,http://.*security.ubuntu.com,构建compare组件的docker安装镜像 
 msit/components/debug/compare/Dockerfile,https://mirrors.huaweicloud.com,构建compare组件的docker安装镜像
 msit/components/debug/compare/Dockerfile,repo.huaweicloud.com,构建compare组件的docker安装镜像
+msit/components/config/config.ini,https://gitee.com/ascend/msit,msit的gitee仓地址
+msit/components/config/config.ini,https://gitee.com/ascend/msit/msit/components/llm,msit llm工具仓库地址
+msit/components/config/config.ini,https://gitee.com/ascend/msit/tree/master/msit/components/debug/compare,msit debug compare工具仓库地址
+msit/components/config/config.ini,https://gitee.com/ascend/msit/tree/master/msit/components/debug/opcheck,msit debug opcheck工具仓库地址
+msit/components/config/config.ini,https://github.com/nlohmann/json/archive/refs/tags,第三方库nlohmann地址
+msit/components/config/config.ini,https://aisbench.obs.myhuaweicloud.com/packet/ais_bench_infer/0.0.2/ait/,aisbench工具包地址
+msit/components/config/config.ini,https://gitee.com/ascend/tools.git,aisbench工具所在的tools仓地址
+msit/components/config/config.ini,http://mirrors.huaweicloud.com/repository/pypi/simple,PyPI华为云镜像地址
+msit/components/config/config.ini,https://mirrors.huaweicloud.com/repository/pypi/simple,PyPI华为云镜像地址
+msit/components/config/config.ini,https://mirrors.tools.huawei.com/pypi/simple,PyPI镜像地址
+msit/components/config/config.ini,http://www.apache.org/licenses/LICENSE-2.0,license信息说明
