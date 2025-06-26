@@ -98,7 +98,7 @@ class TestFuseOpChecker(unittest.TestCase):
             
         mock_rmtree.assert_called_once()
 
-    def test__get_ascgraph_dump_data_given_missing_graph_name_when_fetching_then_return_none(self):
+    def test__get_ascgraph_dump_data_given_missing_graph_name_when_fetching_then_return_none_none(self):
         mock_args = MagicMock()
         checker = self.FuseOpChecker(mock_args)
         checker.opname_to_dump_data_map = {}
@@ -106,5 +106,6 @@ class TestFuseOpChecker(unittest.TestCase):
         mock_tf_builder = MagicMock()
         mock_tf_builder.graph_name = "missing_graph"
         with patch("os.makedirs"):
-            result = checker._get_ascgraph_dump_data(mock_tf_builder)
-            self.assertIsNone(result)
+            result1, result2 = checker._get_ascgraph_dump_data(mock_tf_builder)
+            self.assertIsNone(result1)
+            self.assertIsNone(result2)

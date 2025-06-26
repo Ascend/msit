@@ -124,7 +124,7 @@ class FuseOpChecker:
 
         if graph_name not in self.opname_to_dump_data_map:
             logger.warning(f"Can not found {graph_name} in GE dump data path.") 
-            return None
+            return None, None
         convert_ge_dump_file_to_npy(self.opname_to_dump_data_map[graph_name], self.npy_path)
         # 合理的GE dump文件解析后格式：optype.opname.idx.device_id.timestamp.{input/output}.index.npy
         for file_name in sorted(os.listdir(self.npy_path)):
