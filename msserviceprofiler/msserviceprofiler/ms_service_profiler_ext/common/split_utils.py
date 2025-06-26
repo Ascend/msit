@@ -551,8 +551,8 @@ def process_exporter(framework_df, batch_size, batch_num, rid, name):
     len_result_df = len(result_df)
 
     if len(result_df) == 0:
-        logger.warning(f'{name}: no batchFrameworkProcessing with batch_size {batch_size}')
-        logger.warning(f'{name}: no batchFrameworkProcessing with rid {rid}')
+        logger.warning('%s: no batchFrameworkProcessing with batch_size %d' % (name, batch_size))
+        logger.warning('%s: no batchFrameworkProcessing with rid %r' % (name, rid))
         return pd.DataFrame()
     
     cacl_num = len_result_df if len_result_df <= batch_num else batch_num

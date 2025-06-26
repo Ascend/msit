@@ -57,23 +57,6 @@ def get_dict_value_by_pos(dict_value, target_pos):
     return cur
 
 
-def walk_dict(data, parent_key=""):
-    if isinstance(data, dict):
-        for key, value in data.items():
-            if not isinstance(value, (dict, tuple, list)):
-                yield key, value, parent_key
-            else:
-                new_key = f"{parent_key}.{key}" if parent_key else key
-                yield from walk_dict(value, new_key)
-    elif isinstance(data, (tuple, list)):
-        for index, item in enumerate(data):
-            if not isinstance(item, (dict, tuple, list)):
-                yield str(index), item, parent_key
-            else:
-                new_key = f"{parent_key}.{index}" if parent_key else index
-                yield from walk_dict(item, new_key)
-
-
 def set_log_level(level="info"):
     if level.lower() in LOG_LEVELS:
         logger.setLevel(LOG_LEVELS.get(level.lower()))

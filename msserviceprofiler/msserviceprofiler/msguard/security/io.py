@@ -15,6 +15,7 @@
 
 import os
 from collections import deque
+import pandas as pd
 
 from .exception import WalkLimitError
 from ..validation import validate_params
@@ -98,3 +99,11 @@ def open_s(path, mode='r', **kwargs):
 
     fd = get_fd(path, flags)
     return os.fdopen(fd, mode, **kwargs)
+
+
+@validate_params({"path": Rule.input_file_read})
+def read_csv_s(path, **kwargs):
+    try:
+        return pd.read_csv(path, **kwargs)
+    except Exception as e:
+        raise ValueError("Failed to read csv %r." % path) from e
