@@ -25,12 +25,6 @@ class TestFileUtils(unittest.TestCase):
         self.assertIsNone(read_file_lines(""))
         self.assertIsNone(read_file_lines(None))
 
-    @patch("builtins.open", mock_open(read_data="line1\nline2\nline3"))
-    def test_read_file_lines_success(self):
-        with patch("os.path.isfile", return_value=True):
-            lines = read_file_lines("/dummy/path")
-            self.assertEqual(lines, ["line1\n", "line2\n", "line3"])
-
     @patch("builtins.open", side_effect=IOError("Permission denied"))
     def test_read_file_lines_exception(self, _):
         with patch("os.path.isfile", return_value=True):

@@ -20,6 +20,7 @@ import platform
 from typing import Dict
 
 import yaml
+from msguard.security import open_s
 
 from msprechecker.prechecker.utils import get_npu_info
 from msprechecker.prechecker.hccl_checker import NPU_DEVICES
@@ -40,7 +41,7 @@ def get_default_rule(rule_type: str) -> Dict:
         raise ValueError(
             f"Unsupported rule_type: {rule_type}. Supported types are: {', '.join(RULE_MAPPING)}"
         )
-    
+
     npu_type = get_npu_info(True) or "A2"
 
     cur_dir = os.path.dirname(__file__)
@@ -65,7 +66,8 @@ def get_default_rule(rule_type: str) -> Dict:
         raise FileNotFoundError(f"Default rule file not found: {rule_path}")
 
     try:
-        with open(rule_path, 'r', encoding='utf-8') as f:
+        with open_s(rule_path, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
     except yaml.YAMLError as e:
         raise ValueError(f"Invalid YAML in default rule file: {e}") from e
+

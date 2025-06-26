@@ -36,7 +36,7 @@ class Compiler:
         r'|(?P<NUMBER>\d+([.]\d*)?)'                                        # Integer or decimal number
         r'|(?P<SKIP>[ \t]+)'                                                # Whitespace
     )
-    
+
     _FUNC_MAP = {
         'float': float,
         'int': int,

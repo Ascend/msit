@@ -12,8 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import tempfile
 import unittest
 from unittest.mock import patch, mock_open
+
+from msguard.security import open_s
+
 from msprechecker.prechecker.register import CheckResult
 from msprechecker.prechecker.system_checker import (
     SystemInfoCollect,
@@ -30,54 +35,55 @@ from msprechecker.prechecker.system_checker import (
 class TestSystemInfoCollect(unittest.TestCase):
     @patch('msprechecker.prechecker.system_checker.run_shell_command')
     @patch('os.sysconf')
-    @patch('os.path.exists')
     @patch('os.getenv')
-    def test_collect_env(self, mock_getenv, mock_exists, mock_sysconf, mock_run_shell):
-        # Setup mock data
-        mock_run_shell.return_value.stdout = "CPU(s): 8\nModel name: Test CPU"
-        mock_sysconf.return_value = 4096
-        
-        def getenv_side_effect(var):
-            if var == "ASCEND_TOOLKIT_HOME":
-                return "/path/to/toolkit"
-            return "/path/to/mindie"
-        mock_getenv.side_effect = getenv_side_effect
-        mock_exists.return_value = True
-        
-        # Mock file contents
-        version_file_content = "Version=1.2.3\n"
-        mindie_file_content = "Ascend-mindie-service: 3.4.5\n"
-        
-        # Test
-        collector = SystemInfoCollect()
-        with patch('builtins.open', mock_open()) as mock_file:
-            mock_file.side_effect = [
-                mock_open(read_data=version_file_content).return_value,
-                mock_open(read_data=mindie_file_content).return_value
-            ]
+    def test_collect_env(self, mock_getenv, mock_sysconf, mock_run_shell):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            toolkit_path = os.path.join(temp_dir, "toolkit")
+            os.mkdir(toolkit_path, 0o750)
+            toolkit_version_path = os.path.join(toolkit_path, "version.cfg")
+            with open_s(toolkit_version_path, 'w') as f:
+                f.write("Version=1.2.3\n")
+
+            mindie_path = os.path.join(temp_dir, "mindie")
+            os.mkdir(mindie_path, 0o750)
+            mindie_version_path = os.path.join(mindie_path, "version.info")
+            with open_s(mindie_version_path, 'w') as f:
+                f.write("Ascend-mindie-service: 3.4.5\n")
+
+            mock_run_shell.return_value.stdout = "CPU(s): 8\nModel name: Test CPU"
+            mock_sysconf.return_value = 4096
+
+            def getenv_side_effect(var):
+                if var == "ASCEND_TOOLKIT_HOME":
+                    return toolkit_path
+                return mindie_path
+            mock_getenv.side_effect = getenv_side_effect
+
+            # Test
+            collector = SystemInfoCollect()
             result = collector.collect_env()
-        
-        # Assertions
-        self.assertEqual(result['cpu_model_name'], "Test CPU")
-        self.assertEqual(result['cpu_num'], "8")
-        self.assertEqual(result['page_size'], 4096)
-        self.assertEqual(result['ascend_toolkit_version'], "1.2.3")
-        self.assertEqual(result['mindie_version'], "3.4.5")
+
+            # Assertions
+            self.assertEqual(result['cpu_model_name'], "Test CPU")
+            self.assertEqual(result['cpu_num'], "8")
+            self.assertEqual(result['page_size'], 4096)
+            self.assertEqual(result['ascend_toolkit_version'], "1.2.3")
+            self.assertEqual(result['mindie_version'], "3.4.5")
 
 
 class TestKernelReleaseChecker(unittest.TestCase):
     @patch('platform.release')
     def test_collect_env(self, mock_release):
         mock_release.return_value = "5.10.0"
-        
+
         checker = KernelReleaseChecker()
         result = checker.collect_env()
-        
+
         self.assertEqual(result, (5, 10))
-    
+
     def test_do_precheck(self):
         checker = KernelReleaseChecker()
-        
+
         # Test older version
         with patch('msprechecker.prechecker.system_checker.show_check_result') as mock_show:
             checker.do_precheck((4, 15))
@@ -89,12 +95,12 @@ class TestKernelReleaseChecker(unittest.TestCase):
                 action="升级到 5.10 以上",
                 reason=expected_reason
             )
-        
+
         # Test equal version
         with patch('msprechecker.prechecker.system_checker.show_check_result') as mock_show:
             checker.do_precheck((5, 10))
             mock_show.assert_called_with("system", "内核版本", CheckResult.OK)
-        
+
         # Test newer version
         with patch('msprechecker.prechecker.system_checker.show_check_result') as mock_show:
             checker.do_precheck((6, 1))
@@ -102,23 +108,26 @@ class TestKernelReleaseChecker(unittest.TestCase):
 
 
 class TestDriverVersionChecker(unittest.TestCase):
-    @patch('os.path.exists')
-    @patch('os.access', return_value=True)
-    def test_collect_env(self, mock_exists, _):
-        mock_exists.return_value = True
+    @patch('os.access')
+    @patch('os.stat')
+    def test_collect_env(self, mock_stat, mock_access):
+        mock_stat.return_value = os.stat_result(
+            [33188, 238815, 2096, 1, 0, 0, 20491, 1750903227, 1750903226, 1750903226]
+        )
+        mock_access.return_value = True
         version_file_content = "Version=24.1.0\n"
-        
+
         checker = DriverVersionChecker()
-        with patch('builtins.open', mock_open(read_data=version_file_content)):
+        with patch('msprechecker.prechecker.system_checker.open_s', mock_open(read_data=version_file_content)):
             result = checker.collect_env()
-        
+
         self.assertEqual(result['major_version'], 24)
         self.assertEqual(result['minor_version'], 1)
         self.assertEqual(result['mini_version'], 0)
-    
+
     def test_do_precheck(self):
         checker = DriverVersionChecker()
-        
+
         # Test older version
         with patch('msprechecker.prechecker.system_checker.show_check_result') as mock_show:
             checker.do_precheck({'major_version': 23, 'minor_version': 2, 'mini_version': 0})
@@ -130,12 +139,12 @@ class TestDriverVersionChecker(unittest.TestCase):
                 action="升级到 24.1.0 以上",
                 reason=expected_reason
             )
-        
+
         # Test equal version
         with patch('msprechecker.prechecker.system_checker.show_check_result') as mock_show:
             checker.do_precheck({'major_version': 24, 'minor_version': 1, 'mini_version': 0})
             mock_show.assert_called_with("system", "驱动版本", CheckResult.OK)
-        
+
         # Test newer version
         with patch('msprechecker.prechecker.system_checker.show_check_result') as mock_show:
             checker.do_precheck({'major_version': 25, 'minor_version': 0, 'mini_version': 0})
@@ -147,24 +156,24 @@ class TestVirtualMachineChecker(unittest.TestCase):
     @patch('os.path.exists')
     def test_collect_env(self, mock_exists, _):
         mock_exists.return_value = True
-        
+
         # Test VM case
         cpuinfo_content = "hypervisor: KVM\n"
         checker = VirtualMachineChecker()
-        with patch('builtins.open', mock_open(read_data=cpuinfo_content)):
+        with patch('msprechecker.prechecker.system_checker.open_s', mock_open(read_data=cpuinfo_content)):
             result = checker.collect_env()
         self.assertTrue(result)
-        
+
         # Test physical machine case
         cpuinfo_content = "processor: 0\n"
         checker = VirtualMachineChecker()
-        with patch('builtins.open', mock_open(read_data=cpuinfo_content)):
+        with patch('msprechecker.prechecker.system_checker.open_s', mock_open(read_data=cpuinfo_content)):
             result = checker.collect_env()
         self.assertFalse(result)
-    
+
     def test_do_precheck(self):
         checker = VirtualMachineChecker()
-        
+
         # Test VM case
         with patch('msprechecker.prechecker.system_checker.show_check_result') as mock_show:
             checker.do_precheck(True)
@@ -184,7 +193,7 @@ class TestVirtualMachineChecker(unittest.TestCase):
                 action=action,
                 reason=reason
             )
-        
+
         # Test physical machine case
         with patch('msprechecker.prechecker.system_checker.show_check_result') as mock_show:
             checker.do_precheck(False)
@@ -200,14 +209,14 @@ class TestTransparentHugepageChecker(unittest.TestCase):
         # Test enabled case
         hugepage_content = "[always] madvise never\n"
         checker = TransparentHugepageChecker()
-        with patch('builtins.open', mock_open(read_data=hugepage_content)):
+        with patch('msprechecker.prechecker.system_checker.open_s', mock_open(read_data=hugepage_content)):
             result = checker.collect_env()
         self.assertTrue(result)
         
         # Test disabled case
         hugepage_content = "always madvise [never]\n"
         checker = TransparentHugepageChecker()
-        with patch('builtins.open', mock_open(read_data=hugepage_content)):
+        with patch('msprechecker.prechecker.system_checker.open_s', mock_open(read_data=hugepage_content)):
             result = checker.collect_env()
         self.assertFalse(result)
     

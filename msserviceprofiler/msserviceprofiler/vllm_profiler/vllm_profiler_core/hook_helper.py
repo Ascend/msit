@@ -33,14 +33,14 @@ class HookHelper:
 
         if not all((self.ori_function, self.location, self.attr_name, self.new_function)):
             warn_msg = "{} replace failed.".format(ori_function_define)
-            logging.warning(warn_msg)
+            logging.error(warn_msg)
             raise ValueError(warn_msg)
 
     @staticmethod
     def get_location(function_ins):
         if not hasattr(function_ins, "__module__"):
             warning_msg = "function {} do not has attr __module__.".format(str(function_ins))
-            logging.warning(warning_msg)
+            logging.error(warning_msg)
             raise ValueError(warning_msg)
         module = importlib.import_module(function_ins.__module__)
         qualified_name = function_ins.__qualname__.split(".")
@@ -54,7 +54,7 @@ class HookHelper:
 
         if location is None:
             warning_msg = "{} do not exists".format(".".join(classes))
-            logging.warning(warning_msg)
+            logging.error(warning_msg)
             raise ValueError(warning_msg)
         return location, attr_name
 

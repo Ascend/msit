@@ -87,7 +87,7 @@ class TestFileOperations(unittest.TestCase):
             csv_file = os.path.join(temp_dir, "test.csv")
             with open(csv_file, "w") as f:
                 f.write("key1,key2\nvalue1,value2\nvalue3,value4")
-            
+
             result = read_csv(csv_file)
             self.assertEqual(result, {"key1": ["value1", "value3"], "key2": ["value2", "value4"]})
 
@@ -128,12 +128,12 @@ class TestFileOperations(unittest.TestCase):
 
 class TestSystemInfoCollect(unittest.TestCase):
     @patch('os.path.exists')
-    @patch('builtins.open', new_callable=mock_open, read_data="key: value\nversion: 1.0")
+    @patch('msprechecker.prechecker.utils.open_s', new_callable=mock_open, read_data="key: value\nversion: 1.0")
     def test_get_version_info(self, mock_file, mock_exists):
         mock_exists.return_value = True
         result = get_version_info("/test/path")
         self.assertEqual(result, {"key": "value", "version": "1.0"})
-        
+
         mock_exists.return_value = False
         result = get_version_info("/test/path")
         self.assertEqual(result, {})
@@ -145,7 +145,7 @@ class TestSystemInfoCollect(unittest.TestCase):
         mock_exists.return_value = True
         result = get_mindie_server_config()
         self.assertEqual(result, "/custom/path/conf/config.json")
-        
+
         result = get_mindie_server_config("/explicit/path")
         self.assertEqual(result, "/explicit/path/conf/config.json")
 

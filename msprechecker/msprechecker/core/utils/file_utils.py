@@ -14,13 +14,15 @@
 
 import os
 
+from msguard.security import open_s
+
 
 def read_file_lines(path):
     if not path or not os.path.isfile(path):
         return None
 
     try:
-        with open(path) as f:
+        with open_s(path) as f:
             return f.readlines()
     except Exception:
         return None

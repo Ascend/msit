@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import os
+
+from msguard.security import open_s
+
 from msprechecker.prechecker.register import PrecheckerBase
 from msprechecker.prechecker.register import show_check_result, CheckResult
 from msprechecker.prechecker.utils import logger, get_version_info, get_npu_info, get_global_env_info
@@ -22,7 +25,7 @@ def save_env_contents(fix_pair, save_path):
     save_path = os.path.realpath(save_path)
 
     indent = " " * 4
-    with open(save_path, "w") as ff:
+    with open_s(save_path, "w") as ff:
         ff.write("ENABLE=${1-1}\n")
         ff.write('echo "ENABLE=$ENABLE"\n\n')
         ff.write('if [ "$ENABLE" = "1" ]; then\n')
