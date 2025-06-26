@@ -21,6 +21,8 @@ from opensora.models.causalvideovae.model.causal_vae.parallel_layers import (
     register_vae_decode, parallel_full_model_warp)
 from utils.file_utils import standardize_path
 
+from ascend_utils.common.security.pytorch import safe_torch_load
+from ascend_utils.common.security import get_write_directory, get_valid_read_path
 from msmodelslim.quant import quant_model, SessionConfig
 from msmodelslim.quant import W8A8ProcessorConfig, W8A8QuantConfig, SaveProcessorConfig
 
@@ -63,6 +65,7 @@ def run_model_and_save_images(pipeline, args, save_path):
     if not isinstance(args.text_prompt, list):
         args.text_prompt = [positive_prompt.format(args.text_prompt)]
     if len(args.text_prompt) == 1 and args.text_prompt[0].endswith('txt'):
+        args.text_prompt[0] = get_valid_read_path(args.text_prompt[0])
         text_prompt = open(args.text_prompt[0], 'r').readlines()
         args.text_prompt = [positive_prompt.format(i.strip()) for i in text_prompt]
 
@@ -161,7 +164,7 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
 
     # ***************************** 启动量化 *****************************
     # 加载校准数据
-    calib_dataset = torch.load(dump_data_path, map_location=f'npu:{get_rank()}')
+    calib_dataset = safe_torch_load(dump_data_path, map_location=f'npu:{get_rank()}')
 
     def get_w8a8_cfg():
         _cfg = SessionConfig(
@@ -252,6 +255,14 @@ if __name__ == "__main__":
     args.ae_path = standardize_path(args.ae_path)
     args.text_encoder_name = standardize_path(args.text_encoder_name)
     args.model_path = standardize_path(args.model_path)
+
+    args.ae_path = get_valid_read_path(args.ae_path, is_dir=True)
+    args.text_encoder_name = get_valid_read_path(args.text_encoder_name, is_dir=True)
+    args.model_path = get_valid_read_path(args.model_path, is_dir=True)
+    args.cache_dir = get_write_directory(args.cache_dir)
+    args.save_img_path = get_write_directory(args.save_img_path)
+    args.quant_weight_save_folder = get_write_directory(args.quant_weight_save_folder)
+    args.quant_dump_calib_folder = get_write_directory(args.quant_dump_calib_folder)
 
     vae = CausalVAEModelWrapper(args.ae_path, dtype=torch.float16, local_files_only=True).to("npu")
     vae.vae.enable_tiling()

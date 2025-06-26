@@ -57,23 +57,6 @@ def get_dict_value_by_pos(dict_value, target_pos):
     return cur
 
 
-def walk_dict(data, parent_key=""):
-    if isinstance(data, dict):
-        for key, value in data.items():
-            if not isinstance(value, (dict, tuple, list)):
-                yield key, value, parent_key
-            else:
-                new_key = f"{parent_key}.{key}" if parent_key else key
-                yield from walk_dict(value, new_key)
-    elif isinstance(data, (tuple, list)):
-        for index, item in enumerate(data):
-            if not isinstance(item, (dict, tuple, list)):
-                yield str(index), item, parent_key
-            else:
-                new_key = f"{parent_key}.{index}" if parent_key else index
-                yield from walk_dict(item, new_key)
-
-
 def set_log_level(level="info"):
     if level.lower() in LOG_LEVELS:
         logger.setLevel(LOG_LEVELS.get(level.lower()))
@@ -140,30 +123,57 @@ def get_latest_matching_file(instance_path, pattern):
 
 
 def read_csv(file_path):
-    logger.info(f"Reading file: {file_path}")
+    logger.info(f"Reading CSV file: {file_path}")
     result = {}
-    with open_s(file_path, mode="r", newline="", encoding="utf-8") as ff:
-        for row in csv.DictReader(ff):
-            for kk, vv in row.items():
-                result.setdefault(kk, []).append(vv)
+    try:
+        with open_s(file_path, mode="r", newline="", encoding="utf-8") as ff:
+            reader = csv.DictReader(ff)
+            if not reader.fieldnames:
+                logger.error(f"CSV file {file_path} has no headers or is empty.")
+                return None
+            for row in reader:
+                for kk, vv in row.items():
+                    result.setdefault(kk, []).append(vv)
+            if not result:
+                logger.error(f"CSV file {file_path} is empty or has no valid data.")
+                return None
+    except csv.Error as e:
+        logger.error(f"CSV file {file_path} is not properly formatted: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Failed to read CSV file {file_path}: {e}")
+        return None
     return result
 
 
 def read_json(file_path):
-    logger.info(f"Reading file: {file_path}")
-    with open_s(file_path) as ff:
-        result = json.load(ff)
+    logger.info(f"Reading JSON file: {file_path}")
+    try:
+        with open_s(file_path, mode="r", encoding="utf-8") as ff:
+            result = json.load(ff)
+            if not isinstance(result, dict):
+                logger.error(f"JSON file {file_path} does not contain a JSON object.")
+                return None
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse JSON file {file_path}: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Failed to read JSON file {file_path}: {e}")
+        return None
     return result
 
 
 def read_csv_or_json(file_path):
     if not file_path or not os.path.exists(file_path):
+        logger.warning(f"File does not exist: {file_path}")
         return None
     if file_path.endswith(".json"):
         return read_json(file_path)
-    if file_path.endswith(".csv"):
+    elif file_path.endswith(".csv"):
         return read_csv(file_path)
-    return None
+    else:
+        logger.warning(f"Unsupported file format: {file_path}")
+        return None
 
 
 class UmaskWrapper:

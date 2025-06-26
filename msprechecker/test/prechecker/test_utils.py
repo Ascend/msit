@@ -24,7 +24,6 @@ from unittest.mock import patch, mock_open, MagicMock
 from msprechecker.prechecker.utils import (
     str_to_digit,
     is_deepseek_model,
-    walk_dict,
     same,
     get_dict_value_by_pos,
     set_log_level,
@@ -58,13 +57,6 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(is_deepseek_model("DeepSeek-Model"))
         self.assertTrue(is_deepseek_model("deepseek_model"))
         self.assertFalse(is_deepseek_model("other_model"))
-
-    def test_walk_dict(self):
-        test_dict = {"a": 1, "b": {"c": 2, "d": [3, 4]}}
-        result = list(walk_dict(test_dict))
-        self.assertEqual(len(result), 4)
-        self.assertIn(("a", 1, ""), result)
-        self.assertIn(("c", 2, "b"), result)
 
     def test_same(self):
         self.assertTrue(same([1, 1, 1]))

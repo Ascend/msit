@@ -32,6 +32,8 @@ from FLUX1dev import FluxPipeline
 from FLUX1dev import get_local_rank, get_world_size, initialize_torch_distributed
 from FLUX1dev.utils import check_prompts_valid, check_param_valid, check_dir_safety, check_file_safety
 
+from ascend_utils.common.security.pytorch import safe_torch_load
+from ascend_utils.common.security import get_write_directory, get_valid_write_path, json_safe_load, json_safe_dump
 from msmodelslim.quant import quant_model, SessionConfig, FA3ProcessorConfig, W8A8DynamicQuantConfig, \
     W8A8DynamicProcessorConfig, M3ProcessorConfig, M4ProcessorConfig, M6ProcessorConfig, M6Config
 from msmodelslim.quant import W8A8TimeStepProcessorConfig, W8A8TimeStepQuantConfig, \
@@ -143,6 +145,11 @@ class PromptLoader:
                 if max_num_prompts and i == max_num_prompts:
                     break
 
+                if len(line) < 2:
+                    raise ValueError(
+                        f"Invalid line {line}. The line must have at least 2 fields, "
+                        f"but only {len(line)} field(s) found.")
+
                 prompt = line[0]
                 catagory = line[1]
                 if catagory not in self.catagories:
@@ -152,8 +159,7 @@ class PromptLoader:
                 self.prompts.append((prompt, catagory_id))
 
     def load_prompts_hpsv2(self, file_path, max_num_prompts: int):
-        with os.fdopen(os.open(file_path, os.O_RDONLY), "r") as file:
-            all_prompts = json.load(file)
+        all_prompts = json_safe_load(file_path)
         count = 0
         for style, prompts in all_prompts.items():
             for prompt in prompts:
@@ -199,7 +205,14 @@ def parse_arguments():
     parser.add_argument("--data_split_num", type=int, default=1)
     parser.add_argument("--data_split_id", type=int, default=0)
     parser.add_argument("--do_save_img", action="store_true", help="whether to save image output")
-    return parser.parse_args()
+
+    args = parser.parse_args()
+
+    # check args
+    args.save_path = get_write_directory(args.save_path)
+    args.quant_weight_save_folder = get_write_directory(args.quant_weight_save_folder)
+    args.quant_dump_calib_folder = get_write_directory(args.quant_dump_calib_folder)
+    return args
 
 
 def infer(args):
@@ -340,8 +353,7 @@ def infer(args):
         if os.path.exists(args.info_file_save_path):
             os.remove(args.info_file_save_path)
 
-        with os.fdopen(os.open(args.info_file_save_path, os.O_RDWR | os.O_CREAT, 0o640), "w") as f:
-            json.dump(image_info, f)
+        json_safe_dump(image_info, args.info_file_save_path)
         image_time_count = len(prompt_loader) - 3
 
     if args.do_quant:
@@ -395,7 +407,7 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
 
     # ***************************** 启动量化 *****************************
     # 加载校准数据
-    calib_dataset = torch.load(dump_data_path, map_location=f'npu:{get_rank()}')
+    calib_dataset = safe_torch_load(dump_data_path, map_location=f'npu:{get_rank()}')
 
     # 量化配置
     def get_timestep_cfg():

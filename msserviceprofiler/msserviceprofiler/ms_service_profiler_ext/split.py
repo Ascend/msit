@@ -70,7 +70,7 @@ def arg_parse(subparsers):
 
 
 def main(args):
-    from ms_service_profiler.parse import parse, preprocess_prof_folders
+    from ms_service_profiler.parse import parse
     from ms_service_profiler.utils.log import set_log_level
     from ms_service_profiler.plugins import custom_plugins
 
