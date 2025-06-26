@@ -132,7 +132,6 @@ def extract_model_config_params(model_weight_path):
     return model_params, model_weight_size
 
 
-
 def check_vaild_smi_output(output):
     header_line = None
     for line in output.splitlines():
@@ -219,7 +218,7 @@ def cal_npu_gm_memory(npu_id):
         for line in output.splitlines():
             # Match M capacity line (e.g. "xxM Capacity(MB) : 65536")
             capacity_match = re.match(
-                r".*M Capacity\(MB\)\s*:\s*(\d+)\s*$",
+                r"^[^M]*M Capacity\(MB\)\s*:\s*(\d+)\s*$",
                 line.strip()
             )
             if capacity_match:
@@ -228,7 +227,7 @@ def cal_npu_gm_memory(npu_id):
 
             # Match M Usage line (e.g. "xxM Usage Rate(%) : 5")
             usage_match = re.match(
-                r".*M Usage Rate\(%\)\s*:\s*(\d+)\s*$",
+                r"^[^M]*M Usage Rate\(%\)\s*:\s*(\d+)\s*$",
                 line.strip()
             )
             if usage_match:
