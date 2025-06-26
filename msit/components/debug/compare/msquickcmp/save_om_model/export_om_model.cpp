@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2024-2025. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <cstring>
 #include <memory>
 #include <iostream>
@@ -17,7 +33,8 @@ constexpr mode_t WRITE_FILE_NOT_PERMITTED = S_IWGRP | S_IWOTH | S_IROTH | S_IXOT
 
 std::string GetAbsPath(const std::string &originPath);
 
-bool IsSameOwner(const std::string& path) {
+bool IsSameOwner(const std::string& path)
+{
     std::string absPath = GetAbsPath(path);
     struct stat buf;
     if (stat(absPath.c_str(), &buf)) {
@@ -31,7 +48,8 @@ bool IsSameOwner(const std::string& path) {
     return true;
 }
 
-bool OthersWritable(const std::string& path) {
+bool OthersWritable(const std::string& path)
+{
     struct stat path_stat;
     if (stat(path.c_str(), &path_stat) != 0) {
         std::cerr << "file not exists";
@@ -41,7 +59,8 @@ bool OthersWritable(const std::string& path) {
     return ((permissions & WRITE_FILE_NOT_PERMITTED) > 0);
 }
 
-bool ParentWritable(const std::string& path) {
+bool ParentWritable(const std::string& path)
+{
     if (!IsSameOwner(path) || OthersWritable(path)) {
         return false;
     }
@@ -114,7 +133,8 @@ std::string GetAbsPath(const std::string &originPath)
     return resolvedPath;
 }
 
-std::string GetParentDir(const std::string& path) {
+std::string GetParentDir(const std::string& path)
+{
     size_t found = path.find_last_of('/');
     if (found != std::string::npos) {
         return path.substr(0, found);
@@ -135,7 +155,8 @@ std::string GetRoot(const std::string& path, int max_depth = 200)
     return GetRoot(parentDir, max_depth - 1);  // 递归向上查找
 }
 
-void ParentCheck(const std::string& file_path) {
+void ParentCheck(const std::string& file_path)
+{
     std::string parent_dir = GetRoot(GetAbsPath(file_path));
     if (parent_dir.empty()) {
         return;
@@ -145,7 +166,6 @@ void ParentCheck(const std::string& file_path) {
         std::cerr << "Parent directory has incorrect permissions: " << parent_dir << std::endl;
         throw std::runtime_error("Parent directory permission check failed.");
     }
-
 }
 
 bool SaveOM(const void *model, size_t length, const std::string &file_path)
