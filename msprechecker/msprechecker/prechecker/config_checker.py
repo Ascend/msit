@@ -13,7 +13,10 @@
 # limitations under the License.
 
 import os
+import shlex
+import subprocess
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 
 import yaml
 from msguard.security import open_s
@@ -21,12 +24,14 @@ from msguard.security import open_s
 from msprechecker.prechecker.register import PrecheckerBase, show_check_result, CheckResult, check_file_permission
 from msprechecker.prechecker.utils import (
     parse_mindie_server_config,
-    parse_ranktable_file,
     get_model_path_from_mindie_config,
     get_mindie_server_config,
     is_deepseek_model,
     read_csv_or_json,
     logger,
+    extract_info_from_rank_table,
+    get_current_ip_and_addr,
+    npu_count
 )
 from msprechecker.prechecker.suggestions import DOMAIN, NOT_EMPTY_VALUE
 from msprechecker.core.utils import ResultStatus
@@ -74,11 +79,67 @@ class RankTableChecker(ConfigCheckerBase):
     __checker_name__ = "RankTable"
 
     def __init__(self):
+        _, self.ip = get_current_ip_and_addr()
         super().__init__(domain=DOMAIN.ranktable)
+
+    @staticmethod
+    def _get_device_ip_from_hccn_tools(device_id):
+        hccn_tool_cmd_template = "hccn_tool -i {} -ip -g"
+        hccn_tool_cmd = hccn_tool_cmd_template.format(device_id)
+        
+        try:
+            output = subprocess.check_output(
+                shlex.split(hccn_tool_cmd),
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=3
+            )
+        except Exception:
+            output = ""
+        
+        fields = output.split()
+        if len(fields) != 2:
+            logger.debug("Invalid output from %r: %s", hccn_tool_cmd, output)
+            return output
+        
+        ipaddr = fields[0]
+        if ":" not in ipaddr:
+            logger.debug("Invalid output from %r: %s", hccn_tool_cmd, output)
+            return output
+
+        return ipaddr.split(':')[1]
 
     def collect_env(self, ranktable_file=None, **kwargs):
         self.config_path = ranktable_file
-        return parse_ranktable_file(self.config_path)
+        if not self.config_path:
+            return {}
+        
+        return extract_info_from_rank_table(self.config_path)
+    
+    def do_precheck(self, envs, additional_checks=None, **kwargs):
+        if not envs:
+            return
+        
+        if self.ip not in envs:
+            show_check_result(
+                "hccl", "server_id", CheckResult.ERROR,
+                action="检查 rank table 的 server_id 是否有本机 IP",
+                reason=f"当前 rank table 中未发现当前主机 IP 相关数据：{set(envs)}",
+            )
+            return
+
+        current_device_ips = list(envs[self.ip].values())
+
+        npus = npu_count()
+        with ThreadPoolExecutor(max_workers=npus) as executor:
+            results = list(executor.map(self._get_device_ip_from_hccn_tools, range(npus)))
+            if results != current_device_ips:
+                show_check_result(
+                "hccl", "device_ip", CheckResult.ERROR,
+                action=f"修改 device ip 为： {results}",
+                reason=f"当前 rank table 中，当前主机的 device ip 和实际 device ip 不匹配： {current_device_ips}",
+            )
+            return
 
 
 class ModelConfigChecker(ConfigCheckerBase):

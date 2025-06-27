@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "msprechecker"
-version = "0.0.5"
+version = "0.0.6"
 description = "MindStudio Prechecker"
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -21,6 +21,7 @@ classifiers = [
 dependencies = [
     "pyyaml",
     "psutil",
+    "msguard",
     "importlib_metadata; python_version == '3.7'"
 ]
 

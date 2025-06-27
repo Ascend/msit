@@ -176,17 +176,16 @@ class TestSystemInfoCollect(unittest.TestCase):
 
 
 class TestNetworkFunctions(unittest.TestCase):
-    def test_get_interface_by_ip(self):
-        psutil_mock = MagicMock()
+    @patch("msprechecker.prechecker.utils.psutil")
+    def test_get_interface_by_ip(self, psutil_mock):
+        psutil_mock.net_if_addrs.return_value = {
+            'eth0': [MagicMock(family=socket.AF_INET, address='192.168.1.1')],
+            'lo': [MagicMock(family=socket.AF_INET, address='127.0.0.1')]
+        }
 
-        with patch.dict("sys.modules", {"psutil": psutil_mock}):
-            psutil_mock.net_if_addrs.return_value = {
-                'eth0': [MagicMock(family=socket.AF_INET, address='192.168.1.1')],
-                'lo': [MagicMock(family=socket.AF_INET, address='127.0.0.1')]
-            }
-            interface, ip = get_interface_by_ip('192.168.1.1')
-            self.assertEqual(interface, 'eth0')
-            self.assertEqual(ip, '192.168.1.1')
+        interface, ip = get_interface_by_ip('192.168.1.1')
+        self.assertEqual(interface, 'eth0')
+        self.assertEqual(ip, '192.168.1.1')
 
 
 class TestVersion(unittest.TestCase):

@@ -17,15 +17,9 @@ import platform
 
 from msguard.security import open_s
 
-from msprechecker.prechecker.register import register_checker, GroupPrechecker, PrecheckerBase
+from msprechecker.prechecker.register import GroupPrechecker, PrecheckerBase
 from msprechecker.prechecker.register import show_check_result, record, CONTENT_PARTS, CheckResult
-from msprechecker.prechecker.utils import get_dict_value_by_pos, str_to_digit, logger, run_shell_command
-
-try:
-    import acl
-except ImportError:
-    logger.warning("Import acl error, will skip getting NPU info. Install and source cann toolkit if needed")
-    acl = None
+from msprechecker.prechecker.utils import str_to_digit, logger, run_shell_command
 
 
 DRIVER_VERSION_PATH = "/usr/local/Ascend/driver/version.info"
