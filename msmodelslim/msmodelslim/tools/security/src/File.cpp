@@ -202,7 +202,7 @@ bool File::CheckOwner(const std::string &path)
 {
     std::string absPath = GetAbsPath(path);
     struct stat buf;
-    if (stat(absPath.c_str(), &buf)) {
+    if (bool(stat(absPath.c_str(), &buf))) {
         ERROR_LOG("get file stat failed");
         return false;
     }

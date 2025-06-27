@@ -17,16 +17,11 @@
 #ifndef CORE_LOG_H
 #define CORE_LOG_H
 
-#include <vector>
 #include <string>
 #include <map>
 #include <memory>
 #include <ostream>
 #include <iostream>
-#include <cstdarg>
-#include <execinfo.h>
-
-using namespace std;
 
 #define FILELINE __FILE__, __FUNCTION__, __LINE__
 

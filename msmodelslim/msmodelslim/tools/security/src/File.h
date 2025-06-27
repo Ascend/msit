@@ -68,7 +68,7 @@ public:
     static std::string GetParentDir(const std::string& path);
     // 获取绝对路径
     static std::string GetFullPath(const std::string &originPath);
-    static std::string GetAbsPath(const std::string &path);
+    static std::string GetAbsPath(const std::string &originPath);
     // 路径长度校验
     static bool IsPathLengthLegal(const std::string& path);
     // 路径字符校验

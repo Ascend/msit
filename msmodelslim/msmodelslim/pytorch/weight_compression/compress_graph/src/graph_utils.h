@@ -25,16 +25,14 @@
 #define SUCCESS 0
 
 using namespace ge;
-using std::vector;
-using std::string;
 
 namespace GraphUtils {
-int CheckShape(vector<int64_t> &shape);
+int CheckShape(std::vector<int64_t> &shape);
 
-void GetDataSizeFromShape(vector<int64_t> shape, int64_t &size);
+void GetDataSizeFromShape(std::vector<int64_t> shape, int64_t &size);
 
-bool GetDataFromBin(string input_path, vector<int64_t> shapes, uint8_t** data, int data_type_size);
+bool GetDataFromBin(std::string input_path, std::vector<int64_t> shapes, uint8_t** data, int data_type_size);
 
-int32_t BuildCompressFcGraph(Graph &graph, uint8_t* data, vector<int64_t> &shape, vector<int64_t> &compressParameters);
+int32_t BuildCompressFcGraph(Graph &graph, uint8_t* data, std::vector<int64_t> &shape, std::vector<int64_t> &compressParameters);
 }
 #endif // DAVINCI_GRAPH_UTILS_H
