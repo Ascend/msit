@@ -75,13 +75,14 @@ int WriteDataToFile(const char *filePath, const T *data, size_t count)
     return success ? SUCCESS : FAILED;
 }
 
-int RunCompressGraph(ge::Session *session, uint8_t *data, vector<int64_t> &shape, vector<int64_t> &compressParameters,
+static int RunCompressGraph(ge::Session *session, uint8_t *data, vector<int64_t> &shape, 
+                     vector<int64_t> &compressParameters,
                      vector<string> paths)
 {
     uint32_t compressFc_graph_id = 1;
     Graph compressFcGraph("compressFc Graph");
     // Build graph
-    int ret = BuildCompressFcGraph(compressFcGraph, data, shape, compressParameters);
+    int ret = GraphUtils::BuildCompressFcGraph(compressFcGraph, data, shape, compressParameters);
     if (ret != SUCCESS) {
         std::cout << "Generate compressFc Graph failed." << std::endl;
         return FAILED;
@@ -121,15 +122,17 @@ int RunCompressGraph(ge::Session *session, uint8_t *data, vector<int64_t> &shape
     ret = WriteDataToFile<int8_t>(paths[OUTPUT_WEIGHT_PATH_INDEX].c_str(),
                                   reinterpret_cast<int8_t *>(output_mm[OUTPUT_WEIGHT_PATH_INDEX].GetData()),
                                   outputWeightSize);
-    if (ret != SUCCESS)
+    if (ret != SUCCESS) {
         return FAILED;
+    }
 
     // Write index to file
     ret = WriteDataToFile<uint8_t>(paths[INDEX_PATH_INDEX].c_str(),
                                    reinterpret_cast<uint8_t *>(output_mm[INDEX_PATH_INDEX].GetData()),
                                    output_mm[1].GetSize());
-    if (ret != SUCCESS)
+    if (ret != SUCCESS) {
         return FAILED;
+    }
 
     // Write compress info to file
     int compressInfoSize = 3;
@@ -143,7 +146,7 @@ int RunCompressGraph(ge::Session *session, uint8_t *data, vector<int64_t> &shape
     return SUCCESS;
 }
 
-int RunSession(uint8_t *data, vector<int64_t> &shape, vector<string> paths, vector<int64_t> &compressParameters)
+static int RunSession(uint8_t *data, vector<int64_t> &shape, vector<string> paths, vector<int64_t> &compressParameters)
 {
     // System init
     std::map<AscendString, AscendString> config = {
@@ -181,7 +184,7 @@ int RunSession(uint8_t *data, vector<int64_t> &shape, vector<string> paths, vect
     return SUCCESS;
 }
 
-bool CheckInputsStollValid(int argc, char *argv[])
+static bool CheckInputsStollValid(int argc, char *argv[])
 {
     if (argc != NUMBER_12) {
         std::cout << "Please check your input params count is 11." << std::endl;
@@ -229,12 +232,12 @@ int main(int argc, char *argv[])
 
     vector<string> paths = {outputWeightPath, indexPath, compressInfoPath};
     vector<int64_t> inputWeightShape = {dimK, dimN, 16, 32};
-    if (CheckShape(inputWeightShape) == FAILED) {
+    if (GraphUtils::CheckShape(inputWeightShape) == FAILED) {
         std::cout << "Invalid shape. Please check your input dimK(" << dimK << ") dimN(" << dimN << ")." << std::endl;
     }
     uint8_t *data = nullptr;
     int64_t compress_size = 1;
-    GetDataSizeFromShape(inputWeightShape, compress_size);
+    GraphUtils::GetDataSizeFromShape(inputWeightShape, compress_size);
     int64_t tileNumN = (inputWeightShape[1] + 8 - 1) / 8;
     int64_t tileNumK = (inputWeightShape[0] + 8 - 1) / 8;
     int64_t indexBaseSize = isTight ? 8 : 2;
@@ -255,7 +258,7 @@ int main(int argc, char *argv[])
     vector<int64_t> compressParameters = {compress_size, index_size, isTight, 4, 2, 64, k_value,
                                           n_value, 1, compressType, isTiling};
     try {
-        if (!GetDataFromBin(inputWeightPath, inputWeightShape, &data, sizeof(int8_t))) {
+        if (!GraphUtils::GetDataFromBin(inputWeightPath, inputWeightShape, &data, sizeof(int8_t))) {
             delete[] data;
             data = nullptr;
             std::cout << "read file failed.\n";
