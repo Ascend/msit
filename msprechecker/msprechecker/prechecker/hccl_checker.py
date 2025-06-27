@@ -21,6 +21,13 @@ from msprechecker.prechecker.utils import parse_ranktable_file, run_shell_comman
 
 _DAVINCI_DEVICES = sorted(glob("/dev/davinci*"))
 NPU_DEVICES = [int(ii.split("davinci")[-1]) for ii in _DAVINCI_DEVICES if str.isdigit(ii.split("davinci")[-1])]
+INDENT = " " * 6
+ACTION_WHEN_NO_DATA_COLLECTED = (
+    f"解决方案：1. 通过 `-ranktable` 提供 ranktable\n{INDENT}2. 在容器外检查\n{INDENT}3. 检查 hccn_tool"
+)
+REASON_WHEN_NO_DATA_COLLECTED = (
+    f"可能原因：1. ranktable 中没有找到远端 device ip 的信息\n{INDENT}2. 当前环境没有 hccn_tool\n{INDENT}3. 执行失败"
+)
 
 
 def run_hccl_command(command_formatter):
@@ -60,8 +67,8 @@ class HcclIfnameChecker(PrecheckerBase):
                 "hccl",
                 "lldp Ifname",
                 CheckResult.UNFINISH,
-                action="需要在主机执行该检查",
-                reason="当前没有 hccn_tool 命令或执行失败",
+                action=ACTION_WHEN_NO_DATA_COLLECTED,
+                reason=REASON_WHEN_NO_DATA_COLLECTED
             )
             return
         if not all(len(ii) > 0 for ii in envs):
@@ -99,8 +106,8 @@ class HcclLinkChecker(PrecheckerBase):
                 "hccl",
                 "lldp Ifname",
                 CheckResult.UNFINISH,
-                action="需要在主机执行该检查",
-                reason="当前没有 hccn_tool 命令或执行失败",
+                action=ACTION_WHEN_NO_DATA_COLLECTED,
+                reason=REASON_WHEN_NO_DATA_COLLECTED
             )
             return
         if not all(ii == "UP" for ii in envs):
@@ -138,8 +145,8 @@ class HcclTlsSwitchChecker(PrecheckerBase):
                 "hccl",
                 "tls switch",
                 CheckResult.UNFINISH,
-                action="需要在主机执行该检查",
-                reason="当前没有 hccn_tool 命令或执行失败",
+                action=ACTION_WHEN_NO_DATA_COLLECTED,
+                reason=REASON_WHEN_NO_DATA_COLLECTED
             )
             return
         if not all(ii == "0" for ii in envs):
@@ -199,10 +206,11 @@ class HcclPingChecker(PrecheckerBase):
                 "hccl",
                 "ping",
                 CheckResult.UNFINISH,
-                action="需要在主机执行该检查",
-                reason="当前没有 hccn_tool 命令或执行失败",
+                action=ACTION_WHEN_NO_DATA_COLLECTED,
+                reason=REASON_WHEN_NO_DATA_COLLECTED
             )
             return
+        
         for server_ip, device_connect_result in envs.items():
             if server_ip == self.local_ip:
                 continue

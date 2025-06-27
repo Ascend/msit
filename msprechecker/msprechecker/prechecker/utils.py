@@ -16,13 +16,14 @@ import os
 import sys
 import json
 import csv
-import errno
 import socket
 import logging
+import itertools
 import time
 import re
 from collections import namedtuple
 
+import psutil
 from msguard.security import open_s
 
 
@@ -246,14 +247,51 @@ def get_model_path_from_mindie_config(mindie_service_config=None, mindie_service
 
 
 def get_interface_by_ip(local_ip):
-    import psutil
-
     local_ip_list = local_ip if isinstance(local_ip, (list, tuple)) else [local_ip]
     for interface, addrs in psutil.net_if_addrs().items():
         for addr in addrs:
             if addr.family == socket.AF_INET and addr.address in local_ip_list:
                 return interface, addr.address
     return None, None
+
+
+def get_current_ip_and_addr():
+    for interface, addrs in psutil.net_if_addrs().items():
+        if any(interface.startswith(prefix) for prefix in ("docker", "lo")):
+            continue
+        for addr in addrs:
+            if addr.family == socket.AF_INET and not addr.address.startswith("127"):
+                return interface, addr.address
+    return "", ""
+
+
+def extract_info_from_rank_table(rank_table_file):
+    with open_s(rank_table_file) as f:
+        rank_table = json.load(f)
+
+    ip_to_rank_id = {}
+    for server in rank_table.get("server_list", []):
+        server_id = server["server_id"]
+
+        rank_id_to_device_ip = {}
+        ip_to_rank_id[server_id] = rank_id_to_device_ip
+    
+        for device in server.get("device", []):
+            rank_id = device.get("rank_id")
+            device_ip = device.get("device_ip")
+            rank_id_to_device_ip[rank_id] = device_ip
+
+    return ip_to_rank_id
+
+
+def npu_count():
+    davinci_path_template = "/dev/davinci{}"
+
+    for device_id in itertools.count(0):
+        if not os.path.exists(davinci_path_template.format(device_id)):
+            break
+
+    return device_id
 
 
 def run_shell_command(command, fail_msg="", print_error=True):

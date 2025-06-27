@@ -24,6 +24,8 @@ from msprechecker.prechecker.hccl_checker import (
     HcclTlsSwitchChecker,
     HcclPingChecker,
     CheckResult,
+    ACTION_WHEN_NO_DATA_COLLECTED,
+    REASON_WHEN_NO_DATA_COLLECTED
 )
 
 
@@ -53,8 +55,8 @@ class TestHcclIfnameChecker(unittest.TestCase):
             "hccl",
             "lldp Ifname",
             CheckResult.UNFINISH,
-            action="需要在主机执行该检查",
-            reason="当前没有 hccn_tool 命令或执行失败",
+            action=ACTION_WHEN_NO_DATA_COLLECTED,
+            reason=REASON_WHEN_NO_DATA_COLLECTED
         )
 
     @patch('msprechecker.prechecker.hccl_checker.show_check_result')
@@ -96,8 +98,8 @@ class TestHcclLinkChecker(unittest.TestCase):
             "hccl",
             "lldp Ifname",
             CheckResult.UNFINISH,
-            action="需要在主机执行该检查",
-            reason="当前没有 hccn_tool 命令或执行失败",
+            action=ACTION_WHEN_NO_DATA_COLLECTED,
+            reason=REASON_WHEN_NO_DATA_COLLECTED
         )
 
     @patch('msprechecker.prechecker.hccl_checker.show_check_result')
@@ -139,8 +141,8 @@ class TestHcclTlsSwitchChecker(unittest.TestCase):
             "hccl",
             "tls switch",
             CheckResult.UNFINISH,
-            action="需要在主机执行该检查",
-            reason="当前没有 hccn_tool 命令或执行失败",
+            action=ACTION_WHEN_NO_DATA_COLLECTED,
+            reason=REASON_WHEN_NO_DATA_COLLECTED
         )
 
     @patch('msprechecker.prechecker.hccl_checker.show_check_result')
@@ -206,8 +208,8 @@ class TestHcclPingChecker(unittest.TestCase):
             "hccl",
             "ping",
             CheckResult.UNFINISH,
-            action="需要在主机执行该检查",
-            reason="当前没有 hccn_tool 命令或执行失败",
+            action=ACTION_WHEN_NO_DATA_COLLECTED,
+            reason=REASON_WHEN_NO_DATA_COLLECTED
         )
 
     @patch('msprechecker.prechecker.hccl_checker.show_check_result')

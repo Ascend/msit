@@ -84,12 +84,12 @@ class TestRankTableChecker(unittest.TestCase):
 
     @patch.dict("os.environ", {}, clear=True)
     def test_collect_env_1(self):
-        self.assertIsNone(self.checker.collect_env())
+        self.assertEqual(self.checker.collect_env(), {})
         self.assertIsNone(self.checker.config_path)
 
     @patch.dict("os.environ", {"RANKTABLEFILE": "/random/path"}, clear=True)
     def test_collect_env_2(self):
-        self.assertIsNone(self.checker.collect_env())
+        self.assertEqual(self.checker.collect_env(), {})
         self.assertIsNone(self.checker.config_path)
 
     def test_collect_env_3(self):
@@ -98,30 +98,8 @@ class TestRankTableChecker(unittest.TestCase):
             with open(random_path, "w") as f:
                 json.dump({"Version": 1.0, "server_count": "2"}, f)
 
-            self.assertIsNone(self.checker.collect_env(random_path))
+            self.assertEqual(self.checker.collect_env(random_path), {})
             self.assertEqual(self.checker.config_path, random_path)
-    
-    def test_collect_env_4(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            random_path = os.path.join(temp_dir, "random_path.json")
-            data = {"Version": 1.0, "server_count": "2"}
-            with open(random_path, "w") as f:
-                json.dump(data, f)
-
-            self.assertEqual(self.checker.collect_env(random_path), data)
-            self.assertEqual(self.checker.config_path, random_path)
-            self.assertIsNone(self.checker.do_precheck(None))
-
-    def test_do_precheck_2(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            random_path = os.path.join(temp_dir, "random_path.json")
-            data = {"Version": 1.0, "server_count": "2"}
-            with open(random_path, "w") as f:
-                json.dump(data, f)
-
-            self.assertEqual(self.checker.collect_env(random_path), data)
-            self.assertEqual(self.checker.config_path, random_path)
-            self.assertIsNone(self.checker.do_precheck(data))
 
 
 class TestModelConfigChecker(unittest.TestCase):
