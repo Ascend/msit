@@ -66,29 +66,65 @@ class SimulateVllm:
             SimulateVllm.first = False
             simulate.sub_thread = threading.Thread(target=write_file, args=(file_log,))
             simulate.sub_thread.start()
- 
+
+    @staticmethod
+    def get_batch_stage(model_input):
+        if model_input.is_prompt:
+            return BatchStage.PREFILL
+        return BatchStage.DECODE
+        
+    @staticmethod
+    def get_all_need_blocks(model_input):
+        if model_input.attn_metadata.block_tables is None:
+            return torch.zeros((len(model_input.seq_lens), 1))
+        return torch.count_nonzero(model_input.attn_metadata.block_tables > -1, dim=-1)
+
+    @staticmethod
+    def get_seq_id_to_req(model_input):
+        _seq_id_to_req = {}
+        for _req_id, _seq_ids in model_input.request_ids_to_seq_ids.items():
+            for _id in _seq_ids:
+                _seq_id_to_req[_id] = _req_id
+        return _seq_id_to_req
+    
+
+    @staticmethod
+    def get_cur_req_id(_seq_id_to_req, _seq_id):
+        _cur_req_id = _seq_id_to_req.get(_seq_id)
+        if _cur_req_id is None:
+            raise ValueError(f"No request ID found for sequence ID {_seq_id}.")
+        return _cur_req_id
+
+    @staticmethod
+    def get_req_input_len(_seq_group_sample, _seq_id):
+        _seq_data = _seq_group_sample.seq_data.get(_seq_id)
+        if _seq_data is not None:
+            return len(_seq_data.prompt_token_ids)
+        return 0
+
+    @staticmethod
+    def get_req_output_len(_seq_group_sample, _seq_id):
+        _seq_data = _seq_group_sample.seq_data.get(_seq_id)
+        if _seq_data is not None and hasattr(_seq_data, 'output_token_ids'):
+            return len(_seq_data.output_token_ids)
+        return 0
+
     @staticmethod
     def generate_features(model_input):
         # model_input的类是vllm_ascend.worker.model_runner.ModelInputForNPUWithSamplingMetadata
         if model_input.is_prompt is None and model_input.seq_lens is None:
             return None, None
-        if model_input.is_prompt:
-            batch_stage = BatchStage.PREFILL
-        else:
-            batch_stage = BatchStage.DECODE
-        if model_input.attn_metadata.block_tables is None:
-            all_need_blocks = torch.zeros((len(model_input.seq_lens), 1))
-        else:
-            all_need_blocks = torch.count_nonzero(model_input.attn_metadata.block_tables > -1, dim=-1)
+
+        batch_stage = SimulateVllm.get_batch_stage(model_input)
+        all_need_blocks = SimulateVllm.get_all_need_blocks(model_input)
+    
         _total_req_input_len = []
         _all_request_ids = set({})
         _req_to_input_len = defaultdict(int)
         SimulateVllm.req_to_output_len = defaultdict(int)
         _req_to_need_blocks = defaultdict(int)
-        _seq_id_to_req = {}
-        for _req_id, _seq_ids in model_input.request_ids_to_seq_ids.items():
-            for _id in _seq_ids:
-                _seq_id_to_req[_id] = _req_id
+
+        _seq_id_to_req = SimulateVllm.get_seq_id_to_req(model_input)
         for _index, _seq_group_sample in enumerate(model_input.sampling_metadata.seq_groups):
             # _seq_group_sample的类是vllm.model_executor.sampling_metadata.SequenceGroupToSample
             _stop_ids = _seq_group_sample.sampling_params.stop_token_ids
@@ -96,28 +132,20 @@ class SimulateVllm:
                 if _seq_id not in _seq_group_sample.seq_data:
                     logger.warning(f"{_seq_id} not in {_seq_group_sample.seq_data}")
                     continue
-                _cur_req_id = _seq_id_to_req.get(_seq_id)
-                if _cur_req_id is None:
-                    raise ValueError(f"No request ID found for sequence ID {_seq_id}.")
+                _cur_req_id = SimulateVllm.get_cur_req_id(_seq_id_to_req, _seq_id)
                 if _stop_ids:
                     SimulateVllm.req_to_stop_token_ids[_cur_req_id] = _stop_ids
 
-                _seq_data = _seq_group_sample.seq_data.get(_seq_id)
-                if _seq_data is not None:
-                    _req_input_len = len(_seq_data.prompt_token_ids)
-                else:
-                    _req_input_len = 0
+                _req_input_len = SimulateVllm.get_req_input_len(_seq_group_sample, _seq_id)
                 _req_to_input_len[_cur_req_id] += _req_input_len
                 _total_req_input_len.append(_req_input_len)
-                _seq_data = _seq_group_sample.seq_data.get(_seq_id)
-                if _seq_data is not None and hasattr(_seq_data, 'output_token_ids'):
-                    _req_output_len = len(_seq_data.output_token_ids)
-                else:
-                    _req_output_len = 0
+
+                _req_output_len = SimulateVllm.get_req_output_len(_seq_group_sample, _seq_id)
                 SimulateVllm.req_to_output_len[_cur_req_id] += _req_output_len
                 _req_need_block = all_need_blocks[_index].sum().item()
                 _req_to_need_blocks[_cur_req_id] += _req_need_block
                 _all_request_ids.add(_cur_req_id)
+
         request_field = []
         for _cur_id in _all_request_ids:
             request_field.append(RequestField(_req_to_input_len.get(_cur_id),

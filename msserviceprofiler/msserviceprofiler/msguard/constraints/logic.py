@@ -30,8 +30,8 @@ class FunctionConstraint(BaseConstraint):
         self.func = func
         self.description = description or func.__name__
 
-    def _is_satisfied_by(self, val):
-        result = self.func(val)
+    def _is_satisfied_by(self, path):
+        result = self.func(path)
 
         if not isinstance(result, bool):
             raise TypeError("The function must return a boolean value.")
@@ -46,8 +46,8 @@ class AndConstraint(BaseConstraint):
     def __str__(self):
         return "\nand ".join(f"{c}" for c in self.constraints)
 
-    def _is_satisfied_by(self, val):
-        return all(c.is_satisfied_by(val) for c in self.constraints)
+    def _is_satisfied_by(self, path):
+        return all(c.is_satisfied_by(path) for c in self.constraints)
 
 
 class OrConstraint(BaseConstraint):
@@ -58,8 +58,8 @@ class OrConstraint(BaseConstraint):
     def __str__(self):
         return "\nor ".join(f"{c}" for c in self.constraints)
 
-    def _is_satisfied_by(self, val):
-        return any(c.is_satisfied_by(val) for c in self.constraints)
+    def _is_satisfied_by(self, path):
+        return any(c.is_satisfied_by(path) for c in self.constraints)
     
     
 class NotConstraint(BaseConstraint):
@@ -68,8 +68,8 @@ class NotConstraint(BaseConstraint):
         self.constraint = constraint
         self.description = f"not {self.constraint.description}"
 
-    def _is_satisfied_by(self, val):
-        return not self.constraint.is_satisfied_by(val)
+    def _is_satisfied_by(self, path):
+        return not self.constraint.is_satisfied_by(path)
 
 
 class IfElseConstraint(BaseConstraint):
@@ -91,9 +91,9 @@ class IfElseConstraint(BaseConstraint):
     def __str__(self):
         return f"{self.if_constraint if self.condition_res else self.else_constraint}"
 
-    def _is_satisfied_by(self, val):
-        if self.condition.is_satisfied_by(val):
+    def _is_satisfied_by(self, path):
+        if self.condition.is_satisfied_by(path):
             self.condition_res = True
-            return self.if_constraint.is_satisfied_by(val)
+            return self.if_constraint.is_satisfied_by(path)
         else:
-            return self.else_constraint.is_satisfied_by(val)
+            return self.else_constraint.is_satisfied_by(path)
