@@ -1,5 +1,7 @@
 # Copyright Huawei Technologies Co., Ltd. 2024-2024. All rights reserved.
 
+import os
+import sys
 import argparse
 import json
 from typing import List
@@ -10,8 +12,11 @@ import torch
 
 from safetensors.torch import load_file, save_file
 
-from ascend_utils.common.security import get_valid_write_path, SafeWriteUmask, \
-                                         get_valid_read_path
+current_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.abspath(os.path.join(current_directory, '..'))
+sys.path.append(parent_directory)
+
+from example.common.security.path import get_valid_write_path, SafeWriteUmask, get_valid_read_path
 
 TOOL_AWQ = 'awq'
 TOOL_GPTQ = 'gptq'

@@ -28,7 +28,7 @@ from opensora.models.diffusion.opensora.modeling_opensora import OpenSoraT2V
 from opensora.utils.utils import save_video_grid
 from opensora.npu_config import npu_config
 
-from ascend_utils.common.security import get_write_directory, get_valid_write_path, get_valid_read_path, json_safe_load
+from example.common.security.path import get_write_directory, get_valid_write_path, get_valid_read_path, json_safe_load
 from example.osp1_2.model.model_open_sora_plan1_2_sp import OpenSoraPipelineV1x2
 from msmodelslim.tools.logger import logger
 

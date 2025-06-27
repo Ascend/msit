@@ -10,7 +10,7 @@ parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
 sys.path.append(parent_directory)
 
 from example.common.utils import cmd_bool
-from ascend_utils.common.security import get_valid_read_path, get_write_directory
+from example.common.security.path import get_valid_read_path, get_write_directory
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 

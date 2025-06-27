@@ -12,7 +12,7 @@ from safetensors.torch import load_file, save_file
 from safetensors import safe_open
 
 from add_safetensors import find_file_with_pattern, get_weight_map
-from ascend_utils.common.security import json_safe_load, json_safe_dump
+from example.common.security.path import json_safe_load, json_safe_dump
 
 
 READ_ONLY_PERMISSION = 0o400

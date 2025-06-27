@@ -19,8 +19,8 @@ from hyvideo.config import (
 from hyvideo.inference import HunyuanVideoSampler
 from mindiesd import CacheConfig, CacheAgent
 
-from ascend_utils.common.security.pytorch import safe_torch_load
-from ascend_utils.common.security import get_write_directory, get_valid_read_path
+from example.common.security.pytorch import safe_torch_load
+from example.common.security.path import get_write_directory, get_valid_read_path
 from msmodelslim.quant import quant_model, SessionConfig, FA3ProcessorConfig, W8A8DynamicQuantConfig, \
     W8A8DynamicProcessorConfig, M3ProcessorConfig, M4ProcessorConfig, M6ProcessorConfig, M6Config
 from msmodelslim.quant import W8A8TimeStepProcessorConfig, W8A8TimeStepQuantConfig, \

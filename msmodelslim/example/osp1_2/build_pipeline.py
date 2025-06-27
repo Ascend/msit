@@ -20,7 +20,7 @@ from opensora.npu_config import npu_config
 from opensora.acceleration.parallel_states import initialize_sequence_parallel_state, get_sequence_parallel_state
 from opensora.sample.pipeline_opensora_sp import OpenSoraPipeline
 
-from ascend_utils.common.security.path import get_valid_read_path, get_write_directory
+from example.common.security.path import get_valid_read_path, get_write_directory
 from example.osp1_2.model.model_open_sora_plan1_2_sp import OpenSoraPipelineV1x2
 from msmodelslim.tools.logger import logger
 

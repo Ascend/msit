@@ -32,8 +32,8 @@ from FLUX1dev import FluxPipeline
 from FLUX1dev import get_local_rank, get_world_size, initialize_torch_distributed
 from FLUX1dev.utils import check_prompts_valid, check_param_valid, check_dir_safety, check_file_safety
 
-from ascend_utils.common.security.pytorch import safe_torch_load
-from ascend_utils.common.security import get_write_directory, get_valid_write_path, json_safe_load, json_safe_dump
+from example.common.security.pytorch import safe_torch_load
+from example.common.security.path import get_write_directory, get_valid_write_path, json_safe_load, json_safe_dump
 from msmodelslim.quant import quant_model, SessionConfig, FA3ProcessorConfig, W8A8DynamicQuantConfig, \
     W8A8DynamicProcessorConfig, M3ProcessorConfig, M4ProcessorConfig, M6ProcessorConfig, M6Config
 from msmodelslim.quant import W8A8TimeStepProcessorConfig, W8A8TimeStepQuantConfig, \

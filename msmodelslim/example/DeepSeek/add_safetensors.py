@@ -10,7 +10,7 @@ from safetensors.torch import save_file
 
 from convert_fp8_to_bf16 import weight_dequant
 
-from ascend_utils.common.security import json_safe_load, json_safe_dump, get_valid_read_path, get_valid_write_path, \
+from example.common.security.path import json_safe_load, json_safe_dump, get_valid_read_path, get_valid_write_path, \
     MAX_READ_FILE_SIZE_512G
 from msmodelslim import logger as msmodelslim_logger
 

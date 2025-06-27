@@ -8,7 +8,7 @@ import torch
 from safetensors.torch import load_file
 from tqdm import tqdm
 
-from ascend_utils.common.security import json_safe_load, get_valid_read_path, MAX_READ_FILE_SIZE_32G
+from example.common.security.path import json_safe_load, get_valid_read_path, MAX_READ_FILE_SIZE_32G
 from msmodelslim import logger as msmodelslim_logger
 from msmodelslim.pytorch.llm_ptq.accelerate_adapter import replace_device_align_hook_if_needed
 from msmodelslim.pytorch.llm_ptq.accelerate_adapter.hook_adapter import get_offloaded_weights_loader_if_have
