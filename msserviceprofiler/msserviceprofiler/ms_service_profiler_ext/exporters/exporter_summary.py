@@ -43,6 +43,13 @@ def process_each_record(req_map, batch_map, record):
 def process_batch_record(batch_map, record):
     batch_type = record.get('batch_type')
     rid_tuple = str(record.get('rid_list'))
+    batch_size = 0
+    during_time = 0.0
+    try:
+        batch_size = int(record.get('batch_size', 0))
+        during_time = float(record.get('during_time', 0)) / 1000
+    except Exception as e:
+        logger.warning(f"Invaid record data: {e}")
 
     # 构建batch_map
     if batch_type == 'Prefill':
@@ -52,8 +59,8 @@ def process_batch_record(batch_map, record):
                 BatchCSVFields.PREFILL_BATCH_NUM: 0,
                 BatchCSVFields.PREFILL_EXEC_TIME: 0.0
             }
-        batch_map[prefill_key][BatchCSVFields.PREFILL_BATCH_NUM] = int(record.get('batch_size'))
-        batch_map[prefill_key][BatchCSVFields.PREFILL_EXEC_TIME] += float(record.get('during_time')) / 1000
+        batch_map[prefill_key][BatchCSVFields.PREFILL_BATCH_NUM] = batch_size
+        batch_map[prefill_key][BatchCSVFields.PREFILL_EXEC_TIME] += during_time
 
     if batch_type == 'Decode':
         decode_key = f"decode_{rid_tuple}"
@@ -62,8 +69,8 @@ def process_batch_record(batch_map, record):
                 BatchCSVFields.DECODE_BATCH_NUM: 0,
                 BatchCSVFields.DECODE_EXEC_TIME: 0.0
             }
-        batch_map[decode_key][BatchCSVFields.DECODE_BATCH_NUM] = int(record.get('batch_size'))
-        batch_map[decode_key][BatchCSVFields.DECODE_EXEC_TIME] += float(record.get('during_time')) / 1000
+        batch_map[decode_key][BatchCSVFields.DECODE_BATCH_NUM] = batch_size
+        batch_map[decode_key][BatchCSVFields.DECODE_EXEC_TIME] += during_time
 
 
 def process_req_record(req_map, record):
