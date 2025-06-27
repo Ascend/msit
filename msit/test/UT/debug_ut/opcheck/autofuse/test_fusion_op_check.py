@@ -39,7 +39,8 @@ class TestFuseOpChecker(unittest.TestCase):
         mock_module = MagicMock()
         mock_module_from_spec.return_value = mock_module
         file_path = "/fake/path/graph.py"
-        result = self.FuseOpChecker._load_pyautofuse_graph(file_path)
+        with patch("msit_opcheck.autofuse.fusion_op_check.check_input_path_legality", side_effect=lambda x: x):
+            result = self.FuseOpChecker._load_pyautofuse_graph(file_path)
         mock_spec_from_file.assert_called_once_with("graph_module", file_path)
         mock_module_from_spec.assert_called_once_with(mock_spec)
         mock_spec.loader.exec_module.assert_called_once_with(mock_module)
@@ -88,8 +89,8 @@ class TestFuseOpChecker(unittest.TestCase):
         mock_args.output = "/test/output"
         with patch.object(self.FuseOpChecker, "_get_ascgraph_path", return_value=[]), \
              patch.object(self.FuseOpChecker, "_map_opname_to_dump_data", return_value=None), \
+             patch("msit_opcheck.autofuse.fusion_op_check.check_output_path_legality", side_effect=lambda x: x), \
              patch("os.path.exists", return_value=True), \
-             patch("msit_opcheck.autofuse.fusion_op_check.check_write_directory"), \
              patch.object(self.FuseOpChecker, "_save_compare_result", return_value=MagicMock()):
             
             checker = self.FuseOpChecker(mock_args)
