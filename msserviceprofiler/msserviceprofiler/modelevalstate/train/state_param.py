@@ -4,6 +4,7 @@
 """
 所有需要设置的参数
 """
+import os
 from pathlib import Path
 from typing import Dict
 from dataclasses import dataclass, field
@@ -17,7 +18,7 @@ class StateParam:
     运行时所有需要的参数
     """
     title: str = "MixModel"
-    base_path: Path = Path(r"D:\PyProject\state_eval\pdcontent")  # 项目的根目录
+    base_path: Path = Path(os.getcwd())  # 项目的根目录
     model_dir: Path = field(init=False)
     step_dir: Path = field(init=False)
     bak_dir: Path = field(init=False)
@@ -51,10 +52,8 @@ class StateParam:
         self.model_dir: Path = self.base_path.joinpath("model")
         self.step_dir: Path = self.base_path.joinpath("step")
         self.bak_dir: Path = self.base_path.joinpath("bak")
-        self.ohe_path: Path = self.base_path.joinpath("ohe")
         self.model_dir.mkdir(parents=True, exist_ok=True)
         self.step_dir.mkdir(parents=True, exist_ok=True)
         self.bak_dir.mkdir(parents=True, exist_ok=True)
-        self.ohe_path.mkdir(parents=True, exist_ok=True)
         self.xgb_model_save_model_path: Path = self.model_dir.joinpath("xgb_model.ubj")  # 保存模型的路径
         self.xgb_model_load_model_path: Path = self.model_dir.joinpath("xgb_model.ubj")  # 加载模型的路径, 进行预测使用
