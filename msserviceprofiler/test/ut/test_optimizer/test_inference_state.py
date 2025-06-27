@@ -81,7 +81,6 @@ def test_predict_v1(mock_data_processor, mock_xgb_state_evaluate, tmpdir, static
     )
     config_path = ConfigPath(
         Path(fr"{tmpdir}\xgb_model.ubj"),
-        Path(fr"{tmpdir}\ohe"),
         static_file.base_path,
         Path(fr"{tmpdir}\req_and_decode_file.json"),
         Path(fr"{tmpdir}\cache_data"),
@@ -117,10 +116,9 @@ def predict_with_model(lines_data: DataFrame,
     # 转换格式为接口需要格式
     origin_data: List[NodeInfo] = []
     predict_data: List[NodeInfo] = []
-    custom_encoder = CustomOneHotEncoder(preset_category_data,
-                                         save_dir=ohe_path)
-    custom_encoder.fit(load=True)
-    custom_encoder = CustomLabelEncoder(preset_category_data, save_dir=ohe_path)
+    custom_encoder = CustomOneHotEncoder(preset_category_data)
+    custom_encoder.fit()
+    custom_encoder = CustomLabelEncoder(preset_category_data)
     custom_encoder.fit()
     data_processor = dataset_type(custom_encoder)
     xgb_state_eval = XGBStateEvaluate(
@@ -215,7 +213,6 @@ def test_state_eval(tmpdir):
     file_paths = [_file_name]
     base_path = _tmpdir.joinpath("train")
     xgb_model_path = base_path.joinpath("bak/base/xgb_model.ubj")
-    ohe_path = base_path.joinpath("ohe")
     train_field = "model_execute_time"
     save_result_path = base_path.joinpath("test_state_eval")
     save_result_path.mkdir(exist_ok=True, parents=True)
@@ -223,7 +220,6 @@ def test_state_eval(tmpdir):
     fl = FileReader(file_paths, num_lines=1000)
     process_num = 1
     run_case(process_num, save_result_path, fl, predict_with_model, {
-                        "ohe_path": ohe_path,
                         "train_field": train_field,
                         "dataset_type": DataProcessor
                     })

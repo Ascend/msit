@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from pathlib import Path
 import pandas as pd
 from msserviceprofiler.modelevalstate.inference.data_format_v1 import BatchField, RequestField
 from msserviceprofiler.modelevalstate.inference.dataset import DataProcessor, InputData, CustomLabelEncoder,\
@@ -61,12 +60,9 @@ def test_preprocessor(static_file):
     assert len(result) == 902
 
 
-def test_preprocessor_no_model_op_field(static_file, tmpdir):
-    custom_encoder = CustomLabelEncoder(preset_category_data, Path(tmpdir))
+def test_preprocessor_no_model_op_field(static_file):
+    custom_encoder = CustomLabelEncoder(preset_category_data)
     custom_encoder.fit()
-    custom_encoder.save()
-    for _cus in custom_encoder.category_info:
-        assert _cus.ohe_path.exists()
     processor = DataProcessor(custom_encoder)
     fh = FileHanlder(static_file)
     fh.load_static_data()
@@ -99,8 +95,8 @@ def test_preprocessor_no_model_op_field(static_file, tmpdir):
     assert len(result) == 160
 
 
-def test_custom_one_hot_encoder(tmpdir):
-    custom_encoder = CustomOneHotEncoder(preset_category_data, save_dir=Path(tmpdir))
+def test_custom_one_hot_encoder():
+    custom_encoder = CustomOneHotEncoder(preset_category_data)
     custom_encoder.fit()
     df = pd.DataFrame(
         {"batch_stage": ['prefill', 'decode'],
