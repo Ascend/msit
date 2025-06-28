@@ -75,9 +75,8 @@ int WriteDataToFile(const char *filePath, const T *data, size_t count)
     return success ? SUCCESS : FAILED;
 }
 
-static int RunCompressGraph(ge::Session *session, uint8_t *data, vector<int64_t> &shape, 
-                     vector<int64_t> &compressParameters,
-                     vector<string> paths)
+static int RunCompressGraph(ge::Session *session, uint8_t *data, vector<int64_t> &shape, vector<int64_t> &compressParameters,
+     vector<string> paths)
 {
     uint32_t compressFc_graph_id = 1;
     Graph compressFcGraph("compressFc Graph");

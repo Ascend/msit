@@ -21,8 +21,8 @@
 #include "ge_api.h"
 #include "all_ops.h"
 
-#define FAILED (-1)
-#define SUCCESS 0
+constexpr int FAILED = -1;
+constexpr int SUCCESS = 0;
 
 using namespace ge;
 
