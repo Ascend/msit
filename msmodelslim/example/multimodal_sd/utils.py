@@ -90,6 +90,7 @@ class InputCapture:
             result = func(*args, **kwargs)
 
             # Store record
+            record = to_device(record, device='cpu')
             cls.add_record(record)
 
             return result
