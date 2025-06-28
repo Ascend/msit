@@ -19,8 +19,8 @@ import tempfile
 import pickle
 from unittest.mock import patch, MagicMock
 
-from msguard import InvalidParameterError
-from msguard.security import (
+from msserviceprofiler.msguard import InvalidParameterError
+from msserviceprofiler.msguard.security import (
     is_safe_csv_value,
     sanitize_csv_value,
     CSVInjectionError,

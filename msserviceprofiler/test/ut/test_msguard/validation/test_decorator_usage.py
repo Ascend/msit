@@ -19,7 +19,7 @@ import random
 import unittest
 from unittest import mock
 
-from msguard import validate_params, Path, InvalidParameterError, where
+from msserviceprofiler.msguard import validate_params, Path, InvalidParameterError, where
 
 
 class TestDecoratorUsage(unittest.TestCase):

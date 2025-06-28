@@ -19,7 +19,7 @@ import unittest
 import tempfile
 from unittest.mock import patch
 
-from msguard import validate_args, Rule, InvalidParameterError
+from msserviceprofiler.msguard import validate_args, Rule, InvalidParameterError
 
 
 class TestValidateArgs(unittest.TestCase):
