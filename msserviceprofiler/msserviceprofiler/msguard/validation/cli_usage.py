@@ -26,7 +26,7 @@ def validate_args(constraint: BaseConstraint, silent=True):
     """
     @validate_params({"arg": constraint}) # any checks
     def arg_check(arg: str):
-        pass
+        return arg
 
     @wraps(arg_check)
     def wrapper(arg):
