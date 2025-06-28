@@ -24,8 +24,11 @@ class OpcheckRopeGradOperation(operation_test.OperationTest):
     def golden_calc(self, in_tensors):
         # x,128*32-->reshape x,32,128
         qseqlen = self.op_param.get('qSeqLen', None)
-        cos_list = [in_tensors[2][:x, :] for x in qseqlen]
-        sin_list = [in_tensors[3][:x, :] for x in qseqlen]
+        try:
+            cos_list = [in_tensors[2][:x, :] for x in qseqlen]
+            sin_list = [in_tensors[3][:x, :] for x in qseqlen]
+        except Exception as e:
+            raise IndexError(f"qSeqLen does not match the size of cos/sin tensors.") from e
         cos = torch.concat(cos_list, dim=0)
         sin = torch.concat(sin_list, dim=0)
         sin1 = sin[:, :64]

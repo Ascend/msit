@@ -18,7 +18,7 @@ from itertools import product
 
 from components.utils.util import (confirmation_interaction, 
                                    check_file_ext, safe_int,
-                                   check_file_size_based_on_ext, filter_cmd)
+                                   check_file_size_based_on_ext, filter_cmd, safe_get)
 
 
 class TestUtil(unittest.TestCase):
@@ -147,3 +147,38 @@ class TestFilterCmd(unittest.TestCase):
         for arg in input_args:
             with self.assertRaises(ValueError, msg=f"Expected ValueError for input: {arg}"):
                 filter_cmd([arg])
+
+class TestSafeGet(unittest.TestCase):
+    def test_safe_get_list_valid_index(self):
+        data = [10, 20, 30]
+        self.assertEqual(safe_get(data, 0), 10)
+        self.assertEqual(safe_get(data, 2), 30)
+
+    def test_safe_get_list_invalid_index(self):
+        data = [1, 2, 3]
+        with self.assertRaises(IndexError):
+            safe_get(data, 3)
+        with self.assertRaises(IndexError):
+            safe_get(data, -1)
+        with self.assertRaises(IndexError):
+            safe_get(data, "0")
+
+    def test_safe_get_dict_valid_key(self):
+        d = {"a": 1, "b": 2}
+        self.assertEqual(safe_get(d, "a"), 1)
+        self.assertEqual(safe_get(d, "b"), 2)
+
+    def test_safe_get_dict_invalid_key(self):
+        d = {"x": 100}
+        with self.assertRaises(KeyError):
+            safe_get(d, "y")
+        with self.assertRaises(KeyError):
+            safe_get(d, 1)
+
+    def test_safe_get_invalid_container(self):
+        with self.assertRaises(TypeError):
+            safe_get("notalistordict", 0)
+        with self.assertRaises(TypeError):
+            safe_get(123, 0)
+        with self.assertRaises(TypeError):
+            safe_get(None, 0)

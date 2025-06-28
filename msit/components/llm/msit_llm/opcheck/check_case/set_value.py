@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from msit_llm.opcheck import operation_test
+from components.utils.util import safe_get
 
 
 class OpcheckSetValueOperation(operation_test.OperationTest):
@@ -20,10 +21,13 @@ class OpcheckSetValueOperation(operation_test.OperationTest):
         starts = self.op_param.get("starts", None)
         ends = self.op_param.get("ends", None)
         strides = self.op_param.get("strides", None)
-        golden_result = [in_tensors[0].clone(), in_tensors[1].clone()]
+        golden_result = [safe_get(in_tensors, 0).clone(), safe_get(in_tensors, 1).clone()]
         for i, _ in enumerate(starts):
             self.validate_int_range(strides[i], [1], "strides") # 当前仅支持strides为全1
-            golden_result[0][starts[i]:ends[i]:strides[i]].copy_(in_tensors[1])
+            start = safe_get(starts, i)
+            end = safe_get(ends, i)
+            stride = safe_get(strides, i)
+            golden_result[0][start:end:stride].copy_(safe_get(in_tensors, 1))
         return golden_result
 
     def test(self):

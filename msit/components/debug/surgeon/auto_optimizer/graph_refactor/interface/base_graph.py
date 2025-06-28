@@ -21,6 +21,7 @@ from typing import Deque, List, Dict, Sequence, Set, Tuple, Union, Optional, Typ
 import numpy as np
 
 from auto_optimizer.graph_refactor.interface.base_node import PlaceHolder, Initializer, Node
+from components.utils.util import safe_get
 
 NodeTypeVar = TypeVar('NodeTypeVar', PlaceHolder, Initializer, Node)
 NodeType = Union[PlaceHolder, Initializer, Node]
@@ -435,7 +436,7 @@ class BaseGraph(ABC):
                 out_id = maps.get(in_id, None)
                 # out_id exists, do connection
                 if out_id is not None:
-                    out_name = node.outputs[out_id]
+                    out_name = safe_get(node.outputs, out_id)
                     next_nodes = self.get_next_nodes(out_name)
                     if next_nodes:
                         for next_node in next_nodes:
@@ -453,7 +454,9 @@ class BaseGraph(ABC):
                             for prev_next_node in self._next_map.get(in_name, []):
                                 prev_next_node_in_id = prev_next_node.get_input_id(in_name)
                                 prev_next_node.inputs[prev_next_node_in_id] = out_name
-                            prev_node.outputs[prev_node.get_output_id(in_name)] = out_name
+                            prev_output_id = prev_node.get_output_id(in_name)
+                            if prev_output_id <= len(prev_node.outputs):
+                                prev_node.outputs[prev_output_id] = out_name
                             node.outputs.remove(out_name)
             # update prev and next map, outputs of node no long exist
             for out_name in node.outputs:

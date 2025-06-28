@@ -181,3 +181,22 @@ def safe_int(str_value, log_print_variable_name=None):
         raise ValueError(f"The value {str_value} is not valid, "
                           "what we need is a value that can be convert to int.") from e
     return int_value
+
+
+def safe_get(container, key):
+    """
+    Safely get an item from a list or dict.
+    For lists, checks index bounds.
+    For dicts, checks key existence.
+    Raises IndexError or KeyError if not found.
+    """
+    if isinstance(container, list):
+        if isinstance(key, int) and 0 <= key < len(container):
+            return container[key]
+        raise IndexError("list index out of range")
+    elif isinstance(container, dict):
+        if key in container:
+            return container[key]
+        raise KeyError(f"key '{key}' not found in dict")
+    else:
+        raise TypeError("container must be a list or dict")

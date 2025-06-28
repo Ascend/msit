@@ -205,6 +205,8 @@ class OpcheckPagedAttentionAttentionOperation(operation_test.OperationTest):
             output[i] = out
 
     def golden_calc(self, in_tensors):
+        if len(in_tensors) < 5:
+            raise ValueError(f"in_tensors length must be at least 5, but got {len(in_tensors)}")
         query, key_cache, value_cache, block_tables, context_lens = in_tensors[:5]
         self.bind_idx.append(4)
         mask = None

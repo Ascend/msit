@@ -18,6 +18,7 @@ import torch_npu
 
 from msit_llm.opcheck import operation_test
 from msit_llm.common.log import logger
+from components.utils.util import safe_get
 
 
 class OpcheckMultinomialOperation(operation_test.OperationTest):
@@ -36,7 +37,7 @@ class OpcheckMultinomialOperation(operation_test.OperationTest):
                     for i in range(input0.shape[1])]
         for z in range(samples):
             for j, i in iter_list:
-                if (sum_list[j][i] > rand_list[z]):
+                if (sum_list[j][i] > safe_get(rand_list, z)):
                     ret[j][z] = i
                     break
         return [ret.contiguous()]
