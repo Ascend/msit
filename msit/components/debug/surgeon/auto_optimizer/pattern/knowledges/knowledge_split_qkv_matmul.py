@@ -233,7 +233,7 @@ class KnowledgeSplitQKVMatmul(KnowledgeBase):
         :return: 返回是否修改成功
         """
         if any(graph.get_node(node.name, node_type=Node) is None for nodes in matchinfo.values() for node in nodes):
-            logger.info("Some matching node have been removed or renamed, failed to optimizd.")
+            logger.info("Some matching node have been removed or renamed, failed to optimized.")
             return False
 
         matmul_node = matchinfo['MatMul_0'][0]

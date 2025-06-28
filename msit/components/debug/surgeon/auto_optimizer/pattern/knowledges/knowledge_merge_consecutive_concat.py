@@ -126,7 +126,7 @@ class KnowledgeMergeConsecutiveConcat(KnowledgeBase):
         concats_total = [*concats_to_remove, concat_to_keep]
         # in case previous apply functions modified the graph and removed/renamed any node of current matching subgraph
         if any(node is None for node in concats_total):
-            logger.info("Some matching node have been removed or renamed, failed to optimizd.")
+            logger.info("Some matching node have been removed or renamed, failed to optimized.")
             return False
         # the axis attr of all concat nodes should be the same to be merged
         if len(set(node.attrs.get('axis', -1) for node in concats_total)) != 1:

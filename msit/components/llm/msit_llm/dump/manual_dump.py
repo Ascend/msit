@@ -51,7 +51,11 @@ def dump_data(token_id=-1, data_id=-1, golden_data=None, my_path='', output_path
             ms_makedirs(golden_data_dir)
 
         golden_data_path = os.path.join(golden_data_dir, f'{data_id}_tensor.pth')
-        torch.save(golden_data, golden_data_path)
+        try:
+            torch.save(golden_data, golden_data_path)
+        except OSError as e:
+            logger.error(f"Failed to save tensor to {golden_data_path}: {e}")
+            return
 
         json_path = os.path.join(output_path_prefix, "golden_tensor", "metadata.json")
         write_json_file(data_id, golden_data_path, json_path, token_id, my_path)

@@ -135,7 +135,7 @@ class KnowledgeMergeConsecutiveSlice(KnowledgeBase):
         slices_total = [*slices_to_remove, slice_to_keep]
         # in case previous apply functions modified the graph and removed/renamed any node of current matching subgraph
         if any(node is None for node in slices_total):
-            logger.info("Some matching node have been removed or renamed, failed to optimizd.")
+            logger.info("Some matching node have been removed or renamed, failed to optimized.")
             return False
 
         input_initializers: List[List[Optional[Initializer]]] = [
