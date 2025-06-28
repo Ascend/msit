@@ -50,7 +50,7 @@ shut_down_structures参数指定需关闭优化的图结构。同时，在图优
 
 ```
 pip3 install numpy              #Python版本为3.7.5至3.8时（包含3.7.5版本），numpy版本大于等于1.21.6；Python版本为3.8及以上时， numpy版本需大于等于1.23.0
-pip3 install onnx               #需大于等于1.14.0版本
+pip3 install onnx               #部分版本存在安全漏洞，建议使用 >=1.16.2版本
 pip3 install onnxruntime        #需大于等于1.14.1版本
 pip3 install torch==2.1.0       #支持2.1.0，须为CPU版本的torch
 pip3 install onnx-simplifier    #需大于等于0.3.10版本
