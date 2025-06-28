@@ -21,6 +21,7 @@
 
 using namespace std;
 
+namespace GraphUtils {
 int CheckShape(vector<int64_t> &shape)
 {
     for (auto const &val : shape) {
@@ -126,4 +127,5 @@ int32_t BuildCompressFcGraph(Graph &graph, uint8_t *data, vector<int64_t> &shape
     graph.SetInputs(inputs).SetOutputs(outputs);
 
     return SUCCESS;
+}
 }
