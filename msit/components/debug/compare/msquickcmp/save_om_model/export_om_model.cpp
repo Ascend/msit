@@ -31,9 +31,9 @@ constexpr const char PATH_SEPARATOR = '/';
 constexpr mode_t MAX_PERMISSION = 0777;
 constexpr mode_t WRITE_FILE_NOT_PERMITTED = S_IWGRP | S_IWOTH | S_IROTH | S_IXOTH;
 
-std::string GetAbsPath(const std::string &originPath);
+static std::string GetAbsPath(const std::string &originPath);
 
-bool IsSameOwner(const std::string& path)
+static bool IsSameOwner(const std::string& path)
 {
     std::string absPath = GetAbsPath(path);
     struct stat buf;
@@ -48,7 +48,7 @@ bool IsSameOwner(const std::string& path)
     return true;
 }
 
-bool OthersWritable(const std::string& path)
+static bool OthersWritable(const std::string& path)
 {
     struct stat path_stat;
     if (stat(path.c_str(), &path_stat) != 0) {
@@ -59,7 +59,7 @@ bool OthersWritable(const std::string& path)
     return ((permissions & WRITE_FILE_NOT_PERMITTED) > 0);
 }
 
-bool ParentWritable(const std::string& path)
+static bool ParentWritable(const std::string& path)
 {
     if (!IsSameOwner(path) || OthersWritable(path)) {
         return false;
@@ -67,7 +67,7 @@ bool ParentWritable(const std::string& path)
     return true;
 }
 
-std::string GetFullPath(const std::string &originPath)
+static std::string GetFullPath(const std::string &originPath)
 {
     if (originPath.empty()) {
         return "";
@@ -100,7 +100,7 @@ static std::vector<std::string> SplitPath(const std::string &path)
     return tokens;
 }
 
-std::string GetAbsPath(const std::string &originPath)
+static std::string GetAbsPath(const std::string &originPath)
 {
     std::string fullPath = GetFullPath(originPath);
     if (fullPath.empty()) {
@@ -133,7 +133,7 @@ std::string GetAbsPath(const std::string &originPath)
     return resolvedPath;
 }
 
-std::string GetParentDir(const std::string& path)
+static std::string GetParentDir(const std::string& path)
 {
     size_t found = path.find_last_of('/');
     if (found != std::string::npos) {
@@ -142,7 +142,7 @@ std::string GetParentDir(const std::string& path)
     return ".";
 }
 
-std::string GetRoot(const std::string& path, int max_depth = 200)
+static std::string GetRoot(const std::string& path, int max_depth = 200)
 {
     if (max_depth <= 0) {
         throw std::runtime_error("Max recursion depth exceeded while searching for root directory.");
@@ -155,7 +155,7 @@ std::string GetRoot(const std::string& path, int max_depth = 200)
     return GetRoot(parentDir, max_depth - 1);  // 递归向上查找
 }
 
-void ParentCheck(const std::string& file_path)
+static void ParentCheck(const std::string& file_path)
 {
     std::string parent_dir = GetRoot(GetAbsPath(file_path));
     if (parent_dir.empty()) {
