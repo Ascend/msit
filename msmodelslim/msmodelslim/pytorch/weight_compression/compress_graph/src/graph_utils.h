@@ -21,12 +21,12 @@
 #include "ge_api.h"
 #include "all_ops.h"
 
-constexpr int FAILED = -1;
-constexpr int SUCCESS = 0;
-
 using namespace ge;
 
 namespace GraphUtils {
+constexpr int FAILED = -1;
+constexpr int SUCCESS = 0;
+
 int CheckShape(std::vector<int64_t> &shape);
 
 void GetDataSizeFromShape(std::vector<int64_t> shape, int64_t &size);

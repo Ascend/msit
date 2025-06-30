@@ -26,10 +26,10 @@ int CheckShape(vector<int64_t> &shape)
 {
     for (auto const &val : shape) {
         if (val > 50000) {
-            return FAILED;
+            return GraphUtils::FAILED;
         }
     }
-    return SUCCESS;
+    return GraphUtils::SUCCESS;
 }
 
 void GetDataSizeFromShape(vector<int64_t> shape, int64_t &size)
@@ -126,6 +126,6 @@ int32_t BuildCompressFcGraph(Graph &graph, uint8_t *data, vector<int64_t> &shape
 
     graph.SetInputs(inputs).SetOutputs(outputs);
 
-    return SUCCESS;
+    return GraphUtils::SUCCESS;
 }
 }
