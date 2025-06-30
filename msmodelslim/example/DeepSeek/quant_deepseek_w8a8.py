@@ -122,7 +122,7 @@ def remove_module_entries(save_path, json_filename="quant_model_description_w8a8
     json_safe_dump(filtered_data, json_file_path, indent=4)
 
 
-def update_quant_type(save_path, json_filename):
+def update_quant_model_description_content(save_path, json_filename):
     """
     更新量化类型为 W8A8_DYNAMIC
     
@@ -136,7 +136,10 @@ def update_quant_type(save_path, json_filename):
     dest_quant_description_filepath = os.path.join(save_path, json_filename)
     dest_quant_description_filepath = get_valid_write_path(dest_quant_description_filepath, is_dir=False)
     quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=False)
-    quant_description_data['model_quant_type'] = "W8A8_DYNAMIC"
+    quant_description_data["model_quant_type"] = "W8A8_DYNAMIC"
+    if ("version" in quant_description_data.keys()) & \
+                (quant_description_data["fa_quant_type"] == "FAQuant"):
+        quant_description_data["fa_quant_type"] = "FAKQuant"
     json_safe_dump(quant_description_data, dest_quant_description_filepath, indent=4)
 
 
@@ -269,7 +272,7 @@ def main():
                     save_type=[save_type],
                     part_file_size=4)
     # w8a8 混合量化中 MindIE 要求 description 中的 model_quant_type 为 W8A8_DYNAMIC
-    update_quant_type(save_path, quant_model_description_json_name)
+    update_quant_model_description_content(save_path, quant_model_description_json_name)
     
     # 适配mindie删除description里的module字段
     if args.mindie_format:
