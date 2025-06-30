@@ -17,7 +17,7 @@ import os
 import tempfile
 import unittest
 
-from msguard.security import walk_s, WalkLimitError, open_s
+from msserviceprofiler.msguard.security import walk_s, WalkLimitError, open_s
 
 
 class TestWalkS(unittest.TestCase):

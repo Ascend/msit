@@ -17,7 +17,7 @@ import os
 import unittest
 import tempfile
 
-from msguard.security import update_env_s
+from msserviceprofiler.msguard.security import update_env_s
 
 
 class TestUpdateEnvS(unittest.TestCase):

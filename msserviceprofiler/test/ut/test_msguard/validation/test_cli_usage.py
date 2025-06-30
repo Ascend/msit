@@ -19,7 +19,8 @@ import unittest
 import tempfile
 from unittest.mock import patch
 
-from msguard import validate_args, Rule, InvalidParameterError
+from msserviceprofiler.msguard import validate_args, Rule, InvalidParameterError
+from msserviceprofiler.msguard.security import open_s
 
 
 class TestValidateArgs(unittest.TestCase):
@@ -140,3 +141,15 @@ class TestValidateArgs(unittest.TestCase):
         validator = validate_args(Rule.input_file_read)
         with self.assertRaises(argparse.ArgumentTypeError):
             validator(123)  # 非字符串输入，预期抛出异常
+
+    def test_validate_args_given_valid_input_path_when_input_file_read_constraint_then_return(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--input-path', type=validate_args(Rule.input_file_read))
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_file = os.path.join(temp_dir, "temp_file")
+            with open_s(temp_file, 'w'):
+                pass
+
+            args = parser.parse_args(['--input-path', temp_file])
+            self.assertEqual(args.input_path, temp_file)
