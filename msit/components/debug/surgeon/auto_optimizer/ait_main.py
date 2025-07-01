@@ -106,14 +106,16 @@ class EvaluateCommand(BaseCommand):
 
         path_ = pathlib.Path(args.path)
         knowledge_list = [v.strip() for v in args.knowledges.split(',')]
+        filtered_knowledge_list = []
         for know in knowledge_list:
             if know in ARGS_REQUIRED_KNOWLEDGES:
-                knowledge_list.remove(know)
                 logger.warning(f"Knowledge {know} cannot be evaluate")
+            else:
+                filtered_knowledge_list.append(know)
 
-        if not knowledge_list:
+        if not filtered_knowledge_list:
             return
-        optimizer = GraphOptimizer(knowledge_list)
+        optimizer = GraphOptimizer(filtered_knowledge_list)
         cli_eva(path_, optimizer, args.recursive, args.verbose, args.processes)
 
 
