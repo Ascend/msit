@@ -48,6 +48,8 @@ class OpcheckToppOperation(operation_test.OperationTest):
         sum_val = torch.sum(bool_judge, axis=-1, keepdims=True) - 1
         sum_val[sum_val < 0] = 0
         topp_v = torch.take_along_axis(probs_sorted_sumed, sum_val, axis=-1)
+        if probs.shape[0] > len(rand_list):
+            raise ValueError(f"size of probs ({probs.shape[0]}) exceeds length of rand_list ({len(rand_list)})")
         topp_v *= torch.tensor(rand_list).reshape(-1, 1)[0:probs.shape[0]]
         bool_judge_one = probs_sorted_sumed < topp_v
         res = torch.sum(bool_judge_one, axis=-1, keepdims=True)

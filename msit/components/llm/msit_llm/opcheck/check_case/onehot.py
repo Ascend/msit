@@ -15,13 +15,14 @@
 import torch
 
 from msit_llm.opcheck import operation_test
+from components.utils.util import safe_get
 
 
 class OpcheckOnehotOperation(operation_test.OperationTest):
     def golden_calc(self, in_tensors):
         axis = self.op_param.get('axis', 0)
         depth = self.op_param.get('depth', 0)
-        res = torch.eye(depth)[in_tensors[axis]]
+        res = torch.eye(depth)[safe_get(in_tensors, axis)]
 
         return [res]
 

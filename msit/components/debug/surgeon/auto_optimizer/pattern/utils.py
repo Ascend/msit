@@ -23,6 +23,7 @@ from auto_optimizer.graph_refactor.interface.base_graph import BaseGraph
 from auto_optimizer.graph_refactor.interface.base_node import BaseNode, Initializer, Node, PlaceHolder
 from auto_optimizer.pattern.pattern import MatchBase
 from components.debug.common import logger
+from components.utils.util import safe_get
 
 
 def timing(func: Callable):
@@ -67,7 +68,7 @@ class HasInputShape(MatchBase):
     def match(self, node: BaseNode, graph: BaseGraph) -> bool:
         if not isinstance(node, (Node,)):
             return False
-        place_holder = graph.get_node(node.inputs[self._index], node_type=PlaceHolder)
+        place_holder = graph.get_node(safe_get(node.inputs, self._index), node_type=PlaceHolder)
         return place_holder is not None and bool(place_holder.shape)
 
 
@@ -81,7 +82,7 @@ class HasInputValue(MatchBase):
     def match(self, node: BaseNode, graph: BaseGraph) -> bool:
         if not isinstance(node, (Node,)):
             return False
-        ini = graph.get_node(node.inputs[self._index], node_type=Initializer)
+        ini = graph.get_node(safe_get(node.inputs, self._index), node_type=Initializer)
         return ini is not None and ini.value is not None
 
 

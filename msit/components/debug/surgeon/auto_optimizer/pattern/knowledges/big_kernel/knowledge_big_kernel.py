@@ -21,6 +21,7 @@ from auto_optimizer.pattern.matcher import MatchResult
 from auto_optimizer.pattern.pattern import MatchPattern
 from components.debug.common import logger
 from auto_optimizer.pattern.knowledges.big_kernel.util import gen_normal_subgraph
+from components.utils.util import safe_get
 
 
 layernorm_pattern = Pattern() \
@@ -72,7 +73,10 @@ class KnowledgeBigKernel(KnowledgeBase):
     def big_kernel_apply(self, graph: OnnxGraph, match_result: MatchResult):
         logger.info("Start to optimize {} attention in graph.".format(self.attention_idx))
         refactor = TransformRefactor(graph)
-        match_nodes = {node[0].name: node[0] for _, node in match_result.node_dicts[0].items()}
+        match_nodes = {
+            safe_get(node, 0).name: safe_get(node, 0)
+            for _, node in safe_get(match_result.node_dicts, 0).items()
+        }
         atten_start_node, atten_end_node, softmax = refactor.get_anchor_nodes(match_nodes, self.end_node_type)
         if not atten_start_node or not atten_end_node or not softmax:
             raise ValueError("Cann\'t get attention start node or softmax node or attention end node.")

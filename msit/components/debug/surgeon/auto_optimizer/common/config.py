@@ -25,11 +25,9 @@ class ConfigDict(Dict):
 
     def __getattr__(self, item):
         try:
-            value = super().__getattr__(item)
-        except Exception as err:
-            raise RuntimeError("invalid dict error={}".format(err)) from err
-
-        return value
+            return self[item]
+        except KeyError as err:
+            raise AttributeError(f"'ConfigDict' object has no attribute '{item}'") from err
 
 
 class Config:
