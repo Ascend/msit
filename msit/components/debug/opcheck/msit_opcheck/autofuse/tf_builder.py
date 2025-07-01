@@ -99,24 +99,24 @@ class TensorFlowGraphBuilder:
                 self.nodes[node_name] = current_node
                 continue
 
-            if line.strip().startswith(".x ="):
+            if line.strip().startswith(".x =") and len(line.split("=")) >= 2:
                 input_name = line.split("=")[1].strip()
                 input_name = re.sub(r"\.[^.]+$", "", input_name)
                 current_node["inputs"].append(input_name)
-            elif line.strip().startswith(".x1 ="):
+            elif line.strip().startswith(".x1 =") and len(line.split("=")) >= 2:
                 input_name = line.split("=")[1].strip()
                 input_name = re.sub(r"\.[^.]+$", "", input_name)
                 current_node["inputs"].append(input_name)
-            elif line.strip().startswith(".x2 ="):
+            elif line.strip().startswith(".x2 =") and len(line.split("=")) >= 2:
                 input_name = line.split("=")[1].strip()
                 input_name = re.sub(r"\.[^.]+$", "", input_name)
                 current_node["inputs"].append(input_name)
 
             # 匹配输出
-            if line.strip().startswith(".y.dtype"):
+            if line.strip().startswith(".y.dtype") and len(line.split("=")) >= 2:
                 dtype = line.split("=")[1].strip()
                 current_node["attributes"]["dtype"] = dtype
-            if line.strip().startswith(".y.axis"):
+            if line.strip().startswith(".y.axis") and len(line.split("=")) >= 2:
                 axes = line.split("=")[1].strip().strip("{}").split(", ")
                 current_node["attributes"]["axes"] = axes
             if line.strip().startswith(".y.repeats"):

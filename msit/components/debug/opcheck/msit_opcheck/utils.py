@@ -48,6 +48,8 @@ def broadcast_to_maxshape(shapes: list):
 
 
 def ceil_div(a, b):
+    if b == 0:
+        raise ValueError("Division by zero is not allowed, Please check!")
     return (a + b - 1) // b
 
 
@@ -56,7 +58,10 @@ def align(a, b):
 
 
 def lcm(a, b):
-    return a * b // gcd(a, b)
+    res_gcd = gcd(a, b)
+    if res_gcd == 0:
+        raise ValueError("Division by zero is not allowed, Please check!")
+    return a * b // res_gcd
 
 
 def due_fp16_overflow(data):
