@@ -100,12 +100,20 @@ def analyze(input_path_1, input_path_2):
     df3['completed_time'] = df3['start_time_httpReq(microsecond)'] + df3['execution_time(microsecond)']
     total_latency = df3['first_token_latency'].sum() + total_simulate_time
     total_token = df3['reply_token_size'].sum()
+    if success_req == 0:
+        raise ZeroDivisionError(f"success_req cannot be zero. {ex}") from ex
     avg_prefill_latency = total_latency / success_req / 10 ** 6
     total_time = df3['completed_time'].max() - df3['start_time_httpReq(microsecond)'].min() + df1['simulate_time'].sum()
+    if total_time == 0:
+        raise ZeroDivisionError(f"total_time cannot be zero. {ex}") from ex
     throughput = total_token / total_time * 10 ** 6
     total_decode_time = df3['execution_time(microsecond)'].sum() + total_decode_simulate_time - df3[
         'first_token_latency'].sum()
+    if total_token - success_req == 0:
+        raise ZeroDivisionError(f"total_token - success_req cannot be zero. {ex}") from ex
     average_decode_latency = total_decode_time / (total_token - success_req) / 10 ** 6
+    if total_req == 0:
+        raise ZeroDivisionError(f"total_req cannot be zero. {ex}") from ex
     success_precent = success_req / total_req
     return throughput, avg_prefill_latency, average_decode_latency, success_precent
 

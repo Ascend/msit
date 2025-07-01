@@ -190,12 +190,15 @@ class LatencyModel(BaseModel):
 
 class MindieConfig(BaseModel):
     # 运行mindie时，要修改的mindie config
+    mindie_service_default_path: str = "/usr/local/Ascend/mindie/latest/mindie-service"
+    mindie_service_path: str = os.getenv("MIES_INSTALL_PATH", mindie_service_default_path)
     process_name: str = "mindieservice_daemon"
-    config_path: Path = Path("/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json")
-    config_bak_path: Path = Path("/usr/local/Ascend/mindie/latest/mindie-service/conf/config_bak.json")
+    config_path: Path = Path(os.path.join(mindie_service_path, "conf", "config.json"))
+    config_bak_path: Path = Path(os.path.join(mindie_service_path, "conf", "config_bak.json"))
     work_path: Path = Field(default_factory=lambda: Path(os.getcwd()).resolve())
     command: str = "/usr/bin/bash ./run_mindie.sh"
-    log_path: Path = Path("/usr/local/Ascend/mindie/latest/mindie-service/logs")
+    log_path: Path = Path(os.path.join(mindie_service_path, "logs"))
+
 
 
     @field_validator("config_path")
