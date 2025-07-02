@@ -207,10 +207,10 @@ class AntiOutlier(object):
             same_device = self.cfg.device == model.device
 
         if not self.with_accelerate and not same_device:
-            self.logger.warning("Model is not on the deivce indicated in `AntiOutlierConfig`, "
+            self.logger.warning("Model is not on the device indicated in `AntiOutlierConfig`, "
                                 "Model is on the device `{}` while `AntiOutlierConfig` "
                                 "indicates `{}`".format(model.device, self.cfg.device))
-            self.logger.info("Transfering model from `{}` to `{}`...".format(model.device, self.cfg.device))
+            self.logger.info("Transferring model from `{}` to `{}`...".format(model.device, self.cfg.device))
             model = model.to(self.cfg.device)
             self.logger.info("Transfer done. Suggest to check model and calib_data (if provided) on the "
                              "device that `AntiOutlierConfig` indicates.")

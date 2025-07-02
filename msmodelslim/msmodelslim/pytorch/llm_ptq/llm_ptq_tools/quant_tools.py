@@ -249,10 +249,10 @@ class Calibrator(object):
         else:
             same_device = self.cfg.device == model.device
         if not judge_model_with_accelerate(model) and not same_device:
-            self.logger.warning("Model is not on the deivce indicated in `QuantConfig`, "
+            self.logger.warning("Model is not on the device indicated in `QuantConfig`, "
                                 "Model is on the device `{}` while `QuantConfig` "
                                 "indicates `{}`".format(model.device, self.cfg.device))
-            self.logger.info("Transfering model from `{}` to `{}`...".format(model.device, self.cfg.device))
+            self.logger.info("Transferring model from `{}` to `{}`...".format(model.device, self.cfg.device))
             model = model.to(self.cfg.device)
             self.logger.info("Transfer done. Suggest to check model and calib_data (if provided) on the "
                              "device that `QuantConfig` indicates.")

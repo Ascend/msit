@@ -68,10 +68,10 @@ class FakeQuantizeCalibrator(object):
         else:
             same_device = self.dev_type == model.device
         if not same_device:
-            self.logger.warning("Model is not on the deivce indicated in `dev_type`, "
+            self.logger.warning("Model is not on the device indicated in `dev_type`, "
                                 "Model is on the device `{}` while `dev_type` "
                                 "indicates `{}`".format(model.device, self.dev_type))
-            self.logger.info("Transfering model from `{}` to `{}`...".format(model.device, self.dev_type))
+            self.logger.info("Transferring model from `{}` to `{}`...".format(model.device, self.dev_type))
             model = model.to(self.dev_type)
             self.logger.info("Transfer done. Suggest to check model.")
         return model
