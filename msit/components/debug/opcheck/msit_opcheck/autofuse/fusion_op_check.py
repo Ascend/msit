@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from components.debug.common import logger
-from components.utils.security_check import check_write_directory
+from components.utils.security_check import check_input_path_legality, check_output_path_legality
 from components.utils.cmp_algorithm import NP_CMP_ALG_MAP
 from msit_opcheck.util.file_read import get_ascbackend_ascgraph, convert_ge_dump_file_to_npy
 from msit_opcheck.autofuse.tf_builder import convert_to_tf_graph, sanitize_filename
@@ -41,6 +41,7 @@ class FuseOpChecker:
     @staticmethod
     def _load_pyautofuse_graph(file_path):
         """从指定的 Python 文件加载 pyautofuse 构建的图"""
+        file_path = check_input_path_legality(file_path) # 加载文件前校验一下权限
         spec = importlib.util.spec_from_file_location("graph_module", file_path)
         graph_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(graph_module)
@@ -60,7 +61,7 @@ class FuseOpChecker:
         # 从--graph-path指定路径下找到ascgen目录
         ascgraph_path_list = self._get_ascgraph_path()
         self._map_opname_to_dump_data()
-        check_write_directory(self.output_path)
+        self.output_path = check_output_path_legality(self.output_path)
         real_output_path = os.path.realpath(self.output_path)
         self.npy_path = os.path.join(real_output_path, "tmp")
         for ascgraph in ascgraph_path_list:

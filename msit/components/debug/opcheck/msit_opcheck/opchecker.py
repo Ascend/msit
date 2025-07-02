@@ -131,6 +131,8 @@ class OpChecker:
     def add_op_info_to_cases_info(self, op_info: OpInfo, data_info: dict):
         if not op_info.op_type:
             return
+        if not isinstance(op_info.param, dict):
+            return
         op_param = op_info.param
         op_type = op_info.op_type
         op_name = op_info.param.get("name")
