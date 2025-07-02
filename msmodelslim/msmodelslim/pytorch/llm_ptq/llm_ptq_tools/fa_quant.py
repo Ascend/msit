@@ -165,6 +165,8 @@ class FAQuantizer:
         if not self.is_calib and not self.dequant_infer:
             return states_tensor
 
+        if self.tp_size == 0:
+            raise ValueError("tp size can not be zero")
         if TensorType(qkv) == TensorType.Q:
             scale, offset = self.q_observer.get_scale_offset(
                 states_tensor=states_tensor,

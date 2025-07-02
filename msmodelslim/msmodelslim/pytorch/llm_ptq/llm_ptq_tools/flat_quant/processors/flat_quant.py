@@ -188,6 +188,8 @@ class FlatQuantQuantizerMapVisitor(FakeQuantizerVisitor):
         if hasattr(config, 'head_dim'):
             head_dim = config.head_dim
         else:
+            if config.num_attention_heads == 0:
+                raise ValueError("num_attention_heads can not be zero in config.")
             head_dim = config.hidden_size // config.num_attention_heads
         trans = GeneralMatrixTrans(config.num_attention_heads, 
                                     head_dim, 
