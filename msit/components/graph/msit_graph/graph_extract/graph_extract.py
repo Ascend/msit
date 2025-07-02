@@ -35,6 +35,8 @@ from components.utils.file_open_check import (
 )
 from components.utils.constants import MAX_DEPTH_LIMIT
 
+ITERATIONS = 100
+
 
 class GraphSummary:
     def __init__(self):
@@ -249,6 +251,8 @@ class GraphAnalyze:
             int: The next sequence number after processing all nodes.
         """
         seq = start_seq
+        if seq > ITERATIONS:
+            raise RuntimeError("The number of cycles has exceeded 100 and the program is terminated.")
         for node in nodes:
             node_name = GraphAnalyze._get_node_name(node.name)
             gs.names_to_node[node_name] = node
@@ -276,7 +280,6 @@ class GraphAnalyze:
                 gs.names_to_output_names[GraphAnalyze._get_node_name(input_name)].append(node_name)
             gs.names_to_seq_num[node_name] = seq
             seq += 1
-
             for attr in node.attribute:
                 if attr.name == "graph":
                     seq = GraphAnalyze._nodes_to_gs(attr.g.node, gs, seq)
