@@ -59,6 +59,8 @@ class MindIESaverBackend(BaseSaverBackend):
         quant_cfg_map = {
             "w8a8": QuantConfig(a_bit=8, w_bit=8),
             "w8a8_dynamic": QuantConfig(a_bit=8, w_bit=8, is_dynamic=True),
+            "w4a8_dynamic": QuantConfig(a_bit=8, w_bit=4, is_dynamic=True, group_size=256,
+                                        is_lowbit=True, open_outlier=False),
         }
         quant_cfg = quant_cfg_map[self.save_cfg.quant_type]
         return SaverFactory.create(self.save_cfg.save_type,
