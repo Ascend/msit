@@ -120,6 +120,8 @@ class PromptLoader:
     def check_input_isvalid(batch_size, num_images_per_prompt, max_num_prompts):
         if batch_size <= 0:
             raise ValueError(f"Param batch_size invalid, expected positive value, but get {batch_size}")
+        if batch_size > 100:
+            raise ValueError(f"Param batch_size invalid, expected less than or equal to 100, but get {batch_size}")
         if num_images_per_prompt <= 0:
             raise ValueError(
                 f"Param num_images_per_prompt invalid, expected positive value, but get {num_images_per_prompt}")
@@ -308,7 +310,7 @@ def infer(args):
 
             check_prompts_valid(prompts)
 
-            logger.info(f"[{infer_num + n_prompts}/{len(prompt_loader)}]: {prompts}")
+            logger.info("[%d/%d]: %r", infer_num + n_prompts, len(prompt_loader), prompts)
             infer_num += args.batch_size
             if infer_num > 3:
                 start_time = time.time()

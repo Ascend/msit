@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.manager import TimestepManager
+from msmodelslim.tools.logger import logger
 
 MAX_RECURSION_DEPTH = 20
 
@@ -133,7 +134,7 @@ class DumperManager(nn.Module):
             self.module.forward = self.old_forward
             self.old_forward = None
 
-        print(f'Captured data saved to: {path}')
+        logger.info('Captured data saved to: %r', path)
         return data
 
     def reset(self) -> None:

@@ -67,7 +67,7 @@ def get_args():
 
 def build_pipeline(args):
     def load_t2v_checkpoint(model_path):
-        logger.info('load_t2v_checkpoint, %s', str(model_path))
+        logger.info('load_t2v_checkpoint, %r', model_path)
         if args.model_type == 'dit':
             transformer_model = OpenSoraT2V.from_pretrained(model_path, 
                                                             local_files_only=True, 

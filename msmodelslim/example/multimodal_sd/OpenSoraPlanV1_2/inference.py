@@ -26,12 +26,12 @@ from ascend_utils.common.security import get_write_directory, get_valid_read_pat
 from msmodelslim.quant import quant_model, SessionConfig
 from msmodelslim.quant import W8A8ProcessorConfig, W8A8QuantConfig, SaveProcessorConfig
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
 def load_t2v_checkpoint(model_path):
-    logger.info(f'load_t2v_checkpoint, {model_path}')
+    logger.info('load_t2v_checkpoint, %r', model_path)
     transformer_model = OpenSoraT2V.from_pretrained(model_path, cache_dir=args.cache_dir,
                                                     low_cpu_mem_usage=False, device_map=None,
                                                     torch_dtype=weight_dtype, local_files_only=True).to("npu")
@@ -102,7 +102,7 @@ def run_model_and_save_images(pipeline, args, save_path):
                               seed=args.seed,
                               **kwargs
                               ).images
-            logger.info(videos.shape)
+            logger.debug('videos shape: %r', videos.shape)
 
             if get_sequence_parallel_rank() <= 0:
                 for i in range(len(prompt) if args.batch_size > 1 else 1):
@@ -241,7 +241,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.dtype not in ['bf16', 'fp16']:
-        logger.error("Not supported.")
+        logger.error("Unsupported data type: %r. Only 'bf16' and 'fp16' are supported.", args.dtype)
     weight_dtype = torch.bfloat16 if args.dtype == 'bf16' else torch.float16
     torch.npu.config.allow_internal_format = False
 

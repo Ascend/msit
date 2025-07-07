@@ -34,7 +34,7 @@ from msmodelslim.tools.logger import logger
 
 
 def load_t2v_checkpoint(model_path):
-    logger.info('load_t2v_checkpoint, %s', model_path)
+    logger.info('load_t2v_checkpoint, %r', model_path)
     if args.model_type == 'udit':
         transformer_model = UDiTT2V.from_pretrained(model_path, 
                                                     cache_dir=args.cache_dir,
@@ -95,7 +95,7 @@ def run_model_and_save_images(pipeline, model_path):
 
     seed = int(os.environ.get('RANDOM_SEED', 42))
     for index, prompt in enumerate(args.text_prompt):
-        logger.info('set all seed: %s', str(seed))
+        logger.info('set all seed: %r', seed)
         npu_config.seed_everything(seed)
         videos = pipeline(positive_prompt.format(prompt),
                           negative_prompt=negative_prompt,
@@ -151,7 +151,7 @@ def run_model_and_save_images(pipeline, model_path):
             video_grids = save_video_grid(video_grids)
             imageio.mimwrite(output_path, video_grids, fps=args.fps, quality=6)
 
-        logger.info('concat video file saved at: %s', output_path)
+        logger.info('concat video file saved at: %r', output_path)
 
 
 if __name__ == "__main__":
@@ -266,7 +266,7 @@ if __name__ == "__main__":
         timesteps = json_safe_load(args.schedule_timestep, extensions='txt')
 
         timesteps_set = [x * 1000 for x in timesteps][::-1]
-        logger.info('set timesteps_set to %s', str(timesteps_set))
+        logger.info('set timesteps_set to %r', timesteps_set)
     else:
         timesteps_set = None
 
@@ -309,6 +309,6 @@ if __name__ == "__main__":
         adaptor = DitCacheAdaptor(pipeline)
         adaptor.update_cache_config(**cache_config)
 
-        logger.info('using cache config: %s', str(cache_config))
+        logger.info('using cache config: %r', cache_config)
 
     run_model_and_save_images(pipeline, full_path)
