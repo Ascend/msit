@@ -83,6 +83,8 @@ class SingleTransMatrix(nn.Module):
             output = inp @ matirx
             return output.reshape(init_shape)
         elif self.deriction == "left":
+            if self.size == 0:
+                raise ValueError("size can not be zero.")
             init_shape = inp.shape
             matirx = self.get_matrix(inv_t=inv_t).T.to(inp)
             inp = inp.reshape(-1, self.size, init_shape[-1] // self.size)

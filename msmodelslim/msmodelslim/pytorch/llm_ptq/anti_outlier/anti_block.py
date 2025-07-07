@@ -318,6 +318,8 @@ class LlavaQuantDecoder(nn.Module):
                 sin_cached = self.self_attn.rotary_emb.sin_cached
             else:
                 try:
+                    if self.cfg.num_attention_heads == 0:
+                        raise ValueError("num_attention_heads can not be zero in model config.")
                     dim = self.cfg.hidden_size // self.cfg.num_attention_heads
                     max_position_embeddings = self.cfg.max_position_embeddings
                     base = self.cfg.rope_theta
@@ -581,6 +583,8 @@ class QuantQwen2VLDecoderLayer(nn.Module):
                                      self.self_attn.k_proj.weight,
                                      self.self_attn.v_proj.weight])
             bias_list = None
+            if self.cfg.num_attention_heads == 0:
+                raise ValueError("num_attention_heads can not be zero in model config.")
             dim = self.cfg.hidden_size // self.cfg.num_attention_heads
             max_position_embeddings = self.cfg.max_position_embeddings
             base = self.cfg.rope_theta
@@ -673,6 +677,9 @@ class QuantQwen2VLVisionBlock(nn.Module):
         post_ln_1 = self.norm1(hidden_states)
         if self.cac_migrate_attn:
             msmodelslim_logger.info(f'current block is QuantQwen2VLVisionBlock, layername:{self.layername}')
+            if self.cfg.num_heads == 0:
+                raise ValueError("num_heads can not be zero in model config.")
+
             channel_max = post_ln_1.max(0)[0]
             channel_min = post_ln_1.min(0)[0]
             shift = (channel_max + channel_min) / 2 
@@ -762,6 +769,8 @@ class QuantQwen25VLVisionBlock(nn.Module):
         post_ln_1 = self.norm1(hidden_states)
         if self.cac_migrate_attn:
             msmodelslim_logger.info(f'current block is QuantQwen25VLVisionBlock, layername:{self.layername}')
+            if self.cfg.num_heads == 0:
+                raise ValueError("num_heads can not be zero in model config.")
 
             # calculate scale
             weight_list = torch.cat([self.attn.qkv.weight])
