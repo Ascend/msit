@@ -265,8 +265,10 @@ class FAQuantizer:
         # if GQA（num_key_value_heads != num_head）
         if num_key_value_heads != num_head:
             self.logger.info(
-                f"Using Grouped Query Attention (GQA): "
-                f"num_key_value_heads={num_key_value_heads}, num_head={num_head}"
+                "Using Grouped Query Attention (GQA): "
+                "num_key_value_heads=%r, num_head=%r",
+                num_key_value_heads,
+                num_head
             )
         
         self.set_head_params(num_head, head_dim, num_key_value_heads)
