@@ -46,7 +46,7 @@ def search_restep(pipeline, args):
     scheduler_timestep = restep_adaptor.search()
 
     if dist.get_rank() == 0:
-        logger.info("Searched scheduler timestep: %s", scheduler_timestep)
+        logger.info("Searched scheduler timestep: %r", scheduler_timestep)
 
 
 def search_dit_cache(pipeline, args):
@@ -117,7 +117,7 @@ def search_dit_cache(pipeline, args):
     if dist.get_rank() == 0:
         safe_delete_path_if_exists(args.cache_save_path)
         json_safe_dump(dict(searched_config), args.cache_save_path)
-        logger.info("Searched cache config saved at %s", args.cache_save_path)
+        logger.info("Searched cache config saved at %r", args.cache_save_path)
 
 
 if __name__ == "__main__":

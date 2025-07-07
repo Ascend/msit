@@ -191,7 +191,7 @@ def main():
                     sample = samples[i].unsqueeze(0)
                     video_path = f"{save_path}/sample_{idx}.mp4"
                     save_videos_grid(sample, video_path, fps=24)
-                    logger.info(f'Sample save to: {video_path}')
+                    logger.info('Sample save to: %r', video_path)
 
     # quantization
     if args.do_quant:

@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_t2v_checkpoint(model_path):
-    logger.info(f'load_t2v_checkpoint, {model_path}')
+    logger.info('load_t2v_checkpoint, %r', model_path)
     transformer_model = OpenSoraT2V.from_pretrained(model_path, cache_dir=args.cache_dir,
                                                     low_cpu_mem_usage=False, device_map=None,
                                                     torch_dtype=weight_dtype, local_files_only=True).to("npu")
