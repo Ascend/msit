@@ -62,7 +62,7 @@ def inference(args):
     model.eval()
 
     def inference_func(save_path, desc=''):
-        os.makedirs(save_path, exist_ok=True)
+        save_path = get_write_directory(save_path)
 
         prompts = load_prompt(args.prompt_path)
         for cnt, prompt in enumerate(tqdm(prompts, desc=desc)):

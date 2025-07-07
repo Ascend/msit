@@ -289,8 +289,7 @@ if __name__ == "__main__":
 
     scheduler = EulerAncestralDiscreteScheduler()
 
-    if not os.path.exists(args.save_img_path):
-        os.makedirs(args.save_img_path, exist_ok=True)
+    get_write_directory(args.save_img_path)
 
     pipeline = load_t2v_checkpoint(args.model_path)
     logger.info('load model')
