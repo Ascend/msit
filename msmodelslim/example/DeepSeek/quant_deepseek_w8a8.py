@@ -11,17 +11,18 @@ import torch_npu
 
 from tqdm import tqdm
 
-from convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, OpsType
-from add_safetensors import add_safetensors
-from mtp_quant_module import warp_mtp_model, post_process_mtp_quant
-
-
 current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
 sys.path.append(parent_directory)
 
-from ascend_utils.common.security import get_valid_read_path, get_write_directory, check_number
-from ascend_utils.common.security import json_safe_load, json_safe_dump, get_valid_write_path
+
+from convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, OpsType
+from add_safetensors import add_safetensors
+from mtp_quant_module import warp_mtp_model, post_process_mtp_quant
+
+from example.common.security.path import get_valid_read_path, get_write_directory
+from example.common.security.path import json_safe_load, json_safe_dump, get_valid_write_path
+from example.common.security.type import check_number
 from example.common.utils import SafeGenerator
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json, modify_vllm_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier

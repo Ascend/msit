@@ -21,8 +21,8 @@ from opensora.models.causalvideovae.model.causal_vae.parallel_layers import (
     register_vae_decode, parallel_full_model_warp)
 from utils.file_utils import standardize_path
 
-from ascend_utils.common.security.pytorch import safe_torch_load
-from ascend_utils.common.security import get_write_directory, get_valid_read_path
+from example.common.security.pytorch import safe_torch_load
+from example.common.security.path import get_write_directory, get_valid_read_path
 from msmodelslim.quant import quant_model, SessionConfig
 from msmodelslim.quant import W8A8ProcessorConfig, W8A8QuantConfig, SaveProcessorConfig
 

@@ -16,7 +16,8 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
 sys.path.append(parent_directory)
 
-from ascend_utils.common.security import get_valid_read_path, get_write_directory, check_number
+from example.common.security.path import get_valid_read_path, get_write_directory
+from example.common.security.type import check_number
 from example.common.utils import SafeGenerator, cmd_bool
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig

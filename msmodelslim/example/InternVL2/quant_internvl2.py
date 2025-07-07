@@ -1,8 +1,16 @@
 # Copyright Huawei Technologies Co., Ltd. 2025. All rights reserved.
+
+import os
+import sys
 import argparse
 from transformers import AutoModel, AutoTokenizer, AutoConfig
+
+current_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
+sys.path.append(parent_directory)
+
 from internvl2_utils import get_tokenized_data, get_textvqa_calibration, cmd_bool
-from ascend_utils.common.security import get_valid_read_path, get_write_directory
+from example.common.security.path import get_valid_read_path, get_write_directory
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 

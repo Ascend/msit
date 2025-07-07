@@ -15,8 +15,8 @@ except ImportError:
     from msmodelslim import logger
     logger.warning("torch_npu is not available, if you are using NPU, please install torch_npu")
 
-from ascend_utils.common.security import json_safe_load, json_safe_dump
-from ascend_utils.common.security.path import get_valid_read_path, get_valid_write_path
+from example.common.security.path import json_safe_load, json_safe_dump
+from example.common.security.path import get_valid_read_path, get_valid_write_path
 
 
 MAX_KEY_LENGTH = 256

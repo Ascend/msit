@@ -4,6 +4,7 @@ import functools
 import json
 import copy
 import os
+import sys
 from unittest.mock import patch
 
 import torch
@@ -13,12 +14,17 @@ from tqdm import tqdm
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
+current_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
+sys.path.append(parent_directory)
+
 from convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, OpsType
 from add_safetensors import add_safetensors
 from mtp_quant_module import warp_mtp_model, post_process_mtp_quant
 
-from ascend_utils.common.security import get_valid_read_path, get_write_directory, check_number
-from ascend_utils.common.security import json_safe_load, json_safe_dump
+from example.common.security.path import get_valid_read_path, get_write_directory
+from example.common.security.path import json_safe_load, json_safe_dump
+from example.common.security.type import check_number
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json, modify_vllm_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig

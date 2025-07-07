@@ -8,7 +8,7 @@ import torch
 import torchvision.transforms as T
 from torchvision.transforms.functional import InterpolationMode
 
-from ascend_utils.common.security import get_valid_read_path
+from example.common.security.path import get_valid_read_path
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
