@@ -238,7 +238,7 @@ class GraphAnalyze:
             raise ValueError(f"Index part of tensor name {tensor_name} is not an integer") from e
 
     @staticmethod
-    def _nodes_to_gs(nodes, gs, start_seq):
+    def _nodes_to_gs(nodes, gs, start_seq, depth=0):
         """
         Populates a GraphSummary object with information about nodes.
         
@@ -251,7 +251,7 @@ class GraphAnalyze:
             int: The next sequence number after processing all nodes.
         """
         seq = start_seq
-        if seq > ITERATIONS:
+        if depth > ITERATIONS:
             raise RuntimeError("The number of cycles has exceeded 100 and the program is terminated.")
         for node in nodes:
             node_name = GraphAnalyze._get_node_name(node.name)
@@ -282,7 +282,7 @@ class GraphAnalyze:
             seq += 1
             for attr in node.attribute:
                 if attr.name == "graph":
-                    seq = GraphAnalyze._nodes_to_gs(attr.g.node, gs, seq)
+                    seq = GraphAnalyze._nodes_to_gs(attr.g.node, gs, seq, depth + 1)
 
         return seq
 
