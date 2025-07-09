@@ -63,7 +63,8 @@ class NaiveQuantization(NaiveQuantizationInterface, ABC):
             )
 
         cur_dir = os.path.dirname(os.path.abspath(__file__))
-        self.default_config_path = os.path.abspath(os.path.join(cur_dir, "../practice_lab/Default/default.yaml"))
+        yaml_path = os.path.abspath(os.path.join(cur_dir, "../practice_lab/Default/default.yaml"))
+        self.default_config_path = get_valid_read_path(yaml_path)
 
     def get_best_practice(self,
                           model_type: str,
