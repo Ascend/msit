@@ -16,7 +16,7 @@ import json
 import os
 import stat
 import sys
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List 
 from unittest.mock import MagicMock
 
 import torch
@@ -78,6 +78,43 @@ def _mocked_fake_quantize(tensor: torch.Tensor,
     return tensor, tensor
 
 
+def _mocked_handle_progressive_quant(
+        weight: torch.Tensor,
+        group_size: int = 0,
+        num_bits: int = 4,
+        per_channel: bool = True,
+        w_sym: bool = True,
+        use_hqq: bool = False,
+) -> Tuple[
+    torch.Tensor, 
+    List[torch.Tensor], 
+    torch.Tensor, 
+    List[torch.Tensor]
+]:
+    if weight.numel() < group_size:
+        raise ValueError(f"Cannot perform group quantization with group size {group_size} "
+                         f"for weight with {weight.numel()} elements")
+    
+    scale = torch.ones([1]) if not per_channel else torch.ones([weight.shape[0], 1])
+    offset = torch.zeros([1]) if not per_channel else torch.zeros([weight.shape[0], 1])
+
+    # w4a8_dynamic per_group 分阶段量化
+    ori_shape = weight.reshape(-1, group_size).shape
+    # 二阶段量化为 per-group 量化
+    scale_second = torch.ones([ori_shape[0], 1])
+    offset_second = torch.zeros([ori_shape[0], 1])
+
+    scale = [scale, scale_second]
+    offset = [offset, offset_second]
+
+    return weight, scale, weight, offset
+
+
+def mock_module(module_name: str, module_dict: dict):
+    for func_name, func in module_dict.items():
+        setattr(sys.modules[module_name], func_name, func)
+
+
 def mock_kia_library():
     sys.modules['msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils'] = MagicMock()
     sys.modules['msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs'] = MagicMock()
@@ -94,6 +131,12 @@ def mock_kia_library():
 
     for func_name, func in mock_quant_funcs_dict.items():
         setattr(sys.modules['msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs'], func_name, func)
+
+    lowbit_atomic_power_outlier_module = 'msmodelslim.pytorch.lowbit.atomic_power_outlier'
+    mock_atomic_power_outlier_dict = {
+        'handle_progressive_quant': _mocked_handle_progressive_quant
+    }
+    mock_module(lowbit_atomic_power_outlier_module, mock_atomic_power_outlier_dict)
 
 
 def mock_security_library():

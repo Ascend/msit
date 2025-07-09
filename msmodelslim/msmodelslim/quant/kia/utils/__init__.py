@@ -14,7 +14,7 @@
 #  limitations under the License.
 
 from functools import lru_cache
-from typing import Tuple, Callable
+from typing import Tuple, Callable, List
 
 import torch
 
@@ -37,6 +37,13 @@ def get_kia_linear_quantization_params() -> Callable:
     from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs import \
         linear_quantization_params as kia_linear_quantization_params
     return kia_linear_quantization_params
+
+
+@lru_cache(maxsize=None)
+def get_kia_handle_progressive_quant() -> Callable:
+    from msmodelslim.pytorch.lowbit.atomic_power_outlier import \
+        handle_progressive_quant as kia_handle_progressive_quant
+    return kia_handle_progressive_quant
 
 
 def linear_quantization_params(bit: int, 
@@ -125,3 +132,43 @@ def init_weight_quant_normal(weight: torch.Tensor,
     """
     return get_kia_init_weight_quant_normal()(weight, bits, is_sym, is_signed, intergral_zp, admm, round_opt, mm_tensor,
                                               fake_quant, hqq)
+
+
+def handle_progressive_quant(
+        weight: torch.Tensor,
+        group_size: int = 0,
+        num_bits: int = 4,
+        per_channel: bool = True,
+        w_sym: bool = True,
+        use_hqq: bool = False,
+) -> Tuple[
+    torch.Tensor,  # 反量化权重
+    List[torch.Tensor],  # 缩放因子
+    torch.Tensor,  # 量化后（整型）权重
+    List[torch.Tensor]  # 零点
+]:
+    """
+    对权重 w4 进行分阶段量化
+    
+    参数:
+        weight（torch.Tensor）: 待量化的权重
+        group_size（int）: 分组大小，0 表示不进行分组
+        num_bits（int）: 量化位数，默认为 4
+        per_channel（bool）: 是否是通道量化，默认为 True
+        w_sym（bool）: 是否是对称量化，默认为 True
+        use_hqq（bool）: 是否使用HQQ算法，默认为 False
+
+    返回值:
+        Tuple[
+            torch.Tensor,  # 反量化权重
+            List[torch.Tensor],  # 缩放因子
+            torch.Tensor,  # 量化后（整型）权重
+            List[torch.Tensor]  # 零点
+        ]
+    """
+    if weight.numel() < group_size:
+        raise ValueError(f"Cannot perform group quantization with group size {group_size} "
+                         f"for weight with {weight.numel()} elements")
+    
+    return get_kia_handle_progressive_quant()(weight, group_size, num_bits, per_channel, w_sym, use_hqq)
+

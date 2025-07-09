@@ -28,6 +28,7 @@ from msmodelslim.quant.processor.base import SessionBaseProcessor
 from msmodelslim.quant.processor.const import ProcessStage
 from msmodelslim.quant.processor.quant.w8a8 import W8A8LinearFakeQuantizer
 from msmodelslim.quant.processor.quant.w8a8_dynamic import W8A8DynamicLinearFakeQuantizer
+from msmodelslim.quant.processor.quant.w4a8_dynamic import W4A8DynamicLinearFakeQuantizer
 from msmodelslim.quant.processor.registry import PROCESSOR_REGISTRY, PROCESSOR_CONFIG_REGISTRY
 from msmodelslim.utils.dist import DistHelper
 from msmodelslim.utils.registry import Registry
@@ -53,6 +54,7 @@ class BaseSaverBackend:
         self.process_map: Dict[Type[nn.Module], Callable[[str, nn.Module], None]] = {
             W8A8LinearFakeQuantizer: self._process_w8a8_linear_fake_quantizer,
             W8A8DynamicLinearFakeQuantizer: self._process_w8a8_dynamic_linear_fake_quantizer,
+            W4A8DynamicLinearFakeQuantizer: self._process_w4a8_dynamic_linear_fake_quantizer,
         }
 
     def save(self, prefix: str, module: nn.Module):
@@ -105,6 +107,9 @@ class BaseSaverBackend:
 
     def _process_w8a8_dynamic_linear_fake_quantizer(self, prefix: str, module: nn.Module):
         return self._process_module(prefix, QuantType.W8A8_DYNAMIC, module)
+
+    def _process_w4a8_dynamic_linear_fake_quantizer(self, prefix: str, module: nn.Module):
+        return self._process_module(prefix, QuantType.W4A8_DYNAMIC, module)
 
     def _process_module(self, prefix: str, quant_type: QuantType, module: nn.Module):
         for key, param in module.named_parameters(recurse=False):
