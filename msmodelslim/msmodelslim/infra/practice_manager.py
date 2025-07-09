@@ -1,9 +1,9 @@
 # Copyright Huawei Technologies Co., Ltd. 2025. All rights reserved.
-import re
 import os
+import re
 from abc import ABC
-from typing import List, Dict, Generator
 from pathlib import Path
+from typing import List, Dict, Generator
 
 import yaml
 
@@ -20,9 +20,9 @@ SUPPRORTED_QUANT_TYPES = ["w4a16", "w4a8", "w8a16", "w8a8", "w8a8s", "w8a8c8"]
 def check_label(label, w_bit, a_bit, use_kv_cache, is_sparse):
     """Check if the label matches the quantization parameters"""
     if label.get('w_bit') == w_bit and label.get('a_bit') == a_bit:
-        if is_sparse and not label.get('is_sparse'):
+        if is_sparse != label.get('is_sparse', False):
             return False
-        if use_kv_cache and not label.get('kv_cache'):
+        if use_kv_cache != label.get('kv_cache', False):
             return False
         return True
     return False
