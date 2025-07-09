@@ -113,13 +113,15 @@ class OnnxGraph:
             dag_node = self.node_map.get(name)
             if not isinstance(dag_node, QuantizableOnnxNode):
                 continue
-            w_param = dag_node.params[0]
-            w_param.tensor.value = dag_node.quant_weight
-            w_param.tensor.dtype = onnx.TensorProto.INT8
-            if dag_node.op_type == "Gemm" and dag_node.attrs.get("transB"):
-                w_param.tensor.value = w_param.tensor.value.T
-                w_param.shape = list(w_param.tensor.value.shape)
-                dag_node.attrs['transB'] = 0
+
+            if len(dag_node.params) > 0:
+                w_param = dag_node.params[0]
+                w_param.tensor.value = dag_node.quant_weight
+                w_param.tensor.dtype = onnx.TensorProto.INT8
+                if dag_node.op_type == "Gemm" and dag_node.attrs.get("transB"):
+                    w_param.tensor.value = w_param.tensor.value.T
+                    w_param.shape = list(w_param.tensor.value.shape)
+                    dag_node.attrs['transB'] = 0
 
             # quantize bias
             deq_scale = np.multiply(np.array(dag_node.weight_scale),
