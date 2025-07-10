@@ -24,8 +24,7 @@ spec:
     mm_tensor: False
     pdmix: True
   calib_params:
-    mix_cfg:
-      "model.layers.*.mlp.down_proj": "float"
+    disable_level: L10
   calib_file: ../../calib_lab/mix_calib.jsonl
   calib_save_params:
     save_type:
