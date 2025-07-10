@@ -354,17 +354,14 @@ def get_dynamic_expert_hot_from_csv(
         for j in range(1, n_shared_experts + 1):
             dynamic_expert_hot[:, -j] = shared_expert_hotness
 
-    # 如果需要 topk 信息
-    if topk_info:
-        topk_files = sorted([
+    topk_files = sorted([
             os.path.join(root_folder, f)
             for f in all_files
             if "topk" in f and f.endswith(".csv")
         ], key=numerical_sort_key)
-        if not topk_files:
-            raise FileNotFoundError(
-                "all2all_balance optimization needs topk data, but no such file was found in the data folder."
-            )
+
+    # 如果需要 topk 信息
+    if topk_info and topk_files:
         topk_data_list = [np.loadtxt(f, delimiter=",", dtype=np.float32) for f in topk_files]
         min_topk_size = min(min(len(k) for k in topk_data_list), min_size)
         topk_data = np.asarray([d[:min_topk_size] for d in topk_data_list[n_share_expert_devices_files:]])
@@ -471,7 +468,7 @@ def process_prefill_or_decode(new_args):
     progress_bar.update(1)  # Step 4 
 
     # 使用分层all2all增强型算法
-    if new_args.all2all_balance:
+    if new_args.all2all_balance and expert_topk:
         for i in range(new_args.selected_layers[0], new_args.selected_layers[1] + 1):
             shared_status[i] = ("All2AllBalance.", "")
         deploy_table = all_to_all_algorithm_multi_process(deploy_table, expert_topk,
