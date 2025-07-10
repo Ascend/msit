@@ -29,14 +29,14 @@
 | ------ | ---- | --- | -------- | 
 | model_path | 浮点权重路径 | 无默认值 | 必选参数；<br>输入InternVL 2.0权重目录路径。 |
 | calib_images | 校准集图片路径 | ./textvqa_val | 可选参数；<br>输入校准数据集的目录路径。本示例中图片来源于公开数据集[textvqa](https://huggingface.co/datasets/maoxx241/textvqa_subset)。 当前示例仅支持该校准数据集。|
+| calib_num     | 从校准数据中随机选择的数量 | 30 | 可选参数；<br>根据需要从校准集中选择一定数量的数据用于校准。 |
 | save_directory | 量化权重路径 | 无默认值 | 必选参数；<br>输出量化结果目录路径。 |
-| a_bit | 激活值量化bit | 8 |大模型量化场景下，可配置为8或16； <br>大模型稀疏量化场景下，需配置为8。 <br>InternVL 2.0当前仅支持配置为8。|
+| part_file_size | 量化权重文件大小，单位是GB | 无默认值 | 可选参数；<br>生成量化权重文件大小，请用户自定义单个量化权重文件的最大限制。|
 | w_bit | 权重量化bit | 8 | 大模型量化场景下，可配置为8或16； <br>大模型稀疏量化场景下，需配置为4。 <br>InternVL 2.0当前仅支持配置为8。|
-| device_type | device类型 | cpu | 可选值：['cpu', 'npu'] |
-| part_file_size | 量化权重文件大小 | 无限制 | 单个量化权重文件大小不超过xGB。|
-| calib_num     | 从校准数据中随机选择的数量 | 30 | 可选参数；<br>根据需要从校准集中选择一定数量的数据用于校准  |
-| is_8B_model      | 是否使用8B的模型  | 不开启  | 可选参数；<br>根据需要选择使用8B大小模型或40B大小模型，开启即指定8B大小模型 |  
-| trust_remote_code | 是否信任自定义代码 | False | 指定`trust_remote_code=True`让修改后的自定义代码文件能够正确的被加载。(请确保加载的自定义代码文件的安全性) |
+| a_bit | 激活值量化bit | 8 |大模型量化场景下，可配置为8或16； <br>大模型稀疏量化场景下，需配置为8。 <br>InternVL 2.0当前仅支持配置为8。|
+| device_type | device类型 | cpu | 可选值：['cpu', 'npu']。 |
+| is_8B_model      | 是否使用8B的模型  | 不开启  | 可选参数；<br>根据需要选择使用8B大小模型或40B大小模型，开启即指定8B大小模型。 |  
+| trust_remote_code | 是否信任自定义代码 | False | 指定`trust_remote_code=True`让修改后的自定义代码文件能够正确的被加载。(请确保加载的自定义代码文件的安全性)。 |
 
 - 更多参数配置要求，请参考量化过程中配置的参数 [QuantConfig](../../docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/QuantConfig.md)
   以及量化参数配置类 [Calibrator](../../docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/Calibrator.md)
