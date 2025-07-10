@@ -267,8 +267,6 @@ def main():
     # 适配mindie删除description里的module字段
     if args.mindie_format:
         remove_module_entries(save_path)
-    if args.quant_mtp == "mix":
-        post_process_mtp_quant(save_path)
     
     custom_hook_instance = create_custom_hook(args.quant_mtp, args.mindie_format)
     custom_hooks = {
@@ -282,6 +280,8 @@ def main():
     if args.quant_mtp == "float":
         add_safetensors(org_paths=model_path, target_dir=save_path, safetensors_prefix="mtp_float",
                         max_file_size_gb=5, prefix="model.layers.61.")
+    if args.quant_mtp == "mix":
+        post_process_mtp_quant(save_path)
     pbar.update(1)
 
 
