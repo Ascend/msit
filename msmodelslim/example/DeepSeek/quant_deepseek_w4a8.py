@@ -218,6 +218,7 @@ def main():
         disable_names.append("model.layers." + str(ids) + ".self_attn.kv_b_proj")
     if args.quant_mtp == "mix":
         disable_names.append("lm_head")
+        disable_names.append("mtp_decoder.self_attn.kv_b_proj")
 
     w4a8_pertoken_config = QuantConfig(
         a_bit=8,
