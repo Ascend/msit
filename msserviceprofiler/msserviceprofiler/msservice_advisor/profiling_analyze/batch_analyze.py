@@ -88,10 +88,7 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
     if len(summary_fit_data) > 2:
 
         def func_curv(x, a, b, c):
-            # 检查 x 是否为 0，避免数学错误
-            if x == 0:
-                raise ValueError("x 不能为 0，因为会导致数学运算错误")
-            return a * x**b * np.exp(-c / x)
+            return a * x**b * np.exp(-c / x)  # 已检查 points 中不包含 0 值
 
     else:
 
@@ -107,6 +104,9 @@ def find_best_by_curve_fit(summary_fit_data, process_name):
             if latency == 0:
                 # 如果 latency 为 0，直接抛出 ValueError 异常
                 raise ValueError(f"latency 不能为 0，当前数据点为 (BSZ={bsz}, latency={latency})")
+            if bsz == 0:
+                # 如果 bsz 为 0，直接抛出 ValueError 异常
+                raise ValueError(f"bsz 不能为 0，当前数据点为 (BSZ={bsz}, latency={latency})")
             points.append(bsz)
             targets.append(bsz * 1000 / latency)
 
