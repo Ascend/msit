@@ -14,7 +14,7 @@
 import os
 import argparse
 from pathlib import Path
-import pandas as pd
+import re
 
 from ms_service_profiler.exporters.utils import check_input_path_valid, check_output_path_valid
 
@@ -36,6 +36,14 @@ def add_exporters(args):
         exporter.initialize(args)
         exporters.append(exporter)
     return exporters
+
+
+def check_string_valid(s, max_length=256):
+    if len(s) > max_length:
+        raise argparse.ArgumentTypeError("String length exceeds %d characters: %r" % (max_length, s))
+    if not re.match(r"^[a-zA-Z0-9_./-]+$", s):
+        raise argparse.ArgumentTypeError("Unsafe string: %r" % s)
+    return s
 
 
 def arg_parse(subparsers):
@@ -64,8 +72,10 @@ def arg_parse(subparsers):
     parser.add_argument(
         '--decode-number', type=int, default=1, help='The number of Decode batch to calc statistical data'
     )
-    parser.add_argument('--prefill-rid', type=str, default='-1', help='The rid for Prefill batch to split')
-    parser.add_argument('--decode-rid', type=str, default='-1', help='The rid for Decode batch to split')
+    parser.add_argument('--prefill-rid', type=lambda x: check_string_valid(x, max_length=100),
+                        default='-1', help='The rid for Prefill batch to split')
+    parser.add_argument('--decode-rid', type=lambda x: check_string_valid(x, max_length=100),
+                        default='-1', help='The rid for Decode batch to split')
     parser.set_defaults(func=main)
 
 
@@ -81,7 +91,7 @@ def main(args):
     exporters = add_exporters(args)
 
     # 创建output目录
-    Path(args.output_path).mkdir(parents=True, exist_ok=True)
+    Path(args.output_path).mkdir(parents=True, exist_ok=True, mode=0o750)
 
     # 解析数据并导出
     parse(args.input_path, custom_plugins, exporters, args=args)

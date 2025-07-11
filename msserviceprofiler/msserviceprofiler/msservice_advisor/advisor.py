@@ -21,6 +21,8 @@ from msserviceprofiler.msservice_advisor.profiling_analyze.utils import TARGETS,
 from msserviceprofiler.msservice_advisor.profiling_analyze.utils import str_ignore_case, logger, set_log_level
 from msserviceprofiler.msservice_advisor.profiling_analyze.utils import get_latest_matching_file, read_csv_or_json
 
+from msserviceprofiler.msguard import validate_args, Rule
+
 
 # 文件格式，字典："21559056a7ff44c88a891ecbb537c431"："0", ...
 REQ_TO_DATA_MAP_PATTERN = "req_to_data_map.json"
@@ -172,10 +174,12 @@ def arg_parse(subparsers):
         "advisor", formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="advisor for MindIE Service performance"
     )
     parser.add_argument(
-        "-i", "--instance_path", type=str, default="instance", help="benchamrk instance output directory"
+        "-i", "--instance_path", type=validate_args(Rule.input_dir_traverse),
+        default="instance", help="benchamrk instance output directory"
     )
     parser.add_argument(
-        "-s", "--service_config_path", type=str, default=mindie_service_path, help="MindIE Service config json path"
+        "-s", "--service_config_path", type=validate_args(Rule.input_dir_traverse),
+        default=mindie_service_path, help="MindIE Service config json path"
     )
     parser.add_argument(
         "-t",
