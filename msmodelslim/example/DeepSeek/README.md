@@ -103,6 +103,7 @@
 | fa_quant      | 指定FA量化  | 不开启  | 可选参数；<br>开启即指定。 |
 | dynamic      | 指定动态量化   | 不开启 | 可选参数；<br/>开启即指定。 |
 | disable_anti | 关闭异常值抑制 | 不开启 | 可选参数；<br/>开启即指定。 |
+| anti_method  | 离群值抑制方法 | m4 | 可选参数；<br/> 可选项：m4,m6 |
 
 注：在量化脚本里面通过transformers库对模型进行加载时，调用`from_pretrained`函数时会指定`trust_remote_code=True`让修改后的modeling文件能够正确的被加载。(请确保加载的modeling文件的安全性)
 
@@ -215,6 +216,17 @@ python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8
 - 生成DeepSeek-V3/R1模型 w8a8 mtp 量化权重
   ```shell
   python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --batch_size 4 --quant_mtp mix
+  ```
+  
+##### DeepSeek-R1 0528 w8a8 动态量化（支持function_call）
+- 生成DeepSeek-R1 0528模型 w8a8 动态量化权重
+  ```shell
+  python3 quant_deepseek_w8a8.py \
+  --model_path {浮点权重路径} \
+  --save_path {W8A8量化权重路径} \
+  --dynamic \
+  --anti_dataset ./anti_prompt_fc.json \
+  --anti_method m6
   ```
 
 ##### DeepSeek-V3/R1量化QA
