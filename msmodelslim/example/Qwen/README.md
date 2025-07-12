@@ -181,17 +181,17 @@
   ```
 ##### Qwen2.5-72b W8A8-pdmix量化(prefill阶段 W8A8动态量化, decode阶段 W8A8量化) 搭配 KV cache int8量化
   ```shell
-  python3 quant_qwen.py --model_path {浮点权重路径} \
+  python3 quant_qwen_pdmix.py --model_path {浮点权重路径} \
   --save_directory {W8A8-pdmix量化权重路径} \
-  --calib_file ./calib_data/calib_prompt.jsonl  \
-  --anti_calib_file ./calib_data/anti_prompt.jsonl \
+  --calib_file ./calib_data/calib_prompt_72b_pdmix.json  \
+  --anti_calib_file ./calib_data/anti_prompt_72b_pdmix.json \
   --device_type npu \
   --anti_method m6 \
-  --act_method 3 \
+  --act_method 2 \
   --use_kvcache_quant True \
-  --disable_threshold 1 \
   --pdmix True \
-  --trust_remote_code True
+  --trust_remote_code True \
+  --disable_names model.layers.0.mlp.down_proj model.layers.1.mlp.down_proj model.layers.2.mlp.down_proj model.layers.79.mlp.down_proj
   ```
 
 ##### Qwen2.5-72B-Instruct W4A16 量化
