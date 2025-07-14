@@ -146,7 +146,7 @@ class IsConsistentToCurrentUser(BasePathConstraint):
         if stat_result is None:
             raise FileNotFoundError(f"The path {path!r} does not exist or cannot be accessed.")
 
-        return stat_result.st_uid == os.geteuid()
+        return stat_result.st_uid == os.geteuid() or stat_result.st_uid == 0 # inconsistent only with other normal user
 
 
 class IsSizeReasonable(BasePathConstraint):

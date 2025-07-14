@@ -76,9 +76,13 @@
     ```sh
     msprechecker precheck -ch hccl --ranktable <rank table 路径>
     ```
-  - cpu 和 npu 检查
+  - cpu 和 npu 压测
     ```sh
     msprechecker precheck -ch hardware
+    ```
+  - cpu 和 npu 压测，以及多机网络连接状态检查
+    ```sh
+    msprechecker precheck -ch hardware --ranktable <rank table 路径>
     ```
 
 # 落盘和比对

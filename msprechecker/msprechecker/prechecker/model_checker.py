@@ -132,7 +132,7 @@ class ModelSizeChecker(PrecheckerBase):
                 "Model",
                 "size",
                 CheckResult.ERROR,
-                action="检查当前权重大小：{total_weight_size_str}",
+                action=f"检查当前权重大小：{total_weight_size_str}",
                 reason=f"FP8 权重大小应大约 {fp8_weight_size_str}，FP16 权重大小应大约 {fp16_weight_size_str}",
             )
         else:
