@@ -93,6 +93,9 @@ class MindieCommand:
     def command(self):
         mindie_service_default_path: str = "/usr/local/Ascend/mindie/latest/mindie-service"
         mindie_service_path: str = os.getenv("MIES_INSTALL_PATH", mindie_service_default_path)
+        if not Rule.input_dir_traverse.is_satisfied_by(mindie_service_path):
+            logger.error("the file of mindie_service_install_path is not dir, please check")
+            return None
         mindie_command_path: str = os.path.join(mindie_service_path, "bin", "mindieservice_daemon")
         return [mindie_command_path]
  
