@@ -58,7 +58,7 @@ class ConfigCheckerBase(PrecheckerBase):
             return
 
         if not envs:
-            logger.warning(f"Read config failed: {self.config_path!r}")
+            logger.warning(f"读取 Json 文件失败: {self.config_path!r}，请检查是否文件不存在或不符合 Json 格式规范")
             return
 
         check_file_permission(self.config_path, domain="config", checker_name="file_perm")
