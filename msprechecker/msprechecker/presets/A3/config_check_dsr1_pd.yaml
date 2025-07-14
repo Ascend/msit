@@ -3,49 +3,49 @@ deploy_config:
     expected:
       type: ">="
       value: 1
-    reason: "p_instances_num A3场景应该大于等于1"
+    reason: "p_instances_num A3场景应该大于等于 1"
     severity: high
   d_instances_num:
     expected:
       type: ">="
       value: 1
-    reason: "d_instances_num A3场景应该大于等于1"
+    reason: "d_instances_num A3场景应该大于等于 1"
     severity: high
   single_p_instance_pod_num:
     expected:
       type: ">="
       value: 1
-    reason: "single_p_instance_pod_num A3场景应该大于等于2"
+    reason: "single_p_instance_pod_num A3场景应该大于等于 1"
     severity: high
   single_d_instance_pod_num:
     expected:
       type: ">="
       value: 4
-    reason: "single_d_instance_pod_num A3场景应该大于等于4"
+    reason: "single_d_instance_pod_num A3场景应该大于等于 4"
     severity: high
   p_pod_npu_num:
     expected:
       type: eq
       value: 16
-    reason: "p_pod_npu_num A3场景应该是8"
+    reason: "p_pod_npu_num A3场景应该是 16"
     severity: high
   d_pod_npu_num:
     expected:
       type: eq
       value: 16
-    reason: "d_pod_npu_num A3场景应该是8"
+    reason: "d_pod_npu_num A3场景应该是 16"
     severity: high
   prefill_distribute_enable:
     expected:
       type: eq
       value: 0
-    reason: "prefill_distribute_enable A3场景应该是0"
+    reason: "prefill_distribute_enable A3场景应该是 0"
     severity: high
   decode_distribute_enable:
     expected:
       type: eq
       value: 1
-    reason: "decode_distribute_enable A3场景应该是1"
+    reason: "decode_distribute_enable A3场景应该是 1"
     severity: high
   hardware_type:
     expected:
@@ -356,7 +356,7 @@ mindie_server_decode_config:
             expected:
               type: eq
               value: 1
-            reason: "worldSize应该是8"
+            reason: "worldSize 应该是 1"
             severity: high
           dp:
             expected:
