@@ -357,7 +357,7 @@ class AntiOutlier(object):
         else:
             stat_dict[STAT_KEY_SMOOTH_SCALE] = channel_max
 
-    def os_stats(self):
+    def os_stats(self, feature_sources):
         """Collect the activations into Dict for outlier suppression."""
         self.model.eval()
         act_stats = {}
@@ -369,7 +369,7 @@ class AntiOutlier(object):
 
         hooks = []
         for name, m in self.model.named_modules():
-            if isinstance(m, nn.Linear):
+            if isinstance(m, nn.Linear) and name in feature_sources:
                 hooks.append(
                     m.register_forward_hook(
                         functools.partial(stat_input_hook, name=name))
@@ -534,7 +534,8 @@ class AntiOutlier(object):
 
         smooth_kwargs = {}
 
-        act_stats = self.os_stats()
+        feature_sources = {v[0] for v in self.norm_linear_subgraph.values() if v}
+        act_stats = self.os_stats(feature_sources)
         if self.cfg.anti_method in ['m4', 'm6']:
             num_attention_heads = self.get_num_attention_heads()
             smooth_kwargs = {

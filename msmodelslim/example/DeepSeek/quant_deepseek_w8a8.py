@@ -50,6 +50,7 @@ def parse_args():
     parser.add_argument('--quant_mtp', type=str, choices=['mix', 'float', 'none'], default='none', \
                             help="Quantization mode: 'mix(w8a8 mix quant)' , or \
                             'float(save float mtp weight)' (default: %(default)s)")
+    parser.add_argument('--anti_method', type=str, choices=['m4', 'm6'], default='m4')
     return parser.parse_args()
 
 
@@ -219,7 +220,7 @@ def main():
         with torch.no_grad():
             anti_config = AntiOutlierConfig(w_bit=8,
                                             a_bit=8,
-                                            anti_method='m4',
+                                            anti_method=args.anti_method,
                                             dev_type='npu',
                                             dev_id=model.device.index)
             anti_outlier = AntiOutlier(model, calib_data=anti_dataset, cfg=anti_config)
