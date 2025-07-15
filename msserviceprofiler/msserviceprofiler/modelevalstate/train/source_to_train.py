@@ -24,9 +24,10 @@ from typing import Dict, List, Tuple, Any
 
 import pandas as pd
 from loguru import logger
-from msserviceprofiler.msguard.security.io import read_csv_s
 from msserviceprofiler.msguard.security import open_s
 from msserviceprofiler.msguard.constraints.rule import Rule
+from msserviceprofiler.msguard.security.io import read_csv_s
+
 
 
 def fetch_rids_from_db(db_path):
@@ -401,7 +402,6 @@ def source_to_model(input_path: str, model_type: str):
         batch_rows = read_batch_data(cursor)
         data_by_pid = group_exec_data_by_pid(exec_rows)
         csv_file = os.path.join(input_path, 'request.csv')
-        model_type
         req_df = read_csv_s(csv_file, header=0)
         rids_ori = fetch_rids_from_db(ori_db_path)
         if model_type == 'vllm':
@@ -440,7 +440,6 @@ def source_to_model(input_path: str, model_type: str):
 def req_decodetimes(input_path, output_path):
     csv_file = os.path.join(input_path, f'request.csv')
     json_file = os.path.join(output_path, f'req_id_and_decode_num.json')
-
     # 初始化一个空字典来存储数据
     data = {}
 

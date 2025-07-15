@@ -17,8 +17,9 @@ import shlex
 from pathlib import Path
 from typing import Optional, List, Tuple
 
+import pandas as pd
 from loguru import logger
-
+from msserviceprofiler.msguard.security import open_s, sanitize_csv_value
 from msserviceprofiler.modelevalstate.config.config import (
     BenchMarkConfig,
     DataStorageConfig,
@@ -27,6 +28,7 @@ from msserviceprofiler.modelevalstate.config.config import (
     OptimizerConfigField
 )
 from msserviceprofiler.msguard.security.io import read_csv_s
+
 
 
 class DataStorage:
@@ -51,9 +53,7 @@ class DataStorage:
             return None
         return history_data
 
-    def save(self, performance_index: PerformanceIndex, params: Tuple[OptimizerConfigField],
-             bench_mark_config: BenchMarkConfig, **kwargs):
-        from msserviceprofiler.msguard.security import open_s, sanitize_csv_value
+    def save(self, performance_index: PerformanceIndex, params: Tuple[OptimizerConfigField], **kwargs):
         logger.info("Save result with DataStorage.")
         _column = []
         _value = []
@@ -63,13 +63,6 @@ class DataStorage:
         for _p in params:
             _column.append(_p.name)
             _value.append(_p.value)
-        benchmark_param = shlex.split(bench_mark_config.command)[2:]
-        for i in range(0, len(benchmark_param), 2):
-            if (i + 1) < len(benchmark_param):
-                _column.append(benchmark_param[i].strip("--"))
-                _value.append(benchmark_param[i + 1])
-            else:
-                logger.warning(f"IndexError. index: {i + 1}, list: {benchmark_param}")
         for k, v in kwargs.items():
             _column.append(k)
             _value.append(v)
