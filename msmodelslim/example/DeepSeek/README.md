@@ -218,15 +218,17 @@ python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8
   python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --batch_size 4 --quant_mtp mix
   ```
   
-##### DeepSeek-R1 0528 w8a8 动态量化（支持function_call）
-- 生成DeepSeek-R1 0528模型 w8a8 动态量化权重
+##### DeepSeek-R1 0528 w8a8 混合量化 + mtp 量化
+- 生成DeepSeek-R1 0528模型 w8a8 混合量化 + mtp 量化
   ```shell
   python3 quant_deepseek_w8a8.py \
   --model_path {浮点权重路径} \
   --save_path {W8A8量化权重路径} \
-  --dynamic \
-  --anti_dataset ./anti_prompt_fc.json \
-  --anti_method m6
+  --batch_size 8 \
+  --anti_dataset ./calib_prompt_0528.json \
+  --calib_dataset ./calib_prompt_0528.json \
+  --anti_method m4 \
+   --quant_mtp mix
   ```
 
 ##### DeepSeek-V3/R1量化QA
