@@ -155,9 +155,9 @@ class Generator:
 
                 min_pos = 0
                 max_pos = filtered_length - 1
-                mid_pos = int(round(filtered_length * 0.5))
-                q25_pos = int(round(filtered_length * 0.25))
-                q75_pos = int(round(filtered_length * 0.75))
+                mid_pos = int(filtered_length * 0.5)
+                q25_pos = int(filtered_length * 0.25)
+                q75_pos = int(filtered_length * 0.75)
 
                 min_idx = sorted_filtered.iloc[min_pos]['index']
                 max_idx = sorted_filtered.iloc[max_pos]['index']
