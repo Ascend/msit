@@ -244,6 +244,7 @@ def main():
     if args.quant_mtp == "mix":
         disable_names.append("lm_head")
         disable_names.append("mtp_decoder.self_attn.kv_b_proj")
+        disable_names.append("mtp_layer.shared_head.head")
 
     quant_config = QuantConfig(
         a_bit=8,
