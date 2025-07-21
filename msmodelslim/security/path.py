@@ -66,7 +66,7 @@ def is_belong_to_user_or_group(file_stat):
 def check_write_directory(dir_name, check_user_stat=True):
     real_dir_name = get_valid_path(dir_name)
     if not os.path.isdir(real_dir_name):
-        raise ValueError("The file writen directory {} doesn't exists.".format(dir_name))
+        raise ValueError("The file writen directory {} doesn't exist.".format(dir_name))
 
     file_stat = os.stat(real_dir_name)
     if check_user_stat and not sys.platform.startswith("win") and not is_belong_to_user_or_group(file_stat):
@@ -78,9 +78,9 @@ def check_write_directory(dir_name, check_user_stat=True):
 def get_valid_read_path(path, extensions=None, size_max=MAX_READ_FILE_SIZE_4G, check_user_stat=True, is_dir=False):
     real_path = get_valid_path(path, extensions)
     if not is_dir and not os.path.isfile(real_path):
-        raise ValueError("The path {} doesn't exists or not a file.".format(path))
+        raise ValueError("The path {} doesn't exist or not a file.".format(path))
     if is_dir and not os.path.isdir(real_path):
-        raise ValueError("The path {} doesn't exists or not a directory.".format(path))
+        raise ValueError("The path {} doesn't exist or not a directory.".format(path))
 
     file_stat = os.stat(real_path)
     if check_user_stat and not sys.platform.startswith("win") and not is_belong_to_user_or_group(file_stat):

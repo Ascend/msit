@@ -251,14 +251,14 @@ def test_check_dict_character_given_invalid_characters_in_keys_when_called_then_
 def test_get_valid_read_path_given_nonexistent_file_when_called_then_raises_value_error():
     with patch('components.utils.security_check.get_valid_path', return_value="/nonexistent/file"), \
          patch('os.path.isfile', return_value=False):
-        with pytest.raises(ValueError, match=r"The path .+ doesn't exists or not a file\."):
+        with pytest.raises(ValueError, match=r"The path .+ doesn't exist or not a file\."):
             get_valid_read_path("/nonexistent/file")
 
 
 def test_get_valid_read_path_given_nonexistent_directory_when_called_then_raises_value_error():
     with patch('components.utils.security_check.get_valid_path', return_value="/nonexistent/dir"), \
          patch('os.path.isdir', return_value=False):
-        with pytest.raises(ValueError, match=r"The path .+ doesn't exists or not a directory\."):
+        with pytest.raises(ValueError, match=r"The path .+ doesn't exist or not a directory\."):
             get_valid_read_path("/nonexistent/dir", is_dir=True)
 
 

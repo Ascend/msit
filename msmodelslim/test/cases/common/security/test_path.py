@@ -101,7 +101,7 @@ def test_get_valid_read_path_given_valid_when_any_then_pass():
 
 def test_get_valid_read_path_given_invalid_when_any_then_value_error():
     with pytest.raises(ValueError):
-        security.get_valid_read_path('./not_exist') # ValueError: The file ... doesn't exists or not a file.
+        security.get_valid_read_path('./not_exist') # ValueError: The file ... doesn't exist or not a file.
     with pytest.raises(ValueError):
         # ValueError: The filename ... doesn't endswith ".json"
         security.get_valid_read_path(TEST_READ_FILE_NAME, extensions='.json')
@@ -122,7 +122,7 @@ def test_check_write_directory_given_valid_when_any_then_pass():
 
 def test_check_write_directory_given_invalid_when_any_then_error():
     with pytest.raises(ValueError):
-        # ValueError: The file writen directory ... doesn't exists.
+        # ValueError: The file writen directory ... doesn't exist.
         security.check_write_directory('not_exists')
 
 
@@ -133,7 +133,7 @@ def test_get_valid_write_path_given_valid_when_any_then_pass():
 
 def test_get_valid_write_path_given_invalid_when_any_then_value_error():
     with pytest.raises(ValueError):
-        # ValueError: The file writen directory ... doesn't exists.
+        # ValueError: The file writen directory ... doesn't exist.
         security.get_valid_write_path('not_exists/README.md', extensions='.md')
     with pytest.raises(ValueError):
         # ValueError: Current user doesn't have writen permission to the file writen directory ....
