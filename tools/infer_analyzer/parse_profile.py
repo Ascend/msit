@@ -115,17 +115,18 @@ class ProfileParser:
 
             time_diff = self.op_data.loc[idx, 'Start Time(us)'] + self.op_data.loc[idx, 'Duration(us)'] - self.op_data.loc[
                 start_row, 'Start Time(us)']
-            task_id_diff = self.op_data.loc[idx, 'Task ID'] - self.op_data.loc[start_row, 'Task ID']
 
-            density = task_id_diff / time_diff if task_id_diff != 0 else float('inf')
-
-            self.op_data.loc[start_row:idx + 1, 'density'] = density
+            if 'Task ID' in self.op_data.columns:
+                task_id_diff = self.op_data.loc[idx, 'Task ID'] - self.op_data.loc[start_row, 'Task ID']
+                density = task_id_diff / time_diff if task_id_diff != 0 else float('inf')
+                self.op_data.loc[start_row:idx + 1, 'density'] = density
+                
             self.op_data.loc[idx, "Duration(ms)"] = time_diff / 1000
             self.op_data.loc[idx, "Start Time(ms)"] = str(round(self.op_data.loc[start_row, 'Start Time(us)'] / 1000))
             self.op_data.loc[idx, "Duration Ratio"] = f"{round(time_diff / total_duration * 100, 3)}%"
             start_row = idx + 1
 
-        if (self.op_data["Stage"].eq("other")).all():
+        if (self.op_data["Stage"].eq("other")).all() and "Task ID" in self.op_data.columns:
             density_mean = self.op_data["density"].mean()
             self.op_data.loc[self.op_data["density"] <= density_mean, "Stage"] = "prefill"
             self.op_data.loc[self.op_data["density"] > density_mean, "Stage"] = "decode"
