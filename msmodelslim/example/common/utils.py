@@ -108,6 +108,7 @@ class SafeGenerator:
                 src_filepath = os.path.join(model_dir, filename)
                 dest_filepath = os.path.join(dest_dir, filename)
                 shutil.copyfile(src_filepath, dest_filepath)
+                os.chmod(dest_filepath, int("600", 8))
 
     @staticmethod
     def modify_config(model_dir, dest_dir, torch_dtype, quantize_type, args=None):

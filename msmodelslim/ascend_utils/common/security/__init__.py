@@ -26,4 +26,5 @@ from ascend_utils.common.security.path import (
     safe_delete_path_if_exists,
     safe_copy_file,
     SafeWriteUmask,
+    set_file_stat
 )
