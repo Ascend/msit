@@ -76,9 +76,8 @@ def get_anti_dataset(tokenizer, calib_list, device="npu"):
         calib_dataset.append(
             inputs.data['input_ids'].to(device))
         max_len = max(max_len, inputs.data['input_ids'].size(1))
-    for i in range(len(calib_dataset)):
-        calib_dataset[i] = F.pad(calib_dataset[i], (0, max_len - calib_dataset[i].size(1)), value=0)
-    return torch.cat(calib_dataset)
+    padded = [F.pad(x, (0, max_len - x.size(1)), value=0) for x in calib_dataset]
+    return torch.cat(padded)
 
 
 def get_calib_dataset(tokenizer, calib_list, device="npu"):  # device="npu:0" 如果需要使用npu进行量化
@@ -323,9 +322,9 @@ if __name__ == '__main__':
         with open(calib_file, 'r') as f:
             calib_promt = json.load(f)
         tokenized_calib_data = []
-        for i in range(len(calib_promt)):
-            tmp = get_calib_dataset(quantifier.tokenizer, calib_promt[i])
-            tokenized_calib_data += (tmp)
+        for x in calib_promt:
+            tmp = get_calib_dataset(quantifier.tokenizer, x)
+            tokenized_calib_data += tmp
     else:
         calib_texts = args.calib_texts
 
@@ -336,8 +335,8 @@ if __name__ == '__main__':
         with open(anti_calib_file_path, 'r') as f:
             anti_promt = json.load(f)
         tokenized_ant_calib_data = []
-        for i in range(len(anti_promt)):
-            tmp = get_anti_dataset(quantifier.tokenizer, anti_promt[i])
+        for x in anti_promt:
+            tmp = get_anti_dataset(quantifier.tokenizer, x)
             tokenized_ant_calib_data.append([tmp])
 
     if isinstance(args.disable_threshold, float) and args.disable_threshold > 0:
