@@ -5,11 +5,12 @@ import glob
 from unittest.mock import MagicMock
 
 from ascend_utils.common.security import safe_copy_file, json_safe_dump, json_safe_load, get_valid_read_path, \
-    get_valid_write_path
+    get_valid_write_path, set_file_stat
 
 
 def copy_json(src_path: str, dst_path: str, quant_config, mindie_format: bool):
     safe_copy_file(src_path, dst_path)
+    set_file_stat(dst_path, "600")
 
 
 def modify_config_json(src_path: str, dst_path: str, quant_config, mindie_format: bool, custom_hook=None):
