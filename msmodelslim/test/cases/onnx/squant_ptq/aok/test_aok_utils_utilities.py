@@ -338,7 +338,7 @@ class TestONNXUtils(unittest.TestCase):
 
         with self.assertRaises(ValueError) as context:
             aok_utilities.load_model(self.temp_dir, "nonexist", self.logger)
-        self.assertIn("doesn't exists or not a file", str(context.exception))
+        self.assertIn("doesn't exist or not a file", str(context.exception))
 
     def test_is_model_quantized(self):
         """测试检查模型是否量化"""

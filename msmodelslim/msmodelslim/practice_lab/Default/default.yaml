@@ -21,7 +21,7 @@ spec:
   calib_file: ../../calib_lab/boolq.jsonl
   calib_save_params:
     save_type:
-      - 'safe_tensor'
+      - 'ascendV1'
   
 
 
