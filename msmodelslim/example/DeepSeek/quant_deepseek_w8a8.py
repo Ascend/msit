@@ -53,8 +53,8 @@ def custom_hook(model_config, cloud_vllm=False):
         model_config["model_type"] = "deepseekv2"
         return
     if cloud_vllm:
-        model_config['num_hidden_layers'] = 62
-        model_config['architectures'] = "DeepseekV3Fusion"
+        model_config['num_hidden_layers'] = 61
+        model_config['architectures'] = "DeepseekV3ForCausalLM"
     
     model_config["model_type"] = "deepseek_v3"
     ignore_list = [
@@ -87,7 +87,16 @@ def custom_hook(model_config, cloud_vllm=False):
                     "block_structure": None,
                     "dynamic": False,
                     "group_size": None,
-                    "num_bits": 8,
+                    "num_bits": {
+                        "self_attn.kv_a_proj_with_mqa": 8,
+                        "self_attn.q_a_proj": 8,
+                        "self_attn.q_b_proj": 8,
+                        "self_attn.o_proj": 8,
+                        "mlp.down_proj": 8,
+                        "mlp.gate_up_proj": 8,
+                        "mlp.shared_experts": 8,
+                        "mlp.experts": 8
+                    },
                     "observer": "minmax",
                     "observer_kwargs": {},
                     "strategy": "channel",
