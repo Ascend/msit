@@ -1,6 +1,7 @@
 export WANDB_DISABLED=true
 export WANDB_BASE_URL="https://api.wandb.ai"
 export WANDB_MODE=online
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 
 mkdir images
@@ -58,3 +59,4 @@ torchrun --nnodes=2 --nproc_per_node=8 --node_rank=0 --master_addr=192.168.0.101
     --init_same_noise \
     --clip_range 1e-4 \
     --adv_clip_max 5.0 \
+    --fsdp_sharding_startegy hybrid_full \

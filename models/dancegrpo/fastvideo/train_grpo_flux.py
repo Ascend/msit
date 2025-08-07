@@ -57,6 +57,11 @@ from torch.nn import functional as F
 from typing import List
 from PIL import Image
 from diffusers import FluxTransformer2DModel, AutoencoderKL
+import torch_npu
+from torch_npu.contrib import transfer_to_npu
+from concurrent.futures import ThreadPoolExecutor
+import torchvision
+
 
 
 def sd3_time_shift(shift, t):
@@ -72,6 +77,8 @@ def flux_step(
     prev_sample: torch.Tensor,
     grpo: bool,
     sde_solver: bool,
+    batch_idx=None,
+    initial_all_noise=None,
 ):
     sigma = sigmas[index]
     dsigma = sigmas[index + 1] - sigma
@@ -88,8 +95,8 @@ def flux_step(
         prev_sample_mean = prev_sample_mean + log_term * dsigma
 
     if grpo and prev_sample is None:
-        prev_sample = prev_sample_mean + torch.randn_like(prev_sample_mean) * std_dev_t 
-        
+        #prev_sample = prev_sample_mean + torch.randn_like(prev_sample_mean) * std_dev_t 
+        prev_sample = prev_sample_mean + initial_all_noise[batch_idx, index].to(prev_sample_mean.device) * std_dev_t
 
     if grpo:
         # log prob of prev_sample given prev_sample_mean and std_dev_t
@@ -156,6 +163,8 @@ def run_sample_step(
         text_ids,
         image_ids, 
         grpo_sample,
+        batch_idx,
+        initial_all_noise,
     ):
     if grpo_sample:
         all_latents = [z]
@@ -167,6 +176,8 @@ def run_sample_step(
             timesteps = torch.full([encoder_hidden_states.shape[0]], timestep_value, device=z.device, dtype=torch.long)
             transformer.eval()
             with torch.autocast("cuda", torch.bfloat16):
+                expanded_text_ids = text_ids.unsqueeze(1)
+                expanded_text_ids = expanded_text_ids.repeat(1, encoder_hidden_states.shapep[1], 1)
                 pred= transformer(
                     hidden_states=z,
                     encoder_hidden_states=encoder_hidden_states,
@@ -176,13 +187,15 @@ def run_sample_step(
                         device=z.device,
                         dtype=torch.bfloat16
                     ),
-                    txt_ids=text_ids.repeat(encoder_hidden_states.shape[1],1), # B, L
+                    txt_ids=expanded_text_ids[0], # B, L
                     pooled_projections=pooled_prompt_embeds,
                     img_ids=image_ids,
                     joint_attention_kwargs=None,
                     return_dict=False,
                 )[0]
-            z, pred_original, log_prob = flux_step(pred, z.to(torch.float32), args.eta, sigmas=sigma_schedule, index=i, prev_sample=None, grpo=True, sde_solver=True)
+            z, pred_original, log_prob = flux_step(pred, z.to(torch.float32), args.eta, sigmas=sigma_schedule, index=i, prev_sample=None, grpo=True, sde_solver=True, 
+                                                   batch_idx=batch_idx, initial_all_noise=initial_all_noise)
+            #z, pred_original, log_prob = flux_step(pred, z.to(torch.float32), args.eta, sigmas=sigma_schedule, index=i, prev_sample=None, grpo=True, sde_solver=True)
             z.to(torch.bfloat16)
             all_latents.append(z)
             all_log_probs.append(log_prob)
@@ -258,7 +271,7 @@ def sample_reference_model(
     IN_CHANNELS = 16
     latent_w, latent_h = w // SPATIAL_DOWNSAMPLE, h // SPATIAL_DOWNSAMPLE
 
-    batch_size = 1  
+    batch_size = 4  
     batch_indices = torch.chunk(torch.arange(B), B // batch_size)
 
     all_latents = []
@@ -270,7 +283,9 @@ def sample_reference_model(
                 (1, IN_CHANNELS, latent_h, latent_w),  #（c,t,h,w)
                 device=device,
                 dtype=torch.bfloat16,
-            )
+            ).repeat(batch_size, 1, 1, 1)
+
+    initial_all_noise = torch.randn([args.numgenerations, args.sampling_steps, 2025, 64])
 
     for index, batch_idx in enumerate(batch_indices):
         batch_encoder_hidden_states = encoder_hidden_states[batch_idx]
@@ -299,9 +314,11 @@ def sample_reference_model(
                 batch_text_ids,
                 image_ids,
                 grpo_sample,
+                batch_idx,
+                initial_all_noise,
             )
-        
-        all_image_ids.append(image_ids)
+        for _ in range(batch_size):
+            all_image_ids.append(image_ids)
         all_latents.append(batch_latents)
         all_log_probs.append(batch_log_probs)
         vae.enable_tiling()
@@ -309,29 +326,33 @@ def sample_reference_model(
         image_processor = VaeImageProcessor(16)
         rank = int(os.environ["RANK"])
 
-        
+        image_save_executor = ThreadPoolExecutor(max_workers=8)
+
         with torch.inference_mode():
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 latents = unpack_latents(latents, h, w, 8)
                 latents = (latents / 0.3611) + 0.1159
                 image = vae.decode(latents, return_dict=False)[0]
-                decoded_image = image_processor.postprocess(
+                batch_decoded_images = image_processor.postprocess(
                 image)
-        decoded_image[0].save(f"./images/flux_{rank}_{index}.png")
+        for idx, image in zip(batch_idx, batch_decoded_images):
+            image_save_executor.submit(lambda: image.save(f"./image/flux_{rank}_{idx}.png"))
+
 
         if args.use_hpsv2:
             with torch.no_grad():
-                image_path = decoded_image[0]
-                image = preprocess_val(image_path).unsqueeze(0).to(device=device, non_blocking=True)
-                # Process the prompt
-                text = tokenizer([batch_caption[0]]).to(device=device, non_blocking=True)
-                # Calculate the HPS
-                with torch.amp.autocast('cuda'):
-                    outputs = reward_model(image, text)
-                    image_features, text_features = outputs["image_features"], outputs["text_features"]
-                    logits_per_image = image_features @ text_features.T
-                    hps_score = torch.diagonal(logits_per_image)
-                all_rewards.append(hps_score)
+                for i, decoded_image in enumerate(batch_decoded_images):
+                    image_path = decoded_image
+                    image = preprocess_val(image_path).unsqueeze(0).to(device=device, non_blocking=True)
+                    # Process the prompt
+                    text = tokenizer([batch_caption[i]]).to(device=device, non_blocking=True)
+                    # Calculate the HPS
+                    with torch.amp.autocast('cuda'):
+                        outputs = reward_model(image, text)
+                        image_features, text_features = outputs["image_features"], outputs["text_features"]
+                        logits_per_image = image_features @ text_features.T
+                        hps_score = torch.diagonal(logits_per_image)
+                    all_rewards.append(hps_score)
         
         if args.use_pickscore:
             def calc_probs(processor, model, prompt, images, device):
@@ -365,6 +386,7 @@ def sample_reference_model(
             pil_images = [Image.open(f"./images/flux_{rank}_{index}.png")]
             score = calc_probs(tokenizer, reward_model, caption, pil_images, device)
             all_rewards.append(score)
+
 
     all_latents = torch.cat(all_latents, dim=0)
     all_log_probs = torch.cat(all_log_probs, dim=0)
@@ -504,8 +526,6 @@ def train_one_step(
     train_timesteps = int(len(samples["timesteps"][0])*args.timestep_fraction)
     for i,sample in list(enumerate(samples_batched_list)):
         for _ in range(train_timesteps):
-            clip_range = args.clip_range
-            adv_clip_max = args.adv_clip_max
             new_log_probs = grpo_one_step(
                 args,
                 sample["latents"][:,_],
@@ -519,12 +539,15 @@ def train_one_step(
                 perms[i][_],
                 sigma_schedule,
             )
+            ratio = torch.exp(new_log_probs - sample["log_probs"][:,_])
 
+            adv_clip_max = args.adv_clip_max
             advantages = torch.clamp(
                 sample["advantages"],
                 -adv_clip_max,
                 adv_clip_max,
             )
+            clip_range = args.clip_range
 
             ratio = torch.exp(new_log_probs - sample["log_probs"][:,_])
 
@@ -555,6 +578,7 @@ def train_one_step(
 
 
 def main(args):
+    os.environ['HCCL_DETERMINISTIC'] = 'true'
     torch.backends.cuda.matmul.allow_tf32 = True
 
     local_rank = int(os.environ["LOCAL_RANK"])
@@ -650,7 +674,8 @@ def main(args):
         apply_fsdp_checkpointing(
             transformer, no_split_modules, args.selective_checkpointing
         )
-    
+
+    torch.distributed.barrier()    
 
     vae = AutoencoderKL.from_pretrained(
         args.pretrained_model_name_or_path,
