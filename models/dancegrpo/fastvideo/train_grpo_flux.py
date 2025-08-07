@@ -61,6 +61,70 @@ import torch_npu
 from torch_npu.contrib import transfer_to_npu
 from concurrent.futures import ThreadPoolExecutor
 import torchvision
+from contextlib import contextmanager
+from safetensors.torch import save_file
+
+class FSDP_EMA:
+    def __init__(self, model, decay, rank):
+        self.decay = decay
+        self.rank = rank
+        self.ema_state_dict_rank0 = {}
+        options = StateDictOptions(full_state_dict=True, cpu_offload=True)
+        state_dict = get_model_state_dict(model, options=options)
+
+        if self.rank == 0:
+            self.ema_state_dict_rank0 = {k: v.clone() for k, v in state_dict.items()}
+            main_print("--> Modern EMA handler initialized on rank 0.")
+
+    def update(self, model):
+        options = StateDictOptions(full_state_dict=True, cpu_offload=True)
+        model_state_dict = get_model_state_dict(model, options=options)
+
+        if self.rank == 0:
+            for key in self.ema_state_dict_rank0:
+                if key in model_state_dict:
+                    self.ema_state_dict_rank0[key].copy_(
+                        self.decay * self.ema_state_dict_rank0[key] + (1 - self.decay) * model_state_dict[key]
+                    )
+
+    @contextmanager
+    def use_ema_weights(self, model):
+        backup_options = StateDictOptions(full_state_dict=True, cpu_offload=True)
+        backup_state_dict_rank0 = get_model_state_dict(model, options=backup_options)
+
+        load_options = StateDictOptions(full_state_dict=True, broadcast_from_rank0=True)
+        set_model_state_dict(
+            model,
+            model_state_dict=self.ema_state_dict_rank0, 
+            options=load_options
+        )
+        
+        try:
+            yield
+        finally:
+            restore_options = StateDictOptions(full_state_dict=True, broadcast_from_rank0=True)
+            set_model_state_dict(
+                model,
+                model_state_dict=backup_state_dict_rank0, 
+                options=restore_options
+            )
+
+def save_ema_checkpoint(ema_handler, rank, output_dir, step, epoch, config_dict):
+    if rank == 0 and ema_handler is not None:
+        ema_checkpoint_path = os.path.join(output_dir, f"checkpoint-ema-{step}-{epoch}")
+        os.makedirs(ema_checkpoint_path, exist_ok=True)
+        weight_path = os.path.join(ema_checkpoint_path ,
+                                   "diffusion_pytorch_model.safetensors")
+        save_file(ema_handler.ema_state_dict_rank0, weight_path)
+        if "dtype" in config_dict:
+            del config_dict["dtype"]  # TODO
+        config_path = os.path.join(ema_checkpoint_path, "config.json")
+        # save dict as json
+        import json
+        with open(config_path, "w") as f:
+            json.dump(config_dict, f, indent=4)
+        #torch.save(ema_handler.ema_state_dict_rank0, os.path.join(ema_checkpoint_path, "ema_model.pt"))
+        main_print(f"--> EMA checkpoint saved at {ema_checkpoint_path}")
 
 
 
@@ -177,7 +241,7 @@ def run_sample_step(
             transformer.eval()
             with torch.autocast("cuda", torch.bfloat16):
                 expanded_text_ids = text_ids.unsqueeze(1)
-                expanded_text_ids = expanded_text_ids.repeat(1, encoder_hidden_states.shapep[1], 1)
+                expanded_text_ids = expanded_text_ids.repeat(1, encoder_hidden_states.shape[1], 1)
                 pred= transformer(
                     hidden_states=z,
                     encoder_hidden_states=encoder_hidden_states,
@@ -285,7 +349,7 @@ def sample_reference_model(
                 dtype=torch.bfloat16,
             ).repeat(batch_size, 1, 1, 1)
 
-    initial_all_noise = torch.randn([args.numgenerations, args.sampling_steps, 2025, 64])
+    initial_all_noise = torch.randn([args.num_generations, args.sampling_steps, 2025, 64])
 
     for index, batch_idx in enumerate(batch_indices):
         batch_encoder_hidden_states = encoder_hidden_states[batch_idx]
@@ -336,7 +400,7 @@ def sample_reference_model(
                 batch_decoded_images = image_processor.postprocess(
                 image)
         for idx, image in zip(batch_idx, batch_decoded_images):
-            image_save_executor.submit(lambda: image.save(f"./image/flux_{rank}_{idx}.png"))
+            image_save_executor.submit(lambda: image.save(f"./images/flux_{rank}_{idx}.png"))
 
 
         if args.use_hpsv2:
@@ -417,6 +481,7 @@ def train_one_step(
     noise_scheduler,
     max_grad_norm,
     preprocess_val,
+    ema_handler,
 ):
     total_loss = 0.0
     optimizer.zero_grad()
@@ -670,12 +735,15 @@ def main(args):
     
     transformer = FSDP(transformer, **fsdp_kwargs,)
 
+    ema_handler = None
+    if args.use_ema:
+        ema_handler = FSDP_EMA(transformer, args.ema_decay, rank)
+
     if args.gradient_checkpointing:
         apply_fsdp_checkpointing(
             transformer, no_split_modules, args.selective_checkpointing
         )
 
-    torch.distributed.barrier()    
 
     vae = AutoencoderKL.from_pretrained(
         args.pretrained_model_name_or_path,
@@ -798,6 +866,8 @@ def main(args):
             if step % args.checkpointing_steps == 0:
                 save_checkpoint(transformer, rank, args.output_dir,
                                 step, epoch)
+                if args.use_ema:
+                    save_ema_checkpoint(ema_handler, rank, args.output_dir, step, epoch, dict(transformer.config))
 
                 dist.barrier()
             loss, grad_norm = train_one_step(
@@ -813,7 +883,11 @@ def main(args):
                 noise_scheduler,
                 args.max_grad_norm,
                 preprocess_val,
+                ema_handler,
             )
+
+            if args.use_ema and ema_handler:
+                ema_handler.update(transformer)
     
             step_time = time.time() - start_time
             step_times.append(step_time)
@@ -1125,6 +1199,11 @@ if __name__ == "__main__":
         type = float,
         default=5.0,
         help="clipping advantage",
+    )
+    parser.add_argument(
+        "--use_ema", 
+        action="store_true", 
+        help="Enable Exponential Moving Average of model weights."
     )
     
 
