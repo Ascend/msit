@@ -159,7 +159,6 @@ def flux_step(
         prev_sample_mean = prev_sample_mean + log_term * dsigma
 
     if grpo and prev_sample is None:
-        #prev_sample = prev_sample_mean + torch.randn_like(prev_sample_mean) * std_dev_t 
         prev_sample = prev_sample_mean + initial_all_noise[batch_idx, index].to(prev_sample_mean.device) * std_dev_t
 
     if grpo:
