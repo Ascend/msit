@@ -8,7 +8,7 @@ def flash_attn_no_pad(qkv,
                       causal=False,
                       dropout_p=0.0,
                       softmax_scale=None):
-    #adapted from https://github.com/Dao-AILab/flash-attention/blob/13403e81157ba37ca525890f2f0f2137edf75311/flash_attn/flash_attention.py#L27
+    # adapted from https://github.com/Dao-AILab/flash-attention/blob/13403e81157ba37ca525890f2f0f2137edf75311/flash_attn/flash_attention.py#L27
     batch_size = qkv.shape[0]
     seqlen = qkv.shape[1]
     nheads = qkv.shape[-2]
@@ -35,4 +35,3 @@ def flash_attn_no_pad(qkv,
         h=nheads,
     )
     return output
-    pass

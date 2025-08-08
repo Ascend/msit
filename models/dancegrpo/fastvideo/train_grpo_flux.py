@@ -672,7 +672,6 @@ def main(args):
             transformer, no_split_modules, args.selective_checkpointing
         )
 
-
     vae = AutoencoderKL.from_pretrained(
         args.pretrained_model_name_or_path,
         subfolder="vae",
@@ -1123,7 +1122,6 @@ if __name__ == "__main__":
         default=5.0,
         help="clipping advantage",
     )
-
 
 
 
