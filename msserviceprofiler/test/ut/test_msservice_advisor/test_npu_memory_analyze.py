@@ -201,7 +201,7 @@ def test_write_to_answer_given_valid_values_updates_answers():
 def test_find_max_batch_size_range_given_valid_input_updates_answers(
     mock_block, mock_mem, mock_model, mock_server, mock_token
 ):
-    npu_memory_analyze.find_max_batch_size_range(SAMPLE_SERVER_CONFIG, SAMPLE_BENCHMARK, None, MagicMock())
+    npu_memory_analyze.find_max_batch_size_range(SAMPLE_SERVER_CONFIG, SAMPLE_BENCHMARK, MagicMock())
     assert "maxBatchSize" in ANSWERS[SUGGESTION_TYPES.config]
 
 

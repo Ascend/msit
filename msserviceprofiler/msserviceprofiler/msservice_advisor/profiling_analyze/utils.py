@@ -26,6 +26,7 @@ SUGGESTION_TYPES = namedtuple("SUGGESTION_TYPES", _SUGGESTION_TYPES)(*_SUGGESTIO
 MAX_FILE_ITER_TIME = 10000
 MAX_FILE_SIZE = 10
 BYTES_TO_GB = 1024**3
+MAX_DEVICE_ID_LIST_LENGTH = 128
 
 LOG_LEVELS = {
     "debug": logging.DEBUG,
@@ -61,7 +62,7 @@ def set_log_level(level="info"):
     if level.lower() in LOG_LEVELS:
         logger.setLevel(LOG_LEVELS.get(level.lower()))
     else:
-        logger.warning("Set %s log level failed.", level)
+        logger.warning("Set %r log level failed.", level)
 
 
 def set_logger(msit_logger):
@@ -123,56 +124,56 @@ def get_latest_matching_file(instance_path, pattern):
 
 
 def read_csv(file_path):
-    logger.info(f"Reading CSV file: {file_path}")
+    logger.info("Reading CSV file: %r", file_path)
     result = {}
     try:
         with open_s(file_path, mode="r", newline="", encoding="utf-8") as ff:
             reader = csv.DictReader(ff)
             if not reader.fieldnames:
-                logger.error(f"CSV file {file_path} has no headers or is empty.")
+                logger.error("CSV file %r has no headers or is empty.", file_path)
                 return None
             for row in reader:
                 for kk, vv in row.items():
                     result.setdefault(kk, []).append(vv)
             if not result:
-                logger.error(f"CSV file {file_path} is empty or has no valid data.")
+                logger.error("CSV file %r is empty or has no valid data.", file_path)
                 return None
     except csv.Error as e:
-        logger.error(f"CSV file {file_path} is not properly formatted: {e}")
+        logger.error("CSV file %r is not properly formatted: %s", file_path, e)
         return None
     except Exception as e:
-        logger.error(f"Failed to read CSV file {file_path}: {e}")
+        logger.error("Failed to read CSV file %r: %s", file_path, e)
         return None
     return result
 
 
 def read_json(file_path):
-    logger.info(f"Reading JSON file: {file_path}")
+    logger.info("Reading JSON file: %r", file_path)
     try:
         with open_s(file_path, mode="r", encoding="utf-8") as ff:
             result = json.load(ff)
             if not isinstance(result, dict):
-                logger.error(f"JSON file {file_path} does not contain a JSON object.")
+                logger.error("JSON file %r does not contain a JSON object.", file_path)
                 return None
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse JSON file {file_path}: {e}")
+        logger.error("Failed to parse JSON file %r: %s", file_path, e)
         return None
     except Exception as e:
-        logger.error(f"Failed to read JSON file {file_path}: {e}")
+        logger.error("Failed to read JSON file %r: %s", file_path, e)
         return None
     return result
 
 
 def read_csv_or_json(file_path):
     if not file_path or not os.path.exists(file_path):
-        logger.warning(f"File does not exist: {file_path}")
+        logger.warning("File does not exist: %r", file_path)
         return None
     if file_path.endswith(".json"):
         return read_json(file_path)
     elif file_path.endswith(".csv"):
         return read_csv(file_path)
     else:
-        logger.warning(f"Unsupported file format: {file_path}")
+        logger.warning("Unsupported file format: %r", file_path)
         return None
 
 

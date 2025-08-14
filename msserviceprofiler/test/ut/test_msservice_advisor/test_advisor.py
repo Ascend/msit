@@ -20,6 +20,7 @@ import pytest
 
 from msserviceprofiler.msservice_advisor import advisor
 from msserviceprofiler.msservice_advisor.profiling_analyze.utils import TARGETS, SUGGESTION_TYPES, logger
+from msserviceprofiler.msservice_advisor.profiling_analyze import utils
 
 
 # Test fixtures
@@ -143,16 +144,13 @@ def test_parse_benchmark_instance(mock_read, mock_latest):
 
 # Test parse_mindie_server_config
 def test_parse_mindie_server_config_with_json_path():
-    with patch.object(advisor, "read_csv_or_json", return_value=SAMPLE_CONFIG_JSON):
-        config, log_path = advisor.parse_mindie_server_config("/path/config.json")
-        assert "BackendConfig" in config
-        assert log_path.endswith("custom_logs/server.log")
+    with patch.object(utils, "read_csv_or_json", return_value=SAMPLE_CONFIG_JSON):
+        config = advisor.parse_mindie_server_config("/path/config.json")
 
 
 def test_parse_mindie_server_config_with_service_path():
-    with patch.object(advisor, "read_csv_or_json", return_value=SAMPLE_CONFIG_JSON):
-        config, log_path = advisor.parse_mindie_server_config("/service/path")
-        assert log_path == "/service/path/custom_logs/server.log"
+    with patch.object(utils, "read_csv_or_json", return_value=SAMPLE_CONFIG_JSON):
+        config = advisor.parse_mindie_server_config("/service/path")
 
 
 # Test analyze
@@ -167,7 +165,7 @@ def test_analyze_calls_registered_analyzers():
     )
 
     with patch.object(advisor.logger, "info") as mock_log:
-        advisor.analyze({}, {}, None, params)
+        advisor.analyze({}, {}, params)
 
         # Verify analyzer was called
         assert mock_log.call_count >= 3
@@ -206,7 +204,7 @@ def test_main_integration(mock_log_level, mock_analyze, mock_parse_config, mock_
 
     # Setup mocks
     mock_parse_benchmark.return_value = {"benchmark": "data"}
-    mock_parse_config.return_value = ({"config": "data"}, "log/path")
+    mock_parse_config.return_value = ({"config": "data"})
 
     advisor.main(args)
 
@@ -295,9 +293,10 @@ def test_arg_parse_with_environment_variable():
         advisor.arg_parse(subparsers)
 
         # Test with minimal arguments
-        args = parser.parse_args(["advisor", "-i", "test_instance"])
+        args = parser.parse_args(["advisor"])
+        service_config_path = advisor.get_mindie_server_config_path(args.service_config_path)
 
-        assert args.service_config_path == test_path
+        assert service_config_path == os.path.join(test_path, "conf", "config.json")
     finally:
         # Clean up environment
         if advisor.MIES_INSTALL_PATH in os.environ:

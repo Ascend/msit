@@ -30,6 +30,8 @@ except ImportError as e:
 def summary_batch_info(batch_info):
     summary = {}
     for batchsize, latency_list in batch_info.items():
+        if not latency_list or not isinstance(latency_list, list):
+            continue  # 跳过空列表
         summary[batchsize] = {}
         latency_list.sort()
 
@@ -58,9 +60,12 @@ def read_batch_and_latency(pre_request):
     prefill_batch_info = {}  # batchsize => list of latency
     decode_batch_info = {}  # batchsize => list of latency
     for request in pre_request.values():
+        if not isinstance(request, dict):
+            continue
+
         prefill_batch_size = request.get("prefill_bsz")
-        decode_batch_size_list = request.get("decode_bsz")
-        latency_list = request.get("latency")
+        decode_batch_size_list = request.get("decode_bsz", [])
+        latency_list = request.get("latency", [])
         for index, latency in enumerate(latency_list):
             if index == 0:
                 prefill_batch_info.setdefault(prefill_batch_size, [])
@@ -249,7 +254,7 @@ def generate_decode_suggest_value(best_decode_result, best_prefill_result, decod
 
 
 @register_analyze()
-def find_best_batch_size(mindie_service_config, benchmark, output_log, profiling_params):
+def find_best_batch_size(mindie_service_config, benchmark, profiling_params):
     if "results_per_request" not in benchmark:
         return
 
@@ -299,3 +304,4 @@ def find_best_batch_size(mindie_service_config, benchmark, output_log, profiling
         logger.warning(f"图像生成失败: {error}")
     finally:
         np.seterr(invalid="warn", divide="warn", over="warn")  # set back to warn
+        plt.close('all')
