@@ -268,7 +268,7 @@ def sample_reference_model(
     IN_CHANNELS = 16
     latent_w, latent_h = w // SPATIAL_DOWNSAMPLE, h // SPATIAL_DOWNSAMPLE
 
-    batch_size = 4  #单次处理样本数
+    batch_size = 4  
     batch_indices = torch.chunk(torch.arange(B), B // batch_size)
 
     all_latents = []
@@ -523,8 +523,6 @@ def train_one_step(
     train_timesteps = int(len(samples["timesteps"][0])*args.timestep_fraction)
     for i,sample in list(enumerate(samples_batched_list)):
         for _ in range(train_timesteps):
-            clip_range = args.clip_range
-            adv_clip_max = args.adv_clip_max            
             new_log_probs = grpo_one_step(
                 args,
                 sample["latents"][:,_],
@@ -538,13 +536,16 @@ def train_one_step(
                 perms[i][_],
                 sigma_schedule,
             )
+            ratio = torch.exp(new_log_probs - sample["log_probs"][:,_])
 
+            adv_clip_max = args.adv_clip_max
             advantages = torch.clamp(
                 sample["advantages"],
                 -adv_clip_max,
                 adv_clip_max,
             )
-            
+            clip_range = args.clip_range
+
             ratio = torch.exp(new_log_probs - sample["log_probs"][:,_])
 
             unclipped_loss = -advantages * ratio
@@ -574,6 +575,7 @@ def train_one_step(
 
 
 def main(args):
+    os.environ['HCCL_DETERMINISTIC'] = 'true'
     torch.backends.cuda.matmul.allow_tf32 = True
 
     local_rank = int(os.environ["LOCAL_RANK"])
