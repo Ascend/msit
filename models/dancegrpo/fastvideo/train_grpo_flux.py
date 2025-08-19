@@ -268,7 +268,7 @@ def sample_reference_model(
     IN_CHANNELS = 16
     latent_w, latent_h = w // SPATIAL_DOWNSAMPLE, h // SPATIAL_DOWNSAMPLE
 
-    batch_size = 4  
+    batch_size = 1  
     batch_indices = torch.chunk(torch.arange(B), B // batch_size)
 
     all_latents = []
@@ -282,6 +282,7 @@ def sample_reference_model(
                 dtype=torch.bfloat16,
             ).repeat(batch_size, 1, 1, 1)
 
+    #随机扰动一次性批量生成
     initial_all_noise = torch.randn([args.num_generations, args.sampling_steps, 2025, 64])
 
     for index, batch_idx in enumerate(batch_indices):
