@@ -324,7 +324,7 @@ def sample_reference_model(
         image_processor = VaeImageProcessor(16)
         rank = int(os.environ["RANK"])
 
-        #异步保存图片，减少NPU空闲等待
+        #异步保存图片，以此减少NPU空闲等待
         image_save_executor = ThreadPoolExecutor(max_workers=8)
 
         with torch.inference_mode():
