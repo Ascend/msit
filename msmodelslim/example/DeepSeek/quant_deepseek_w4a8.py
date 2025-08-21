@@ -187,11 +187,13 @@ def main():
                                                  },
                                                  torch_dtype="auto",
                                                  attn_implementation='eager')
+
+    # 内存自动反量化fp8到bf16，如果没有反量化参数则认为是bf16，跳过
+    auto_convert_model_fp8_to_bf16(model, model_path, OpsType.get_ops_type(args.from_bf16, args.from_fp8))
+
     # mtp量化封装原模型为mtp model
     if args.quant_mtp == "mix":
         model = warp_mtp_model(config, model, model_path)
-
-    auto_convert_model_fp8_to_bf16(model, model_path, OpsType.get_ops_type(args.from_bf16, args.from_fp8))
 
     pbar.update(1)
 
