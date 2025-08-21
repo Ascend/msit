@@ -58,7 +58,6 @@ from typing import List
 from PIL import Image
 from diffusers import FluxTransformer2DModel, AutoencoderKL
 import torch_npu
-from torch_npu.contrib import transfer_to_npu
 from concurrent.futures import ThreadPoolExecutor
 import torchvision
 
@@ -93,7 +92,10 @@ def flux_step(
         prev_sample_mean = prev_sample_mean + log_term * dsigma
 
     if grpo and prev_sample is None:
-        prev_sample = prev_sample_mean + initial_all_noise[batch_idx, index].to(prev_sample_mean.device) * std_dev_t
+        if initial_all_noise is None:
+            prev_sample = prev_sample_mean + torch.randn_like(prev_sample_mean) * std_dev_t
+        else:
+            prev_sample = prev_sample_mean + initial_all_noise[batch_idx, index].to(prev_sample_mean.device) * std_dev_t
 
     if grpo:
         # log prob of prev_sample given prev_sample_mean and std_dev_t
@@ -149,6 +151,17 @@ def unpack_latents(latents, height, width, vae_scale_factor):
 
     return latents
 
+def is_npu_available():
+    if hasattr(torch, 'npu') and torch.npu.is_available():
+        return True
+    return False
+
+def load_npu_module():
+    if is_npu_available():
+        from torch_npu.contrib import transfer_to_npu  #延迟导入
+        return transfer_to_npu
+    return None
+
 def run_sample_step(
         args,
         z,
@@ -160,8 +173,8 @@ def run_sample_step(
         text_ids,
         image_ids, 
         grpo_sample,
-        batch_idx,
-        initial_all_noise,
+        batch_idx=None,
+        initial_all_noise=None,
     ):
     if grpo_sample:
         all_latents = [z]
@@ -192,7 +205,6 @@ def run_sample_step(
                 )[0]
             z, pred_original, log_prob = flux_step(pred, z.to(torch.float32), args.eta, sigmas=sigma_schedule, index=i, prev_sample=None, grpo=True, sde_solver=True, 
                                                    batch_idx=batch_idx, initial_all_noise=initial_all_noise)
-            #z, pred_original, log_prob = flux_step(pred, z.to(torch.float32), args.eta, sigmas=sigma_schedule, index=i, prev_sample=None, grpo=True, sde_solver=True)
             z.to(torch.bfloat16)
             all_latents.append(z)
             all_log_probs.append(log_prob)
@@ -282,9 +294,7 @@ def sample_reference_model(
                 dtype=torch.bfloat16,
             ).repeat(batch_size, 1, 1, 1)
 
-    #随机扰动一次性批量生成
-    initial_all_noise = torch.randn([args.num_generations, args.sampling_steps, 2025, 64])
-
+    initial_all_noise = None
     for index, batch_idx in enumerate(batch_indices):
         batch_encoder_hidden_states = encoder_hidden_states[batch_idx]
         batch_pooled_prompt_embeds = pooled_prompt_embeds[batch_idx]
@@ -297,6 +307,13 @@ def sample_reference_model(
                     dtype=torch.bfloat16,
                 )
         input_latents_new = pack_latents(input_latents, len(batch_idx), IN_CHANNELS, latent_h, latent_w)
+        
+        #批量生成多个初始noise
+        if index == 0:
+            back_dims = input_latents_new.shape[-2:]
+            new_shape = (args.num_generations, args.sampling_steps) + back_dims
+            initial_all_noise = torch.randn(new_shape)
+        
         image_ids = prepare_latent_image_ids(len(batch_idx), latent_h // 2, latent_w // 2, device, torch.bfloat16)
         grpo_sample=True
         progress_bar = tqdm(range(0, sample_steps), desc="Sampling Progress")
@@ -336,7 +353,6 @@ def sample_reference_model(
                 image)
         for idx, image in zip(batch_idx, batch_decoded_images):
             image_save_executor.submit(lambda: image.save(f"./images/flux_{rank}_{idx}.png"))
-
 
         if args.use_hpsv2:
             with torch.no_grad():
