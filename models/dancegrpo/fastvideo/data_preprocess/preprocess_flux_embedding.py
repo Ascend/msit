@@ -63,8 +63,19 @@ class T5dataset(Dataset):
     def __len__(self):
         return len(self.train_dataset)
 
+def is_npu_available():
+    if hasattr(torch, 'npu') and torch.npu.is_available():
+        return True
+    return False
+
+def load_npu_module():
+    if is_npu_available():
+        from torch_npu.contrib import transfer_to_npu  #延迟导入
+        return transfer_to_npu
+    return None
 
 def main(args):
+    load_npu_module()
     local_rank = int(os.getenv("RANK", 0))
     world_size = int(os.getenv("WORLD_SIZE", 1))
     print("world_size", world_size, "local rank", local_rank)
