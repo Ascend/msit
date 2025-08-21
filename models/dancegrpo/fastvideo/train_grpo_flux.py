@@ -402,7 +402,6 @@ def sample_reference_model(
             score = calc_probs(tokenizer, reward_model, caption, pil_images, device)
             all_rewards.append(score)
 
-
     all_latents = torch.cat(all_latents, dim=0)
     all_log_probs = torch.cat(all_log_probs, dim=0)
     all_rewards = torch.cat(all_rewards, dim=0)
