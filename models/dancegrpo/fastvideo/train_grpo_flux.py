@@ -591,6 +591,7 @@ def train_one_step(
 
 
 def main(args):
+    load_npu_module()
     torch.backends.cuda.matmul.allow_tf32 = True
 
     local_rank = int(os.environ["LOCAL_RANK"])
