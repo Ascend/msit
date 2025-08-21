@@ -27,7 +27,6 @@ from tqdm import tqdm
 import re
 from diffusers import FluxPipeline
 import torch_npu
-from torch_npu.contrib import transfer_to_npu
 
 def contains_chinese(text):
     return bool(re.search(r'[\u4e00-\u9fff]', text))
