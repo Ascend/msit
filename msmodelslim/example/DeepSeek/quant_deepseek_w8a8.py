@@ -115,9 +115,9 @@ def remove_module_entries(save_path, json_filename="quant_model_description_w8a8
     description_data = json_safe_load(json_file_path)
     # 过滤掉键中包含"module"的条目
     filtered_data = {
-        key: value 
-        for key, value in description_data.items() 
-        if "norm.module." not in key  
+        key: value
+        for key, value in description_data.items()
+        if "norm.module." not in key
         # 检查键中是否包含"norm.module."字符串
     }
     # 写回更新后的JSON文件（如需保留原始文件，可改为写入新文件） 
@@ -197,11 +197,13 @@ def main():
                                                      },
                                                      torch_dtype="auto",
                                                      attn_implementation='eager')
+
+    # 内存自动反量化fp8到bf16，如果没有反量化参数则认为是bf16，跳过
+    auto_convert_model_fp8_to_bf16(model, model_path, OpsType.get_ops_type(args.from_bf16, args.from_fp8))
+
     # mtp量化封装原模型为mtp model
     if args.quant_mtp == "mix":
         model = warp_mtp_model(config, model, model_path)
-
-    auto_convert_model_fp8_to_bf16(model, model_path, OpsType.get_ops_type(args.from_bf16, args.from_fp8))
 
     pbar.update(1)
 
@@ -278,11 +280,11 @@ def main():
                     part_file_size=4)
     # w8a8 混合量化中 MindIE 要求 description 中的 model_quant_type 为 W8A8_DYNAMIC
     update_quant_model_description_content(save_path, quant_model_description_json_name)
-    
+
     # 适配mindie删除description里的module字段
     if args.mindie_format:
         remove_module_entries(save_path)
-    
+
     custom_hook_instance = create_custom_hook(args.quant_mtp, args.mindie_format, args.fa_quant)
     custom_hooks = {
         'config.json': functools.partial(modify_config_json, custom_hook=custom_hook_instance) \
@@ -295,7 +297,7 @@ def main():
     if args.quant_mtp == "float":
         add_safetensors(org_paths=model_path, target_dir=save_path, safetensors_prefix="mtp_float",
                         max_file_size_gb=5, prefix="model.layers.61.")
-    
+
     if args.quant_mtp == "mix":
         post_process_mtp_quant(save_path)
     pbar.update(1)
