@@ -11,7 +11,7 @@ sys.path.append(parent_directory)
 
 from example.common.security.path import get_valid_write_path, get_valid_read_path, get_write_directory
 from example.common.utils import SafeGenerator, ArgumentParser, StringArgumentValidator, MAX_KEY_LENGTH, \
-    MAX_JSON_LENGTH, cmd_bool
+    MAX_JSON_LENGTH, cmd_bool, parse_tokenizer_args
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlier, AntiOutlierConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.layer_select import LayerSelector
@@ -181,7 +181,11 @@ class Quantifier:
             trust_remote_code=self.trust_remote_code
         )
 
-        tokenizer_args = kwargs.get("tokenizer_args", {})
+        tokenizer_args = parse_tokenizer_args(
+            args.tokenizer_args, 
+            default={}
+        )
+        
         self.tokenizer = safe_generator.get_tokenizer_from_pretrained(
             self.model_path_or_name,
             use_fast=False,
