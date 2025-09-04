@@ -34,6 +34,7 @@ from msserviceprofiler.modelevalstate.optimizer.analyze_profiler import analyze 
 from msserviceprofiler.modelevalstate.common import get_train_sub_path
 from msserviceprofiler.msguard.security.io import read_csv_s
 from msserviceprofiler.msguard.security import open_s
+from msserviceprofiler.msguard import Rule
 
 
 _analyze_mapping = {AnalyzeTool.profiler.value: analyze_profiler}
@@ -298,13 +299,12 @@ class ProfilerBenchmark(BenchMark):
 
 
 class VllmBenchMark(BenchMark):
-    from msserviceprofiler.modelevalstate.config.custom_command import VllmBenchmarkCommand
-
     def __init__(self, benchmark_config, throughput_type: str = "common", bak_path: Optional[Path] = None):
+        from msserviceprofiler.modelevalstate.config.custom_command import VllmBenchmarkCommand
         super().__init__(benchmark_config, throughput_type, bak_path)
         self.output_path = benchmark_config.output_path
         if not self.output_path.exists():
-            self.output_path.mkdir(parents=True)
+            self.output_path.mkdir(parents=True, mode=0o750)
         self.command = VllmBenchmarkCommand(self.benchmark_config.vllm_command).command
 
     def get_performance_index(self):
@@ -511,6 +511,9 @@ class ScheduleWithMultiMachine(Scheduler):
                 self.benchmark.bak_path = None
             else:
                 _cur_bak_path = get_train_sub_path(self.bak_path)
+                if not Rule.input_file_read.is_satisfied_by(_cur_bak_path):
+                    logger.error("the file of multimachine_bak_path is not safe, please check")
+                    return 
                 self.simulator.bak_path = _cur_bak_path
                 self.benchmark.bak_path = _cur_bak_path
                 _cmd = f"{self.cmd.backup} params:{_cur_bak_path}"
@@ -518,6 +521,8 @@ class ScheduleWithMultiMachine(Scheduler):
                 self.communication.clear_cmd(_cmd)
 
     def monitoring_status(self):
+        start_time = time.time()
+        timeout = 3600
         logger.info("Start monitoring")
         while True:
             _cmd = self.cmd.process_poll
@@ -529,6 +534,10 @@ class ScheduleWithMultiMachine(Scheduler):
                     f"Failed in run simulator. all status: {all_poll}")
             if self.benchmark.check_success():
                 return
+            if time.time() - start_time > timeout:
+                self.simulator.stop(del_log=False)
+                self.benchmark.stop(del_log=False)
+                raise TimeoutError("Monitoring status timed out.")
             time.sleep(1)
 
     def run_simulate(self, params: np.ndarray, params_field):
@@ -716,7 +725,7 @@ def main(args: argparse.Namespace):
     if args.backup:
         bak_path = settings.output.joinpath("bak")
         if not bak_path.exists():
-            bak_path.mkdir(parents=True)
+            bak_path.mkdir(parents=True, mode=0o750)
     # 单机benchmark
     if args.benchmark_policy == BenchMarkPolicy.benchmark.value:
         benchmark = BenchMark(settings.benchmark, bak_path=bak_path)

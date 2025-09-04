@@ -21,14 +21,15 @@ from pathlib import Path
 from loguru import logger
 from packaging import version
 from msserviceprofiler.msguard.constraints.rule import validate_params, Rule
+from msserviceprofiler.msguard.security import open_s
 
 _patch_dir = Path(__file__).absolute().expanduser().parent.resolve()
 
 
 def check_flag(target_file, patch_file):
-    with open(target_file, "r", encoding="utf-8") as f:
+    with open_s(target_file, "r", encoding="utf-8") as f:
         data = f.readlines()
-    with open(patch_file, "r", encoding="utf-8") as f:
+    with open_s(patch_file, "r", encoding="utf-8") as f:
         patch_data = f.readlines()
     i = 0
     diff_flag = True
@@ -52,9 +53,9 @@ def check_flag(target_file, patch_file):
 def add_patch(target_file, patch_file):
     flags = os.O_WRONLY | os.O_CREAT
     modes = stat.S_IWUSR | stat.S_IRUSR
-    with open(patch_file, "r", encoding="utf-8") as f:
+    with open_s(patch_file, "r", encoding="utf-8") as f:
         patch_data = f.readlines()
-    with os.fdopen(os.open(target_file, flags, modes), "a") as f:
+    with open_s(target_file, "a") as f:
         for _row in patch_data:
             f.write(_row)
     # 没有打补丁的，添加补丁文件内容

@@ -23,6 +23,8 @@ class BenchmarkCommandConfig(BaseModel):
 class BenchmarkCommand:
     def __init__(self, benchmark_command_config: BenchmarkCommandConfig):
         self.process = shutil.which("benchmark")
+        if self.process is None:
+            raise ValueError("Error: The 'benchmark' executable was not found in the system PATH.")
         self.benchmark_command_config = benchmark_command_config
  
     @property
@@ -47,6 +49,7 @@ class BenchmarkCommand:
  
  
 class VllmBenchmarkCommandConfig(BaseModel):
+    serving: str = ""
     backend: str = "vllm"
     host: str = "127.0.0.1"
     port: str = "6379"
@@ -110,6 +113,8 @@ class VllmCommandConfig(BaseModel):
 class VllmCommand:
     def __init__(self, command_config: VllmCommandConfig):
         self.process = shutil.which("vllm")
+        if self.process is None:
+            raise ValueError("Error: The 'vllm' executable was not found in the system PATH.")
         self.command_config = command_config
  
     @property

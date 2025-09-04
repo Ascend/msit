@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 import numpy as np
 from matplotlib import pyplot as plt
 from loguru import logger
-
+from msserviceprofiler.msguard.security import open_s
 from msserviceprofiler.modelevalstate.common import State
 
 
@@ -159,20 +159,21 @@ class AnalysisState:
         if config.save_path:
             plt.savefig(Path(config.save_path).joinpath(f"{config.x_label}_{config.y_label}_{config.title}.png"))
             plt.close()
+            with open_s(config.save_path.joinpath(f"{config.title}.txt"), 'w') as f:
+                f.write('mean\n')
+                f.write(json.dumps(_mean))
+                f.write('\n')
+                f.write('positive std\n')
+                f.write(json.dumps(_positive_sigma))
+                f.write('\n')
+                f.write('negative std\n')
+                f.write(json.dumps(_negative_sigma))
+                f.write('\n')
+                f.write('predict \n')
+                f.write(json.dumps([float(i) for i in _predict]))
         else:
             plt.show()
-        with open(config.save_path.joinpath(f"{config.title}.txt"), 'w') as f:
-            f.write('mean\n')
-            f.write(json.dumps(_mean))
-            f.write('\n')
-            f.write('positive std\n')
-            f.write(json.dumps(_positive_sigma))
-            f.write('\n')
-            f.write('negative std\n')
-            f.write(json.dumps(_negative_sigma))
-            f.write('\n')
-            f.write('predict \n')
-            f.write(json.dumps([float(i) for i in _predict]))
+        
 
     @staticmethod
     def plot_pred_and_real(pred, real, save_path: Optional[Path] = None):

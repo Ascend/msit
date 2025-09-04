@@ -359,7 +359,7 @@ def save_processed_data_to_csv_vllm(
         os.makedirs(parrent_path, exist_ok=True)
         file_path = os.path.join(parrent_path, 'feature.csv')
 
-        with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+        with open_s(file_path, 'w', newline='', encoding='utf-8') as csvfile:
             write_csv_header(csvfile)
             an_data = ExecutionDataVllm(exec_data, batch_data, processed_data.req_df, processed_data.rids_ori, 
                                     processed_data.kvcache_df)
@@ -381,7 +381,7 @@ def save_processed_data_to_csv_mindie(
         os.makedirs(parrent_path, exist_ok=True)
         file_path = os.path.join(parrent_path, 'feature.csv')
 
-        with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+        with open_s(file_path, 'w', newline='', encoding='utf-8') as csvfile:
             write_csv_header(csvfile)
             an_data = ExecutionDataMindie(exec_data, batch_data, processed_data.req_df, processed_data.rids_ori, 
                                     processed_data.index_dict, processed_data.batch_id_block_sum)
