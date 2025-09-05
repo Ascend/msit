@@ -78,7 +78,7 @@ def get_next_dict_item(dict_value):
 
 
 def parse_benchmark_instance(instance_path):
-    if not os.path.isdir(instance_path) or not os.access(instance_path, os.R_OK | os.X_OK):
+    if not instance_path:
         logger.warning(f"instance_path not provided or not accessible, will skip related analyse.")
         return {}
 
@@ -107,32 +107,35 @@ def parse_benchmark_instance(instance_path):
     )
 
 
-def parse_mindie_server_config(service_config_path):
+def get_mindie_server_config_path(service_config_path):
+    if not service_config_path:
+        service_config_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
+
     logger.debug("\nmindie_service_config:")
-    if service_config_path.endswith(".json"):  # config.json directly
-        mindie_service_path = os.path.dirname(os.path.dirname(service_config_path))
-    else:  # mindie service path
-        mindie_service_path = service_config_path
+    if not service_config_path.endswith(".json"): # mindie service path
         service_config_path = os.path.join(service_config_path, "conf", "config.json")
-    if not os.path.isfile(service_config_path) or not os.access(service_config_path, os.R_OK):
-        logger.warning(f"mindie_service_path not provided or not accessible, will skip related analyse.")
-        return {}, None
-    logger.info(f"mindie_service_path: {mindie_service_path}, service_config_path: {service_config_path}")
-    mindie_service_config = read_csv_or_json(service_config_path)
     
+    return service_config_path
+
+
+def parse_mindie_server_config(service_config_path):
+    service_config_path = get_mindie_server_config_path(service_config_path)
+
+    if not Rule.input_file_read.is_satisfied_by(service_config_path):
+        logger.warning(f"mindie_service_path not provided or not accessible, will skip related analyse.")
+        return {}
+
+    logger.info(f"mindie_service_path: {service_config_path}")
+    mindie_service_config = read_csv_or_json(service_config_path)
+
     logger.debug(
         f"mindie_service_config: {get_next_dict_item(mindie_service_config) if mindie_service_config else None}"
     )
 
-    if mindie_service_config:
-        mindie_server_log_path = mindie_service_config.get("LogConfig", {}).get("logPath", "logs/mindie-server.log")
-        mindie_server_log_path = os.path.join(mindie_service_path, mindie_server_log_path)
-    else:
-        mindie_server_log_path = None
-    return mindie_service_config, mindie_server_log_path
+    return mindie_service_config
 
 
-def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, params: ProfilingParameters):
+def analyze(mindie_service_config, benchmark_instance, params: ProfilingParameters):
     import msserviceprofiler.msservice_advisor.profiling_analyze
     from msserviceprofiler.msservice_advisor.profiling_analyze.register import REGISTRY, ANSWERS
 
@@ -140,7 +143,7 @@ def analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, p
     logger.info("<think>")
     for name, analyzer in REGISTRY.items():
         logger.info(f"[{name}]")
-        analyzer(mindie_service_config, benchmark_instance, mindie_server_log_path, params)
+        analyzer(mindie_service_config, benchmark_instance, params)
     logger.info("</think>")
 
     logger.info("")
@@ -168,18 +171,16 @@ def check_positive_integer(value):
 
 
 def arg_parse(subparsers):
-    mindie_service_path = os.getenv(MIES_INSTALL_PATH, MINDIE_SERVICE_DEFAULT_PATH)
-
     parser = subparsers.add_parser(
         "advisor", formatter_class=argparse.ArgumentDefaultsHelpFormatter, help="advisor for MindIE Service performance"
     )
     parser.add_argument(
-        "-i", "--instance_path", type=validate_args(Rule.input_dir_traverse),
-        default="instance", help="benchamrk instance output directory"
+        "-i", "--instance_path", type=validate_args(Rule.input_dir_traverse), required=False,
+        default=None, help="benchamrk instance output directory"
     )
     parser.add_argument(
-        "-s", "--service_config_path", type=validate_args(Rule.input_dir_traverse),
-        default=mindie_service_path, help="MindIE Service config json path"
+        "-s", "--service_config_path", type=str, required=False,
+        default=None, help="MindIE Service config json path"
     )
     parser.add_argument(
         "-t",
@@ -212,5 +213,5 @@ def main(args):
     profiling_params = ProfilingParameters.extract_from_args(args)
     set_log_level(args.log_level)
     benchmark_instance = parse_benchmark_instance(args.instance_path)
-    mindie_service_config, mindie_server_log_path = parse_mindie_server_config(args.service_config_path)
-    analyze(mindie_service_config, benchmark_instance, mindie_server_log_path, profiling_params)
+    mindie_service_config = parse_mindie_server_config(args.service_config_path)
+    analyze(mindie_service_config, benchmark_instance, profiling_params)

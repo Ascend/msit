@@ -59,8 +59,8 @@ def test_num_mem_size_checker_given_valid_config_when_npu_mem_size_not_minus1_th
     test_config = {"BackendConfig": {"ModelDeployConfig": {"ModelConfig": [{"npuMemSize": 1024}]}}}
 
     with patch.object(base_analyze.logger, "info") as mock_log:
-        base_analyze.num_mem_size_checker(
-            test_config, {}, "", {}  # benchmark_instance  # mindie_server_log_path  # profiling_params
+        base_analyze.npu_mem_size_checker(
+            test_config, {}, {}  # benchmark_instance  # mindie_server_log_path  # profiling_params
         )
 
         mock_log.assert_called_with("获取目前 numMemSize 的值为 1024, 并不是 -1")
@@ -73,7 +73,7 @@ def test_num_mem_size_checker_given_valid_config_when_npu_mem_size_not_minus1_th
 def test_num_mem_size_checker_given_npu_mem_size_minus1_when_called_then_no_action():
     test_config = {"BackendConfig": {"ModelDeployConfig": {"ModelConfig": [{"npuMemSize": -1}]}}}
 
-    base_analyze.num_mem_size_checker(test_config, {}, "", {})
+    base_analyze.npu_mem_size_checker(test_config, {}, {})
 
     assert "npuMemSize" not in ANSWERS[SUGGESTION_TYPES.config]
 
@@ -85,7 +85,7 @@ def test_check_prefill_latency_given_first_token_target_and_support_select_batch
 
     with patch.object(base_analyze.logger, "debug") as mock_debug:
         base_analyze.check_prefill_latency(
-            test_config, benchmark_data, "", namedtuple("test", ["target"])(TARGETS.FirstTokenTime)
+            test_config, benchmark_data, namedtuple("test", ["target"])(TARGETS.FirstTokenTime)
         )
 
         # Verify logging was called
@@ -102,7 +102,7 @@ def test_check_prefill_latency_given_throughput_target_and_support_select_batch_
     test_config = {"BackendConfig": {"ScheduleConfig": {"supportSelectBatch": False}}}
 
     base_analyze.check_prefill_latency(
-        test_config, benchmark_data, "", namedtuple("test", ["target"])(TARGETS.Throughput)
+        test_config, benchmark_data, namedtuple("test", ["target"])(TARGETS.Throughput)
     )
 
     assert ("set to True", "开启 supportSelectBatch 可降低首 Throughput 时延") in ANSWERS[SUGGESTION_TYPES.config][
@@ -116,7 +116,7 @@ def test_check_prefill_latency_given_empty_results_when_called_then_no_crash():
 
     # Should not raise any exceptions
     base_analyze.check_prefill_latency(
-        test_config, benchmark_data, "", namedtuple("test", ["target"])(TARGETS.FirstTokenTime)
+        test_config, benchmark_data, namedtuple("test", ["target"])(TARGETS.FirstTokenTime)
     )
 
 
@@ -127,7 +127,7 @@ def test_check_prefill_latency_with_single_latency_value():
 
     with patch.object(base_analyze.logger, "debug") as mock_debug:
         base_analyze.check_prefill_latency(
-            test_config, benchmark_data, "", namedtuple("test", ["target"])(TARGETS.FirstTokenTime)
+            test_config, benchmark_data, namedtuple("test", ["target"])(TARGETS.FirstTokenTime)
         )
 
         # Should still log histogram info
@@ -140,5 +140,5 @@ def test_check_prefill_latency_with_missing_latency_values():
 
     # Should not crash
     base_analyze.check_prefill_latency(
-        test_config, benchmark_data, "", namedtuple("test", ["target"])(TARGETS.FirstTokenTime)
+        test_config, benchmark_data, namedtuple("test", ["target"])(TARGETS.FirstTokenTime)
     )

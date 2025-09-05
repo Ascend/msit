@@ -19,7 +19,7 @@ from msserviceprofiler.msservice_advisor.profiling_analyze.utils import get_dict
 
 
 @register_analyze()
-def npu_mem_size_checker(mindie_service_config, benchmark_instance, mindie_server_log_path, profiling_params):
+def npu_mem_size_checker(mindie_service_config, benchmark_instance, profiling_params):
     npu_mem_size_pos = "BackendConfig:ModelDeployConfig:ModelConfig:0:npuMemSize"
     npu_mem_size = get_dict_value_by_pos(mindie_service_config, npu_mem_size_pos)
     if npu_mem_size is not None and npu_mem_size != -1:
@@ -33,7 +33,7 @@ def npu_mem_size_checker(mindie_service_config, benchmark_instance, mindie_serve
 
 
 @register_analyze()
-def check_prefill_latency(mindie_service_config, benchmark_instance, mindie_server_log_path, profiling_params):
+def check_prefill_latency(mindie_service_config, benchmark_instance, profiling_params):
     target = profiling_params.target
     if benchmark_instance:
         results_per_request = benchmark_instance.get("results_per_request").values()

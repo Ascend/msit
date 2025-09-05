@@ -179,6 +179,6 @@ def test_get_predict_image_without_matplotlib_does_nothing():
 def test_find_best_batch_size_given_insufficient_data_adds_suggestion():
     benchmark = {"results_per_request": {"req1": {"prefill_bsz": 1, "decode_bsz": [1], "latency": [10.5, 2.1]}}}
 
-    batch_analyze.find_best_batch_size({}, benchmark, None, {})
+    batch_analyze.find_best_batch_size({}, benchmark, {})
 
     assert "maxBatchSize" in ANSWERS[SUGGESTION_TYPES.config]

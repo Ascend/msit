@@ -19,7 +19,9 @@ import re
 import subprocess
 
 from msserviceprofiler.msservice_advisor.profiling_analyze.register import register_analyze, answer, GLOBAL_DATA
-from msserviceprofiler.msservice_advisor.profiling_analyze.utils import logger, SUGGESTION_TYPES, BYTES_TO_GB
+from msserviceprofiler.msservice_advisor.profiling_analyze.utils import (
+    logger, SUGGESTION_TYPES, BYTES_TO_GB, MAX_DEVICE_ID_LIST_LENGTH
+)
 from msserviceprofiler.msservice_advisor.profiling_analyze.utils import vaild_readable_directory, vaild_readable_file
 from msserviceprofiler.msservice_advisor.profiling_analyze.utils import get_directory_size, read_csv_or_json
 
@@ -92,8 +94,8 @@ def extract_server_config_params(server_config, output_token_num, tp):
     output_token_num, cache_block_sizes = get_schedule_config_info(backend_config, output_token_num)
 
     npu_device_ids = backend_config.get('npuDeviceIds', [[]])[0]
-    if not npu_device_ids or len(npu_device_ids) == 0:
-        raise Exception("mindie-server config.json missing 'npuDeviceIds'.")
+    if not npu_device_ids or len(npu_device_ids) == 0 or len(npu_device_ids) >= MAX_DEVICE_ID_LIST_LENGTH:
+        raise Exception("mindie-server config.json missing 'npuDeviceIds' or it's invaild.")
     logger.info(f"npu_device_ids: {npu_device_ids}")
 
     model_configs = backend_config.get('ModelDeployConfig', {}).get('ModelConfig', [[]])[0]
@@ -400,7 +402,7 @@ def write_to_answer(min_batch, max_batch, avg_batch):
 
 
 @register_analyze()
-def find_max_batch_size_range(server_config, benchmark, output_log, input_params):
+def find_max_batch_size_range(server_config, benchmark, input_params):
     # get input token number and average output token num
     input_token_num, avg_token_num = extract_token_num(benchmark, input_params)
 
