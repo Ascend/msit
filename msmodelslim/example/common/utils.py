@@ -289,3 +289,16 @@ def cmd_bool(cmd_arg):
     elif cmd_arg == "False":
         return False
     raise ValueError(f"{cmd_arg} should be True or False")
+
+
+def parse_tokenizer_args(input_str, default=None):
+    default = {} if default is None else default
+    try:
+        args_dict = json.loads(input_str)
+        if not isinstance(args_dict, dict):
+            raise ValueError("Parsed JSON must be a dictionary")
+        return args_dict
+    except (json.JSONDecodeError, TypeError, AttributeError) as e:
+        if not isinstance(default, dict):
+            raise ValueError("Default value must be a dictionary") from e
+        return default

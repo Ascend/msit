@@ -9,7 +9,8 @@ parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
 sys.path.append(parent_directory)
 
 from example.common.security.path import get_valid_write_path, get_valid_read_path
-from example.common.utils import SafeGenerator, ArgumentParser, StringArgumentValidator, MAX_KEY_LENGTH, MAX_JSON_LENGTH
+from example.common.utils import SafeGenerator, ArgumentParser, StringArgumentValidator, MAX_KEY_LENGTH, \
+    MAX_JSON_LENGTH, cmd_bool, parse_tokenizer_args
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlier, AntiOutlierConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 from msmodelslim import logger
@@ -222,7 +223,10 @@ if __name__ == '__main__':
     elif args.anti_method:
         anti_outlier_config_val = AntiOutlierConfig(anti_method=args.anti_method,
                                                     dev_type=args.device_type, dev_id=rank)
-    tokenizer_args = json.loads(args.tokenizer_args)
+    tokenizer_args = parse_tokenizer_args(
+        args.tokenizer_args, 
+        default={"padding_side": "left", "pad_token": "<unk>"}
+    )
     quantifier = Quantifier(
         model_path, quant_conf, anti_outlier_config_val,
         device_type=args.device_type, tokenizer_args=tokenizer_args,
