@@ -39,9 +39,17 @@ class ModelParser:
 
     def __del__(self):
         if os.path.isfile(self._json_path):
-            os.remove(self._json_path)
+            try:
+                os.remove(self._json_path)
+            except Exception as e:
+                logger.error(f"can not remove json file, please check.")
+                raise RuntimeError from e
         if os.path.isfile(self._om_path):
-            os.remove(self._om_path)
+            try:
+                os.remove(self._om_path)
+            except Exception as e:
+                logger.error(f"can not remove om file, please check.")
+                raise RuntimeError from e
 
     @property
     def om_path(self) -> str:
@@ -93,7 +101,11 @@ class ModelParser:
         if not utils.check_file_security(output):
             return False
         if os.path.isfile(output):
-            os.remove(output)
+            try:
+                os.remove(output)
+            except Exception as e:
+                logger.error(f"can not remove output file, please check.")
+                raise RuntimeError from e
 
         framework = self._config.framework
         convert_cmd = [
@@ -126,7 +138,11 @@ class ModelParser:
         if not utils.check_file_security(om_path):
             return AtcErr.UNKNOWN, ''
         if os.path.isfile(om_path):
-            os.remove(om_path)
+            try:
+                os.remove(om_path)
+            except Exception as e:
+                logger.error(f"can not remove output om file, please check.")
+                raise RuntimeError from e
 
         convert_cmd = [
             'atc',

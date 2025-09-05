@@ -100,9 +100,9 @@ def npu_dump_process(args, use_cli):
 
 
 def cpu_dump_process(args):
-    # 1. get dumper
-    golden_dumper = _generate_golden_data_model(args, npu_dump_npy_path="")
     if is_saved_model_valid(args.model_path):
+        # 1. get dumper
+        golden_dumper = _generate_golden_data_model(args, npu_dump_npy_path="")
         # 2. generate input
         golden_dumper.generate_inputs_data_for_dump()
         # 3. dump data

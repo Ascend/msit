@@ -103,7 +103,6 @@ class NpuTfAdapterDumpData(object):
                 file_name = os.path.basename(input_file)
                 dest_file = os.path.join(self.input, file_name)
                 shutil.copy(input_file, dest_file)
-                os.chmod(input_file, 0o640)
                 os.chmod(dest_file, 0o640)
                 # convert .bin to numpy
                 data_type = file_name.rsplit("_", 1)[-1].split(".")[0]

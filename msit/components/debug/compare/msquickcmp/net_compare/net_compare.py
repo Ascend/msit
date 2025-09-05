@@ -275,8 +275,7 @@ class NetCompare(object):
         npu_dump_index = header_list.index(NPU_DUMP_TAG)
         ground_truth_index = header_list.index(GROUND_TRUTH_TAG)
 
-        with ms_open(fp_read, 'r', max_size=MAX_SIZE_LIMITE_NORMAL_FILE) as f:
-            result_reader = csv.reader(f)
+        result_reader = csv.reader(fp_read)
         # update result data
         new_content = []
         for line in result_reader:
