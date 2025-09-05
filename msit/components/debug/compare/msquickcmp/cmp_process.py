@@ -710,11 +710,12 @@ def subgraph_check(og, node_interval, args, onnx_data_path, input_shape):
     cmg_args = CmpArgsAdapter(subgraph_onnx_file, os.path.join(args.out_path, "tmp_for_accuracy_locat.om"),
                               "", bin_files_path, args.cann_path, tmp_out_path, "", args.device,
                               "", "", False, "", True, False, custom_op=args.custom_op, locat=True)
-    utils.logger.info("Start to run comparision")
+    utils.logger.info("Start to run comparison")
     res = run(cmg_args, input_shape, original_out_path, True)
-    utils.logger.info("Comparision finished")
+    utils.logger.info("Comparison finished")
     shutil.rmtree(tmp_out_path)
-    shutil.rmtree(tmp_bin_path)
+    if os.path.exists(tmp_bin_path):
+        shutil.rmtree(tmp_bin_path)
     if al.check_res(res, endnode):
         return True
     return False

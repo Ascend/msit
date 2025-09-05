@@ -81,7 +81,7 @@ def find_npy_files_with_prefix(workdir, prefix):
     Return:
         a matching file path list
     """
-    pattern = r'^{}.*\.npy'.format(prefix)
+    pattern = r'^{}.*\.npy'.format(re.escape(prefix))
     regex = re.compile(pattern)
     matched_files = []
     for root, _, files in os.walk(workdir):

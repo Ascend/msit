@@ -372,7 +372,10 @@ class OnnxDumpData(DumpData):
                 file_path = os.path.join(self.onnx_dump_data_dir, file_name)
                 if output in net_output_node:
                     self.net_output[net_output_node.index(output)] = file_path
-                np.save(file_path, dump_bins[res_idx])
+                if res_idx <= len(dump_bins) - 1:
+                    np.save(file_path, dump_bins[res_idx])
+                else:
+                    utils.logger.error("res_idx out of bounds of dump_bins and can not save, please check.")
                 res_idx += 1
 
         if len(file_name_map) > 0:

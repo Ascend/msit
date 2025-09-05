@@ -140,7 +140,7 @@ class CompareCommand(BaseCommand):
             dest="dump",
             default=True,
             type=str2bool,
-            help="Whether to dump all the operations' ouput.")
+            help="Whether to dump all the operations' output.")
         parser.add_argument(
             '--convert',
             dest="bin2npy",
@@ -179,7 +179,7 @@ class CompareCommand(BaseCommand):
             default=False,
             dest="single_op",
             type=str2bool,
-            help='Comparision mode:single operator compare.Usage: -single True')
+            help='Comparison mode:single operator compare.Usage: -single True')
         parser.add_argument(
             "-max",
             "--max-cmp-size",
@@ -204,7 +204,7 @@ class CompareCommand(BaseCommand):
             dest="saved_model_tag_set",
             default='serve',
             help="Enter the tagSet of the model.Currently, multiple tagSets can be transferred, "
-                 "for example, --saved_model_tag_set ['serve', 'genenal_parser']")
+                 "for example, --saved_model_tag_set ['serve', 'general_parser']")
         # alone compare parameters
         parser.add_argument(
             '-mp',
@@ -338,7 +338,7 @@ class DumpCommand(BaseCommand):
             dest="saved_model_tag_set",
             default='serve',
             help="Enter the tagSet of the model.Currently, multiple tagSets can be transferred, "
-                 "for example, --saved_model_tag_set ['serve', 'genenal_parser']")
+                 "for example, --saved_model_tag_set ['serve', 'general_parser']")
         parser.add_argument(
             '-dp',
             '--device-pattern',

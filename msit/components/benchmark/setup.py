@@ -13,11 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from configparser import ConfigParser
 from setuptools import setup, find_packages  # type: ignore
 
 config = ConfigParser()
-config.read('../config/config.ini')
+cur_dir = os.path.dirname(os.path.abspath(__file__))  # benchmark
+components_dir = os.path.dirname(cur_dir)  # components
+config_ini_path = os.path.join(components_dir, 'config', 'config.ini')
+config.read(config_ini_path)
 
 msit_sub_tasks = [
     {

@@ -119,7 +119,7 @@ class TfDumpData(DumpData):
             if os.listdir(self.important_dirs.get("input")):
                 input_path = self.important_dirs.get("input")
                 self.input_path = ','.join([os.path.join(input_path, ii) for ii in os.listdir(input_path)])
-                return 
+                return
 
             input_path_list = []
             for index, tensor in enumerate(inputs_tensor):
@@ -186,8 +186,9 @@ class TfDumpData(DumpData):
                 else:
                     tensor_count[tensor_name] += 1
                 count_tensor_name = tensor_count.get(tensor_name)
-                npy_file_name = "%s.%s.npy" % (tensor_name.replace("/", "_").replace(":", "."),
-                                               str(round(time.time() * 1000000)))
+                npy_file_name = (f"{tensor_name.replace('/', '_').replace(':', '.')}."
+                                 f"{str(round(time.time() * 1000000))}."
+                                 f"{count_tensor_name}.npy")
                 npy_file_path = os.path.join(self.important_dirs.get("dump_data_tf"), npy_file_name)
                 # get the net_output dump file info
                 if tensor_name in self.net_output_name:
