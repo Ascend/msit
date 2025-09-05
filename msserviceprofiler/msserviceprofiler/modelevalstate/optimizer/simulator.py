@@ -25,7 +25,7 @@ from typing import Any, Tuple, Optional
 import shutil
 import psutil
 from loguru import logger
-
+from msserviceprofiler.msguard.security import open_s
 from msserviceprofiler.modelevalstate.config.config import (MindieConfig, MODEL_EVAL_STATE_CONFIG_PATH,
                                                             modelevalstate_config_path, CUSTOM_OUTPUT, custom_output)
 from msserviceprofiler.modelevalstate.config.config import OptimizerConfigField
@@ -41,15 +41,13 @@ class Simulator:
         logger.info(f"config path {self.mindie_config.config_path}", )
         if not self.mindie_config.config_path.exists():
             raise FileNotFoundError(self.mindie_config.config_path)
-        with open(self.mindie_config.config_path, "r") as f:
+        with open_s(self.mindie_config.config_path, "r") as f:
             data = json.load(f)
         self.default_config = data
         logger.info(f"config bak path {self.mindie_config.config_bak_path}", )
         if self.mindie_config.config_bak_path.exists():
             self.mindie_config.config_bak_path.unlink()
-        flags = os.O_WRONLY | os.O_CREAT
-        modes = stat.S_IWUSR | stat.S_IRUSR
-        with os.fdopen(os.open(self.mindie_config.config_bak_path, flags, modes), 'w') as fout:
+        with open_s(self.mindie_config.config_bak_path, 'w') as fout:
             json.dump(self.default_config, fout, indent=4)
         self.mindie_log = None
         self.mindie_log_offset = 0
@@ -103,28 +101,31 @@ class Simulator:
     @staticmethod
     def set_config(origin_config, key: str, value: Any):
         next_level = None
-        if "." in key:
-            _f_index = key.index(".")
-            _cur_key, next_level = key[:_f_index], key[_f_index + 1:]
-        else:
-            _cur_key = key
-        if next_level is None:
-            if isinstance(origin_config, dict):
-                origin_config[_cur_key] = value
-            elif isinstance(origin_config, list):
-                if len(origin_config) > int(_cur_key):
-                    origin_config[int(_cur_key)] = value
-                else:
-                    origin_config.append(value)
-            return
-        if "." in next_level:
-            _next_index = next_level.index(".")
-            _next_key, _next_next_level = next_level[:_next_index], next_level[_next_index + 1:]
-        elif next_level:
-            _next_key = next_level
-            _next_next_level = None
-        else:
-            _next_key = None
+        try:
+            if "." in key:
+                _f_index = key.index(".")
+                _cur_key, next_level = key[:_f_index], key[_f_index + 1:]
+            else:
+                _cur_key = key
+            if next_level is None:
+                if isinstance(origin_config, dict):
+                    origin_config[_cur_key] = value
+                elif isinstance(origin_config, list):
+                    if len(origin_config) > int(_cur_key):
+                        origin_config[int(_cur_key)] = value
+                    else:
+                        origin_config.append(value)
+                return
+            if "." in next_level:
+                _next_index = next_level.index(".")
+                _next_key = next_level[:_next_index]
+            elif next_level:
+                _next_key = next_level
+            else:
+                _next_key = None
+        except Exception as e:
+            logger.error(f"Unexpected error occurred at {key}")
+            raise e
         if isinstance(origin_config, dict):
             Simulator.set_config_for_dict(origin_config, _cur_key, _next_key, next_level, value)
         elif isinstance(origin_config, list):
@@ -147,11 +148,9 @@ class Simulator:
 
         # 将新的config写入到config文件中
         logger.debug(f"new config {new_config}")
-        flags = os.O_WRONLY | os.O_CREAT
-        modes = stat.S_IWUSR | stat.S_IRUSR
         if self.mindie_config.config_path.exists():
             self.mindie_config.config_path.unlink()
-        with os.fdopen(os.open(self.mindie_config.config_path, flags, modes), "w") as fout:
+        with open_s(self.mindie_config.config_path, "w") as fout:
             json.dump(new_config, fout, indent=4)
 
     def check_env(self):
@@ -180,7 +179,7 @@ class Simulator:
         time.sleep(1)
 
     def check_success(self, print_log=False):
-        with open(self.mindie_log, "r") as f:
+        with open_s(self.mindie_log, "r") as f:
             try:
                 f.seek(self.mindie_log_offset)
                 output = f.read()
@@ -261,9 +260,7 @@ class Simulator:
             kill_children(children)
             kill_process(self.mindie_config.process_name)
             remove_file(self.mindie_config.config_path)
-            flags = os.O_WRONLY | os.O_CREAT
-            modes = stat.S_IWUSR | stat.S_IRUSR
-            with os.fdopen(os.open(self.mindie_config.config_path, flags, modes), "w") as fout:
+            with open_s(self.mindie_config.config_path, "w") as fout:
                 json.dump(self.default_config, fout)
         except Exception as e:
             logger.error(f"Failed to stop simulator process. {e}")
@@ -303,7 +300,7 @@ class VllmSimulator(Simulator):
         self.start_server(run_params)
 
     def check_success(self, print_log=False):
-        with open(self.mindie_log, "r") as f:
+        with open_s(self.mindie_log, "r") as f:
             try:
                 f.seek(self.mindie_log_offset)
                 output = f.read()

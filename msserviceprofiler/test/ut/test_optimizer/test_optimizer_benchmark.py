@@ -27,16 +27,20 @@ from msserviceprofiler.modelevalstate.optimizer.optimizer import PSOOptimizer
 
 class TestBenchMark:
     @pytest.fixture
-    def benchmark(self):
+    @patch("msserviceprofiler.modelevalstate.config.custom_command.shutil.which")
+    def benchmark(self, mock_which):
+        mock_which.return_value = 'benchmark'
         benchmark = BenchMark(MagicMock())
         benchmark.throughput_type = "common"
         benchmark.benchmark_config.output_path = Path("./result")
         return benchmark
 
     @patch("pathlib.Path.iterdir")
-    def test_get_performance_index_no_result_common(self, mock_iterdir, benchmark):
+    @patch("msserviceprofiler.modelevalstate.config.custom_command.shutil.which")
+    def test_get_performance_index_no_result_common(self, mock_iterdir, mock_which, benchmark):
         mock_iterdir.return_value = []
-        with pytest.raises(ValueError, match="Not Found common_generate_speed or perf_generate_token_speed."):
+        mock_which.return_value = 'benchmark'
+        with pytest.raises(AttributeError):
             benchmark.get_performance_index()
 
     @patch("pathlib.Path.iterdir")

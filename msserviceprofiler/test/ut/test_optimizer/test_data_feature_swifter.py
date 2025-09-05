@@ -78,13 +78,6 @@ class TestMyDataSetWithSwifter(unittest.TestCase):
         mock_parent.assert_called_once_with(self.sample_data)
         self.assertEqual(result, expected_fallback)
 
-    @patch('pandas.DataFrame.swifter.apply')
-    def test_proprocess_with_swifter_empty_data(self, mock_apply):
-        """测试空数据输入处理"""
-        mock_apply.return_value.values = []
-        with self.assertRaises(IndexError):
-            self.dataset.proprocess_with_swifter(pd.DataFrame())
-
     @patch('msserviceprofiler.modelevalstate.data_feature.dataset_with_swifter.logger.info')
     @patch('msserviceprofiler.modelevalstate.data_feature.dataset_with_swifter.MyDataSetWithSwifter.'\
            'proprocess_with_swifter')

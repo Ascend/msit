@@ -44,6 +44,7 @@ from msserviceprofiler.modelevalstate.inference.dataset import InputData, DataPr
     CustomLabelEncoder, preset_category_data
 from msserviceprofiler.modelevalstate.inference.file_reader import FileHanlder, StaticFile
 from msserviceprofiler.msguard.security.io import read_csv_s
+from msserviceprofiler.modelevalstate.inference.utils import save_dataframe_to_csv
 
 sub_thread = None
 predict_queue = queue.Queue()
@@ -68,7 +69,7 @@ class CachePredict:
         self.new_label = None
         self.output = data_path.joinpath(f"train_{os.getpid()}_{datetime.today().strftime('%Y%m%d%H%M%S')}.csv")
         if not self.output.parent.exists():
-            self.output.parent.mkdir(parents=True)
+            self.output.parent.mkdir(parents=True, mode=0o750)
 
     def update(self, data: List, label: float):
         _compare_data = [round(k) for k in data]
@@ -96,7 +97,8 @@ class CachePredict:
             return
         data = self.new_data.copy()
         data[self.new_label.name] = self.new_label
-        data.to_csv(self.output, index=False)
+        parent_dir, filename = os.path.split(self.output)
+        save_dataframe_to_csv(data, parent_dir, filename)
 
 
 def update_cache(cache_predict: Optional[CachePredict], persistent_threshold: int = 100):
@@ -121,7 +123,9 @@ def update_cache(cache_predict: Optional[CachePredict], persistent_threshold: in
 def signal_handler(signum, frame):
     predict_queue.put(None)
     if sub_thread:
-        sub_thread.join()
+        sub_thread.join(timeout=3)
+        if sub_thread.is_alive():
+            raise TimeoutError("子线程未在指定时间完成")
     raise RuntimeError("signal handel, ending...")
 
 

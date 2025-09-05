@@ -16,8 +16,9 @@ import os
 import stat
 import time
 from pathlib import Path
- 
+from loguru import logger
 from filelock import FileLock
+from msserviceprofiler.msguard.security.io import open_s
  
  
 class CustomCommand:
@@ -72,20 +73,18 @@ class CustomCommand:
 class CommunicationForFile:
     def __init__(self, cmd_file: Path, res_file: Path, timeout=120):
         if not cmd_file.parent.exists():
-            cmd_file.parent.mkdir(parents=True)
+            cmd_file.parent.mkdir(parents=True, mode=0o750)
         if not res_file.parent.exists():
-            res_file.parent.mkdir(parents=True)
+            res_file.parent.mkdir(parents=True, mode=0o750)
         self.cmd_file = cmd_file
         self.cmd_file_lock = cmd_file.parent.joinpath(f"{cmd_file.name}.lock")
-        flags = os.O_WRONLY | os.O_CREAT
-        modes = stat.S_IWUSR | stat.S_IRUSR | stat.S_IROTH | stat.S_IWOTH
         if not self.cmd_file_lock.exists():
-            with os.fdopen(os.open(self.cmd_file_lock, flags, modes), "w") as f:
+            with open_s(self.cmd_file_lock, "w") as f:
                 pass
         self.res_file = res_file
         self.res_file_lock = res_file.parent.joinpath(f"{res_file.name}.lock")
         if not self.res_file_lock.exists():
-            with os.fdopen(os.open(self.res_file_lock, flags, modes), "w") as f:
+            with open_s(self.res_file_lock, "w") as f:
                 pass
         self.timeout = timeout
  
@@ -97,14 +96,14 @@ class CommunicationForFile:
                 with open(self.cmd_file, "w") as fcmd:
                     fcmd.write(cmd)
             else:
-                with os.fdopen(os.open(self.cmd_file, flags, modes), "w", buffering=1024) as fcmd:
+                with open_s(self.cmd_file, "w", buffering=1024) as fcmd:
                     fcmd.write(cmd)
  
     def recv_command(self):
         with FileLock(self.res_file_lock):
             if not self.res_file.exists():
                 return ''
-            with open(self.res_file, 'r', encoding="utf-8") as f:
+            with open_s(self.res_file, 'r', encoding="utf-8") as f:
                 data = f.read()
         return data
  
@@ -143,9 +142,16 @@ class CommunicationForFile:
         return status
  
     def clear_res(self):
+        start_time = time.time()
+        timeout = 10  # 设置超时时间为10秒
         while True:
             time.sleep(1)
             data = self.recv_command()
             if data.strip().lower() == CustomCommand.cmd_eof:
                 self.send_command(CustomCommand.cmd_eof)
+                break
+            # 检查是否超时
+            if time.time() - start_time > timeout:
+                # 超时处理，例如发送错误信息或退出循环
+                logger.error("未接收到eof响应，超时退出")
                 break

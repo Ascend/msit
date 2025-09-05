@@ -26,7 +26,7 @@ from typing import Optional
 
 import numpy as np
 import torch
-
+from loguru import logger
 from msserviceprofiler.modelevalstate.config.config import settings
 from msserviceprofiler.modelevalstate.inference.constant import IS_SLEEP_FLAG, BatchStage
 from msserviceprofiler.modelevalstate.inference.data_format_v1 import BatchField, RequestField, ConfigPath
@@ -109,7 +109,9 @@ def exit_handler(file_logger):
 def signal_handler(signum, frame):
     predict_queue.put(None)
     if sub_thread:
-        sub_thread.join()
+        sub_thread.join(timeout=3)
+        if sub_thread.is_alive():
+            raise TimeoutError("子线程未在指定时间完成")
     raise RuntimeError("signal handel, ending...")
 
 
@@ -144,7 +146,7 @@ class Simulate:
             else:
                 ServiceField.req_id_and_max_decode_length = {}
             if not Path(ServiceField.config_path.static_file_dir).exists():
-                Path(ServiceField.config_path.static_file_dir).mkdir(parents=True)
+                Path(ServiceField.config_path.static_file_dir).mkdir(parents=True, mode=0o750)
             static_file = StaticFile(base_path=ServiceField.config_path.static_file_dir)
             ServiceField.fh = FileHanlder(static_file)
             ServiceField.fh.load_static_data()
@@ -159,6 +161,8 @@ class Simulate:
     @staticmethod
     def generate_random_token(plugin_object, shape, max_value=32000):
         # max_value 是vacab size，就是词表的范围
+        if np.prod(shape) > max_value + 1:
+            raise ValueError("token数量超过词表的范围，无法进行无放回抽样")
         array = np.random.choice(np.arange(0, max_value + 1), size=np.prod(shape), replace=False)
         array = np.reshape(array, shape)
         array = np.where(array == plugin_object.eos_token_id, np.random.randint(0, max_value + 1), array)
@@ -266,4 +270,8 @@ class Simulate:
     def predict_and_save(time_sleep: bool = False):
         res = Simulate.predict(time_sleep)
         # 增加异步写入能力
-        predict_queue.put_nowait(res)
+        try:
+            predict_queue.put_nowait(res)
+        except queue.Full:
+            logger.error("predict_queue is full")
+            predict_queue.put(res)
