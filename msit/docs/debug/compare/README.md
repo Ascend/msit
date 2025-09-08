@@ -60,6 +60,8 @@ RUN groupadd HwHiAiUser && useradd -rm -d /home/HwHiAiUser -s /bin/bash -g HwHiA
 ```
 wget --no-check-certificate ${PYTHON_PATH}
 ```
+需要注意的是，no-check-certificate会跳过检查目标网站的证书信息，有一定的安全风险，用户需要谨慎使用并自行承担后果。
+
 4、请将Ascend-cann-toolkit<version+arch>.run改为实际上的toolkit路径(必须是相对路径)  
 5、从这个[仓库](https://github.com/lenLRX/caffe)下载zip[代码](https://github.com/lenLRX/caffe/archive/refs/heads/ascend-amct.zip),得到的zip包叫ascend-amct.zip或caffe-ascend-amct.zip  
 6、从[这里](https://support.huawei.com/enterprise/zh/ascend-computing/cann-pid-251168373/software)下载amct的包Ascend-cann-amct_5.1.RC1.1_linux-aarch64.tar.gz(注意下载对应需要的版本如：X86，aarch64等)  

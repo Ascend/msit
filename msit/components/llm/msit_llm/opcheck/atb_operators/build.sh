@@ -47,7 +47,7 @@ function download_nlohmann_json()
     if [ "$AIT_INSTALL_FIND_LINKS" != "" ]; then 
         cp "$AIT_INSTALL_FIND_LINKS/$JSON_TAR" ./
     else
-        wget --no-check-certificate -c $JSON_URL
+        wget -c $JSON_URL
     fi 
     
     if [ "$AIT_DOWNLOAD_PATH" != "" ]; then 
