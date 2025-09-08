@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2024-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,24 +11,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 import typing
 import json
 import base64
+
 import pandas as pd
 import onnx
 
+from components.utils.check import Rule, validate_params
+from components.utils.constants import TENSOR_MAX_SIZE
+from components.utils.file_open_check import ms_open
+from components.utils.file_utils import save_onnx
 from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
-from components.utils.check import Rule, validate_params
-from components.utils.file_open_check import ms_open
-from components.utils.constants import TENSOR_MAX_SIZE
 
 
 def atb_node_to_plain_node(atb_node_dict, level, target_level):
     if target_level != -1 and level >= target_level:
         return [atb_node_dict]
-    
+
     # 递归元
     if "nodes" in atb_node_dict:
         plain_nodes = []
@@ -88,7 +91,7 @@ def parse_onnx_attr_from_atb_node_dict(atb_node_dict):
         if isinstance(atb_node_dict["param"][param_name], dict):
             for sub_param_name in atb_node_dict["param"][param_name]:
                 full_name = param_name + "." + sub_param_name
-                onnx_attr_dict = atb_param_to_onnx_attribute(full_name, 
+                onnx_attr_dict = atb_param_to_onnx_attribute(full_name,
                                                              atb_node_dict["param"][param_name][sub_param_name])
                 onnx_attrs.append(onnx_attr_dict)
         else:
@@ -157,7 +160,7 @@ def atb_json_to_onnx_json(atb_json_dict, target_level, shape_contents):
 
     onnx_json_dict["graph"] = {}
     onnx_json_dict["graph"]["node"] = plain_nodes
-    
+
     if shape_contents is not None:
         onnx_json_dict["graph"]["valueInfo"] = []
         # csv_content like {nodename:inputs[{type, shape:[]}]}
@@ -172,7 +175,7 @@ def atb_json_to_onnx_json(atb_json_dict, target_level, shape_contents):
 
             atb_shape_to_onnx_shape(onnx_json_dict["graph"]["valueInfo"], input_names, shape_info.get("inputs", []))
             atb_shape_to_onnx_shape(onnx_json_dict["graph"]["valueInfo"], output_names, shape_info.get("outputs", []))
-            
+
     value_info = {shape_info.get("name"): shape_info for shape_info in onnx_json_dict["graph"].get("valueInfo", [])}
 
     onnx_json_dict["graph"]["input"] = []
@@ -249,4 +252,4 @@ def atb_json_to_onnx(atb_json_path, target_level=-1, cache_csv_file: typing.Unio
     onnx_str = json.dumps(onnx_json)
     convert_model = Parse(onnx_str, onnx.ModelProto())
     onnx_dir = atb_json_path[0:-5] + ".onnx"
-    onnx.save(convert_model, onnx_dir)
+    save_onnx(convert_model, onnx_dir)

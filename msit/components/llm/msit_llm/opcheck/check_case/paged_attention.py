@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2023-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,23 +13,24 @@
 # limitations under the License.
 
 from enum import Enum
-import torch
-import torch_npu
 
+import torch
+
+from components.utils.util import safe_get, safe_del
 from msit_llm.opcheck import operation_test
 from msit_llm.common.log import logger
 
 
 class CompressType(Enum):
-    COMPRESS_TYPE_UNDEFINED = 0 # 默认值，不压缩
-    COMPRESS_TYPE_KVHEAD = 1 # 压缩key_cache, value_cache的kvHead维度，只支持Atlas 800I A2
+    COMPRESS_TYPE_UNDEFINED = 0  # 默认值，不压缩
+    COMPRESS_TYPE_KVHEAD = 1  # 压缩key_cache, value_cache的kvHead维度，只支持Atlas 800I A2
 
 
 class MaskType(Enum):
-    UNDEFINED = 0 # 默认值，全0的mask
-    MASK_TYPE_NORM = 1 # 倒三角mask
-    MASK_TYPE_ALIBI = 2 # alibi mask
-    MASK_TYPE_SPEC = 3 # 并行解码mask
+    UNDEFINED = 0  # 默认值，全0的mask
+    MASK_TYPE_NORM = 1  # 倒三角mask
+    MASK_TYPE_ALIBI = 2  # alibi mask
+    MASK_TYPE_SPEC = 3  # 并行解码mask
 
 
 class QuantType(Enum):
@@ -38,8 +39,8 @@ class QuantType(Enum):
 
 
 class CalcType(Enum):
-    CALC_TYPE_UNDEFINED = 0 # 默认值，不开启并行解码
-    CALC_TYPE_SPEC = 1 # 并行解码功能
+    CALC_TYPE_UNDEFINED = 0  # 默认值，不开启并行解码
+    CALC_TYPE_SPEC = 1  # 并行解码功能
 
 
 class OpcheckPagedAttentionAttentionOperation(operation_test.OperationTest):
@@ -121,19 +122,19 @@ class OpcheckPagedAttentionAttentionOperation(operation_test.OperationTest):
         return score
 
     def ref_masked_attention(self, masked_attention_input, alibi_bias=None):
-        query = masked_attention_input[0] # (1, head_num, head_size)
-        key = masked_attention_input[1] # (context_len, kv_head_num, head_size)
+        query = masked_attention_input[0]  # (1, head_num, head_size)
+        key = masked_attention_input[1]  # (context_len, kv_head_num, head_size)
         value = masked_attention_input[2]
-        qk_scale = masked_attention_input[3] # float
+        qk_scale = masked_attention_input[3]  # float
 
         # Q * K.T
         query = torch.permute(query, (1, 0, 2))
         quant_type = self.op_param.get('quantType', QuantType.TYPE_QUANT_UNDEFINED.value)
         if quant_type == QuantType.TYPE_QUANT_UNDEFINED.value:
-            key = torch.permute(key, (1, 2, 0)) # 0 1 2
+            key = torch.permute(key, (1, 2, 0))  # 0 1 2
         else:
             key = torch.permute(key, (1, 0, 2))
-        sim = self.group_matmul(query.shape[0], key.shape[0], query, key, 1) # (head_num, q_seqlen, k_seqlen)
+        sim = self.group_matmul(query.shape[0], key.shape[0], query, key, 1)  # (head_num, q_seqlen, k_seqlen)
         if alibi_bias is None:
             sim = sim * qk_scale
         else:
@@ -162,7 +163,7 @@ class OpcheckPagedAttentionAttentionOperation(operation_test.OperationTest):
 
         mask_type = self.op_param.get('maskType', MaskType.UNDEFINED.value)
         if mask_type != MaskType.UNDEFINED.value:
-            mask_dim = 3 if mask_type == MaskType.MASK_TYPE_NORM.value else len(mask.shape) # mask shape
+            mask_dim = 3 if mask_type == MaskType.MASK_TYPE_NORM.value else len(mask.shape)  # mask shape
         else:
             mask_dim = 0
         mask_index_coff = 1
@@ -218,16 +219,16 @@ class OpcheckPagedAttentionAttentionOperation(operation_test.OperationTest):
         mask_type = self.op_param.get('maskType', MaskType.UNDEFINED.value)
         is_masked = mask_type != MaskType.UNDEFINED.value
         if is_masked:
-            mask = in_tensors[5]
+            mask = safe_get(in_tensors, 5)
         if self.optimization_closed == "maskType":
-            del self.in_tensors[5]
+            safe_del(self.in_tensors, 5)
 
         batch_run_status_enable = self.op_param.get("batchRunStatusEnable", False)
         if batch_run_status_enable:
             if is_masked:
-                batch_status = in_tensors[6]
+                batch_status = safe_get(in_tensors, 6)
             else:
-                batch_status = in_tensors[5]
+                batch_status = safe_get(in_tensors, 5)
 
         calc_type = self.op_param.get('calcType', CalcType.CALC_TYPE_UNDEFINED.value) # 暂时不使用
         if calc_type == CalcType.CALC_TYPE_SPEC.value:

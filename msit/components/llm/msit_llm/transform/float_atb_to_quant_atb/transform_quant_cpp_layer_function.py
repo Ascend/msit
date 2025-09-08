@@ -167,9 +167,12 @@ class TransformQuantCppLayerFunction:
         return norm_nodes
 
     def is_mlp_norm_node_using_attn_norm_param(self):
+        if not self.norm_nodes:
+            raise IndexError('norm_nodes is empty')
         attn_norm_param_name = self.atb_node_params.get(self.norm_nodes[0], 'Not exist')
-        return any([self.atb_node_params.get(norm_node, 'Not exist') ==
-            attn_norm_param_name for norm_node in self.norm_nodes[1:]])
+        return any([
+            self.atb_node_params.get(node, 'Not exist') == attn_norm_param_name for node in self.norm_nodes[1:]
+            ])
 
     def seek_till_node_operation_line(self, cur_id, node_name):
         pre_end_line_token_id = cur_id

@@ -207,6 +207,25 @@ def safe_get(container, key):
         raise TypeError("container must be a list or dict")
 
 
+def safe_del(container, key):
+    """
+    Safely delete an item from a list or dict.
+    For lists, checks index bounds.
+    For dicts, checks key existence.
+    Raises IndexError or KeyError if not found.
+    """
+    if isinstance(container, list):
+        if isinstance(key, int) and 0 <= key < len(container):
+            del container[key]
+        raise IndexError("list index out of range")
+    elif isinstance(container, dict):
+        if key in container:
+            del container[key]
+        raise KeyError(f"key '{key}' not found in dict")
+    else:
+        raise TypeError("container must be a list or dict")
+
+
 def recursion_depth_decorator(func_info, max_depth=MAX_RECUR_DEPTH):
     """装饰一个函数，当函数递归调用超过限制时，抛出异常并打印函数信息。"""
     def decorator(func):

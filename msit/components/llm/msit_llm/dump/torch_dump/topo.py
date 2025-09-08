@@ -9,6 +9,7 @@ from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
 from components.utils.file_open_check import ms_open
 from components.utils.constants import TENSOR_MAX_SIZE
+from components.utils.util import recursion_depth_decorator
 
 
 FILE_PERMISSION = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP
@@ -217,6 +218,7 @@ class ModelTree:
             self._create_sub_tree(sub_module, sub_node, module_ids)
 
 
+@recursion_depth_decorator('msit_llm.dump.torch_dump.topo._tree_to_dict')
 def _tree_to_dict(node):
     return {
         "name": node.node_name,

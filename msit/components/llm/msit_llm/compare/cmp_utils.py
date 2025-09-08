@@ -32,10 +32,12 @@ from msit_llm.common.constant import (TOKEN_ID, DATA_ID, GOLDEN_DATA_PATH, MY_DA
                                       STAT_CPM, CSV_STATISTICS_HEADER, GOLDEN_OP_TYPE,
                                       MY_OP_TYPE)
 from msit_llm.common.log import logger
-from components.utils.cmp_algorithm import CMP_ALG_MAP, CUSTOM_ALG_MAP, CMP_STATICTISC_MAP
-from components.utils.security_check import ms_makedirs
 from components.utils.check.rule import Rule
+from components.utils.cmp_algorithm import CMP_ALG_MAP, CUSTOM_ALG_MAP, CMP_STATICTISC_MAP
+from components.utils.constants import FileCheckConst
 from components.utils.file_open_check import ms_open
+from components.utils.file_utils import FileChecker
+from components.utils.security_check import ms_makedirs
 
 
 MIN_LAYER_NUMBER = 10
@@ -46,6 +48,12 @@ class BasicDataInfo:
     TORCH_UNSUPPORTED_D_TYPE_MAP = {"uint16": "int32", "uint32": "int64"}
 
     def __init__(self, golden_data_path, my_data_path, token_id=None, data_id=None, op_type=None):
+        file_check = FileChecker(golden_data_path, FileCheckConst.DIR, ability=FileCheckConst.READ_ABLE)
+        file_check.common_check()
+        file_check = FileChecker(my_data_path, FileCheckConst.DIR, ability=FileCheckConst.READ_ABLE)
+        file_check.common_check()
+        golden_data_path = os.path.realpath(golden_data_path)
+        my_data_path = os.path.realpath(my_data_path)
         self.my_data_path, self.golden_data_path = my_data_path, golden_data_path
         self.token_id = self.get_token_id(my_data_path) if token_id is None else token_id
         self.data_id = self.count_data_id if data_id is None else data_id
@@ -80,6 +88,8 @@ class BasicDataInfo:
         dump_filename_idx = 4
         dump_tensor_idx = 3
         dirseg = cur_path.split(os.path.sep)
+        if len(dirseg) > 16:
+            raise RecursionError(f'The depth of "{cur_path}" directory is too deep.')
         if len(dirseg) < dump_filename_idx:
             return 0
         flag1 = dirseg[-dump_tensor_idx] == "tensors" or dirseg[-dump_tensor_idx] == "torch_tensors"
