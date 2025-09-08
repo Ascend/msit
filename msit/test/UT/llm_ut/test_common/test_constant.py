@@ -13,13 +13,12 @@
 # limitations under the License.
 
 from __future__ import print_function
-
 import datetime
 import os
 import unittest
 from unittest.mock import patch, MagicMock
 
-from msit_llm.common.constant import get_visible_device, get_global_device, get_timestamp_sync, get_ait_dump_path
+from msit_llm.common.constant import get_visible_device, get_timestamp_sync, get_ait_dump_path
 
 
 class TestDeviceRelatedFunctions(unittest.TestCase):
@@ -38,7 +37,7 @@ class TestDeviceRelatedFunctions(unittest.TestCase):
         envionment_name = "ASCEND_VISIBLE_DEVICES"
         with self.assertRaises(ValueError) as context:
             get_visible_device(envionment_name)
-        
+
         assert "The value of the variable ASCEND_VISIBLE_DEVICES is not valid" in str(context.exception)
 
 
@@ -61,6 +60,8 @@ class TestGetTimestampSync(unittest.TestCase):
         self.mock_is_initialized = patch('torch.distributed.is_initialized').start()
         # 模拟torch.distributed.init_process_group函数，保存模拟对象
         self.mock_init_process_group = patch('torch.distributed.init_process_group').start()
+        # 模拟torch.distributed.destroy_process_group函数，保存模拟对象
+        self.mock_destroy_process_group = patch('torch.distributed.destroy_process_group').start()
         # 模拟torch.distributed.all_reduce函数，保存模拟对象
         self.mock_all_reduce = patch('torch.distributed.all_reduce').start()
         # 模拟torch.tensor函数，保存模拟对象
@@ -93,6 +94,15 @@ class TestGetTimestampSync(unittest.TestCase):
         # 调用函数
         result = get_timestamp_sync()
 
+        # 检查init_process_group是否未被调用
+        self.mock_init_process_group.assert_not_called()
+
+        # 检查all_reduce是否未被调用
+        self.mock_all_reduce.assert_not_called()
+
+        # 检查destroy_process_group是否未被调用
+        self.mock_destroy_process_group.assert_not_called()
+
         # 检查结果
         expected_timestamp = int(self.mock_datetime.now().strftime("%s"))
         self.assertEqual(result, expected_timestamp)
@@ -120,6 +130,9 @@ class TestGetTimestampSync(unittest.TestCase):
         # 检查all_reduce是否被调用
         self.mock_all_reduce.assert_called_once()
 
+        # 检查destroy_process_group是否被调用
+        self.mock_destroy_process_group.assert_called_once()
+
         # 检查结果
         self.assertEqual(result, 1700000000)
 
@@ -145,6 +158,9 @@ class TestGetTimestampSync(unittest.TestCase):
 
         # 检查all_reduce是否被调用
         self.mock_all_reduce.assert_called_once()
+
+        # 检查destroy_process_group是否未被调用
+        self.mock_destroy_process_group.assert_not_called()
 
         # 检查结果
         self.assertEqual(result, 1700000000)

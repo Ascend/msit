@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2023-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
+
 import datetime
+import os
+
 import torch
 
 from components.utils.cmp_algorithm import CMP_ALG_MAP
@@ -183,13 +185,16 @@ def get_timestamp_sync():
     world_size = safe_int(str_world_size, "LOCAL_WORLD_SIZE")
     if world_size < 2:
         return max_timestamp
-    
+
     str_rank = os.environ.get("LOCAL_RANK", "0")
     rank = safe_int(str_rank, "LOCAL_RANK")
     max_timestamp = torch.tensor(max_timestamp)
     if not torch.distributed.is_initialized():
         torch.distributed.init_process_group(backend=GLOBAL_DIST_BACKEND, rank=rank, world_size=world_size)
-    torch.distributed.all_reduce(max_timestamp, op=torch.distributed.ReduceOp.MAX)
+        torch.distributed.all_reduce(max_timestamp, op=torch.distributed.ReduceOp.MAX)
+        torch.distributed.destroy_process_group()
+    else:
+        torch.distributed.all_reduce(max_timestamp, op=torch.distributed.ReduceOp.MAX)
 
     return max_timestamp.item()
 

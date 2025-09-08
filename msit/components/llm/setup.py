@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2023-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,11 +30,11 @@ for root, _, files in os.walk('components/llm/msit_llm/opcheck/test_framework/')
 
 msit_sub_tasks = [
     {
-    "name": "llm",
-    "help_info": "Large Language Model(llm) Debugger Tools.",
-    "module": "msit_llm.__main__",
-    "attr": "get_cmd_instance"
-}
+        "name": "llm",
+        "help_info": "Large Language Model(llm) Debugger Tools.",
+        "module": "msit_llm.__main__",
+        "attr": "get_cmd_instance"
+    }
 ]
 
 msit_sub_task_entry_points = [
@@ -42,12 +42,15 @@ msit_sub_task_entry_points = [
     for t in msit_sub_tasks
 ]
 
+if not site.getsitepackages():
+    raise RuntimeError('There are no global site-packages directories.')
+
 setup(
     name='msit_llm',
     version='8.0.0',
     description='Debug tools for large language model(llm)',
     url=config.get('URL', 'msit_llm_url'),
-    packages=find_packages(),    
+    packages=find_packages(),
     package_data={'': ['*.sh', '*.cpp', '*.h', '*.txt']},
     license='Apache-2.0',
     keywords='msit_llm',

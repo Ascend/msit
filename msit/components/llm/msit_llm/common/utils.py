@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2023-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -114,8 +114,9 @@ def check_exec_script_file(script_path: str):
 
 def check_input_args(args: list):
     for arg in args:
-        if arg in INVALID_CHARS:
-            raise argparse.ArgumentTypeError("Args has invalid chars. Please check")
+        for char in arg:
+            if char in INVALID_CHARS:
+                raise argparse.ArgumentTypeError("Args has invalid chars. Please check")
 
 
 def check_exec_cmd(command: str):
@@ -131,7 +132,7 @@ def check_exec_cmd(command: str):
         args = cmds[2:]
         check_input_args(args)
     return True
-    
+
 
 def check_output_path_legality(value):
     if not value:
@@ -140,9 +141,9 @@ def check_output_path_legality(value):
     try:
         file_stat = FileStat(path_value)
     except Exception as err:
-        raise argparse.ArgumentTypeError(f"output path is illegal. Please check.") from err
+        raise argparse.ArgumentTypeError("output path is illegal. Please check.") from err
     if not file_stat.is_basically_legal("write", strict_permission=False):
-        raise argparse.ArgumentTypeError(f"output path can not be written. Please check.")
+        raise argparse.ArgumentTypeError("output path can not be written. Please check.")
     return path_value
 
 
@@ -185,28 +186,28 @@ def check_data_can_convert_to_int(value):
 def load_file_to_read_common_check(path: str, exts=None):
     if not isinstance(path, str):
         raise TypeError("'path' should be 'str'")
-    
+
     if isinstance(exts, (tuple, list)):
         if not any(check_file_ext(path, ext) for ext in exts):
             logger.error("Expected extenstion to be one of %r", exts)
             raise ValueError
-        
+
     elif exts is not None:
         logger.error("Expected 'exts' to be 'List[str]', got %r instead", type(exts))
         raise TypeError
-    
+
     if re.search(PATH_WHITE_LIST_REGEX, path):
         logger.error("Invalid character: %r", path)
         raise ValueError
-    
+
     path = os.path.realpath(path)
-    
+
     try:
         file_status = os.stat(path)
     except OSError as e:
         logger.error("%s: %r", e.strerror, path)
         raise
-    
+
     if not os.st.S_ISREG(file_status.st_mode):
         logger.error("Not a regular file: %r", path)
         raise ValueError
@@ -229,12 +230,12 @@ def load_file_to_read_common_check(path: str, exts=None):
         if cur_euid != 0:
             logger.error("File owner and current user are inconsistent: %r", path)
             raise PermissionError
-        
+
         # root but reading a other writeable file
         elif (os.st.S_IWGRP & file_status.st_mode) == os.st.S_IWGRP or \
              (os.st.S_IWUSR & file_status.st_mode) == os.st.S_IWUSR:
             logger.warning("Privilege escalation risk detected. Trying to read a file that belongs to"
-                          " a normal user and is writeable to the user or the user group")
+                           " a normal user and is writeable to the user or the user group")
 
     return path
 
@@ -282,7 +283,7 @@ def check_cosine_similarity(value):
     try:
         ivalue = float(value)
     except Exception as err:
-        raise argparse.ArgumentTypeError(f"Cosine similarity is invalid. Please check.") from err
+        raise argparse.ArgumentTypeError("Cosine similarity is invalid. Please check.") from err
     if ivalue < -1 or ivalue > 1:
         raise argparse.ArgumentTypeError("Cosine similarity: %s is an invalid float value" % value)
     return ivalue
@@ -292,7 +293,7 @@ def check_kl_divergence(value):
     try:
         ivalue = float(value)
     except Exception as err:
-        raise argparse.ArgumentTypeError(f"KL_divergence is invalid. Please check.") from err
+        raise argparse.ArgumentTypeError("KL_divergence is invalid. Please check.") from err
     if ivalue < 0:
         raise argparse.ArgumentTypeError("KL_divergence: %s is an invalid float value" % value)
     return ivalue
@@ -302,7 +303,7 @@ def check_l1_norm(value):
     try:
         ivalue = float(value)
     except Exception as err:
-        raise argparse.ArgumentTypeError(f"L1_Norm is invalid. Please check.") from err
+        raise argparse.ArgumentTypeError("L1_Norm is invalid. Please check.") from err
     if ivalue < -1:
         raise argparse.ArgumentTypeError("L1_Norm: %s is an invalid float value" % value)
     return ivalue
