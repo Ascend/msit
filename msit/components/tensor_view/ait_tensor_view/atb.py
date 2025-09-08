@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2024-2025 Huawei Technologies Co., Ltd.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ def read_atb_data(path: str) -> torch.Tensor:
     dtype = dtype_dict.get(dtype)
     tensor = torch.frombuffer(array("b", obj_buffer), dtype=dtype)
 
-    return tensor.view(dims)
+    return tensor.view(dims) if dims else tensor
 
 
 def write_atb_data(tensor: torch.Tensor, path: str):

@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2023-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
-import sys
 import subprocess
+import sys
+
+from components.utils.constants import FileCheckConst
+from components.utils.file_utils import FileChecker
 from components.utils.install import AitInstaller
 
 
@@ -25,7 +29,7 @@ class LlmInstall(AitInstaller):
         if not os.path.exists(os.path.join(os.path.dirname(__file__), "opcheck/libopchecker.so")):
             check_res.append("[warnning] build libopchecker.so failed. will make the opchecker feature unusable. "
                              "use `msit build-extra llm` to try again")
-        
+
         if not check_res:
             return "OK"
         else:
@@ -37,7 +41,9 @@ class LlmInstall(AitInstaller):
             return
 
         if find_links is not None:
-            os.environ['AIT_INSTALL_FIND_LINKS'] = os.path.realpath(find_links)
+            file_check = FileChecker(find_links, FileCheckConst.DIR, ability=FileCheckConst.READ_WRITE_ABLE)
+            file_check.common_check()
+            os.environ['AIT_INSTALL_FIND_LINKS'] = file_check.file_path
         subprocess.run(
             ["/bin/bash", os.path.abspath(os.path.join(os.path.dirname(__file__), "install.sh"))], shell=False
         )
@@ -47,7 +53,9 @@ class LlmInstall(AitInstaller):
         if sys.platform == 'win32':
             return
 
-        os.environ['AIT_DOWNLOAD_PATH'] = os.path.realpath(dest)
+        file_check = FileChecker(dest, FileCheckConst.DIR, ability=FileCheckConst.READ_WRITE_ABLE)
+        file_check.common_check()
+        os.environ['AIT_DOWNLOAD_PATH'] = file_check.file_path
         subprocess.run(
             ["/bin/bash", os.path.abspath(os.path.join(os.path.dirname(__file__), "install.sh"))], shell=False
         )

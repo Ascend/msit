@@ -17,24 +17,37 @@ import unittest
 from unittest import mock
 
 from components.llm.msit_llm.__install__ import LlmInstall
+from components.utils.file_utils import FileCheckException
 
 
 class TestLlmInstall(unittest.TestCase):
     @mock.patch('components.llm.msit_llm.__install__.subprocess.run')
     def test_build_extra_with_find_links(self, mock_run):
-        find_links_path = '/path/to/find_links'
+        find_links_path = os.path.dirname(os.path.realpath(__file__))
         LlmInstall.build_extra(find_links=find_links_path)
 
         self.assertEqual(os.environ.get('AIT_INSTALL_FIND_LINKS'), os.path.realpath(find_links_path))
         mock_run.assert_called_once()
+        del os.environ['AIT_INSTALL_FIND_LINKS']
+
+        find_links_path = os.path.join(find_links_path, 'non-existent_directory')
+        with self.assertRaises(FileCheckException) as context:
+            LlmInstall.build_extra(find_links=find_links_path)
+            self.assertEqual(context.exception.code, FileCheckException.ILLEGAL_PATH_ERROR)
 
     @mock.patch('components.llm.msit_llm.__install__.subprocess.run')
     def test_download_extra(self, mock_run):
-        dest_path = '/path/to/dest'
+        dest_path = os.path.dirname(os.path.realpath(__file__))
         LlmInstall.download_extra(dest_path)
 
         self.assertEqual(os.environ.get('AIT_DOWNLOAD_PATH'), os.path.realpath(dest_path))
         mock_run.assert_called_once()
+        del os.environ['AIT_DOWNLOAD_PATH']
+
+        dest_path = os.path.join(dest_path, 'non-existent_directory')
+        with self.assertRaises(FileCheckException) as context:
+            LlmInstall.download_extra(dest_path)
+            self.assertEqual(context.exception.code, FileCheckException.ILLEGAL_PATH_ERROR)
 
     @mock.patch('components.llm.msit_llm.__install__.subprocess.run')
     def test_build_extra_on_windows(self, mock_run):

@@ -20,8 +20,8 @@ MIND_STUDIO_LOGO = "[Powered by MindStudio]"
 
 PATH_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9/.-]")
 
-CONFIG_FILE_MAX_SIZE = 1 * 1024 * 1024 # work for .ini config file
-TEXT_FILE_MAX_SIZE = 100 * 1024 * 1024 # work for txt, py
+CONFIG_FILE_MAX_SIZE = 1 * 1024 * 1024  # work for .ini config file
+TEXT_FILE_MAX_SIZE = 100 * 1024 * 1024  # work for txt, py
 CSV_FILE_MAX_SIZE = 1024 * 1024 * 1024
 JSON_FILE_MAX_SIZE = 1024 * 1024 * 1024
 ONNX_MODEL_MAX_SIZE = 2 * 1024 * 1024 * 1024
@@ -42,3 +42,58 @@ EXT_SIZE_MAPPING = {
 }
 
 MAX_DEPTH_LIMIT = 100
+MAX_RECUR_DEPTH = 998
+
+
+class FileCheckConst:
+    """
+    Class for file check const
+    """
+    READ_ABLE = "read"
+    WRITE_ABLE = "write"
+    READ_WRITE_ABLE = "read and write"
+    DIRECTORY_LENGTH = 4096
+    FILE_NAME_LENGTH = 255
+    FILE_VALID_PATTERN = r"^[a-zA-Z0-9_.:/-]+$"
+    FILE_PATTERN = r'^[a-zA-Z0-9_./-]+$'
+    PKL_SUFFIX = ".pkl"
+    NUMPY_SUFFIX = ".npy"
+    JSON_SUFFIX = ".json"
+    PT_SUFFIX = ".pt"
+    CSV_SUFFIX = ".csv"
+    XLSX_SUFFIX = ".xlsx"
+    YAML_SUFFIX = ".yaml"
+    IR_SUFFIX = ".ir"
+    ZIP_SUFFIX = ".zip"
+    SHELL_SUFFIX = ".sh"
+    LOG_SUFFIX = ".log"
+    MAX_PKL_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
+    MAX_NUMPY_SIZE = 10737418240  # 10 * 1024 * 1024 * 1024
+    MAX_JSON_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
+    MAX_PT_SIZE = 10737418240  # 10 * 1024 * 1024 * 1024
+    MAX_CSV_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
+    MAX_XLSX_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
+    MAX_YAML_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
+    MAX_IR_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
+    MAX_ZIP_SIZE = 10737418240  # 10 * 1024 * 1024 * 1024
+    MAX_FILE_IN_ZIP_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
+    MAX_FILE_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
+    COMMOM_FILE_SIZE = 1048576  # 1 * 1024 * 1024
+    MAX_LOG_SIZE = 10737418240  # 1 * 1024 * 1024 * 1024
+    DIR = "dir"
+    FILE = "file"
+    DATA_DIR_AUTHORITY = 0o750
+    DATA_FILE_AUTHORITY = 0o640
+    FILE_SIZE_DICT = {
+        PKL_SUFFIX: MAX_PKL_SIZE,
+        NUMPY_SUFFIX: MAX_NUMPY_SIZE,
+        JSON_SUFFIX: MAX_JSON_SIZE,
+        PT_SUFFIX: MAX_PT_SIZE,
+        CSV_SUFFIX: MAX_CSV_SIZE,
+        XLSX_SUFFIX: MAX_XLSX_SIZE,
+        YAML_SUFFIX: MAX_YAML_SIZE,
+        IR_SUFFIX: MAX_IR_SIZE,
+        ZIP_SUFFIX: MAX_ZIP_SIZE,
+        LOG_SUFFIX: MAX_LOG_SIZE
+    }
+    CSV_BLACK_LIST = r'^[＋－＝％＠\+\-=%@]|;[＋－＝％＠\+\-=%@]'
