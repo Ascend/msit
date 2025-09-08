@@ -33,7 +33,7 @@ build_om_so() {
       return
   fi
 
-  COMPILE_OPTIONS="-Wl,-z,relro,-z,now,-z,noexecstack -s -fstack-protector-all -ftrapv"
+  COMPILE_OPTIONS="-Wl,-z,relro,-z,now,-z,noexecstack -s -fstack-protector-all -ftrapv -D_FORTIFY_SOURCE=2"
   g++ ${CURRENT_DIR}/save_om_model/export_om_model.cpp \
           -I ${ge_dev_path}/include \
           -L ${ge_dev_path}/lib64 \

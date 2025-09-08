@@ -18,10 +18,14 @@ LINK_DIRECTORIES(
     $ENV{CANN_HOME}/aarch64-linux/lib64
 )
 
+set(CMAKE_SKIP_RPATH TRUE)
+
 ADD_EXECUTABLE(aie_convert aie_convert.cpp)
+
+target_compile_options(aie_convert PRIVATE "-D_FORTIFY_SOURCE=2")
+target_compile_options(aie_convert PRIVATE "-ftrapv")
+target_link_options(aie_convert PRIVATE "-s")
 
 TARGET_INCLUDE_DIRECTORIES(aie_convert PUBLIC
     $ENV{ASCENDIE_HOME}/include
 )
-
-TARGET_LINK_LIBRARIES(aie_convert PUBLIC ascendie)
