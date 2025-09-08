@@ -98,7 +98,7 @@ sudo usermod -aG docker $USER
 
 ## 4.Dockerfile构建时报错 `ERROR: cannot verify xxx.com's certificate`
 
-可在Dockerfile中每个wget命令后加--no-check-certificate，有安全风险，由用户自行承担。
+可在Dockerfile中每个wget命令后加--no-check-certificate，需要注意的是，这会跳过检查目标网站的证书信息，有一定的安全风险，用户需要谨慎使用并自行承担后果。
 
 ## 5.使用单算子比对功能时执行`atc`出现fail
 一般是模型由于存在`reshape`算子导致的shape缺失从而`atc`转换失败，如果reshape的shape输入为某个网络算子，可能导致单算子atc转换失败，例如图中的reshape：

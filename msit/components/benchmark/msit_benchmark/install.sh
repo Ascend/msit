@@ -42,7 +42,7 @@ download_and_install_aclruntime() {
 
     WHL_NAME="aclruntime-0.0.2-cp3${PYTHON3_MINI_VERSION}-cp3${PYTHON3_MINI_VERSION}${SUB_SUFFIX}-linux_$(uname -m).whl"
     echo "WHL_NAME=$WHL_NAME, URL=${WHL_BASE_URL}${WHL_NAME}"
-    wget --no-check-certificate -c "${WHL_BASE_URL}${WHL_NAME}" && pip3 install $WHL_NAME $arg_force_reinstall && rm -f $WHL_NAME
+    wget -c "${WHL_BASE_URL}${WHL_NAME}" && pip3 install $WHL_NAME $arg_force_reinstall && rm -f $WHL_NAME
     if [ $? -ne 0 ]; then
         echo "Downloading or installing from whl failed, will install from source code"
         pip3 install -v "${TOOLS_BAS_URL}#egg=aclruntime&subdirectory=ais-bench_workload/tool/ais_bench/backend" --force-reinstall
@@ -61,7 +61,7 @@ download_and_install_ais_bench() {
 
     WHL_NAME="ais_bench-0.0.2-py3-none-any.whl"
     echo "WHL_NAME=$WHL_NAME, URL=${WHL_BASE_URL}${WHL_NAME}"
-    wget --no-check-certificate -c "${WHL_BASE_URL}${WHL_NAME}" && pip3 install $WHL_NAME $arg_force_reinstall && rm -f $WHL_NAME
+    wget -c "${WHL_BASE_URL}${WHL_NAME}" && pip3 install $WHL_NAME $arg_force_reinstall && rm -f $WHL_NAME
     if [ $? -ne 0 ]; then
         echo "Downloading or installing from whl failed, will install from source code"
         pip3 install -v "${TOOLS_BAS_URL}#egg=aclruntime&subdirectory=ais-bench_workload/tool/ais_bench/backend" --force-reinstall

@@ -135,6 +135,7 @@ msit llm dump <options>
 ## 免责声明
 
 - msit仅提供在昇腾设备上的一体化开发工具，支持一站式调优，不对其质量或维护负责。如果您遇到了问题，Gitee/Ascend/msit提交issue，我们将根据您的issue跟踪解决。衷心感谢您对我们社区的理解和贡献。
+- msit资料中提及的HwHiAiUser用户(NPU驱动和固件的默认运行用户）的用途，请参见[《Atlas 系列硬件产品账户清单》](https://support.huawei.com/enterprise/zh/doc/EDOC1100235027/13819a2d)。
 - 部分msit依赖包的某些版本存在已知安全漏洞，请及时使用安全补丁进行修复，或在满足业务需求的情况下，将依赖包升级至以下推荐版本。
 
 | 依赖包         | 安全版本                     |
