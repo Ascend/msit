@@ -17,20 +17,15 @@ import re
 import sys
 
 import json
-from copy import deepcopy
-from collections import namedtuple
 from functools import reduce
 
-import torch
-import torch_npu
 from transformers import AutoConfig
 
-from components.utils.file_open_check import ms_open
 from msit_llm.transform.utils import write_file
 from msit_llm.common.log import logger
 from msit_llm.transform.torch_to_atb_python.utils import to_transformers_traced_module, get_valid_name, \
     get_lambda_source_code, generate_infer_file, get_config_attr, build_transformers_model, \
-    find_mindie_supported_model, ATBModel, ATBModelConfig, Operation 
+    find_mindie_supported_model, ATBModel, ATBModelConfig, Operation
 from msit_llm.transform.torch_to_atb_python.env import NN_MODULE_STACK, SKIP_NODES, SKIP_MODULES, \
     TORCH_MODULE_TO_ATB_MAP, FX_OP_TYPES, FIXED_INPUTS, KV_CACHE_SURFFIX, BASIC_INPUT_NAMES, \
     RESHPAE_KIND, GATE_UP_WEIGHT, DOWN_WEIGHT
@@ -54,7 +49,6 @@ except Exception:  # Could be import error or mindie errors, just catch all Exce
 if os.environ.get("ASDOPS_LOG_LEVEL") == "FATAL":
     os.environ["ASDOPS_LOG_LEVEL"] = "ERROR"
 os.environ["ASDOPS_LOG_TO_STDOUT"] = "1"
-
 
 
 class ATBModelFromTorch(ATBModel):
@@ -136,12 +130,26 @@ class ATBModelFromTorch(ATBModel):
             self.weight_stack_map.setdefault(".".join(ii.split(".")[:-1]), []).append(ii)
 
         self.num_key_value_heads = get_config_attr(self.config, "num_key_value_heads", default=self.num_attention_heads)
+        if not isinstance(self.num_key_value_heads, int):
+            raise ValueError("num_key_value_heads must be a integer")
         self.rope_theta = get_config_attr(self.config, "rope_theta", default=1e4)
+        if not isinstance(self.rope_theta, (float, int)):
+            raise ValueError("rope_theta must be a floating point number")
         self.rms_norm_eps = get_config_attr(self.config, "rms_norm_eps", default=1e-5)
+        if not isinstance(self.rms_norm_eps, (float, int)):
+            raise ValueError("rms_norm_eps must be a floating point number")
         self.topk = get_config_attr(self.config, "num_experts_per_tok", default=0)
+        if not isinstance(self.topk, int):
+            raise ValueError("topk must be a integer")
         self.num_experts = get_config_attr(self.config, "num_local_experts", default=8)
+        if not isinstance(self.num_experts, int):
+            raise ValueError("num_experts must be a integer")
         self.model_type = get_config_attr(self.config, "torch_dtype", default="bfloat16")
+        if not isinstance(self.model_type, int):
+            raise ValueError("model_type must be a integer")
         self.num_layers = get_config_attr(self.config, "num_hidden_layers", default=8)
+        if not isinstance(self.num_layers, int):
+            raise ValueError("num_layers must be a integer")
 
         self.torch_module_to_atb_map = {}
         for kk, vv in TORCH_MODULE_TO_ATB_MAP.items():
@@ -275,7 +283,6 @@ class ATBModelFromTorch(ATBModel):
             for op in operations:
                 if isinstance(op, list):
                     sub_graph_name = f"sub_graph_{sub_graph_id}"
-                    sub_graph_inputs, sub_graph_outputs = stacked_inputs[0], stacked_outputs[0]
                     _to_file(sub_graph_name, op, depth=depth + 1)
                     cur_inputs, cur_outputs = _get_input_output_name(sub_graph_name)
                     contents.append(
@@ -318,12 +325,12 @@ class ATBModelFromTorch(ATBModel):
         write_file(output_file, contents_str)
         return output_file
 
-    def find_moe(self):  
+    def find_moe(self):
         for key in list(self.traced_module.state_dict().keys()):
             if "moe.experts" in key:
                 return True
         return False
-    
+
     def convert_fx_traced_module(self):
         previous_module_name, cur_module_name, previous_operation_out, base_module_name = None, None, None, None
         input_node_map, output_node_map, operation_outputs = {}, {}, {}
@@ -354,10 +361,9 @@ class ATBModelFromTorch(ATBModel):
                 base_module_name = list(node.meta[NN_MODULE_STACK].keys())[0]
 
             cur_module_name = self._get_module_name_by_nn_module_stack(node)
-            #do rope in a unified manner 
-            if (cur_module_name.endswith("self_attn.rotary_emb") and 
-                previous_module_name.endswith("self_attn") and 
-                self.is_moe):
+            # do rope in a unified manner
+            if (cur_module_name.endswith("self_attn.rotary_emb") and
+                    previous_module_name.endswith("self_attn") and self.is_moe):
                 continue
             input_node_map.setdefault(cur_module_name, []).extend([ii.name for ii in node.all_input_nodes])
 
@@ -400,13 +406,13 @@ class ATBModelFromTorch(ATBModel):
                 layer_id = find_names[0]
                 self._op_process_moe_mlp_init_routing(atb_operation=atb_operation, module_name=module_name)
                 self._op_process_moe_mlp_cast(atb_operation=atb_operation, module_name=module_name)
-                self._op_process_moe_mlp_gate_up_gmm(atb_operation=atb_operation, 
-                                                    module_name=module_name, 
-                                                    layer_id=layer_id)
+                self._op_process_moe_mlp_gate_up_gmm(atb_operation=atb_operation,
+                                                     module_name=module_name,
+                                                     layer_id=layer_id)
                 self._op_process_moe_mlp_activation_block(atb_operation=atb_operation, module_name=module_name)
-                self._op_process_moe_mlp_down_gmm(atb_operation=atb_operation, 
-                                                module_name=module_name, 
-                                                layer_id=layer_id)
+                self._op_process_moe_mlp_down_gmm(atb_operation=atb_operation,
+                                                  module_name=module_name,
+                                                  layer_id=layer_id)
                 self._op_process_moe_mlp_moe_token_unpermute(atb_operation=atb_operation, module_name=module_name)
                 if len(self.operations) < 1:
                     raise RuntimeError("Build operations failed, Please check it!")
@@ -582,13 +588,13 @@ class ATBModelFromTorch(ATBModel):
             Operation(
                 op_type="Linear",
                 op_param={"hasBias": False, "enAccum": False},
-                inputs=[module_name.split("block_sparse_moe")[0] + "post_attention_layernorm.out", 
+                inputs=[module_name.split("block_sparse_moe")[0] + "post_attention_layernorm.out",
                         module_name + ".gate.weight"],
                 outputs=[module_name + ".intermediate_router_logits"],
                 op_name=module_name + ".gate",
             ),
         ]
-    
+
     def _op_process_moe_router(self, atb_operation=None, module_name=""):
         self.operations += [
             Operation(
@@ -602,12 +608,12 @@ class ATBModelFromTorch(ATBModel):
                 op_type="Sort",
                 op_param={"num": [self.topk]},
                 inputs=[module_name + ".intermediate_router_weights"],
-                outputs=[module_name + ".intermediate_router_weights_topk", 
-                        module_name + ".intermediate_selected_experts"],
+                outputs=[module_name + ".intermediate_router_weights_topk",
+                         module_name + ".intermediate_selected_experts"],
                 op_name=module_name + ".router_topk",
             ),
         ]
-    
+
     def _op_process_moe_norm(self, atb_operation=None, module_name=""):
         self.operations += [
             Operation(
@@ -627,23 +633,23 @@ class ATBModelFromTorch(ATBModel):
             Operation(
                 op_type="Elewise",
                 op_param={"elewiseType": "ELEWISE_REALDIV"},
-                inputs=[module_name + ".intermediate_router_weights_topk", 
+                inputs=[module_name + ".intermediate_router_weights_topk",
                         module_name + ".intermediate_router_weights_topk_sumed1"],
                 outputs=[module_name + ".intermediate_router_weights_topk_reduced"],
                 op_name=module_name + ".norm_div",
             ),
         ]
-    
+
     def _op_process_moe_mlp_init_routing(self, atb_operation=None, module_name=""):
         self.operations += [
             Operation(
                 op_type="MoeInitRouting",
                 op_param={"topkNum": self.topk, "expertNum": self.num_experts},
-                inputs=[module_name.split("block_sparse_moe")[0] + "post_attention_layernorm.out", 
+                inputs=[module_name.split("block_sparse_moe")[0] + "post_attention_layernorm.out",
                         module_name + ".intermediate_selected_experts"],
-                outputs=[module_name + ".intermediate_sorted_hidden_states", 
-                        module_name + ".intermediate_idx",
-                        module_name + ".intermediate_group_list"],
+                outputs=[module_name + ".intermediate_sorted_hidden_states",
+                         module_name + ".intermediate_idx",
+                         module_name + ".intermediate_group_list"],
                 op_name=module_name + ".moe_init_routing",
             )
         ]
@@ -658,13 +664,13 @@ class ATBModelFromTorch(ATBModel):
                 op_name=module_name + ".elewise_cast",
             )
         ]
-    
+
     def _op_process_moe_mlp_gate_up_gmm(self, atb_operation=None, module_name="", layer_id=0):
         self.operations += [
             Operation(
                 op_type="GroupedMatmul",
-                op_param={"transposeB": False, 
-                        'outTensorType': 'ACL_BF16' if self.model_type == "bfloat16" else 'ACL_FLOAT16'},
+                op_param={"transposeB": False,
+                          'outTensorType': 'ACL_BF16' if self.model_type == "bfloat16" else 'ACL_FLOAT16'},
                 inputs=[module_name + ".intermediate_sorted_hidden_states",
                         GATE_UP_WEIGHT+layer_id,
                         module_name + ".intermediate_group_list_int64"],
@@ -672,7 +678,7 @@ class ATBModelFromTorch(ATBModel):
                 op_name=module_name + ".integrated_gmm_gate_up",
             )
         ]
-    
+
     def _op_process_moe_mlp_activation_block(self, atb_operation=None, module_name=""):
         self.operations += [
             Operation(
@@ -681,7 +687,7 @@ class ATBModelFromTorch(ATBModel):
                 op_name=module_name + ".activation_split",
                 inputs=[module_name + ".intermediate_matmul_gate_up_out"],
                 outputs=[module_name + ".intermediate_matmul_gate_out",
-                            module_name + ".intermediate_matmul_up_out",]
+                         module_name + ".intermediate_matmul_up_out"]
             ),
             Operation(
                 op_type="Activation",
@@ -695,17 +701,17 @@ class ATBModelFromTorch(ATBModel):
                 op_param={'elewiseType': 'ELEWISE_MUL'},
                 op_name=module_name + ".activation_elewise_mul",
                 inputs=[module_name + ".intermediate_swish_out_internal",
-                            module_name + ".intermediate_matmul_up_out"],
+                        module_name + ".intermediate_matmul_up_out"],
                 outputs=[module_name + ".intermediate_swish_out"]
             )
         ]
-    
+
     def _op_process_moe_mlp_down_gmm(self, atb_operation=None, module_name="", layer_id=0):
         self.operations += [
             Operation(
                 op_type="GroupedMatmul",
-                op_param={"transposeB": False, 
-                        'outTensorType': 'ACL_BF16' if self.model_type == "bfloat16" else 'ACL_FLOAT16'},
+                op_param={"transposeB": False,
+                          'outTensorType': 'ACL_BF16' if self.model_type == "bfloat16" else 'ACL_FLOAT16'},
                 inputs=[module_name + ".intermediate_swish_out",
                         DOWN_WEIGHT+layer_id,
                         module_name + ".intermediate_group_list_int64"],
@@ -713,7 +719,7 @@ class ATBModelFromTorch(ATBModel):
                 op_name=module_name + ".integrated_gmm_down",
             )
         ]
-    
+
     def _op_process_moe_mlp_moe_token_unpermute(self, atb_operation=None, module_name=""):
         self.operations += [
             Operation(
@@ -721,8 +727,8 @@ class ATBModelFromTorch(ATBModel):
                 op_param={},
                 op_name=module_name + ".moe_token_unpermute",
                 inputs=[module_name + ".intermediate_mlp_out",
-                            module_name + ".intermediate_idx",
-                            module_name + ".intermediate_router_weights_topk_reduced"],
+                        module_name + ".intermediate_idx",
+                        module_name + ".intermediate_router_weights_topk_reduced"],
                 outputs=[module_name + ".mlp_out"]
             )
         ]
@@ -850,8 +856,11 @@ class ATBModelFromTorch(ATBModel):
 
     def _replace_input_ids_by_inputs_embeds_for_vl_model(self):
         if FIXED_INPUTS.input_ids in self.model_inputs:
-            self.model_inputs = [FIXED_INPUTS.inputs_embeds if ii == FIXED_INPUTS.input_ids else ii \
-                                 for ii in self.model_inputs]
+            self.model_inputs = [
+                FIXED_INPUTS.inputs_embeds
+                if ii == FIXED_INPUTS.input_ids else ii
+                for ii in self.model_inputs
+            ]
 
         embed_op_id, embed_outputs = -1, None
         for op_id, op in enumerate(self.operations):

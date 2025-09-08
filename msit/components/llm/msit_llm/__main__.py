@@ -174,7 +174,6 @@ class DumpCommand(BaseCommand):
     def handle(self, args, **kwargs):
         if args.exec:
             set_log_level(args.log_level)
-            logger.info(f"About to execute command : {args.exec}")
             logger.warning("Please ensure that your execution command is secure.")
             init_dump_task(args)
             # 有的大模型推理任务启动后，输入对话时有提示符，使用subprocess拉起子进程无法显示提示符

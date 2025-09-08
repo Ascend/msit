@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import os
-import stat
-from pathlib import Path
 from msit_llm.transform.float_atb_to_quant_atb.utils import (
     check_libclang_so,
     filter_chinese_char,
@@ -51,6 +49,8 @@ class TransformQuant:
             hpp_file_path = (base_name + ".h") if os.path.exists(base_name + ".h") else (base_name + ".hpp")
 
         cpp_cursor, cpp_contents = self.parse_file_as_cursor(cpp_file_path)
+        if not list(cpp_cursor.get_children()):
+            raise RuntimeError('AST has no child nodes')
         cpp_children = list(next(list(cpp_cursor.get_children())[-1].get_children()).get_children())
         self.cpp_contents, self.cpp_children = cpp_contents, cpp_children
         self.cpp_file_path, self.hpp_file_path = cpp_file_path, hpp_file_path
@@ -169,14 +169,14 @@ class TransformQuant:
         next_semicolon_pos = cur_contents.find(";")
         if next_semicolon_pos == -1:
             raise ValueError("Semicolon not found; cannot parse in_tensor_count.")
-        
+
         # Extract the value after the last '=' and strip whitespace
         raw_value = cur_contents[:next_semicolon_pos].split("=")[-1].strip()
         try:
             cur_in_tensor_count = int(raw_value)
         except ValueError as e:
             raise ValueError(f"Failed to convert '{raw_value}' to an integer.") from e
-        
+
         # Increase the tensor count by the number of added tensors
         cur_in_tensor_count += len(self.in_tensor_added)
         insert_contents = " = {}".format(cur_in_tensor_count)
@@ -185,6 +185,9 @@ class TransformQuant:
         return insert_contents, insert_start, insert_end
 
     def update_from_json(self, cursor, contents):
+        if len(list(cursor.get_arguments())) < 2:
+            raise RuntimeError('The number of arguments for AST must be greater than 2, '
+                               f'but got {len(list(cursor.get_arguments()))}')
         json_param, in_param = list(cursor.get_arguments())[:2]
         json_param_spelling, in_param_spelling = json_param.spelling, in_param.spelling
         insert_position = cursor.extent.end.offset - 1

@@ -496,6 +496,18 @@ def save_npy_to_txt(data, dst_file='', align=0):
     change_mode(dst_file, FileCheckConst.DATA_FILE_AUTHORITY)
 
 
+def save_onnx(model, filepath):
+    check_path_before_create(filepath)
+    filepath = os.path.realpath(filepath)
+    try:
+        import onnx
+        onnx.save(model, filepath)
+    except Exception as e:
+        logger.error(f"The onnx model failed to save. Please check the path: {filepath}.")
+        raise RuntimeError(f"Save onnx model {filepath} failed.") from e
+    change_mode(filepath, FileCheckConst.DATA_FILE_AUTHORITY)
+
+
 def write_csv(data, filepath, mode="a+", malicious_check=False):
     def csv_value_is_valid(value: str) -> bool:
         if not isinstance(value, str):

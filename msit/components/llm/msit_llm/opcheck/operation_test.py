@@ -370,6 +370,9 @@ class OperationTest(unittest.TestCase):
 
     def convert_data_format(self, data):
         dim0, dim1 = data.shape[0], data.shape[1]
+        remainder = dim1 % 32 if data.dtype == torch.int8 else dim1 % 16
+        if remainder != 0:
+            raise RuntimeError(f'The tensor with shape {data.shape} is invalid to convert format')
         if data.dtype == torch.int8:
             data = data.reshape([1, dim1 // 32, dim0, 32]).permute(0, 2, 1, 3).reshape([dim0, dim1])
         else:
