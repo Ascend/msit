@@ -22,8 +22,8 @@ from msserviceprofiler.msservice_advisor.profiling_analyze.register import regis
 from msserviceprofiler.msservice_advisor.profiling_analyze.utils import (
     logger, SUGGESTION_TYPES, BYTES_TO_GB, MAX_DEVICE_ID_LIST_LENGTH
 )
-from msserviceprofiler.msservice_advisor.profiling_analyze.utils import vaild_readable_directory, vaild_readable_file
 from msserviceprofiler.msservice_advisor.profiling_analyze.utils import get_directory_size, read_csv_or_json
+from msserviceprofiler.msguard import validate_params, Rule
 
 
 def get_benchmark_token_num(benchmark, info_name):
@@ -112,19 +112,14 @@ def extract_server_config_params(server_config, output_token_num, tp):
     )
 
 
+@validate_params({'model_weight_path': Rule.input_dir_traverse})
 def extract_model_config_params(model_weight_path):
     """
         获取模型参数信息，及模型权重文件总大小
     """
-    # check model weight directory
-    vaild_readable_directory(model_weight_path)
-
-    # check model config.json
-    model_config_file = os.path.join(model_weight_path, "config.json")
-    model_config_file = vaild_readable_file(model_config_file)
-    logger.info(f"model config path: {model_config_file}")
-
     # get model config.json
+    model_config_file = os.path.join(model_weight_path, "config.json")
+    logger.info(f"model config path: {model_config_file}")
     model_params = read_csv_or_json(model_config_file)
 
     # caculate model weight size

@@ -43,12 +43,12 @@ pip install -U msserviceprofiler
 #### 或通过源码方式使用 msserviceprofiler
 
 ```shell
-git clone https://gitee.com/ascend/msit.git
+git clone https://gitcode.com/ascend/msit.git
 export PYTHONPATH=$PWD/msit/msserviceprofiler/:$PYTHONPATH
 ```
 
 ## 支持与帮助
 
-🐛 [Issue提交](https://gitee.com/ascend/msit/issues)
+🐛 [Issue提交](https://gitcode.com/Ascend/msit/issues)
 
 💬 [昇腾论坛](https://www.hiascend.com/forum/forum-0106101385921175006-1.html)
