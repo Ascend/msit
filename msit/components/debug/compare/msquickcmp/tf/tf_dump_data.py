@@ -31,7 +31,7 @@ from msquickcmp.common.utils import AccuracyCompareException
 from components.utils.file_open_check import ms_open
 from components.utils.constants import TENSOR_MAX_SIZE
 
-from components.utils.util import load_file_to_read_common_check
+from components.utils.util import load_file_to_read_common_check, check_str_for_cmd
 
 
 class TfDumpData(DumpData):
@@ -193,6 +193,7 @@ class TfDumpData(DumpData):
                 # get the net_output dump file info
                 if tensor_name in self.net_output_name:
                     self.net_output[self.net_output_name.index(tensor_name)] = npy_file_path
+                check_str_for_cmd(tensor_name, 'tensor_name')
                 pt_command_list.append("pt %s -n %d -w %s" % (tensor_name, count_tensor_name, npy_file_path))
         return pt_command_list
 
