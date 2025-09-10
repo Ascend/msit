@@ -19,6 +19,7 @@ import stat
 import subprocess
 import tempfile
 import time
+from dataclasses import dataclass
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Tuple, Optional
@@ -31,6 +32,26 @@ from msserviceprofiler.modelevalstate.config.config import (MindieConfig, MODEL_
 from msserviceprofiler.modelevalstate.config.config import OptimizerConfigField
 from msserviceprofiler.modelevalstate.optimizer.utils import (backup, kill_process, kill_children,
                                                               remove_file, close_file_fp)
+
+
+@dataclass
+class ConfigContextdict:
+    origin_config: dict
+    cur_key: str
+    next_key: str
+    next_level: str
+    value: Any
+    current_depth: int
+
+
+@dataclass
+class ConfigContextlist:
+    origin_config: list
+    cur_key: str
+    next_key: str
+    next_level: str
+    value: Any
+    current_depth: int
 
 
 class Simulator:
@@ -73,33 +94,41 @@ class Simulator:
             logger.error("pkill not found in path")
 
     @staticmethod
-    def set_config_for_dict(origin_config, cur_key, next_key, next_level, value):
-        if cur_key in origin_config:
-            Simulator.set_config(origin_config[cur_key], next_level, value)
-        elif Simulator.is_int(cur_key):
-            raise KeyError(f"data: {origin_config}, key: {cur_key}")
-        elif Simulator.is_int(next_key):
-            origin_config[cur_key] = []
-            Simulator.set_config(origin_config[cur_key], next_level, value)
+    def set_config_for_dict(context: ConfigContextdict):
+        if context.cur_key in context.origin_config:
+            Simulator.set_config(context.origin_config[context.cur_key], context.next_level, context.value, 
+                                 context.current_depth)
+        elif Simulator.is_int(context.cur_key):
+            raise KeyError(f"data: {context.origin_config}, key: {context.cur_key}")
+        elif Simulator.is_int(context.next_key):
+            context.origin_config[context.cur_key] = []
+            Simulator.set_config(context.origin_config[context.cur_key], context.next_level, context.value, 
+                                 context.current_depth)
         else:
-            origin_config[cur_key] = {}
-            Simulator.set_config(origin_config[cur_key], next_level, value)
+            context.origin_config[context.cur_key] = {}
+            Simulator.set_config(context.origin_config[context.cur_key], context.next_level, context.value, 
+                                 context.current_depth)
 
     @staticmethod
-    def set_config_for_list(origin_config, cur_key, next_key, next_level, value):
-        if len(origin_config) > int(cur_key):
-            Simulator.set_config(origin_config[int(cur_key)], next_level, value)
-        elif len(origin_config) == int(cur_key) and Simulator.is_int(next_key):
-            origin_config.append([])
-            Simulator.set_config(origin_config[int(cur_key)], next_level, value)
-        elif len(origin_config) == int(cur_key) and not Simulator.is_int(next_key):
-            origin_config.append({})
-            Simulator.set_config(origin_config[int(cur_key)], next_level, value)
+    def set_config_for_list(context: ConfigContextlist):
+        if len(context.origin_config) > int(context.cur_key):
+            Simulator.set_config(context.origin_config[int(context.cur_key)], context.next_level, context.value, 
+                                 context.current_depth)
+        elif len(context.origin_config) == int(context.cur_key) and Simulator.is_int(context.next_key):
+            context.origin_config.append([])
+            Simulator.set_config(context.origin_config[int(context.cur_key)], context.next_level, context.value,
+                                  context.current_depth)
+        elif len(context.origin_config) == int(context.cur_key) and not Simulator.is_int(context.next_key):
+            context.origin_config.append({})
+            Simulator.set_config(context.origin_config[int(cur_key)], context.next_level, context.value, 
+                                 context.current_depth)
         else:
-            raise IndexError(f"data: {origin_config}, index: {cur_key}")
+            raise IndexError(f"data: {context.origin_config}, index: {context.cur_key}")
 
     @staticmethod
-    def set_config(origin_config, key: str, value: Any):
+    def set_config(origin_config, key: str, value: Any, current_depth=0):
+        if current_depth > 10:
+            raise RecursionError("Exceeded maximum recursion depth")
         next_level = None
         try:
             if "." in key:
@@ -127,9 +156,25 @@ class Simulator:
             logger.error(f"Unexpected error occurred at {key}")
             raise e
         if isinstance(origin_config, dict):
-            Simulator.set_config_for_dict(origin_config, _cur_key, _next_key, next_level, value)
+            context = ConfigContextdict(
+                origin_config=origin_config,
+                cur_key=_cur_key,
+                next_key=_next_key,
+                next_level=next_level,
+                value=value,
+                current_depth=current_depth + 1
+            )
+            Simulator.set_config_for_dict(context)
         elif isinstance(origin_config, list):
-            Simulator.set_config_for_list(origin_config, _cur_key, _next_key, next_level, value)
+            context = ConfigContextlist(
+                origin_config=origin_config,
+                cur_key=_cur_key,
+                next_key=_next_key,
+                next_level=next_level,
+                value=value,
+                current_depth=current_depth + 1
+            )
+            Simulator.set_config_for_list(context)
         else:
             raise ValueError(f"Not Support type {type(origin_config)}")
 
