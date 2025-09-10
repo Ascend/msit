@@ -88,61 +88,6 @@ def test_set_logger_given_existing_handler_when_configured_then_no_duplicate():
     assert len(test_logger.handlers) == 1  # Original handler replaced?
 
 
-# Test vaild_readable_directory
-def test_vaild_readable_directory_given_valid_dir_when_checked_then_passes():
-    temp_dir = tempfile.mkdtemp()
-    try:
-        utils.vaild_readable_directory(temp_dir)  # Should not raise
-    finally:
-        os.rmdir(temp_dir)
-
-
-def test_vaild_readable_directory_given_nonexistent_path_when_checked_then_error():
-    with pytest.raises(FileExistsError):
-        utils.vaild_readable_directory("/nonexistent/path")
-
-
-def test_vaild_readable_directory_given_file_path_when_checked_then_error():
-    temp_file = create_temp_file(10)
-    try:
-        with pytest.raises(ValueError):
-            utils.vaild_readable_directory(temp_file)
-    finally:
-        os.unlink(temp_file)
-
-
-def test_vaild_readable_directory_given_unreadable_dir_when_checked_then_error():
-    temp_dir = tempfile.mkdtemp()
-    try:
-        os.chmod(temp_dir, 0o000)  # Remove all permissions
-        with pytest.raises(PermissionError):
-            utils.vaild_readable_directory(temp_dir)
-    finally:
-        os.chmod(temp_dir, 0o755)  # Restore permissions for cleanup
-        os.rmdir(temp_dir)
-
-
-# Test vaild_readable_file
-def test_vaild_readable_file_given_valid_file_when_checked_then_returns_path():
-    temp_file = create_temp_file(10)
-    try:
-        result = utils.vaild_readable_file(temp_file)
-        assert isinstance(result, Path)
-    finally:
-        os.unlink(temp_file)
-
-
-def test_vaild_readable_file_given_unreadable_file_when_checked_then_error():
-    temp_file = create_temp_file(10)
-    try:
-        os.chmod(temp_file, 0o000)  # Remove all permissions
-        with pytest.raises(PermissionError):
-            utils.vaild_readable_file(temp_file)
-    finally:
-        os.chmod(temp_file, 0o644)  # Restore permissions for cleanup
-        os.unlink(temp_file)
-
-
 # Test get_directory_size
 def test_get_directory_size_given_empty_dir_when_calculated_then_zero():
     temp_dir = tempfile.mkdtemp()

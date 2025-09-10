@@ -19,6 +19,7 @@ import logging
 from collections import namedtuple
 from glob import glob
 from msserviceprofiler.msguard.security.io import open_s
+from msserviceprofiler.msguard import validate_params, Rule
 
 TARGETS = namedtuple("TARGETS", ["FirstTokenTime", "Throughput"])("FirstTokenTime", "Throughput")
 _SUGGESTION_TYPES = ["env", "system", "config"]
@@ -77,29 +78,6 @@ def set_logger(msit_logger):
 
 logger = logging.getLogger("msservice_advisor_logger")
 set_logger(logger)
-
-
-def vaild_readable_directory(path):
-    if not os.path.exists(path):
-        raise FileExistsError(f"Path '{path}' does not exist.")
-    if not os.path.isdir(path):
-        raise ValueError(f"Path '{path}' is not a directory.")
-    if not os.access(path, os.R_OK):
-        raise PermissionError(f"Directory '{path}' is not readable.")
-
-
-def vaild_readable_file(path):
-    path = Path(path)
-    if not path.exists():
-        raise FileExistsError(f"path '{path}' does not exist.")
-
-    if not os.access(path, os.R_OK):
-        raise PermissionError(f"path '{path}' is not readable.")
-    
-    file_size = path.stat().st_size
-    if file_size > MAX_FILE_SIZE * BYTES_TO_GB:
-        raise ValueError(f"path '{path}' cannot exceed {MAX_FILE_SIZE}GB.")
-    return str(path)
 
 
 def get_directory_size(path):
@@ -164,6 +142,7 @@ def read_json(file_path):
     return result
 
 
+@validate_params({'file_path': Rule.input_file_read})
 def read_csv_or_json(file_path):
     if not file_path or not os.path.exists(file_path):
         logger.warning("File does not exist: %r", file_path)

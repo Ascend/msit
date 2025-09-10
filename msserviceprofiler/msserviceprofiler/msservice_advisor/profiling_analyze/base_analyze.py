@@ -36,17 +36,18 @@ def npu_mem_size_checker(mindie_service_config, benchmark_instance, profiling_pa
 def check_prefill_latency(mindie_service_config, benchmark_instance, profiling_params):
     target = profiling_params.target
     if benchmark_instance:
-        results_per_request = benchmark_instance.get("results_per_request").values()
+        results_per_request = benchmark_instance.get("results_per_request", {}).values()
         prefill_latencies = np.array([ii["latency"][0] for ii in results_per_request if len(ii.get("latency", [])) > 0])
 
-        counts, buckets = np.histogram(prefill_latencies)
-        bucket_keys = ["{:.2f}-{:.2f}".format(ii, jj) for ii, jj in zip(buckets[:-1], buckets[1:])]
-        bucket_keys_max_len = len(max(bucket_keys, key=lambda ii: len(ii)))
-        logger.debug("First token latency:")
-        logger.debug(" " * (4 + bucket_keys_max_len - 14) + "Bucket [0, -1]: Count")
-        logger.debug(" " * 4 + "-" * bucket_keys_max_len + ": ------")
-        for bucket_key, count in zip(bucket_keys, counts):
-            logger.debug(" " * (4 + bucket_keys_max_len - len(bucket_key)) + "{}: {}".format(bucket_key, count))
+        if len(prefill_latencies) > 0:
+            counts, buckets = np.histogram(prefill_latencies)
+            bucket_keys = ["{:.2f}-{:.2f}".format(ii, jj) for ii, jj in zip(buckets[:-1], buckets[1:])]
+            bucket_keys_max_len = len(max(bucket_keys, key=len))
+            logger.debug("First token latency:")
+            logger.debug(" " * (4 + bucket_keys_max_len - 14) + "Bucket [0, max]: Count")
+            logger.debug(" " * 4 + "-" * bucket_keys_max_len + ": ------")
+            for bucket_key, count in zip(bucket_keys, counts):
+                logger.debug(" " * (4 + bucket_keys_max_len - len(bucket_key)) + "{}: {}".format(bucket_key, count))
 
     if mindie_service_config:
         support_select_batch = get_dict_value_by_pos(
