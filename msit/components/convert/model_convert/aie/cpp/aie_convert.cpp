@@ -49,10 +49,27 @@ int main(int argc, char** argv)
     auto modelData = builder->BuildModel(network, config);
 
     std::ofstream fout(outputPath, std::ios::binary);
+    // 检查打开文件是否成功
+    if (!fout) {
+        throw std::runtime_error("Failed to open: " + outputPath);
+    }
 
     fout.write((char*)modelData.data.get(), modelData.size);
+    // 检查写入是否成功，否则清除残留文件
+    if (!fout) {
+        fout.close();
+        std::error_code ignore;
+        std::filesystem::remove(outputPath, ignore);
+        throw std::runtime_error("Failed to write to: " + outputPath);
+    }
 
     fout.close();
+    // 检查关闭文件是否成功
+    if (!fout) {
+        std::error_code ignore;
+        std::filesystem::remove(outputPath, ignore);
+        throw std::runtime_error("Failed to close file: " + outputPath);
+    }
 
     std::cout << "AIE Model Convert Succeed" << std::endl;
 

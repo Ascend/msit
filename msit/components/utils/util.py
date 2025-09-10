@@ -168,6 +168,16 @@ def filter_cmd(paras):
     return filtered
 
 
+def check_str_for_cmd(strings, var_name):
+    whitelist_pattern = re.compile(r"^[a-zA-Z0-9_\-./=:,\[\] ]+$")
+    if whitelist_pattern.fullmatch(strings):
+        pass
+    else:
+        raise ValueError(
+            f'{var_name} contains invalid characters. Only the "{whitelist_pattern}" pattern is allowed.'
+        )
+
+
 def load_file_to_read_common_check_for_cli(value, exts=None):
     try:
         value = load_file_to_read_common_check(value, exts)

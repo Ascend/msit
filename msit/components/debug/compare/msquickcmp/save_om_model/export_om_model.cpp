@@ -76,7 +76,16 @@ static std::string GetFullPath(const std::string &originPath)
         return originPath;
     }
 
-    std::string cwd = getcwd(nullptr, 0);
+    // 获取当前工作目录，检查是否成功
+    char* cwd_ptr = getcwd(nullptr, 0);
+    if (!cwd_ptr) {  // 检查getcwd返回值是否为nullptr
+        // 抛出异常
+        throw std::runtime_error("Failed to get current working directory");
+    }
+
+    // 安全处理动态分配的内存
+    std::string cwd(cwd_ptr);
+    free(cwd_ptr)  // 释放getcwd分配的内存，避免泄露
 
     return std::move(cwd + PATH_SEPARATOR + originPath);
 }
