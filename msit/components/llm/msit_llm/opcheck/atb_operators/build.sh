@@ -19,6 +19,29 @@ IGNORE_INFO="If not using opcheck, ignore this error."
 
 echo SCRIPT_DIR: $SCRIPT_DIR
 
+function check_nlohmann_json()
+{
+    jsonVERSION=$1
+    filePath=$2
+
+    if [[ "$jsonVERSION" == "3.11.1" ]]; then
+        sha256Value="598becb62ee0e01cf32795073c8ae09b6e95335cd43a4417b785d93ce105b0d0"
+    elif [[ "$jsonVERSION" == "3.11.2" ]]; then
+        sha256Value="d69f9deb6a75e2580465c6c4c5111b89c4dc2fa94e3a85fcd2ffcd9a143d9273"
+    elif [[ "$jsonVERSION" == "3.11.3" ]]; then
+        sha256Value="0d8ef5af7f9794e3263480193c491549b2ba6cc74bb018906202ada498a79406"
+    else
+        echo "Unknown json version"
+        exit 1
+    fi
+
+    sha256Data=$(sha256sum "${filePath}" | cut -d' ' -f1)
+    if [[ "${sha256Data}" != "${sha256Value}" ]]; then
+        echo "Failed to verify sha256: ${filePath}"
+        exit 1
+    fi
+}
+
 function download_nlohmann_json()
 {
     JSON_BASE_URL=$(python3 -c "from components.utils.install import get_public_url; print(get_public_url('json_base_url'))")
@@ -37,6 +60,7 @@ function download_nlohmann_json()
     echo "JSON_URL=$JSON_URL"
 
     if [[ -d "$SCRIPT_DIR/dependency/nlohmann" && -e "$SCRIPT_DIR/dependency/$JSON_TAR" ]]; then
+        check_nlohmann_json ${JSON_VERSION} $SCRIPT_DIR/dependency/$JSON_TAR
         echo "[INFO] $SCRIPT_DIR/dependency/nlohmann already exists, skip downloading"
         return
     fi
@@ -49,7 +73,8 @@ function download_nlohmann_json()
     else
         wget -c $JSON_URL
     fi 
-    
+    check_nlohmann_json ${JSON_VERSION} $JSON_TAR
+
     if [ "$AIT_DOWNLOAD_PATH" != "" ]; then 
         mv $JSON_TAR "$AIT_DOWNLOAD_PATH"
         cd -
