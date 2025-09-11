@@ -19,6 +19,7 @@ sys.path.append(parent_directory)
 from convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, OpsType
 from add_safetensors import add_safetensors
 from mtp_quant_module import warp_mtp_model, post_process_mtp_quant
+from rot_utils.rot_ds import rot_model
 
 from example.common.security.path import get_valid_read_path, get_write_directory
 from example.common.security.path import json_safe_load, json_safe_dump, get_valid_write_path
@@ -51,6 +52,7 @@ def parse_args():
                             help="Quantization mode: 'mix(w8a8 mix quant)' , or \
                             'float(save float mtp weight)' (default: %(default)s)")
     parser.add_argument('--anti_method', type=str, choices=['m4', 'm6'], default='m4')
+    parser.add_argument('--rot', action='store_true', help="rot model")
     return parser.parse_args()
 
 
@@ -204,6 +206,12 @@ def main():
     # mtp量化封装原模型为mtp model
     if args.quant_mtp == "mix":
         model = warp_mtp_model(config, model, model_path)
+    
+    if args.rot:
+        if args.quant_mtp == "float":
+            raise NotImplementedError("original float mtp is not supported rotation, "
+                                      "please use mix mode and disable all MTP Linear to get float rotated MTP model!")
+        rot_model(model)
 
     pbar.update(1)
 

@@ -206,6 +206,7 @@ class UpdateWeightsMapHook(ModelHook):
                     raise ValueError(f"dataset {dataset} must be WritableOffloadedWeightsLoader")
 
                 dataset[weights_map.prefix + key] = item.clone().detach().cpu()
+            module._parameters[key] = torch.nn.Parameter(item.clone())
 
         clear_device_cache()
 

@@ -104,7 +104,7 @@
 | dynamic      | 指定动态量化   | 不开启 | 可选参数；<br/>开启即指定。 |
 | disable_anti | 关闭异常值抑制 | 不开启 | 可选参数；<br/>开启即指定。 |
 | anti_method  | 离群值抑制方法 | m4 | 可选参数；<br/> 可选项：m4,m6 |
-
+| rot |开启基于旋转矩阵的预处理 | 不开启 | 可选参数；<br>开启即指定。      |
 注：在量化脚本里面通过transformers库对模型进行加载时，调用`from_pretrained`函数时会指定`trust_remote_code=True`让修改后的modeling文件能够正确的被加载。(请确保加载的modeling文件的安全性)
 
 
@@ -228,7 +228,8 @@ python3 quant_deepseek_w8a8.py --model_path {浮点权重路径} --save_path {W8
   --anti_dataset ./calib_prompt_0528.json \
   --calib_dataset ./calib_prompt_0528.json \
   --anti_method m4 \
-   --quant_mtp mix
+  --quant_mtp mix \
+  --rot
   ```
 
 ##### DeepSeek-V3/R1量化QA

@@ -6,6 +6,7 @@ import sys
 import shutil
 import stat
 import json
+import csv
 from example.common.security.type import check_dict_character, check_type
 from msmodelslim.tools.logger import LOGGER_FUNC
 from msmodelslim import logger
@@ -256,3 +257,19 @@ class SafeWriteUmask:
 
     def __exit__(self, exc_type=None, exc_val=None, exc_tb=None):
         os.umask(self.ori_umask)
+
+
+def txt_safe_load(path, extensions=("txt"), size_max=MAX_READ_FILE_SIZE_4G, check_user_stat=True, delimiter=","):
+    path = get_valid_read_path(path, extensions, size_max, check_user_stat)
+    txt_data = []
+    
+    with open(path, 'r', encoding='utf-8') as txt_file:
+        for line in txt_file:
+            line = line.strip()  # 去除首尾空白字符
+            if line:  # 跳过空行
+                # 按分隔符分割并去除每个元素的空白字符
+                row = [item.strip() for item in line.split(delimiter)]
+                txt_data.append(row)
+    
+    return txt_data
+
