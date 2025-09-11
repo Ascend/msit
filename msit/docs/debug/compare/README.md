@@ -57,13 +57,12 @@ RUN groupadd HwHiAiUser && useradd -rm -d /home/HwHiAiUser -s /bin/bash -g HwHiA
 
 3、Dockerfile会创建一个HwHiAiUser用户，它是NPU驱动和固件的默认运行用户，具体用途请参考[《Atlas 系列硬件产品账户清单》](https://support.huawei.com/enterprise/zh/doc/EDOC1100235027/13819a2d)。
 
-4、如果在 `wget ${PYTHON_PATH}` 的时候出现报错，显示需要 `use --no-check-certificate`。则在 `wget ${PYTHON_PATH}` 处添加 `--no-check-certificate`，示例如下：
+4、如果在 `wget ${PYTHON_PATH}` 的时候出现报错，显示需要 `use --no-check-certificate`。可在 `wget ${PYTHON_PATH}` 处添加 `--no-check-certificate`，示例如下：
 
 ```
 wget --no-check-certificate ${PYTHON_PATH}
 ```
-需要注意的是，no-check-certificate会跳过检查目标网站的证书信息，有一定的安全风险，用户需要谨慎使用并自行承担后果。
-
+但是，需要注意的是，no-check-certificate会跳过检查目标网站的证书信息，有一定的安全风险，用户需要谨慎使用并自行承担后果。<br>
 5、请将Ascend-cann-toolkit<version+arch>.run改为实际上的toolkit路径(必须是相对路径)  
 6、从这个[仓库](https://github.com/lenLRX/caffe)下载zip[代码](https://github.com/lenLRX/caffe/archive/refs/heads/ascend-amct.zip),得到的zip包叫ascend-amct.zip或caffe-ascend-amct.zip  
 7、从[这里](https://support.huawei.com/enterprise/zh/ascend-computing/cann-pid-251168373/software)下载amct的包Ascend-cann-amct_5.1.RC1.1_linux-aarch64.tar.gz(注意下载对应需要的版本如：X86，aarch64等)  
