@@ -7,7 +7,7 @@
 - 该工具使用约束场景说明，参考链接：[CANN商用版/约束说明（仅推理场景）](https://www.hiascend.com/document/detail/zh/canncommercial/80RC1/devaids/auxiliarydevtool/atlasprofiling_16_0003.html)
 
 ## 工具安装
-- 工具安装请见 [msit一体化工具使用指南](https://gitee.com/ascend/msit/blob/master/msit/docs/install/README.md)
+- 工具安装请见 [msit一体化工具使用指南](https://gitcode.com/Ascend/msit/blob/master/msit/docs/install/README.md)
 
 ## 使用方法
 ### 功能介绍   

@@ -45,7 +45,7 @@ SOLUTION_LEVEL_WIN = 45
 logging.addLevelName(SOLUTION_LEVEL, "\033[1;32m" + "SOLUTION" + "\033[0m")  # green [SOLUTION]
 logging.addLevelName(SOLUTION_LEVEL_WIN, "SOLUTION_WIN")
 
-SOLUTION_BASE_LOC = '\"gitee repo: Ascend/msit, wikis: ait_security_error_log_solution, chapter:'
+SOLUTION_BASE_LOC = '\"gitcode repo: Ascend/msit, wiki: ait_security_error_log_solution, chapter:'
 SOFT_LINK_SUB_CHAPTER = 'soft_link_error_log_solution\"'
 PATH_LENGTH_SUB_CHAPTER = 'path_length_overflow_error_log_solution\"'
 OWNER_SUB_CHAPTER = 'owner_or_ownergroup_error_log_solution\"'

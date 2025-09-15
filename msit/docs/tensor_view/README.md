@@ -8,7 +8,7 @@ tensor-view工具提供了查看tensor的接口，源数据是dump后生成的bi
 ### 环境准备
 
 - 安装 `python >= 3.7` 环境
-- **安装msit工具**，安装参考文档：[msit工具安装](https://gitee.com/ascend/msit/blob/master/msit/docs/install/README.md)
+- **安装msit工具**，安装参考文档：[msit工具安装](https://gitcode.com/Ascend/msit/blob/master/msit/docs/install/README.md)
 
 - **数据准备**
     - tensor参数文件(.bin/.pth)路径，支持ATB格式（.bin）/Torch格式（.pth），

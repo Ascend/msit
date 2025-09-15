@@ -123,7 +123,7 @@ msit llm dump <options>
 
 ## FAQ
 
-* [msit使用以及安装常见问题](https://gitee.com/ascend/msit/wikis/msit%E7%9A%84%E5%AE%89%E8%A3%85%E4%B8%8E%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/msit%E5%AE%89%E8%A3%85)
+* [msit使用以及安装常见问题](https://gitcode.com/Ascend/msit/wiki/msit%E7%9A%84%E5%AE%89%E8%A3%85%E4%B8%8E%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%2Fmsit%E5%AE%89%E8%A3%85.md)
 
 * [更多FAQ请点击](./docs/FAQ.md)
 
@@ -134,7 +134,7 @@ msit llm dump <options>
 
 ## 免责声明
 
-- msit仅提供在昇腾设备上的一体化开发工具，支持一站式调优，不对其质量或维护负责。如果您遇到了问题，Gitee/Ascend/msit提交issue，我们将根据您的issue跟踪解决。衷心感谢您对我们社区的理解和贡献。
+- msit仅提供在昇腾设备上的一体化开发工具，支持一站式调优，不对其质量或维护负责。如果您遇到了问题，请在GitCode/Ascend/msit提交issue，我们将根据您的issue跟踪解决。衷心感谢您对我们社区的理解和贡献。
 - 部分msit依赖包的某些版本存在已知安全漏洞，请及时使用安全补丁进行修复，或在满足业务需求的情况下，将依赖包升级至以下推荐版本。
 
 | 依赖包         | 安全版本                     |

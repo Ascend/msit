@@ -3,7 +3,7 @@
 ## 简介
 surgeon（自动调优）工具使能ONNX模型在昇腾芯片的优化，并提供基于ONNX的改图功能。该工具在原[auto-optimizer](./auto_optimizer/README.md)工具的基础上进行了优化、扩展，建议优先使用。
 
-将surgeon工具优化、修改后的ONNX模型转换为可部署在NPU上的OM模型的操作方法可参见《CANN商用版快速入门》中的“[将ONNX模型转换为OM模型](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/quickstart/quickstart/quickstart_18_0010.htm)”章节或[《msit convert功能使用指南》](https://gitee.com/ascend/msit/blob/master/msit/docs/convert/README.md)。
+将surgeon工具优化、修改后的ONNX模型转换为可部署在NPU上的OM模型的操作方法可参见《CANN商用版快速入门》中的“[将ONNX模型转换为OM模型](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/quickstart/quickstart/quickstart_18_0010.html)”章节或[《msit convert功能使用指南》](https://gitcode.com/Ascend/msit/blob/master/msit/docs/convert/README.md)。
 
 ## 工具安装
 - 工具安装请见 [msit一体化工具使用指南](../../../README.md)
@@ -115,8 +115,8 @@ optimize可简写为opt。
 | --threshold                | 推理速度提升阈值。仅当知识库的优化带来的提升超过这个值时才使用这个知识库，可以为负，负值表示接受负优化。默认为0，即默认只接受推理性能有提升的优化。仅当启用infer-test选项时有意义。 | 否       |
 | -is/--input-shape              | 静态Shape图输入形状，ATC转换参数，可以省略。仅当启用infer-test选项时有意义。 | 否       |
 | --input-shape-range        | 动态Shape图形状范围，ATC转换参数。仅当启用infer-test选项时有意义。 | 否       |
-| --dynamic-shape            | 动态Shape图推理输入形状，benchmark推理时用的参数，含义同benchmark参数[--dym-shape](https://gitee.com/ascend/msit/tree/master/msit/docs/benchmark#%E9%AB%98%E7%BA%A7%E5%8A%9F%E8%83%BD%E5%8F%82%E6%95%B0)。仅当启用infer-test选项时有意义。 | 否       |
-| -outsize/--output-size              | 动态Shape图推理输出实际size，benchmark推理时用的参数。含义同benchmark参数[--output-size](https://gitee.com/ascend/msit/tree/master/msit/docs/benchmark#%E9%AB%98%E7%BA%A7%E5%8A%9F%E8%83%BD%E5%8F%82%E6%95%B0)。仅当启用infer-test选项时有意义。 | 否       |
+| --dynamic-shape            | 动态Shape图推理输入形状，benchmark推理时用的参数，含义同benchmark参数[--dym-shape](https://gitcode.com/Ascend/msit/tree/master/msit/docs/benchmark#%E9%AB%98%E7%BA%A7%E5%8A%9F%E8%83%BD%E5%8F%82%E6%95%B0)。仅当启用infer-test选项时有意义。 | 否       |
+| -outsize/--output-size              | 动态Shape图推理输出实际size，benchmark推理时用的参数。含义同benchmark参数[--output-size](https://gitcode.com/Ascend/msit/tree/master/msit/docs/benchmark#%E9%AB%98%E7%BA%A7%E5%8A%9F%E8%83%BD%E5%8F%82%E6%95%B0)。仅当启用infer-test选项时有意义。 | 否       |
 | -h/--help                  | 工具使用帮助信息。                                           | 否       |
 
 ### extract命令
