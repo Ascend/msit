@@ -70,12 +70,21 @@ class FileChecker:
         file_type(str): The correct file type for file
     """
 
-    def __init__(self, file_path, path_type, ability=None, file_type=None, is_script=True):
+    def __init__(
+        self,
+        file_path,
+        path_type,
+        ability=None,
+        file_type=None,
+        is_script=True,
+        max_size=None
+    ):
         self.file_path = file_path
         self.path_type = self._check_path_type(path_type)
         self.ability = ability
         self.file_type = file_type
         self.is_script = is_script
+        self.max_size = max_size
 
     @staticmethod
     def _check_path_type(path_type):
@@ -98,7 +107,7 @@ class FileChecker:
         if self.is_script:
             check_path_owner_consistent(self.file_path)
         check_path_pattern_valid(self.file_path)
-        check_common_file_size(self.file_path)
+        check_common_file_size(self.file_path, self.max_size)
         check_file_suffix(self.file_path, self.file_type)
         if self.path_type == FileCheckConst.FILE:
             check_dirpath_before_read(self.file_path)
@@ -249,13 +258,18 @@ def check_file_size(file_path, max_size):
         raise FileCheckException(FileCheckException.FILE_TOO_LARGE_ERROR)
 
 
-def check_common_file_size(file_path):
-    if os.path.isfile(file_path):
+def check_common_file_size(file_path, max_file_size=None):
+    if not os.path.isfile(file_path):
+        return
+
+    if max_file_size is None:
         for suffix, max_size in FileCheckConst.FILE_SIZE_DICT.items():
             if file_path.endswith(suffix):
                 check_file_size(file_path, max_size)
                 return
         check_file_size(file_path, FileCheckConst.COMMOM_FILE_SIZE)
+    else:
+        check_file_size(file_path, max_file_size)
 
 
 def check_file_suffix(file_path, file_suffix):
