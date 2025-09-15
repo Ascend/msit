@@ -5,7 +5,7 @@
 1.环境的安装与配置
 请参考《[MindIE安装指南](https://www.hiascend.com/document/detail/zh/mindie/10RC3/envdeployment/instg/mindie_instg_0001.html)》安装MindIE，并参考《MindIE安装指南》中“配置MindIE > [配置MindIE LLM](https://www.hiascend.com/document/detail/zh/mindie/10RC3/envdeployment/instg/mindie_instg_0028.html)”章节配置MindIE LLM。
 
-量化环境安装指南：https://gitee.com/ascend/msit/tree/master/msmodelslim#%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87
+量化环境安装指南：https://gitcode.com/Ascend/msit/tree/master/msmodelslim#%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87
 
 2.量化权重生成
 
@@ -110,7 +110,7 @@ Answer: Deep learning is a subset of machine learning that uses artificial neura
 
 MindIE安装指南：请参考《[MindIE安装指南](https://www.hiascend.com/document/detail/zh/mindie/10RC3/envdeployment/instg/mindie_instg_0001.html)》安装MindIE。
 
-量化环境安装指南：https://gitee.com/ascend/msit/tree/master/msmodelslim#%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87
+量化环境安装指南：https://gitcode.com/Ascend/msit/tree/master/msmodelslim
 
 推理验证参考链接：
 参考MindIE-Torch的模型参考样例

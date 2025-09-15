@@ -32,7 +32,7 @@
 
 ## 环境配置
 
-- 环境配置请参考[使用说明](https://gitee.com/ascend/msit/blob/master/msmodelslim/README.md)
+- 环境配置请参考[使用说明](https://gitcode.com/Ascend/msit/blob/master/msmodelslim/README.md)
 
 ## 量化权重生成
 
@@ -108,8 +108,8 @@
 注：在量化脚本里面通过transformers库对模型进行加载时，调用`from_pretrained`函数时会指定`trust_remote_code=True`让修改后的modeling文件能够正确的被加载。(请确保加载的modeling文件的安全性)
 
 
-更多参数配置要求，请参考量化过程中配置的参数 [QuantConfig](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/QuantConfig.md)
-以及量化参数配置类 [Calibrator](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/Calibrator.md)
+更多参数配置要求，请参考量化过程中配置的参数 [QuantConfig](https://gitcode.com/Ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/QuantConfig.md)
+以及量化参数配置类 [Calibrator](https://gitcode.com/Ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/Calibrator.md)
 
 ### 使用案例
 
