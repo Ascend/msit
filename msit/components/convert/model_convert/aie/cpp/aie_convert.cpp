@@ -15,6 +15,7 @@
  */
 
 #include <iostream>
+#include <cstdio>
 #include <fstream>
 #include "AscendIE.h"
 
@@ -58,16 +59,14 @@ int main(int argc, char** argv)
     // 检查写入是否成功，否则清除残留文件
     if (!fout) {
         fout.close();
-        std::error_code ignore;
-        std::filesystem::remove(outputPath, ignore);
+        remove(outputPath.c_str());
         throw std::runtime_error("Failed to write to: " + outputPath);
     }
 
     fout.close();
     // 检查关闭文件是否成功
     if (!fout) {
-        std::error_code ignore;
-        std::filesystem::remove(outputPath, ignore);
+        remove(outputPath.c_str());
         throw std::runtime_error("Failed to close file: " + outputPath);
     }
 
