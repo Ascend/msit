@@ -198,7 +198,7 @@ class TfSaveModelDumpData(DumpData):
 
     def _save_dump_data(self, out, output_tensors):
         for data, tensor in zip(out, output_tensors):
-            tensor_name = tensor.name.replace("/", "_").replace(":", ".") + "." + str(int(time.time()))
+            tensor_name = tensor.name.replace("/", "_").replace(":", ".") + "." + str(round(time.time() * 1000000))
             npy_file_path = os.path.join(self.dump_data_tf, tensor_name)
             np.save(npy_file_path, data)
 
