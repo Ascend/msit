@@ -17,11 +17,11 @@ AutoGPTQ：GPU
 
 # 1.msModelslim量化
 环境准备如下：  
-[大模型量化工具使用前的开发环境的部署](https://gitee.com/ascend/msit/tree/master/msmodelslim)  
-[大模型量化工具依赖安装](https://gitee.com/ascend/msit/tree/master/msmodelslim/msmodelslim/pytorch/llm_ptq)  
+[大模型量化工具使用前的开发环境的部署](https://gitcode.com/Ascend/msit/tree/master/msmodelslim)  
+[大模型量化工具依赖安装](https://gitcode.com/Ascend/msit/tree/master/msmodelslim/msmodelslim/pytorch/llm_ptq)  
 
 ## 1.1 msModelslim量化
-量化脚本跟正常的量化脚本一样，可以参考：[w8a8精度调优策略](https://gitee.com/ascend/msit/blob/master/msmodelslim/docs/w8a8%E7%B2%BE%E5%BA%A6%E8%B0%83%E4%BC%98%E7%AD%96%E7%95%A5.md) 。
+量化脚本跟正常的量化脚本一样，可以参考：[w8a8精度调优策略](https://gitcode.com/Ascend/msit/blob/master/msmodelslim/docs/w8a8%E7%B2%BE%E5%BA%A6%E8%B0%83%E4%BC%98%E7%AD%96%E7%95%A5.md) 。
 本文以W4A16量化方式示例进行说明。需要注意的地方有三处:  
 a.在离群值抑制配置（AntiOutlierConfig）中，a_bit和w_bit应根据量化方式进行设置。当anti_method被设置为"m3"时，代表使用AWQ算法；而对于GPTQ算法，则不需要使用离群值抑制模块，此时可以将相关配置注释掉。
 ```python
@@ -54,14 +54,14 @@ quant_config = QuantConfig(
 ```
 c.关于保存的权重文件
 本脚本仅支持未切片的safetensors权重转换，所以使用保存量化权重文件的时候，不要使用分片保存。  
-参考链接：https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%8E%8B%E7%BC%A9%E6%8E%A5%E5%8F%A3/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96%E6%8E%A5%E5%8F%A3/PyTorch/save().md
+参考链接：https://gitcode.com/Ascend/msit/blob/dev/msmodelslim/docs/Python-API%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%8E%8B%E7%BC%A9%E6%8E%A5%E5%8F%A3/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96%E6%8E%A5%E5%8F%A3/PyTorch/save().md
 ```python
 calibrator.save(output_path, safetensors_name=None, json_name=None, save_type=None, part_file_size=None)
 ```
 
 
 ## 1.2 转换脚本使用
-转换脚本路径位于：https://gitee.com/ascend/msit/blob/master/msmodelslim/example/ms_to_vllm.py
+转换脚本路径位于：https://gitcode.com/Ascend/msit/blob/master/msmodelslim/example/ms_to_vllm.py
 
 经过上一步1.1使用msModelslim对权重进行量化，生成quant_model_description_w4a16.json和quant_model_weight_w4a16.safetensors，再使用转换脚本ms_to_vllm.py进行权重格式转换，生成转换后的safetensors文件，用法如下：
 ```python 

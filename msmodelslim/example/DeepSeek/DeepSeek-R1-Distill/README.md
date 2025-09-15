@@ -13,7 +13,7 @@
 ## 环境配置
 
 
-- 使用 MindIE1.0版本 [官方镜像](https://gitee.com/ascend/ascend-docker-image/tree/dev/mindie#%E5%90%AF%E5%8A%A8%E5%AE%B9%E5%99%A8)，如1.0.0-800I-A2-py311-openeuler24.03-lts
+- 使用 MindIE1.0版本 [官方镜像](https://gitcode.com/Ascend/ascend-docker-image/tree/dev/mindie#%E5%90%AF%E5%8A%A8%E5%AE%B9%E5%99%A8)，如1.0.0-800I-A2-py311-openeuler24.03-lts
 
 ## 量化
 - 如果需要使用npu多卡量化，请先配置环境变量，支持多卡量化：

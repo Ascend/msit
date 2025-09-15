@@ -11,7 +11,7 @@
 - 稀疏量化：LLaMa-33B，LLaMa2-7B，LLaMa2-13B, Llama3.1-70B
 - KV cache量化: Llama3.1-70B
 - Attention 量化：Llama3.1-70B
-- W4A8_DYNAMIC 量化：Llama3.1-8B-Instruct, Llama3.1-70B-Instruct。注意，通过该量化策略量化的模型需要结合[推理引擎部署推理](https://gitee.com/ascend/MindIE-LLM/blob/master/examples/atb_models/examples/models/llama/README.md)。
+- W4A8_DYNAMIC 量化：Llama3.1-8B-Instruct, Llama3.1-70B-Instruct。注意，通过该量化策略量化的模型需要结合推理引擎部署推理。
 
 #### 此模型仓已适配的模型版本权重获取地址
   - [LLaMa系列](https://github.com/facebookresearch/llama/tree/llama_v1)
@@ -20,7 +20,7 @@
 
 ## 环境配置
 
-- 环境配置请参考[使用说明](https://gitee.com/ascend/msit/blob/master/msmodelslim/README.md)
+- 环境配置请参考[使用说明](https://gitcode.com/Ascend/msit/blob/master/msmodelslim/README.md)
 
 ## 量化权重生成
 
@@ -70,8 +70,8 @@
 | trust_remote_code | 是否信任自定义代码 | False | 指定`trust_remote_code=True`让修改后的自定义代码文件能够正确的被加载。(请确保加载的自定义代码文件的安全性)。 |
 | mindie_format | 非多模态模型量化后的权重配置文件是否兼容MindIE现有版本 | False | 开启`mindie_format`时保存的量化权重格式能够兼容MindIE 2.1.RC1及之前的版本。 |
 
-- 更多参数配置要求，请参考量化过程中配置的参数 [QuantConfig](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/QuantConfig.md)
-  以及量化参数配置类 [Calibrator](https://gitee.com/ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/Calibrator.md)
+- 更多参数配置要求，请参考量化过程中配置的参数 [QuantConfig](https://gitcode.com/Ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/QuantConfig.md)
+  以及量化参数配置类 [Calibrator](https://gitcode.com/Ascend/msit/blob/dev/msmodelslim/docs/Python-API接口说明/大模型压缩接口/大模型量化接口/PyTorch/Calibrator.md)
 
 ### 使用案例
 - 请将{浮点权重路径}和{量化权重路径}替换为用户实际路径。
@@ -140,7 +140,7 @@
   ```
 ##### Llama3.1-70B W8A8量化搭配Attention量化
 - 当前仅支持基于BF16权重生成量化权重
-- 需修改`modeling_llama.py`文件和`config.json`文件，配置方法参考[FA量化使用说明](https://gitee.com/ascend/msit/blob/master/msmodelslim/docs/FA%E9%87%8F%E5%8C%96%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.md)。 
+- 需修改`modeling_llama.py`文件和`config.json`文件，配置方法参考[FA量化使用说明](https://gitcode.com/Ascend/msit/blob/master/msmodelslim/docs/FA%E9%87%8F%E5%8C%96%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.md)。 
 - 相比于W8A8量化，需额外设置`use_fa_quant`参数为True
   ```shell
   python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu --disable_level L5 --anti_method m4 --act_method 3 --use_fa_quant True --trust_remote_code True

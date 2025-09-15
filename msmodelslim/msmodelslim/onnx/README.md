@@ -57,7 +57,7 @@ pip3 install onnx-simplifier    #需大于等于0.3.10版本
 ```
 静态shape模型量化步骤（以ResNet50为例）
 
-用户需自行准备模型，本样例以ResNet50为例，参考对应[README](https://gitee.com/ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，导出onnx文件。
+用户需自行准备模型，本样例以ResNet50为例，参考对应[README](https://gitee.com/Ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，导出onnx文件。
 
 新建模型的量化脚本resnet50_quant.py，编辑resnet50_quant.py文件，导入如下样例代码。
 
@@ -77,11 +77,11 @@ calib.export_quant_onnx(output_model_path)  # 导出量化后模型
 ```
 python3 resnet50_quant.py
 ```
-量化后的ONNX模型可参考[README](https://gitee.com/ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，将ONNX模型转换为OM模型，并进行精度验证。若精度损失超过预期，可参考精度保持策略减少精度损失。
+量化后的ONNX模型可参考[README](https://gitee.com/Ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，将ONNX模型转换为OM模型，并进行精度验证。若精度损失超过预期，可参考精度保持策略减少精度损失。
 
 动态shape模型量化步骤（以YoloV5m为例）
 
-用户需自行准备模型。以YoloV5m为例，可参考对应[README](https://gitee.com/ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，获取6.1版本YoloV5m模型的权重文件后，并配置模型推理方式为nms_script，导出动态shape的onnx文件，导出命令参考如下：
+用户需自行准备模型。以YoloV5m为例，可参考对应[README](https://gitee.com/Ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，获取6.1版本YoloV5m模型的权重文件后，并配置模型推理方式为nms_script，导出动态shape的onnx文件，导出命令参考如下：
 ```
 bash pth2onnx.sh --tag 6.1 --model yolov5m --nms_mode nms_script
 ```
@@ -104,7 +104,7 @@ calib.export_quant_onnx(output_model_path)  # 导出量化后模型
 ```
 python3 yolov5m_quant.py
 ```
-量化后的ONNX模型可参考[README](https://gitee.com/ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，将ONNX模型转换为OM模型，并进行精度验证。若精度损失超过预期，可参考精度保持策略减少精度损失。
+量化后的ONNX模型可参考[README](https://gitee.com/Ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，将ONNX模型转换为OM模型，并进行精度验证。若精度损失超过预期，可参考精度保持策略减少精度损失。
 
 精度保持策略
 
@@ -166,7 +166,7 @@ pip3 install onnxruntime==1.14.1
 
 静态shape模型量化步骤（以ResNet50为例）
 
-本样例以ResNet50为例，参考[README](https://gitee.com/ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“准备数据集”章节获取ImageNet数据集即可，无需预处理，同时参考“模型推理”章节导出onnx文件。
+本样例以ResNet50为例，参考[README](https://gitee.com/Ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E5%87%86%E5%A4%87%E6%95%B0%E6%8D%AE%E9%9B%86)中“准备数据集”章节获取ImageNet数据集即可，无需预处理，同时参考“模型推理”章节导出onnx文件。
 
 新建模型量化脚本resnet50_quant.py，编辑resnet50_quant.py文件，导入如下样例代码。
 
@@ -194,11 +194,11 @@ run_quantize(input_model_path,output_model_path,quant_config)  # 使用run_quant
 
 python3 resnet50_quant.py
 
-量化后的ONNX模型可参考[README](https://gitee.com/ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，将ONNX模型转换为OM模型，并进行精度验证。
+量化后的ONNX模型可参考[README](https://gitee.com/Ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，将ONNX模型转换为OM模型，并进行精度验证。
 
 动态shape模型量化步骤（以YoloV5m为例）
 
-本样例以YoloV5m为例，参考对应[README](https://gitee.com/ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，导出动态shape的onnx文件。
+本样例以YoloV5m为例，参考对应[README](https://gitee.com/Ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，导出动态shape的onnx文件。
 
 新建模型的量化脚本yolov5m_quant.py，编辑yolov5m_quant.py文件，导入如下样例代码。
 
@@ -226,7 +226,7 @@ run_quantize(input_model_path,output_model_path,quant_config)  # 使用run_quant
 ```
 python3 yolov5m_quant.py
 ```
-量化后的ONNX模型可参考[README](https://gitee.com/ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，将ONNX模型转换为OM模型，并进行精度验证。
+量化后的ONNX模型可参考[README](https://gitee.com/Ascend/ModelZoo-PyTorch/tree/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，将ONNX模型转换为OM模型，并进行精度验证。
 
 数据预处理
 
