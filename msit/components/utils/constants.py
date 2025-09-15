@@ -60,6 +60,7 @@ class FileCheckConst:
     NUMPY_SUFFIX = ".npy"
     JSON_SUFFIX = ".json"
     PT_SUFFIX = ".pt"
+    BIN_SUFFIX = ".bin"
     CSV_SUFFIX = ".csv"
     XLSX_SUFFIX = ".xlsx"
     YAML_SUFFIX = ".yaml"
@@ -71,6 +72,7 @@ class FileCheckConst:
     MAX_NUMPY_SIZE = 10737418240  # 10 * 1024 * 1024 * 1024
     MAX_JSON_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
     MAX_PT_SIZE = 10737418240  # 10 * 1024 * 1024 * 1024
+    MAX_BIN_SIZE = 10737418240  # 10 * 1024 * 1024 * 1024
     MAX_CSV_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
     MAX_XLSX_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
     MAX_YAML_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
@@ -89,6 +91,7 @@ class FileCheckConst:
         NUMPY_SUFFIX: MAX_NUMPY_SIZE,
         JSON_SUFFIX: MAX_JSON_SIZE,
         PT_SUFFIX: MAX_PT_SIZE,
+        BIN_SUFFIX: MAX_BIN_SIZE,
         CSV_SUFFIX: MAX_CSV_SIZE,
         XLSX_SUFFIX: MAX_XLSX_SIZE,
         YAML_SUFFIX: MAX_YAML_SIZE,
