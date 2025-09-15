@@ -7,14 +7,14 @@
 ### Environment Setup
 - Set up an operating and development environment powered by Ascend AI Processors including driver / firmware / CANN, referring [Ascend Documentation](https://www.hiascend.com/en/document)
 - Install Python 3.7.5.
-- Install benchmark tool, referring [ais_bench](https://gitee.com/ascend/msit/tree/master/msit/components/benchmark/README.md)
+- Install benchmark tool, referring [ais_bench](https://gitcode.com/Ascend/msit/tree/master/msit/components/benchmark/README.md)
 - **ONNX related python packages** `pip3 install onnxruntime onnx numpy`, If the installation of dependent modules fails using the pip command, it is recommended to execute the command **pip3 install --upgrade pip** to avoid installation failure due to low pip version.
 - **TensorFlow related python packages**, referring [Centos7.6 installing tensorflow1.15.0](https://bbs.huaweicloud.com/blogs/181055).
 
 ### Usage
 - Getting this package by downloading zip package or `git clone`:
   ```sh
-  git clone https://gitee.com/ascend/msit.git
+  git clone https://gitcode.com/Ascend/msit.git
   ```
 - Change directory to `compare`
   ```sh

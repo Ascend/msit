@@ -26,7 +26,7 @@ docker build \
 --build-arg PYTHON_PATH=https://www.python.org/ftp/python/3.7.5/Python-3.7.5.tgz \
 --build-arg PYPI_PATH=https://repo.huaweicloud.com/repository/pypi/simple \
 --build-arg PYPI_PATH_TRUST=repo.huaweicloud.com \
---build-arg MSIT_PATH=https://gitee.com/ascend/msit.git \
+--build-arg MSIT_PATH=https://gitcode.com/Ascend/msit.git \
 -f Dockerfile . -t msit-caffe:latest
 ```
 注意:  

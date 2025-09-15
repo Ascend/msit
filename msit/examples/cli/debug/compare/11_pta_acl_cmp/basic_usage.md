@@ -72,7 +72,7 @@ msit debug compare aclcmp xx_args
 | --exec | 执行命令，用于拉起大模型推理脚本。建议使用bash xx.sh args或者python3 xx.py的方式拉起。 |
 
 # 3. 使用示例
-使用前请安装msit工具，安装指导参考：https://gitee.com/ascend/msit/blob/master/msit/docs/install/README.md 以 chatglm-6b为例，介绍下如何使用加速库精度比对工具。
+使用前请安装msit工具，安装指导参考：https://gitcode.com/Ascend/msit/blob/master/msit/docs/install/README.md 以 chatglm-6b为例，介绍下如何使用加速库精度比对工具。
 
 1.  设置task_id
 

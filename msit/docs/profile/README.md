@@ -4,7 +4,7 @@
 - 面向在昇腾设备上进行模型推理的性能数据采集和分析。
 
 ## 工具安装
-- 首先需要安装msit工具，工具安装请见 [msit一体化工具使用指南](https://gitee.com/ascend/msit/blob/master/msit/docs/install/README.md)
+- 首先需要安装msit工具，工具安装请见 [msit一体化工具使用指南](https://gitcode.com/Ascend/msit/blob/master/msit/docs/install/README.md)
 - 安装好msit之后，还需要安装profile工具
 ```bash
 msit install profile

@@ -3,8 +3,8 @@
   benchmark提供的python API可供使能基于昇腾硬件的离线模型(.om模型)推理。<br>
 
 使用msit benchmark 提供的api需要安装`ais_bench`和`aclruntime`包。安装方法有：
-- 1、参考[一体化安装指导](https://gitee.com/ascend/msit/blob/master/msit/docs/install/README.md)安装msit benchmark工具
-- 2、依据需求，单独安装ais_bench包和aclruntime包([安装包获取地址](https://gitee.com/ascend/msit/blob/master/msit/components/benchmark/README.md#下载whl包安装))：
+- 1、参考[一体化安装指导](https://gitcode.com/Ascend/msit/blob/master/msit/docs/install/README.md)安装msit benchmark工具
+- 2、依据需求，单独安装ais_bench包和aclruntime包([安装包获取地址](https://gitcode.com/Ascend/msit/blob/master/msit/components/benchmark/README.md#下载whl包安装))：
 
   ``` cmd
   # 安装aclruntime

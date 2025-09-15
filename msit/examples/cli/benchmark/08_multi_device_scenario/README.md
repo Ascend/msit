@@ -38,4 +38,4 @@ i:1 device_2 throughput:276.54867008654026 start_time:1676875630.8043878 end_tim
 其中结果最后展示每个Device推理测试的throughput（吞吐率）、start_time（测试启动时间）、end_time（测试结束时间）以及summary throughput（吞吐率汇总）。其他详细字段解释请参见本手册的“输出结果”章节。
 
 ## FAQ
-使用出现问题时，可参考[FAQ](https://gitee.com/ascend/msit/wikis/benchmark_FAQ/ait%20benchmark%20%E5%AE%89%E8%A3%85%E9%97%AE%E9%A2%98FAQ)
+使用出现问题时，可参考[FAQ](https://gitcode.com/Ascend/msit/wiki/benchmark_FAQ%2Fait%20benchmark%20%E4%BD%BF%E7%94%A8%E8%BF%87%E7%A8%8B%20FAQ.md)

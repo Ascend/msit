@@ -1,1 +1,1 @@
-资料已移动，[点击跳转](https://gitee.com/ascend/msit/blob/master/msit/docs/convert/README.md)
+资料已移动，[点击跳转](https://gitcode.com/Ascend/msit/blob/master/msit/docs/convert/README.md)

@@ -15,7 +15,7 @@
 import re
 
 
-AIT_FAQ_HOME = "gitee repo: Ascend/msit, wiki"
+AIT_FAQ_HOME = "gitcode repo: Ascend/msit, wiki"
 MIND_STUDIO_LOGO = "[Powered by MindStudio]"
 
 PATH_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9/.-]")
