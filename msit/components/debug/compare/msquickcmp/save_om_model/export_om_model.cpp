@@ -85,7 +85,7 @@ static std::string GetFullPath(const std::string &originPath)
 
     // 安全处理动态分配的内存
     std::string cwd(cwd_ptr);
-    free(cwd_ptr)  // 释放getcwd分配的内存，避免泄露
+    free(cwd_ptr);  // 释放getcwd分配的内存，避免泄露
 
     return std::move(cwd + PATH_SEPARATOR + originPath);
 }
