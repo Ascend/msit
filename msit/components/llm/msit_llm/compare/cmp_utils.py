@@ -48,14 +48,17 @@ class BasicDataInfo:
     TORCH_UNSUPPORTED_D_TYPE_MAP = {"uint16": "int32", "uint32": "int64"}
 
     def __init__(self, golden_data_path, my_data_path, token_id=None, data_id=None, op_type=None):
-        path_type = FileCheckConst.DIR if os.path.isdir(golden_data_path) else FileCheckConst.FILE
-        file_check = FileChecker(golden_data_path, path_type, ability=FileCheckConst.READ_ABLE,
+        data_path = golden_data_path.split(',')[0]
+        path_type = FileCheckConst.DIR if os.path.isdir(data_path) else FileCheckConst.FILE
+        file_check = FileChecker(data_path, path_type, ability=FileCheckConst.READ_ABLE,
                                  max_size=FileCheckConst.MAX_BIN_SIZE)
         file_check.common_check()
-        path_type = FileCheckConst.DIR if os.path.isdir(my_data_path) else FileCheckConst.FILE
-        file_check = FileChecker(my_data_path, path_type, ability=FileCheckConst.READ_ABLE,
+        data_path = my_data_path.split(',')[0]
+        path_type = FileCheckConst.DIR if os.path.isdir(data_path) else FileCheckConst.FILE
+        file_check = FileChecker(data_path, path_type, ability=FileCheckConst.READ_ABLE,
                                  max_size=FileCheckConst.MAX_BIN_SIZE)
         file_check.common_check()
+
         golden_data_path = os.path.realpath(golden_data_path)
         my_data_path = os.path.realpath(my_data_path)
         self.my_data_path, self.golden_data_path = my_data_path, golden_data_path
