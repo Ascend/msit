@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 from ms_service_profiler.utils.log import logger
+from msserviceprofiler.msguard.security import sanitize_csv_value
 
 from .base import BaseComparator
 from ..common.csv_fields import BaseCSVFields, ServiceCSVFields
@@ -71,23 +72,26 @@ class CSVComparator(BaseComparator):
         # 遍历合并后的 DataFrame
         for _, row in df_merged.iterrows():
             metric = row[BaseCSVFields.METRIC]
+            metric = sanitize_csv_value(metric, replace=True)
 
-            # 添加 a 数据
+            # 添加 a 数据、b 数据 和 diff 数据
             a_row = {BaseCSVFields.METRIC: metric, 'Data Source': 'Input Data'}
-            for col in df_a.columns[1:]:
-                a_row[col] = row[f'{col}_a']
-            rows.append(a_row)
-
-            # 添加 b 数据
             b_row = {BaseCSVFields.METRIC: metric, 'Data Source': 'Golden Data'}
-            for col in df_a.columns[1:]:
-                b_row[col] = row[f'{col}_b']
-            rows.append(b_row)
-
-            # 添加 diff 数据
             diff_row = {BaseCSVFields.METRIC: metric, 'Data Source': 'Different'}
+
             for col in df_a.columns[1:]:
-                diff_row[col] = row[f'{col}_diff']
+                # 全部 csv 字段过滤
+                val_a = sanitize_csv_value(row[f'{col}_a'], replace=True)
+                val_b = sanitize_csv_value(row[f'{col}_b'], replace=True)
+                val_diff = sanitize_csv_value(row[f'{col}_diff'], replace=True)
+                col = sanitize_csv_value(col, replace=True)
+
+                a_row[col] = val_a
+                b_row[col] = val_b
+                diff_row[col] = val_diff
+
+            rows.append(a_row)
+            rows.append(b_row)
             rows.append(diff_row)
 
         # 将所有行转换为 DataFrame
