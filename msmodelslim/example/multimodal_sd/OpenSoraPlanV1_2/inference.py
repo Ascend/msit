@@ -289,7 +289,7 @@ if __name__ == "__main__":
 
     scheduler = EulerAncestralDiscreteScheduler()
 
-    get_write_directory(args.save_img_path)
+    args.save_img_path = get_write_directory(args.save_img_path)
 
     pipeline = load_t2v_checkpoint(args.model_path)
     logger.info('load model')

@@ -97,32 +97,60 @@ class AclInference:
         self.model_path = get_valid_read_path(model_path, extensions=["om"], size_max=MAX_READ_FILE_SIZE_32G)
         self.device_id = device_id
 
-        # Create a new context for each new model
-        self.context, ret = acl.rt.create_context(device_id)
-        _check_ret("acl.rt.create_context", ret)
-        logger.info(f"end to create_context")
+        # -------------------------- 资源初始化 --------------------------
+        self._init_success = False  # 默认为False，所有资源分配完成后改为True
+        self.context = None
+        self.model_id = None
+        self.model_desc = None
+        self.inputs = []
+        self.outputs = []
+        self.num_inputs = 0
+        self.num_outputs = 0
+        self.input_data_buffer = []
+        self.output_data_buffer = []
+        self.output_host_bytes_data = []
+        self.output_host_buffer = []
+        self.execute_time_ms = 0
 
-        self.model_id, ret = acl.mdl.load_from_file(self.model_path)
-        _check_ret("acl.mdl.load_from_file", ret)
+        try:
+            # Create a new context for each new model
+            self.context, ret = acl.rt.create_context(device_id)
+            _check_ret("acl.rt.create_context", ret)
+            logger.info(f"end to create_context")
 
-        self.model_desc = acl.mdl.create_desc()
-        ret = acl.mdl.get_desc(self.model_desc, self.model_id)
-        _check_ret("acl.mdl.get_desc", ret)
+            self.model_id, ret = acl.mdl.load_from_file(self.model_path)
+            _check_ret("acl.mdl.load_from_file", ret)
 
-        self.inputs, self.outputs = self.get_inputs(), self.get_outputs()
-        self.num_inputs, self.num_outputs = len(self.inputs), len(self.outputs)
+            self.model_desc = acl.mdl.create_desc()
+            ret = acl.mdl.get_desc(self.model_desc, self.model_id)
+            _check_ret("acl.mdl.get_desc", ret)
 
-        if self.num_inputs == 0 or self.num_outputs == 0:
-            raise ValueError("model with zero input or output currently not supported")
-        if self.inputs[-1].name == "ascend_mbatch_shape_data":
-            raise ValueError("model with ascend_mbatch_shape_data currently not supported")
-        if any([ii.shape is None for ii in self.outputs]):
-            raise ValueError("model dynamic input or output currently not supported")
+            self.inputs, self.outputs = self.get_inputs(), self.get_outputs()
+            self.num_inputs, self.num_outputs = len(self.inputs), len(self.outputs)
 
-        self.input_data_buffer = self._init_input_device_buffer()
-        self.output_data_buffer = self._init_output_device_buffer()
-        self.output_host_bytes_data, self.output_host_buffer = self._init_output_host_buffer()
-        self.execute_time_ms = 0  # Recording the latest executing time
+            if self.num_inputs == 0 or self.num_outputs == 0:
+                raise ValueError("model with zero input or output currently not supported")
+            if self.inputs[-1].name == "ascend_mbatch_shape_data":
+                raise ValueError("model with ascend_mbatch_shape_data currently not supported")
+            if any([ii.shape is None for ii in self.outputs]):
+                raise ValueError("model dynamic input or output currently not supported")
+
+            self.input_data_buffer = self._init_input_device_buffer()
+            self.output_data_buffer = self._init_output_device_buffer()
+            self.output_host_bytes_data, self.output_host_buffer = self._init_output_host_buffer()
+            self.execute_time_ms = 0  # Recording the latest executing time
+            self._init_success = True
+
+        except Exception as e:
+            # -------------------------- 异常时提示，由finally释放已分配资源 --------------------------
+            logger.error("Initialization failed: %r", str(e))
+            raise  # 重新抛出异常，不掩盖错误
+
+        finally:
+            # -------------------------- 逆序释放初始化阶段已分配的资源（若初始化失败） --------------------------
+            if not self._init_success:
+                # 释放内存资源（后分配先释放）
+                self.release_resource()
 
     def __call__(self, input_data):
         acl.rt.set_context(self.context)
@@ -140,28 +168,37 @@ class AclInference:
             if cur_dtype != ACL_DTYPE.get(model_dtype):
                 raise TypeError("input data type {} not matching model input type {}".format(cur_dtype, model_dtype))
 
-        load_input_dataset = self._input_data_from_host_to_device(cur_input_data)
-        load_output_dataset = self._create_output_data_device_buffer()
-        start = time.time()
-        ret = acl.mdl.execute(self.model_id, load_input_dataset, load_output_dataset)
-        self.execute_time_ms = (time.time() - start) * 1000
-        _check_ret("acl.mdl.execute", ret)
+        load_input_dataset = None
+        load_output_dataset = None
+        try:
+            load_input_dataset = self._input_data_from_host_to_device(cur_input_data)
+            load_output_dataset = self._create_output_data_device_buffer()
 
-        self._destroy_data_buffer(load_input_dataset)
-        self._destroy_data_buffer(load_output_dataset)
-        return self._output_data_from_device_to_host(output_shape=[ii.shape for ii in self.get_outputs()])
+            # 执行推理
+            start = time.time()
+            ret = acl.mdl.execute(self.model_id, load_input_dataset, load_output_dataset)
+            self.execute_time_ms = (time.time() - start) * 1000
+            _check_ret("acl.mdl.execute", ret)
+
+            return self._output_data_from_device_to_host(output_shape=[ii.shape for ii in self.get_outputs()])
+        finally:
+            # -------------------------- finally中强制释放临时数据集 --------------------------
+            if load_input_dataset is not None:
+                self._destroy_data_buffer(load_input_dataset)
+            if load_output_dataset is not None:
+                self._destroy_data_buffer(load_output_dataset)
 
     @staticmethod
     def _init_acl_data_buffer(acl_dataset, data_buffer, data_size):
         data = acl.create_data_buffer(data_buffer, data_size)
         if data is None:
-            ret = acl.destroy_data_buffer(acl_dataset)
-            _check_ret("acl.destroy_data_buffer", ret)
-
+            # 此时未向acl_dataset添加任何资源，直接抛错即可
+            raise Exception("acl.create_data_buffer failed: data is None")
         _, ret = acl.mdl.add_dataset_buffer(acl_dataset, data)
         if ret != ACL_ERROR_NONE:
-            ret = acl.destroy_data_buffer(acl_dataset)
-            _check_ret("acl.destroy_data_buffer", ret)
+            ret_destroy = acl.destroy_data_buffer(data)
+            _check_ret("acl.destroy_data_buffer", ret_destroy)
+            raise Exception("acl.mdl.add_dataset_buffer failed, ret=%r", ret)
 
     @staticmethod
     def _destroy_data_buffer(dataset):
@@ -205,21 +242,45 @@ class AclInference:
         return self.execute_time_ms
 
     def release_resource(self):
-        ret = acl.mdl.unload(self.model_id)
-        _check_ret("acl.mdl.unload", ret)
-        ret = acl.mdl.destroy_desc(self.model_desc)
-        _check_ret("acl.mdl.destroy_desc", ret)
-        for buffer in self.input_data_buffer:
-            ret = acl.rt.free(buffer["buffer"])
-            _check_ret("acl.rt.free", ret)
-        for buffer in self.output_data_buffer:
-            ret = acl.rt.free(buffer["buffer"])
-            _check_ret("acl.rt.free", ret)
+        # 释放内存资源（后分配先释放）
+        self.output_host_bytes_data.clear()
+        self.output_host_buffer.clear()
+        for buf in self.output_data_buffer:
+            if buf.get("buffer"):
+                try:
+                    acl.rt.free(buf["buffer"])
+                    logger.debug("Freed output buffer")
+                except Exception as fe:
+                    logger.warning("Failed to free output buffer: %r", str(fe))
+        self.output_data_buffer.clear()
+        for buf in self.input_data_buffer:
+            if buf.get("buffer"):
+                try:
+                    acl.rt.free(buf["buffer"])
+                    logger.debug("Freed input buffer")
+                except Exception as fe:
+                    logger.warning("Failed to free input buffer: %r", str(fe))
+        self.input_data_buffer.clear()
 
-        # Also destroy context
-        ret = acl.rt.destroy_context(self.context)
-        _check_ret("acl.rt.destory_context", ret)
-        logger.info(f"end to destroy_context")
+        # 逆序释放：后分配的先释放，避免依赖错误
+        if self.model_desc is not None:
+            try:
+                acl.mdl.destroy_desc(self.model_desc)
+                logger.debug("Destroyed model_desc")
+            except Exception as de:
+                logger.warning("Failed to destroy model_desc: %r", str(de))
+        if self.model_id is not None:
+            try:
+                acl.mdl.unload(self.model_id)
+                logger.debug("Unloaded model")
+            except Exception as ue:
+                logger.warning("Failed to unload model: %r", str(ue))
+        if self.context is not None:
+            try:
+                acl.rt.destroy_context(self.context)
+                logger.debug("Destroyed context")
+            except Exception as ce:
+                logger.warning("Failed to destroy context: %r", str(ce))
 
     def _init_input_device_buffer(self):
         input_data_buffer = []
