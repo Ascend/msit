@@ -27,7 +27,7 @@ class StatMinMaxObserver(nn.Cell):
         self._max = Parameter(
             Tensor(np.array([0]), ms.dtype.float32), name="float_max")
         
-        self.sample_num = Parameter(initializer(0, (1,), mstype.int8), name="sample_num")
+        self.sample_num = Parameter(initializer(0, (1,), mstype.int32), name="sample_num")
 
     def construct(self, x):
 

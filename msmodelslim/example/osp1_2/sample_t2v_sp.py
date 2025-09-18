@@ -77,7 +77,8 @@ def run_model_and_save_images(pipeline, model_path):
         args.text_prompt = [args.text_prompt]
     if len(args.text_prompt) == 1 and args.text_prompt[0].endswith('txt'):
         args.text_prompt[0] = get_valid_read_path(args.text_prompt[0])
-        text_prompt = open(args.text_prompt[0], 'r').readlines()
+        with open(args.text_prompt[0], 'r') as txt_file:
+            text_prompt = txt_file.readlines()
         args.text_prompt = [i.strip() for i in text_prompt]
 
     checkpoint_name = "final"
@@ -289,7 +290,8 @@ if __name__ == "__main__":
         args.text_prompt = [args.text_prompt]
     if len(args.text_prompt) == 1 and args.text_prompt[0].endswith('txt'):
         args.text_prompt[0] = get_valid_read_path(args.text_prompt[0])
-        text_prompt = open(args.text_prompt[0], 'r').readlines()
+        with open(args.text_prompt[0], 'r') as f:
+            text_prompt = f.readlines()
         args.text_prompt = [i.strip() for i in text_prompt]
 
     args.save_img_path = get_write_directory(args.save_img_path)
