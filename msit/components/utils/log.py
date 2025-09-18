@@ -25,6 +25,8 @@ LOG_LEVELS = {
     "critical": logging.CRITICAL
 }
 
+SPECIAL_CHAR = ["\n", "\r", "\u007F", "\b", "\f", "\t", "\u000B", "%08", "%0a", "%0b", "%0c", "%0d", "%7f"]
+
 LOG_LEVELS_LOWER = [ii.lower() for ii in LOG_LEVELS.keys()]
 
 
@@ -45,5 +47,18 @@ def set_logger(msit_logger):
         msit_logger.addHandler(stream_handler)
 
 
+def get_filter_handle(handle, self):
+    def filter_handle(self, record):
+        for char in SPECIAL_CHAR:
+            record.msg = record.msg.replace(char, '_')
+        return handle(record)
+
+    return filter_handle.__get__(self, type(self))
+
+
 logger = logging.getLogger("msit_logger")
 set_logger(logger)
+if hasattr(logger, 'handle'):
+    logger.handle = get_filter_handle(logger.handle, logger)
+else:
+    raise RuntimeError('The Python version is not suitable')

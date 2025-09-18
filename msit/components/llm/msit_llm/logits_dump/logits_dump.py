@@ -38,7 +38,7 @@ def build_humanevalx_bad_case_list(key_list):
         except ValueError as e:
             raise ValueError("The format of key column is wrong, please check bad_case_result_csv") from e
         bad_case_list[prefix].append(bad_case_idx)
-    
+
     return list(bad_case_list.values())
 
 
@@ -75,7 +75,7 @@ def build_bad_case_list(bad_case_csv_path):
     key_list = bad_case_df['key'].tolist()
     if len(key_list) == 0:
         raise RuntimeError("Bad case list is empty, no need to dump logits")
-    
+
     bad_case_list = []
     if isinstance(key_list[0], str) and '/' in key_list[0]:
         if key_list[0].split('/')[0] in HUMANEVAL_X_KEY_PREFIX:
@@ -120,12 +120,12 @@ def check_npu():
 
 
 def execute_command(cmd, info_need=True):
-    if info_need:
-        logger.info("Execute command: " + " ".join(cmd))
     try:
         cmd = filter_cmd(cmd)
-        subprocess.run(cmd, shell=False, check=True, text=True, \
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if info_need:
+            logger.info("Execute command: " + " ".join(cmd))
+        subprocess.run(cmd, shell=False, check=True, text=True,
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except Exception as e:
         logger.error(f"Failed to execute modeltest cmd, error code: {e.returncode}")
         logger.error("Error message in modeltest: ")
@@ -145,7 +145,6 @@ class LogitsDumper:
         self.bad_case_result_csv = args.bad_case_result_csv
         self.token_range = args.token_range
 
-
     def dump_logits(self):
         bad_case_list = build_bad_case_list(self.bad_case_result_csv)
         os.environ['BAD_CASE_LOGITS_DUMP'] = "True"
@@ -155,7 +154,7 @@ class LogitsDumper:
         if len(cmd_model_infer) < 1:
             raise RuntimeError("The input command is empty.")
         elif cmd_model_infer[0] != "torchrun" and cmd_model_infer[0] != "modeltest":
-            raise RuntimeError("The input command is invaild."\
+            raise RuntimeError("The input command is invaild."
                                " It needs to start with either 'torchrun' or 'modeltest'.")
         if not (check_npu() or check_gpu()):
             del_env()
@@ -163,9 +162,8 @@ class LogitsDumper:
 
         execute_command(cmd_model_infer, True)
 
-        result_path = f"{{output_dir}}/data/{{DEVICE_TYPE}}/precision_test/{{dataset}}/"\
-                       "{{data_type}}/{{model_name}}/logits/"
-        logger.info("'Logits Dump' has successfully finished, the logits is stored at '%s'", result_path)
+        logger.info("'Logits Dump' has successfully finished, the logits is stored at '%s'",
+                    "{{output_dir}}/data/{{DEVICE_TYPE}}/precision_test/{{dataset}}/"
+                    "{{data_type}}/{{model_name}}/logits/")
         logger.info("The logits dump process is finished. Eliminate the impact of the environment variables.")
         del_env()
-    
