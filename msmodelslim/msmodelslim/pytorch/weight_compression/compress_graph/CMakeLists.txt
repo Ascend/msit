@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.5.1)
 project(graph_run)
 
 # Compile options
+set(CMAKE_SKIP_RPATH TRUE)
 set(CMAKE_CXX_STANDARD 14)
 add_compile_options(-std=c++11 -Wall -D_GLIBCXX_USE_CXX11_ABI=0)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -D_GLIBCXX_USE_CXX11_ABI=0")
