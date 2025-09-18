@@ -88,10 +88,17 @@ class CEval5ShotProcessor(DatasetProcessorBase):
         subject_mapping = self.get_subject_mapping()
         self.ori_prompts = []
         self.ori_answers = []
+        required_column = len(self.choices) + 1
         for task_name in tqdm(subject_mapping):
             dev_df, val_df = self.load_csv_by_task_name(task_name, self.dataset_path)
             task_len = val_df.shape[0]
             subject_prompt = []
+            if val_df.shape[1] <= required_column:
+                # 处理列数不足的情况
+                msmodelslim_logger.warning(f"val_df has only {val_df.shape[1]} columns, "
+                                            f"but requires at least {required_column+1} columns. "
+                                            f"Skipping task {task_name}.")
+                continue
 
             for i in range(task_len):
                 subject_prompt.append(self.format_example(val_df, i, include_answer=False))

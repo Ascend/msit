@@ -436,7 +436,17 @@ def simplify_model(model,
     input_shapes = {}
     for tensor in graph.input:
         input_name = tensor.name
-        input_shape = [x.dim_value for x in tensor.type.tensor_type.shape.dim]
+        # 安全提取输入形状，处理动态维度情况
+        input_shape = []
+        for dim in tensor.type.tensor_type.shape.dim:
+            if dim.HasField('dim_value') and dim.dim_value > 0:
+                input_shape.append(dim.dim_value)
+            else:
+                # 动态维度或无效维度，使用默认值或跳过
+                logger.warning(f"Input '{input_name}' has dynamic or invalid dimension: {dim}")
+                # 对于动态维度，我们可以使用一个合理的默认值
+                # 或者跳过该输入的形状定义
+                input_shape.append(1)  # 使用默认值1
         input_shapes[input_name] = input_shape
     from onnxsim import simplify
     model_simp, _ = simplify(model=model, test_input_shapes=input_shapes)

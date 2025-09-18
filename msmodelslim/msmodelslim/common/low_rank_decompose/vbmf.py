@@ -47,7 +47,9 @@ def evbmf(source_input, sigma2=None, high=None) -> int:
         residual = np.sum(np.sum(source_input ** 2) - np.sum(svd_ss ** 2)) if high < low else 0
 
         inner_thresh = (1 + alpha_thresh) * (1 + none_zero_divide(alpha, alpha_thresh))
-        eh_ub = int(np.min([np.ceil(none_zero_divide(low, 1 + alpha)) - 1, high])) - 1
+        eh_ub_base = int(np.min([np.ceil(none_zero_divide(low, 1 + alpha)) - 1, high])) - 1
+        # 限制eh_ub的范围：0 ≤ eh_ub ≤ high-2，确保eh_ub + 1 < high（即不超过svd_ss的长度）
+        eh_ub = np.clip(eh_ub_base, 0, high - 2)
         upper_bound = none_zero_divide((np.sum(svd_ss ** 2) + residual), low * median)
         ss_median = none_zero_divide(np.mean(svd_ss[eh_ub + 1:] ** 2), median)
         lower_bound = np.max([none_zero_divide(svd_ss[eh_ub + 1] ** 2, median * inner_thresh), ss_median])
