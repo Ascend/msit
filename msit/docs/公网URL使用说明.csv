@@ -5,13 +5,6 @@ msit/install.sh,https://mirrors.huaweicloud.com/repository/pypi/simple,若pip源
 msit/install.sh,https://mirrors.tools.huawei.com/pypi/simple,若pip源为华为云，则优先安装skl2onnx(当前mirrors.huaweicloud.com中skl2onnx已停止更新，不包含1.14.1及以上版本)
 msit/setup.py,https://gitcode.com/Ascend/msit,用于msit工具打包成python包的主页说明
 msit/components/__main__.py,https://gitcode.com/Ascend/msit/wiki/Home.md,msit工具wiki主页说明
-msit/components/debug/compare/Dockerfile,http://.*archive.ubuntu.com,构建compare组件的docker安装镜像
-msit/components/debug/compare/Dockerfile,http://repo.huaweicloud.com,构建compare组件的docker安装镜像
-msit/components/debug/compare/Dockerfile,http://ports.ubuntu.com,构建compare组件的docker安装镜像
-msit/components/debug/compare/Dockerfile,https://www.python.org/ftp/python/3.7.5/Python-3.7.5.tgz,构建compare组件的docker安装镜像
-msit/components/debug/compare/Dockerfile,https://repo.huaweicloud.com/repository/pypi/simple,构建compare组件的docker安装镜像
-msit/components/debug/compare/Dockerfile,https://gitcode.com/Ascend/msit.git,构建compare组件的docker安装镜像
-msit/components/debug/compare/Dockerfile,https://pypi.tuna.tsinghua.edu.cn/simple/,构建compare组件的docker安装镜像
 msit/components/debug/compare/setup.py,https://gitcode.com/Ascend/msit/tree/master/msit/components/debug/compare,用于compare组件打包成python包的主页说明
 msit/components/debug/compare/tests/get_pth_resnet18_model.sh,https://download.pytorch.org/models/resnet18-f37072fd.pth,用于下载compare组件测试用例所需的开源模型
 msit/components/debug/compare/tests/get_pth_resnet18_model.sh,https://gitee.com/ascend/ModelZoo-PyTorch/raw/master/ACL_PyTorch/built-in/cv/Resnet18_for_PyTorch/resnet18_pth2onnx.py,用于下载compare组件测试用例所需的开源模型
@@ -30,41 +23,6 @@ msit/components/debug/surgeon/docs/img/inference.png,www.iodraw.com,样例图片
 msit/components/debug/surgeon/test/dataset/test_img/cat.jpg,http://ns.adobe.com/xap/1.0/,样例图片文件中的来源
 msit/components/convert/setup.py,https://gitcode.com/Ascend/msit,msit的gitcode仓地址
 msit/components/analyze/setup.py,https://gitcode.com/Ascend/msit,msit的gitcode仓地址
-msit/components/transplt/config.ini,https://msit-resources.obs.cn-south-1.myhuaweicloud.com/config.zip,msit transplt的配置文件下载地址
-msit/components/transplt/config.ini,https://msit-resources.obs.cn-south-1.myhuaweicloud.com/float.h,mingw的windows安装包patch文件下载地址
-msit/components/transplt/config.ini,https://msit-resources.obs.cn-south-1.myhuaweicloud.com/headers.zip,msit transplt的配置文件下载地址
-msit/components/transplt/config.ini,https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/LLVM-12.0.0-win64.exe,LLVM的官网下载地址
-msit/components/transplt/config.ini,https://nchc.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-posix/seh/x86_64-8.1.0-release-posix-seh-rt_v6-rev0.7z,mingw官网下载地址
-msit/components/transplt/config.ini,https://www.7-zip.org/a/7z2301-x64.msi,7-zip官网下载地址
-msit/components/transplt/Dockerfile,http://.*archive.ubuntu.com@http://repo.huaweicloud.com,ubuntu的yum软件包源地址
-msit/components/transplt/Dockerfile,http://.*security.ubuntu.com@http://repo.huaweicloud.com,ubuntu的yum软件包源地址
-msit/components/transplt/Dockerfile,http://apt.llvm.org/llvm-snapshot.gpg.key,LLVM的官方gpg key下载地址
-msit/components/transplt/Dockerfile,http://ports.ubuntu.com@http://repo.huaweicloud.com,ubuntu的yum软件包源地址
-msit/components/transplt/Dockerfile,https://msit-resources.obs.cn-south-1.myhuaweicloud.com/config.zip,msit transplt的配置文件下载地址
-msit/components/transplt/Dockerfile,https://msit-resources.obs.cn-south-1.myhuaweicloud.com/headers.zip,msit transplt的配置文件下载地址
-msit/components/transplt/Dockerfile,https://bootstrap.pypa.io/get-pip.py,pip安装脚本官网下载地址
-msit/components/transplt/Dockerfile,https://gitcode.com/Ascend/msit.git,msit的gitcode仓地址
-msit/components/transplt/Dockerfile,https://mirrors.cernet.edu.cn/llvm-apt/focal/,ubuntu的llvm源地址
-msit/components/transplt/Dockerfile,https://repo.huaweicloud.com/repository/pypi/simple,华为云官方pip源地址
-msit/components/transplt/install.sh,http://.*archive.ubuntu.com@http://repo.huaweicloud.com,ubuntu的yum软件包源地址
-msit/components/transplt/install.sh,http://.*security.ubuntu.com@http://repo.huaweicloud.com,ubuntu的yum软件包源地址
-msit/components/transplt/install.sh,http://apt.llvm.org/llvm-snapshot.gpg.key,LLVM的官方gpg key下载地址
-msit/components/transplt/install.sh,http://mirrors.163.com/openSUSE/distribution/leap/15.1/repo/non-oss,openSUSE软件包源地址
-msit/components/transplt/install.sh,http://mirrors.163.com/openSUSE/distribution/leap/15.1/repo/oss,openSUSE软件包源地址
-msit/components/transplt/install.sh,http://mirrors.163.com/openSUSE/update/leap/15.1/non-oss,openSUSE软件包源地址
-msit/components/transplt/install.sh,http://mirrors.163.com/openSUSE/update/leap/15.1/oss,openSUSE软件包源地址
-msit/components/transplt/install.sh,http://ports.ubuntu.com@http://repo.huaweicloud.com,ubuntu的yum软件包源地址
-msit/components/transplt/install.sh,https://msit-resources.obs.cn-south-1.myhuaweicloud.com/config.zip,msit transplt的配置文件下载地址
-msit/components/transplt/install.sh,https://msit-resources.obs.cn-south-1.myhuaweicloud.com/headers.zip,msit transplt的配置文件下载地址
-msit/components/transplt/install.sh,https://mirrors.cernet.edu.cn/llvm-apt/focal/,ubuntu的llvm源地址
-msit/components/transplt/setup.py,https://gitcode.com/Ascend/msit,msit的gitcode仓地址
-msit/components/transplt/test/test.sh,https://msit-resources.obs.cn-south-1.myhuaweicloud.com,msit transplt的配置文件下载地址
-msit/components/transplt/tools/update_link/config.json,"https://www.hiascend.com/document/detail/zh/canncommercial//inferapplicationdev/aclcppdevg/aclcppdevg_03_%04d.html,",昇腾社区cann API地址
-msit/components/transplt/tools/update_link/config.json,"https://www.hiascend.com/document/detail/zh/mind-sdk//vision/mxvisionug/mxvisionug_%04d.html,",昇腾社区mind sdk API地址
-msit/components/transplt/tools/update_link/src/web_crawler.py,https://www.hiascend.com,昇腾社区地址
-msit/components/debug/compare/Dockerfile,http://.*security.ubuntu.com,构建compare组件的docker安装镜像 
-msit/components/debug/compare/Dockerfile,https://mirrors.huaweicloud.com,构建compare组件的docker安装镜像
-msit/components/debug/compare/Dockerfile,repo.huaweicloud.com,构建compare组件的docker安装镜像
 msit/components/config/config.ini,https://gitcode.com/Ascend/msit,msit的gitcode仓地址
 msit/components/config/config.ini,https://gitcode.com/Ascend/msit/tree/master/msit/components/llm,msit llm工具仓库地址
 msit/components/config/config.ini,https://gitcode.com/Ascend/msit/tree/master/msit/components/debug/compare,msit debug compare工具仓库地址
