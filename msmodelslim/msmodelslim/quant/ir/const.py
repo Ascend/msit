@@ -33,3 +33,5 @@ int4_per_channel_asym = QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.INT4, sym
 int4_per_channel_sym = QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.INT4, symmetric=True)
 int4_per_group_asym = QScheme(scope=QScope.PER_GROUP, dtype=QDType.INT4, symmetric=False)
 int4_per_group_sym = QScheme(scope=QScope.PER_GROUP, dtype=QDType.INT4, symmetric=True)
+fp16_placeholder_sym = QScheme(scope=QScope.PLACEHOLDER, dtype=QDType.FLOAT, symmetric=True)
+fp16_placeholder_asym = QScheme(scope=QScope.PLACEHOLDER, dtype=QDType.FLOAT, symmetric=False)

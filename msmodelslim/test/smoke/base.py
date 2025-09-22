@@ -14,56 +14,20 @@
 #  limitations under the License.
 
 import os
-import shutil
-import tempfile
-from abc import abstractmethod
 from functools import lru_cache
 from pathlib import Path
+from typing import List
+from unittest.mock import patch
 
-import pytest
 import torch
-import yaml
 from torch import nn
+from transformers import PretrainedConfig, PreTrainedTokenizerBase
 
 from msmodelslim.app import DeviceType
-from msmodelslim.app.quant_service.modelslim_v1.quant_config import ModelslimV1ServiceConfig
-from msmodelslim.app.quant_service.modelslim_v1.save import AscendV1Config
-from msmodelslim.core.base.protocol import ProcessRequest
-from msmodelslim.core.runner.pipeline_interface import PipelineInterface
-from msmodelslim.model.base import BaseModelAdapter
-
-
-class SessionTestCaseBase:
-    """pytest版本的测试基类，使用fixture模式替代unittest.TestCase"""
-
-    @pytest.fixture(autouse=True)
-    def setup_session_test(self):
-        """自动设置测试环境"""
-        self.temp_dir = tempfile.mkdtemp()
-        self.temp_dir = os.path.realpath(self.temp_dir)
-        assert os.path.exists(self.temp_dir)
-
-        # 创建W8A8量化配置
-        self.yaml_cfg_file = os.path.join(os.path.dirname(__file__), "configs", self.yaml_file_name())
-        self.service_cfg = ModelslimV1ServiceConfig.model_validate(
-            yaml.safe_load(open(self.yaml_cfg_file, "r"))['service_cfg'])
-
-        yield
-
-        # 清理资源
-        shutil.rmtree(self.temp_dir)
-
-    @pytest.fixture(autouse=True)
-    def setup_ascendv1(self, setup_session_test):
-        """设置AscendV1配置"""
-        for save_cfg in self.service_cfg.save:
-            save_cfg.set_save_directory(self.temp_dir)
-            if isinstance(save_cfg, AscendV1Config):
-                save_cfg.part_file_size = 0
-
-    @abstractmethod
-    def yaml_file_name(self) -> str:
-        raise NotImplementedError(f"You should provide a yaml name to init test session")
+from msmodelslim.model import ModelFactory
+from msmodelslim.model.qwen3 import Qwen3ModelAdapter
+from msmodelslim.quant.processor.kv_smooth import KVSmoothFusedUnit, KVSmoothFusedType
+from resources.fake_llama.fake_llama import get_fake_llama_model_and_tokenizer
 
 
 @lru_cache(maxsize=1)
@@ -83,66 +47,87 @@ def is_cuda_available():
         return False
 
 
-class SimpleSequentialAdapter(BaseModelAdapter, PipelineInterface):
-    """最简适配器：将任意 nn.Module 作为整体进行访问与前向。
+@ModelFactory.register("fake_llama")
+class FakeLlamaModelAdapter(Qwen3ModelAdapter):
+    def __init__(self, model_type: str, model_path: Path, trust_remote_code: bool = False):
+        model, tokenizer = get_fake_llama_model_and_tokenizer()
+        self.loaded_config = model.config
+        self.loaded_model = model
+        self.loaded_tokenizer = tokenizer
+        Qwen3ModelAdapter.__init__(self, model_type, model_path, trust_remote_code)
 
-    - handle_dataset: 返回 [(tensor,)] 列表，供 forward 使用
-    - init_model: 直接返回传入的模型到 device
-    - generate_model_visit: 仅针对整体模型发出一次访问请求
-    - generate_model_forward: 针对整体模型发出一次前向请求
-    - enable_kv_cache: 空实现
-    """
+    def _load_config(self, trust_remote_code=False) -> PretrainedConfig:
+        return self.loaded_config
 
-    def __init__(self, model: nn.Module):
-        super().__init__("", Path(""), True)
-        self._model = model
+    def _load_model(self, device: DeviceType) -> nn.Module:
+        return self.loaded_model
 
-    def handle_dataset(self, dataset, device: DeviceType = DeviceType.NPU):
-        if dataset is None:
-            return []
-        # 测试侧按模型当前设备放置数据，避免依赖被测代码的 device 传递
-        try:
-            model_dev = next(self._model.parameters()).device
-        except StopIteration:
-            model_dev = torch.device('cpu')
-        processed = []
-        for item in dataset:
-            # 支持 dict 作为 kwargs 传递
-            if isinstance(item, dict):
-                kwargs = {}
-                for k, v in item.items():
-                    if hasattr(v, 'to'):
-                        item[k] = v.to(model_dev)
+    def _load_tokenizer(self, trust_remote_code=False) -> PreTrainedTokenizerBase:
+        return self.loaded_tokenizer
 
-                processed.append(kwargs)
-                continue
+    def get_kvcache_smooth_fused_subgraph(self) -> List[KVSmoothFusedUnit]:
+        return [
+            KVSmoothFusedUnit(
+                attention_name=f"model.layers.{i}.self_attn",
+                layer_idx=i,
+                fused_from_query_states_name="q_proj",
+                fused_from_key_states_name="k_proj",
+                fused_type=KVSmoothFusedType.StateViaRopeToLinear
+            )
+            for i in range(self.config.num_hidden_layers)
+        ]
 
-            if isinstance(item, (list, tuple)):
-                # 位置参数场景：若检测到前两个是 input_ids/attention_mask 语义的张量，则转为 long
-                converted = []
-                for idx, t in enumerate(item):
-                    if hasattr(t, 'to'):
-                        item[idx] = t.to(model_dev)
-                    converted.append(t)
-                inputs = tuple(converted)
-            else:
-                inputs = (item.to(model_dev) if hasattr(item, 'to') else item,)
-            processed.append(inputs)
-        return processed
 
-    def init_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
-        dev = str(device).lower()
-        return self._model.to(dev)
+def invoke_test(config_name: str, model_save_path: str):
+    """使用真正的CLI parser来模拟命令行参数并返回model_adapter"""
+    import sys
+    from msmodelslim.cli.__main__ import main as cli_main
 
-    def generate_model_visit(self, model: nn.Module, transformer_blocks=None):
-        yield ProcessRequest(name="", module=model, args=tuple(), kwargs={})
+    # 保存原始的sys.argv
+    original_argv = sys.argv.copy()
 
-    def generate_model_forward(self, model: nn.Module, inputs):
-        # 若 inputs 为 kwargs（dict），则走 kwargs 形式
-        if isinstance(inputs, dict):
-            yield ProcessRequest(name="", module=model, args=tuple(), kwargs=inputs)
-            return
-        yield ProcessRequest(name="", module=model, args=inputs, kwargs={})
+    # 用于存储model_adapter的变量
+    captured_model_adapter = None
 
-    def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
-        return None
+    try:
+        # 构建命令行参数
+        config_path = os.path.join(os.path.dirname(__file__), "configs", config_name)
+        sys.argv = [
+            'msmodelslim',
+            'quant',
+            '--model_type', 'fake_llama',
+            '--model_path', './',
+            '--save_path', model_save_path,
+            '--device', 'cpu',
+            '--config_path', config_path,
+            '--trust_remote_code', 'False'
+        ]
+
+        # 使用patch来模拟copy_files调用并拦截model_adapter
+        with patch('msmodelslim.app.quant_service.modelslim_v1.save.ascendv1.copy_files') as mock_copy_files:
+            # 获取原始的quantize方法
+            from msmodelslim.app.quant_service.proxy import QuantServiceProxy
+            original_quantize = QuantServiceProxy.quantize
+
+            # 创建包装函数来捕获model_adapter但不影响原始流程
+            def capture_model_adapter(self, quant_config, model_adapter, save_path=None, device=None):
+                nonlocal captured_model_adapter
+                captured_model_adapter = model_adapter
+                # 调用原始方法，保持原始流程不变
+                return original_quantize(self, quant_config, model_adapter, save_path, device)
+
+            # 临时替换方法
+            QuantServiceProxy.quantize = capture_model_adapter
+
+            try:
+                # 直接调用CLI main函数，它会解析sys.argv
+                cli_main()
+            finally:
+                # 恢复原始方法
+                QuantServiceProxy.quantize = original_quantize
+
+    finally:
+        # 恢复原始的sys.argv
+        sys.argv = original_argv
+
+    return captured_model_adapter

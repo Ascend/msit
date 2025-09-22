@@ -167,7 +167,7 @@ class AdapterConfig:
     fusion: FusionConfig = field(default_factory=lambda: FusionConfig())  # 融合配置
 
 # 模型适配Smooth算法接口
-class SmoothInterface(ABC):
+class IterSmoothInterface(ABC):
     @abstractmethod
     def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
         """
@@ -185,14 +185,14 @@ class SmoothInterface(ABC):
 ### 适配步骤
 
 **前置要求：**
-- 模型需要继承 `SmoothInterface` 接口。
+- 模型需要继承 `IterSmoothInterface` 接口。
 - 模块名称必须与 `named_modules()` 返回的完整路径一致。
 - 支持的子图类型：`norm-linear`、`linear-linear`、`ov`、`up-down`。
 - 配置中的`subgraph_type`、`mapping` 是必要参数。
 - 当配置`FusionConfig`且`fusion_type`为qkv时，必须给出num_attention_heads和num_key_value_heads。
 
 **步骤：**
-1. **继承接口**：模型适配器继承 `SmoothInterface` 接口，实现 `get_adapter_config_for_subgraph()` 方法。
+1. **继承接口**：模型适配器继承 `IterSmoothInterface` 接口，实现 `get_adapter_config_for_subgraph()` 方法。
 2. **配置子图映射**：为每层配置四种类型的子图映射关系：
    - **Norm-Linear子图**：归一化层到后续线性层的映射
    - **OV子图**：注意力机制中V投影到O投影的映射
@@ -260,7 +260,7 @@ def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
 
 ## 适用要求
 
-- **模型架构要求**：模型必须支持 `SmoothInterface` 接口，并正确配置子图映射关系。
+- **模型架构要求**：模型必须支持 `IterSmoothInterface` 接口，并正确配置子图映射关系。
 - **模块命名要求**：模块名称必须与 `named_modules()` 返回的完整路径完全一致。
 - **子图类型支持**：目前支持四种标准子图类型：`norm-linear`、`linear-linear`、`ov`、`up-down`。
 - **模块属性要求**：目标模块必须存在且具备可写的 `weight`（以及可选 `bias`），其他自定义模块暂不支持。

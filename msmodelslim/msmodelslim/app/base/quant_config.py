@@ -29,8 +29,9 @@ class BaseQuantConfig:
         if not isinstance(d, dict):
             raise SchemaValidateError(f'quant config must be a dict',
                                       action='Please make sure the quant config is a dictionary')
+        metadata = d['metadata'] if 'metadata' in d else {'config_id': "Unknown", 'score': '100', 'label': {}}
         return BaseQuantConfig(
             apiversion=d.get('apiversion', 'Unknown'),
-            metadata=Metadata(**d['metadata']),
+            metadata=Metadata(**metadata),
             spec=d['spec']
         )

@@ -11,20 +11,31 @@ metadata:
     kv_cache: True
 spec:
   process:
+    - type: "iter_smooth"                  
+      alpha: 0.9                      
+      scale_min: 1e-5                      
+      symmetric: False                   
+      enable_subgraph_type:                
+        - 'norm-linear'
+        - 'linear-linear'
+        - 'ov'
+        - 'up-down'
+      include:                             
+        - "*"
     - type: "kv_smooth"
       smooth_factor: 1.0
     - type: "linear_quant"
       qconfig:
         act:
-          scope: "per_tensor"   # default is per_tensor
-          dtype: "int8"        # default is int8
-          symmetric: False      # default is True
-          method: "minmax"      # default is minmax
+          scope: "per_tensor"  
+          dtype: "int8"        
+          symmetric: False    
+          method: "minmax"      
         weight:
-          scope: "per_channel"   # default is per_channel
-          dtype: "int8"        # default is int8
-          symmetric: True       # default is True
-          method: "minmax"      # default is minmax
+          scope: "per_channel"  
+          dtype: "int8"        
+          symmetric: True      
+          method: "minmax"     
       include: ["*"]
       exclude: ["*down_proj*"]
     - type: "dynamic_cache" 

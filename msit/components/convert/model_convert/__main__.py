@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from enum import unique, Enum
 from components.utils.parser import BaseCommand
 from components.utils.log import logger
 from model_convert.aie.bean import ConvertConfig
@@ -21,9 +22,30 @@ from model_convert.cmd_utils import add_arguments, gen_convert_cmd, execute_cmd
 from components.utils.security_check import get_valid_read_path, get_valid_write_path, MAX_READ_FILE_SIZE_32G
 
 
+@unique
+class SocType(Enum):
+    Ascend310 = 0
+    Ascend310P = 1
+
+
+def get_soc_type() -> str:
+    default_soc = SocType.Ascend310.name
+    try:
+        import acl
+
+        return acl.get_soc_name()
+    except ImportError:
+        logger.warning(f'Get soc_version failed, use default {default_soc}.')
+    return default_soc
+
+
 def parse_input_param(model: str,
                       output: str,
                       soc_version: str) -> ConvertConfig:
+
+    if not soc_version:
+        soc_version = get_soc_type()
+
     return ConvertConfig(
         model=model,
         output=output,

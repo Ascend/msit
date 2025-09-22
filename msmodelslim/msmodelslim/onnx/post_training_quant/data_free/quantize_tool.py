@@ -57,7 +57,11 @@ def build_activations(model, onnx_graph, quantized_nodes, quant_config=None):
     else:
         calib_data = check_and_get_calib_data(inputs)
     output = ort_session.run([], calib_data[0])
+    # 检查输出长度是否符合预期
+    if len(output) < len(onnx_graph.outputs):
+        raise ValueError(f"模型输出长度不足，预期至少 {len(onnx_graph.outputs)} 个输出，实际只有 {len(output)} 个")
     activations = output[len(onnx_graph.outputs):]
+    
     for i, act in enumerate(activations):
         name = quantized_nodes[i]
         onnx_node = onnx_graph.node_map.get(name)

@@ -2,7 +2,7 @@
 apiversion: multimodal_sd_modelslim_v1
 metadata:
   config_id: wan2_1_w8a8_dynamic
-  score: 90
+  score: 0.95
   verified_model_types:
     - Wan2_1
     - Wan2.1

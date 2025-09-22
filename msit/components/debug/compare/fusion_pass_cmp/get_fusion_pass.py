@@ -25,7 +25,7 @@ from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 
-from components.utils.log import logger
+from components.utils.log import logger, msg_filter
 from components.utils.constants import JSON_FILE_MAX_SIZE
 from components.utils.file_open_check import ms_open
 from components.utils.check.rule import Rule
@@ -163,15 +163,15 @@ def check_output_path_legality(value):
     try:
         file_stat = FileStat(path_value)
     except FileNotFoundError as ffe:
-        raise argparse.ArgumentTypeError("output path %r does not exist." % path_value) from ffe
+        raise argparse.ArgumentTypeError("output path %r does not exist." % msg_filter(path_value)) from ffe
     except PermissionError as pe:
-        raise argparse.ArgumentTypeError("permission denied for output path %r." % path_value) from pe
+        raise argparse.ArgumentTypeError("permission denied for output path %r." % msg_filter(path_value)) from pe
     except Exception as err:
         raise argparse.ArgumentTypeError(
-            "an unexpected error occurred while checking the output path %r." % path_value
+            "an unexpected error occurred while checking the output path %r." % msg_filter(path_value)
             ) from err
     if not file_stat.is_basically_legal("write", strict_permission=False):
-        raise argparse.ArgumentTypeError("output path %r cannot be written to." % path_value)
+        raise argparse.ArgumentTypeError("output path %r cannot be written to." % msg_filter(path_value))
     return path_value
 
 
@@ -182,15 +182,15 @@ def check_input_path_legality(value):
     try:
         file_stat = FileStat(path_value)
     except FileNotFoundError as ffe:
-        raise argparse.ArgumentTypeError("input path %r does not exist." % path_value) from ffe
+        raise argparse.ArgumentTypeError("input path %r does not exist." % msg_filter(path_value)) from ffe
     except PermissionError as pe:
-        raise argparse.ArgumentTypeError("permission denied for input path %r." % path_value) from pe
+        raise argparse.ArgumentTypeError("permission denied for input path %r." % msg_filter(path_value)) from pe
     except Exception as err:
         raise argparse.ArgumentTypeError(
-            "an unexpected error occurred while checking the input path %r." % path_value
+            "an unexpected error occurred while checking the input path %r." % msg_filter(path_value)
             ) from err
     if not file_stat.is_basically_legal('read', strict_permission=False):
-        raise argparse.ArgumentTypeError("input path %r cannot be read." % path_value)
+        raise argparse.ArgumentTypeError("input path %r cannot be read." % msg_filter(path_value))
     return path_value
 
 

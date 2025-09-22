@@ -20,7 +20,7 @@ from pydantic import ValidationError
 
 from msmodelslim.quant.quantizer.base import QConfig
 from msmodelslim.quant.quantizer.linear import LinearQConfig, LinearQuantizer
-from msmodelslim.utils.exception import SpecError
+from msmodelslim.utils.exception import SpecError, SchemaValidateError
 
 
 class TestLinearQConfig:
@@ -49,7 +49,7 @@ class TestLinearQConfig:
     def test_linear_qconfig_validation(self):
         """测试LinearQConfig参数验证"""
         # 测试缺失必需字段
-        with pytest.raises(ValidationError):  # 具体异常类型取决于pydantic配置
+        with pytest.raises(SchemaValidateError):  # 具体异常类型取决于pydantic配置
             LinearQConfig()
 
 

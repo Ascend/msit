@@ -22,7 +22,7 @@ from msmodelslim.quant import ir as qir
 from msmodelslim.quant.observer.histogram import HistogramObserver, HistogramObserverConfig, SearchMethod
 from msmodelslim.quant.quantizer.base import QConfig, AutoActQuantizer
 from msmodelslim.quant.quantizer.impl.histogram import ActPerTensorHistogram
-from msmodelslim.utils.exception import SpecError, UnexpectedError
+from msmodelslim.utils.exception import SpecError, UnexpectedError, SchemaValidateError
 
 
 def to_qconfig(q_scheme: QScheme, method: str) -> QConfig:
@@ -65,7 +65,7 @@ class TestHistogramObserverConfig:
 
     def test_invalid_config(self):
         """测试无效配置"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(SchemaValidateError):
             HistogramObserverConfig(
                 symmetric=True,
                 search_method=SearchMethod.KL_DIVERGENCE,

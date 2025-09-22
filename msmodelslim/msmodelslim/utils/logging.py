@@ -135,6 +135,7 @@ def progress_bar(iterable, desc: str = None, total: int = -1, interval: int = 1)
     logging.StreamHandler.terminator = prev_terminator
     logger.info("")
 
+
 @contextmanager
 def clean_output():
     """Context manager to temporarily disable log formatting for clean output"""

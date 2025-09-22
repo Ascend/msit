@@ -33,7 +33,7 @@ from msmodelslim.utils.exception import ToDoError
 from msmodelslim.utils.security import safe_copy_file
 from .saver import AutoSaverProcessor, AutoSaverBaseConfig
 from .utils.json import JsonWriter
-from .utils.pack import w4a8_pack_int4, process_scale
+from .utils.pack import w4a8_pack_int4, w4a16_pack_int4, process_scale
 from .utils.safetensors import SafetensorsWriter, BufferedSafetensorsWriter
 
 
@@ -155,7 +155,7 @@ class AscendV1Saver(AutoSaverProcessor):
     关于该格式的更多信息，请参考 AscendV1Config 中的说明。
     """
     # W4A8_DYNAMIC is hidden.
-    QUANT_TYPE_PRIORITY = ['FLOAT', 'W16A16S', 'W8A8_DYNAMIC', 'W8A8']
+    QUANT_TYPE_PRIORITY = ['FLOAT', 'W16A16S', 'W8A16', 'W4A16', 'W8A8_DYNAMIC', 'W8A8']
 
     def __init__(self, model: nn.Module, config: AscendV1Config, adapter: object, **kwargs: Dict[str, Any]):
         super().__init__(model, config, adapter, **kwargs)
@@ -329,6 +329,33 @@ class AscendV1Saver(AutoSaverProcessor):
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "W4A4_DYNAMIC", module.bias.to(torch.float32))
             self.model_quant_type = "W4A4_DYNAMIC"
+
+    @save_this_rank_only()
+    def on_w8a16_per_channel(self, prefix: str, module: qir.W8A16PerChannelFakeQuantLinear):
+        with torch.device(module.weight.device):
+            weight_scale = module.weight_scale.unsqueeze(-1)
+            weight_offset = module.weight_offset.unsqueeze(-1)
+            quant_weight = module.weight
+            bias = module.bias if module.bias is not None else torch.zeros(module.weight.shape[0])
+            self.write_tensor(prefix + ".weight", "W8A16", quant_weight.to(torch.int8))
+            self.write_tensor(prefix + ".weight_scale", "W8A16", weight_scale.to(torch.float32))
+            self.write_tensor(prefix + ".weight_offset", "W8A16", weight_offset.to(torch.float32))
+            if module.bias is not None:
+                self.write_tensor(prefix + ".bias", "W8A16", bias.to(torch.float32))
+            self.model_quant_type = "W8A16"
+
+    @save_this_rank_only()
+    def on_w4a16_per_channel(self, prefix: str, module: qir.W4A16PerChannelFakeQuantLinear):
+        with torch.device(module.weight.device):
+            weight_scale = module.weight_scale.unsqueeze(-1)
+            weight_offset = module.weight_offset.unsqueeze(-1)
+            trans_flag = weight_scale.shape[-1] == 1
+            self.write_tensor(prefix + ".weight", "W4A16", w4a16_pack_int4(module.weight.to(torch.int8), trans_flag))
+            self.write_tensor(prefix + ".weight_scale", "W4A16", weight_scale.to(torch.float32))
+            self.write_tensor(prefix + ".weight_offset", "W4A16", weight_offset.to(torch.float32))
+            if module.bias is not None:
+                self.write_tensor(prefix + ".bias", "W4A16", module.bias.to(torch.float32))
+            self.model_quant_type = "W4A16"
 
     @save_this_rank_only()
     def on_float_linear(self, prefix: str, module: nn.Linear):

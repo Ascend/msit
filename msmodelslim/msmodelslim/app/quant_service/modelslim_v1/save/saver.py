@@ -70,9 +70,11 @@ class AutoSaverProcessor(AutoSessionProcessor):
             qir.W8A8StaticFakeQuantLinear: self.on_w8a8_static,
             qir.W8A8DynamicPerChannelFakeQuantLinear: self.on_w8a8_dynamic_per_channel,
             qir.W8A8DynamicPerGroupFakeQuantLinear: self.on_w8a8_dynamic_per_group,
+            qir.W8A16PerChannelFakeQuantLinear: self.on_w8a16_per_channel,
             qir.W4A4DynamicPerChannelFakeQuantLinear: self.on_w4a4_dynamic_per_channel,
             qir.W4A4DynamicPerGroupFakeQuantLinear: self.on_w4a4_dynamic_per_group,
             qir.W4A8DynamicFakeQuantLinear: self.on_w4a8_dynamic,
+            qir.W4A16PerChannelFakeQuantLinear: self.on_w4a16_per_channel,
             nn.Linear: self.on_float_linear,
             nn.Module: self.on_float_module,
             qir.FakeQuantDynamicCache: self.on_dynamic_cache,
@@ -139,6 +141,9 @@ class AutoSaverProcessor(AutoSessionProcessor):
     def on_w8a8_dynamic_per_group(self, prefix: str, module: qir.W8A8DynamicPerGroupFakeQuantLinear):
         raise NotImplementedError(
             f"You should implement the on_w8a8_dynamic_per_group method for {self.__class__.__name__}")
+    
+    def on_w8a16_per_channel(self, prefix: str, module: qir.W8A16PerChannelFakeQuantLinear):
+        raise NotImplementedError(f"You should implement the on_w8a16_per_channel method for {self.__class__.__name__}")
 
     def on_w4a4_dynamic_per_channel(self, prefix: str, module: qir.W4A4DynamicPerChannelFakeQuantLinear):
         raise NotImplementedError(
@@ -150,6 +155,9 @@ class AutoSaverProcessor(AutoSessionProcessor):
 
     def on_w4a8_dynamic(self, prefix: str, module: qir.W4A8DynamicFakeQuantLinear):
         raise NotImplementedError(f"You should implement the on_w4a8_dynamic method for {self.__class__.__name__}")
+
+    def on_w4a16_per_channel(self, prefix: str, module: qir.W4A16PerChannelFakeQuantLinear):
+        raise NotImplementedError(f"You should implement the on_w4a16_per_channel method for {self.__class__.__name__}")
 
     def on_float_linear(self, prefix: str, module: nn.Linear):
         raise NotImplementedError(f"You should implement the on_linear method for {self.__class__.__name__}")

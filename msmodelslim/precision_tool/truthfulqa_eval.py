@@ -68,16 +68,32 @@ def split_multi_answer(ans, sep=';', close=True):
 
 
 def find_subsequence(arr, subarr, start=True):
-    for idx in range(len(arr) - len(subarr) + 1):
-        if np.all(arr[idx:idx + len(subarr)] == subarr):
+    arr_len = len(arr)
+    sub_len = len(subarr)
+    
+    # 处理子序列长度为0或长于原数组的情况
+    if sub_len == 0 or sub_len > arr_len:
+        if start:
+            return 0
+        else:
+            return arr_len - 1 if arr_len > 0 else 0
+    
+    for idx in range(arr_len - sub_len + 1):
+        if np.all(arr[idx:idx + sub_len] == subarr):
             if start:
-                return idx + 2
+                # 确保返回值不超过数组最大索引
+                return min(idx + 2, arr_len - 1)
             else:
-                return idx - 2
+                # 确保返回值不小于0
+                return max(idx - 2, 0)
+    
+    # 未找到子序列时的返回值处理
     if start:
         return 0
     else:
-        return len(arr)
+        # 确保返回的是有效索引（最后一个元素的索引）
+        return arr_len - 1 if arr_len > 0 else 0
+
 
 
 def set_columns(tag, frame):

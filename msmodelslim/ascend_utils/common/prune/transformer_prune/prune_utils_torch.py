@@ -28,7 +28,20 @@ class PruneUtilsTorch(PruneUtilsBase):
     def generate_combined_qkv_index(old_dim, new_dim):
         """
         generate index to extract weight from old weight
+        
+        Args:
+            old_dim: 原始维度大小
+            new_dim: 新维度大小，必须满足 new_dim <= old_dim
+            
+        Returns:
+            torch.LongTensor: 提取权重的索引
+            
+        Raises:
+            ValueError: 当 new_dim > old_dim 时抛出异常
         """
+        if new_dim > old_dim:
+            raise ValueError(f"new_dim ({new_dim}) cannot be greater than old_dim ({old_dim}). "
+                            f"This function only supports dimension reduction (new_dim <= old_dim).")
         mask = torch.zeros(old_dim)
         old_step = old_dim / QKV_NUMS
         new_step = new_dim / QKV_NUMS

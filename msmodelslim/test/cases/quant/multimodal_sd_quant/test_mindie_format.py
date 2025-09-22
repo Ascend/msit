@@ -474,9 +474,9 @@ class TestMindIEFormatSaverModuleHandlers:
 
             saver = MindIEFormatSaver(mock_model, mock_config, mock_adapter)
 
-            # 创建模拟的W8A8DynamicFakeQuantLinear模块
+            # 创建模拟的W8A8DynamicPerChannelFakeQuantLinear模块
             device = torch.device("cpu")
-            mock_module = Mock(spec=qir.W8A8DynamicFakeQuantLinear)
+            mock_module = Mock(spec=qir.W8A8DynamicPerChannelFakeQuantLinear)
             mock_module.weight = torch.randint(-128, 127, (10, 20), dtype=torch.int8, device=device)
             mock_module.weight_scale = torch.tensor(0.02, device=device)
             mock_module.bias = None  # 无bias
@@ -490,7 +490,7 @@ class TestMindIEFormatSaverModuleHandlers:
 
                 # Mock write_tensor方法
                 with patch.object(saver, 'write_tensor') as mock_write_tensor:
-                    saver.on_w8a8_dynamic("test_prefix", mock_module)
+                    saver.on_w8a8_dynamic_per_channel("test_prefix", mock_module)
 
                     # 验证write_tensor被调用多次
                     assert mock_write_tensor.call_count >= 3  # weight, weight_scale, weight_offset

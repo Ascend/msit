@@ -18,6 +18,7 @@ import json
 import os
 import stat
 import sys
+import yaml
 
 from unittest.mock import MagicMock
 
@@ -32,6 +33,12 @@ def _mock_get_valid_write_path(path: str, *args, **kwarg) -> str:
     return path
 
 
+def _mock_yaml_safe_load(path, *args, **kwargs):
+    """Mock yaml_safe_load function that reads yaml file from path and converts to dict"""
+    with open(path, 'r', encoding='utf-8') as file:
+        return yaml.safe_load(file)
+
+
 def mock_kia_library():
     sys.modules['msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils'] = MagicMock()
     sys.modules['msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs'] = MagicMock()
@@ -44,6 +51,7 @@ def mock_kia_library():
 def mock_security_library():
     sys.modules['msmodelslim.utils.security.path'] = MagicMock()
     sys.modules['msmodelslim.utils.security.path'].json_safe_dump = _mock_json_safe_dump
+    sys.modules['msmodelslim.utils.security.path'].yaml_safe_load = _mock_yaml_safe_load
     sys.modules['msmodelslim.utils.security.path'].get_valid_write_path = _mock_get_valid_write_path
     sys.modules['msmodelslim.utils.security.path'].get_valid_path = _mock_get_valid_write_path
     sys.modules['msmodelslim.utils.security.path'].get_valid_read_path = _mock_get_valid_write_path
@@ -51,6 +59,7 @@ def mock_security_library():
 
     sys.modules['ascend_utils.common.security.path'] = MagicMock()
     sys.modules['ascend_utils.common.security.path'].json_safe_dump = _mock_json_safe_dump
+    sys.modules['ascend_utils.common.security.path'].yaml_safe_load = _mock_yaml_safe_load
     sys.modules['ascend_utils.common.security.path'].get_valid_write_path = _mock_get_valid_write_path
     sys.modules['ascend_utils.common.security.path'].get_valid_path = _mock_get_valid_write_path
     sys.modules['ascend_utils.common.security.path'].get_write_directory = _mock_get_valid_write_path

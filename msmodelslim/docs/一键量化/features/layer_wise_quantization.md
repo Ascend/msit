@@ -31,7 +31,7 @@
 ### 启用逐层量化
 ```yaml
 spec:
-  pipeline: "layer_wise"  # 启用逐层量化
+  runner: "layer_wise"  # 启用逐层量化
   process:
     - type: "linear_quant"
       qconfig:
