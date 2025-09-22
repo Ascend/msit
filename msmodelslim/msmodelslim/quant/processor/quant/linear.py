@@ -58,7 +58,7 @@ class LinearQuantProcessor(AutoSessionProcessor):
         self.exclude = ConfigSet(config.exclude)
 
     def is_data_free(self) -> bool:
-        return self.config.qconfig.act.scope == QScope.PER_TOKEN
+        return self.config.qconfig.act.scope == QScope.PER_TOKEN or self.config.qconfig.act.scope == QScope.PLACEHOLDER
 
     def support_distributed(self) -> bool:
         return True

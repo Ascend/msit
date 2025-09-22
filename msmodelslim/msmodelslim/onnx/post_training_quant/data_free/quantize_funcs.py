@@ -101,6 +101,8 @@ def round_func(rounding_error_sum, rounding_number_, rounding_error_, ele_flip_u
 
     rounding_error_sum = abs(rounding_error_sum)
     topk = int(rounding_error_sum)
+    # 添加边界检查，确保 topk 不超过 order_ 数组的长度
+    topk = min(topk, len(order_))
 
     idx_ = list(order_[0:topk].astype(int))
     rounding_error_[idx_] = error_[idx_]

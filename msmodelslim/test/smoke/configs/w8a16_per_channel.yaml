@@ -1,0 +1,23 @@
+apiversion: modelslim_v1
+
+spec:
+  process:
+    - type: "linear_quant"
+      qconfig:
+        act:
+          scope: "placeholder"
+          dtype: "float"
+          symmetric: False
+          method: "dummy"
+        weight:
+          scope: "per_channel"
+          dtype: "int8"
+          symmetric: false
+          method: "hqq"
+      include:
+        - "*"
+      exclude: []
+
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4

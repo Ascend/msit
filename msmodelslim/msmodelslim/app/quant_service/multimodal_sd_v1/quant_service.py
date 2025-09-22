@@ -89,6 +89,9 @@ class MultimodalSDModelslimV1QuantService(BaseQuantService):
 
         get_logger().info(f"==========QUANTIZATION: Run Quantization==========")
 
+        if quant_config.spec.runner != "layer_wise":
+            get_logger().warning(f"runner for multimodal_sd_v1 is not layer_wise, will be converted to layer_wise.")
+        
         runner = LayerWiseRunner(adapter=model_adapter)
 
         for process_cfg in final_process_cfg:

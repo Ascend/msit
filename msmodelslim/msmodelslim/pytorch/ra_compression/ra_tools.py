@@ -70,10 +70,24 @@ class RACompressor(object):
     def _split_qkv_weight_to_query_key(self, weight_list, num_attention_heads):
         if len(weight_list) == 1:  # qkv
             qkv_weight = weight_list[0]
+            # 添加形状验证：确保第一维可被3整除
+            if qkv_weight.shape[0] % 3 != 0:
+                raise ValueError(
+                    f"QKV fused weight first dimension must be divisible by 3, "
+                    f"but got shape {qkv_weight.shape}. "
+                    f"Please check model configuration or weight structure."
+                )
             qkv_weight = qkv_weight.reshape(3, qkv_weight.shape[0] // 3, num_attention_heads, -1)
             return (qkv_weight[0], qkv_weight[1])
         elif len(weight_list) == 2:  # q, kv
             q_weight, kv_weight = weight_list
+             # 添加形状验证：确保KV权重第一维可被2整除
+            if kv_weight.shape[0] % 2 != 0:
+                raise ValueError(
+                    f"KV fused weight first dimension must be divisible by 2, "
+                    f"but got shape {kv_weight.shape}. "
+                    f"Please check model configuration or weight structure."
+                )
             kv_weight = kv_weight.reshape(2, kv_weight.shape[0] // 2, num_attention_heads, -1)
             return (q_weight.reshape(q_weight.shape[0], num_attention_heads, -1), kv_weight[0])
         else:  # q, k, v

@@ -17,6 +17,7 @@ import pytest
 from pydantic import ValidationError
 
 from msmodelslim.quant.quantizer.base import AutoActQuantizer, AutoWeightQuantizer, QConfig
+from msmodelslim.utils.exception import SchemaValidateError
 
 
 class TestAutoActQuantizerFactory:
@@ -29,7 +30,7 @@ class TestAutoActQuantizerFactory:
             AutoActQuantizer.from_config(None)
 
         # 测试非QConfig对象
-        with pytest.raises(ValidationError):
+        with pytest.raises(SchemaValidateError):
             AutoActQuantizer.from_config({"dtype": "int8"})
 
     def test_register_new_subclass_and_can_create_instance_using_from_config(self):
@@ -58,7 +59,7 @@ class TestAutoWeightQuantizerFactory:
             AutoWeightQuantizer.from_config(None)
 
         # 测试非QConfig对象
-        with pytest.raises(ValidationError):
+        with pytest.raises(SchemaValidateError):
             AutoWeightQuantizer.from_config({"dtype": "int8"})
 
     def test_register_new_subclass_and_can_create_instance_using_from_config(self):

@@ -17,6 +17,7 @@ from typing import Any, Dict, Optional, Tuple, Set, Callable
 import torch
 from torch import nn
 from torch.utils.hooks import RemovableHandle
+
 try:
     from transformers import Cache
 except ImportError:
@@ -28,9 +29,8 @@ CONST_PAST_KEY_VALUES = 'past_key_values'
 CONST_PAST_KEY_VALUE = 'past_key_value'
 
 
-class KVCacheListener(Cache):
+class KVCacheListener:
     def __init__(self, listen_helper: Callable[[int, torch.Tensor, torch.Tensor], None], cache: Cache):
-        super().__init__()
         if cache is None:
             raise SpecError("Cache cannot be None. KVCacheListener requires a valid Cache instance.",
                             action="Please provide a valid Cache instance.")
@@ -49,8 +49,8 @@ class KVCacheListener(Cache):
             return object.__getattribute__(self, name)
 
         # 优先从底层 cache 获取（实现“除了 update 都用 self.cache 的逻辑”）
-        cache = object.__getattribute__(self, 'cache')
         try:
+            cache = object.__getattribute__(self, 'cache')
             return getattr(cache, name)
         except AttributeError:
             # 底层没有该属性，退回当前实例/父类
@@ -68,7 +68,7 @@ class KVCacheListener(Cache):
             raise SpecError("Cache does not have update method. KVCacheListener requires a valid Cache instance.",
                             action="Please provide a valid Cache instance "
                                    "with update(key_states, value_states, layer_idx, cache_kwargs) method.")
-        return self.cache.update(key_states, value_states, layer_idx, cache_kwargs)
+        return key_states, value_states
 
 
 class KVCacheListenerManager:

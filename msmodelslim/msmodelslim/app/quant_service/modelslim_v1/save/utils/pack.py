@@ -46,6 +46,23 @@ def w4a8_pack_int4(save_quant_weight):
     return packed_weight_tensor
 
 
+def w4a16_pack_int4(save_quant_weight, trans_flag):
+    """
+    Pack int4 weight to int8 weight
+    @param save_quant_weight: torch.Tensor, int4 weight
+    @param trans_flag: bool, whether to transpose the weight
+    @return: torch.Tensor, int8 weight
+    """
+
+    # per group 不推荐 Transpose，per channel 推荐 Transpose
+    weight_in_k_n = save_quant_weight.transpose(-1, -2).contiguous()
+    weight_trans = weight_in_k_n if not trans_flag else weight_in_k_n.transpose(-1, -2).contiguous()
+    save_quant_weight = _pack_int4(weight=weight_trans)
+    if not trans_flag:
+        save_quant_weight = save_quant_weight.transpose(-1, -2).contiguous()
+    return save_quant_weight
+
+
 def process_scale(name, bias, tp_num):
     """
     Pack int4 weight to int8 weight

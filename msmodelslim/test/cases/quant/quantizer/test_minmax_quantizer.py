@@ -12,7 +12,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import copy
 
 import pytest
 import torch
@@ -25,10 +24,8 @@ from msmodelslim.quant.quantizer.base import QConfig, AutoActQuantizer
 from msmodelslim.quant.quantizer.impl.minmax import (
     ActPerTensorMinmax,
     ActPerTokenMinmax,
-    WeightPerGroupMinmax,
     WeightPerChannelMinmax
 )
-from msmodelslim.utils.exception import SchemaValidateError
 
 
 def to_qconfig(q_scheme: QScheme, method: str) -> QConfig:
@@ -194,83 +191,6 @@ class TestActPerTokenMinmax:
         """测试通过自动量化器创建"""
         quantizer = AutoActQuantizer.from_config(qconfig)
         assert isinstance(quantizer, ActPerTokenMinmax)
-
-
-class TestWeightPerGroupMinmax:
-    """测试Per-Group权重量化器"""
-
-    def setup_class(self):
-        self.config = QConfig(
-            dtype="int8",
-            scope="per_group",
-            method="minmax",
-            symmetric=True,
-            ext={
-                "group_size": 256
-            }
-        )
-
-    def test_initialization(self):
-        """测试初始化"""
-
-        quantizer = WeightPerGroupMinmax(self.config)
-
-        assert quantizer.config == self.config
-        assert quantizer.group_size == 256
-        assert quantizer.weight is None
-        assert quantizer.bias is None
-
-    def test_group_size_validation(self):
-        """测试group_size参数验证"""
-        config = copy.deepcopy(self.config)
-        config.ext = None
-        with pytest.raises(SchemaValidateError, match='"group_size" is needed'):
-            WeightPerGroupMinmax(config)
-
-    def test_init_weight_then_forward(self):
-        """测试权重初始化并前向传播"""
-        quantizer = WeightPerGroupMinmax(self.config)
-
-        # 初始化权重
-        weight = QStorage(QDType.FLOAT, torch.randn(128, 256))
-        bias = torch.randn(256)
-
-        quantizer.init_weight(weight, bias)
-
-        assert quantizer.weight == weight
-        assert quantizer.bias is bias
-
-        # 前向传播
-        result = quantizer()
-
-        # 验证q_param被设置
-        q_param = quantizer.get_q_param()
-        assert q_param
-        assert q_param.scheme == self.config.to_scheme()
-        assert isinstance(q_param.ext, dict)
-        assert "scale" in q_param.ext
-        assert "offset" in q_param.ext
-        assert isinstance(q_param.ext["scale"], torch.Tensor)
-        assert isinstance(q_param.ext["offset"], torch.Tensor)
-
-        # 验证q_storage被设置
-        q_storage = quantizer.get_q_storage()
-        assert q_storage is not None
-
-        # 验证输出形状
-        assert result.shape == weight.value.shape
-
-    @pytest.mark.parametrize(
-        "qconfig",
-        [
-            to_qconfig(qir.int8_per_group_sym, "minmax"),
-        ]
-    )
-    def test_creation_with_auto_quantizer(self, qconfig):
-        """测试通过自动量化器创建"""
-        from msmodelslim.quant.quantizer.base import AutoWeightQuantizer
-        quantizer = AutoWeightQuantizer.from_config(qconfig)
-        assert isinstance(quantizer, WeightPerGroupMinmax)
 
 
 class TestWeightPerChannelMinmax:

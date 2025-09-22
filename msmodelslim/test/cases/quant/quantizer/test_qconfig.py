@@ -14,10 +14,10 @@
 #  limitations under the License.
 
 import pytest
-from pydantic import ValidationError
 
 from msmodelslim.core.QAL.qbase import QScheme, QScope, QDType
 from msmodelslim.quant.quantizer.base import QConfig
+from msmodelslim.utils.exception import SchemaValidateError
 
 
 class TestQConfig:
@@ -81,7 +81,7 @@ class TestQConfig:
 
     def test_qconfig_validation_invalid_dtype(self):
         """测试无效dtype参数验证"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(SchemaValidateError):
             QConfig.model_validate(
                 dict(
                     dtype="invalid_dtype",
@@ -93,7 +93,7 @@ class TestQConfig:
 
     def test_qconfig_validation_invalid_scope(self):
         """测试无效scope参数验证"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(SchemaValidateError):
             QConfig(
                 dtype="int8",
                 scope="invalid_scope",
@@ -103,7 +103,7 @@ class TestQConfig:
 
     def test_qconfig_validation_missing_required_fields(self):
         """测试缺失必需字段验证"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(SchemaValidateError):
             QConfig(
                 dtype="int8",
                 # 缺失scope

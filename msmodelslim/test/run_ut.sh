@@ -29,19 +29,23 @@ chmod g-w ${route}/resources -R  # Group not writable
 
 ret=0
 code_dir=${rootdir}/msmodelslim,${rootdir}/ascend_utils
+cp ${rootdir}/lab_calib     ${rootdir}/msmodelslim/ -rf
+cp ${rootdir}/lab_practice  ${rootdir}/msmodelslim/ -rf
+cp ${rootdir}/config        ${rootdir}/msmodelslim/ -rf
 # Final output results need a `final.xml`, but merging multi xml requires tools like  `junitparser`. Don't know how...
 python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/pytorch --junitxml="${route}/report/final.xml" || ret=1
 python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/mindspore --junitxml="${route}/report/final_mindspore.xml" || ret=1
 python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/common --junitxml="${route}/report/final_common.xml" || ret=1
 python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/onnx --junitxml="${route}/report/final_onnx.xml" || ret=1
 python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/msmodelslim --junitxml="${route}/report/final_msmodelslim.xml" || ret=1
-
-#python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/quant --junitxml="${route}/report/final_quant.xml" || ret=1
-#python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/utils --junitxml="${route}/report/final_utils.xml" || ret=1
-#python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/smoke --junitxml="${route}/report/final_smoke.xml" || ret=1
-python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/analyze --junitxml="${route}/report/final_analyze.xml" || ret=1
+python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/quant --junitxml="${route}/report/final_quant.xml" || ret=1
+python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/utils --junitxml="${route}/report/final_utils.xml" || ret=1
+#python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/analyze --junitxml="${route}/report/final_analyze.xml" || ret=1
 python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/cases/anti --junitxml="${route}/report/final_anti.xml" || ret=1
+python3 -m coverage run --source=${code_dir} -p -m pytest ${route}/smoke --junitxml="${route}/report/final_smoke.xml" || ret=1
+
 python3 -m coverage combine
 python3 -m coverage xml -o ${route}/report/coverage.xml
+cat ${route}/report/coverage.xml | grep line-rate | grep coverage
 
 exit ${ret}

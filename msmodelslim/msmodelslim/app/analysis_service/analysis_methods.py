@@ -91,8 +91,7 @@ class QuantileAnalysisMethod(LayerAnalysisMethod):
         range_param = 2 * act_max / 254 / (sorted_act[number_3_4] - sorted_act[number_1_4] + 1e-10)
         return range_param.item()
 
-    @staticmethod
-    def compute_score(layer_data: Dict[str, Any]) -> float:
+    def compute_score(self, layer_data: Dict[str, Any]) -> float:
         """Compute quantile score for the layer"""
         tensor_data = torch.cat(layer_data['tensor']).view(-1).float()
         device = layer_data['device']
@@ -131,8 +130,7 @@ class StdAnalysisMethod(LayerAnalysisMethod):
     def name(self) -> str:
         return "std"
 
-    @staticmethod
-    def compute_score(layer_data: Dict[str, Any]) -> float:
+    def compute_score(self, layer_data: Dict[str, Any]) -> float:
         """Compute std-based score for the layer"""
         abs_max = max(abs(layer_data['t_max']), abs(layer_data['t_min']))
 
@@ -144,8 +142,7 @@ class StdAnalysisMethod(LayerAnalysisMethod):
         range_param = abs_max / std_value
         return range_param.item()
 
-    @staticmethod
-    def get_hook() -> Callable:
+    def get_hook(self) -> Callable:
         def activation_hook(module, input_tensor, output_tensor, layer_name, stats_dict):
             if isinstance(input_tensor, tuple):
                 input_tensor = input_tensor[0]
@@ -194,12 +191,11 @@ class KurtosisAnalysisMethod(LayerAnalysisMethod):
     def name(self) -> str:
         return "kurtosis"
 
-    @staticmethod
-    def compute_score(layer_data: Dict[str, Any]) -> float:
+    def compute_score(self, layer_data: Dict[str, Any]) -> float:
         """Compute quantile score for the layer"""
         tensor_data = torch.cat(layer_data['tensor']).view(-1).float()
         score = kurtosis(tensor_data)
-        return score
+        return score.item()
 
     def get_hook(self) -> Callable:
         def activation_hook(module, input_tensor, output_tensor, layer_name, stats_dict):

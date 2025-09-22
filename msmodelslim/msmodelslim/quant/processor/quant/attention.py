@@ -28,10 +28,11 @@ from msmodelslim.quant.processor.base import AutoSessionProcessor, AutoProcessor
 from msmodelslim.quant.quantizer.attention import DynamicCacheQuantizer
 from msmodelslim.utils.config_map import ConfigSet
 from msmodelslim.utils.hook_utils import add_before_hook, add_after_hook, restore_target
+from msmodelslim.utils.function_hijacker import hijack_function, restore_function, get_original_function
 from msmodelslim.quant.ir import FakeQuantDynamicCache
 from msmodelslim.quant.quantizer.base import QConfig
 from msmodelslim.core.QAL.qbase import QScope
-from msmodelslim.utils.exception import VersionError
+from msmodelslim.utils.exception import VersionError, UnsupportedError
 
 DYNAMIC_AVAILABLE = True
 try:
@@ -152,7 +153,7 @@ class DynamicCacheQuantProcessor(AutoSessionProcessor):
         for layer_idx, _ in attention_layers.items():
             self._create_quantizer(layer_idx)
 
-        # add fake quantize hook
+        # add quantize hook
         add_before_hook(self.trigger_hook_target, self._add_quantizer_hook)
         self._trigger_hook_installed = True
 
@@ -195,6 +196,8 @@ class DynamicCacheQuantProcessor(AutoSessionProcessor):
                 self.fake_kvcache_quantizers[layer_idx][target_name] = getattr(mod, f'{target_name}_quantizer')
 
     def _add_quantizer_hook(self, _, kwargs):
+        get_logger().debug(f"dynamic cache quant processor hijack kvcache update, "
+                           "the cache is always empty when calibrating!")
         for _, value in kwargs.items():
             if isinstance(value, self.cache_target[0]):
                 # Check if hook already installed using cache ID
@@ -202,14 +205,14 @@ class DynamicCacheQuantProcessor(AutoSessionProcessor):
                 if cache_id in self._installed_cache_ids:
                     return
                 target = (value, self.cache_target[1])
-                add_after_hook(target, self._cache_update_hook)
+                hijack_function(target, self._custom_cache_update)
                 self._installed_cache_ids.add(cache_id)
                 return
         if not self._use_global_hook:
             get_logger().warning(f"No {self.cache_target[0].__name__} found in the model forward function arguments"
                         f"try to hook on {self.cache_target[0].__name__}.{self.cache_target[1]}, "
                         "this may influence other model's inference!")
-            add_after_hook(self.cache_target, self._cache_update_hook)
+            hijack_function(self.cache_target, self._custom_cache_update)
             self._use_global_hook = True
 
     def _add_fake_quant_hook(self, _, kwargs):
@@ -229,26 +232,6 @@ class DynamicCacheQuantProcessor(AutoSessionProcessor):
                         "this may influence other model's inference!")
             add_after_hook(self.cache_target, self._fake_quant_update)
             self._use_global_hook = True
-
-    def _cache_update_hook(self, _, kwargs, result):
-        layer_idx = kwargs.get(self.input_layer_idx_name)
-        for _, target_name in self.input_name_map.items():
-            states = kwargs.get(target_name)
-            
-            if self._attention_layers_map[layer_idx] not in self.include:
-                return result
-
-            if self._attention_layers_map[layer_idx] in self.exclude:
-                return result
-                
-            # Update key and value quantization observers
-            
-            quantizer = self.cache_quantizers[layer_idx][target_name]
-            if quantizer is not None:
-                quantizer(states)
-                self.quantizer_ready[layer_idx][target_name] = True
-
-        return result
 
     def _fake_quant_update(self, _, kwargs, result):
         layer_idx = kwargs.get(self.input_layer_idx_name)
@@ -270,4 +253,36 @@ class DynamicCacheQuantProcessor(AutoSessionProcessor):
                 states = quantizer(states)
             res.append(states)
         return tuple(res) if len(result) > 1 else res[0]
+
+    def _custom_cache_update(self, **kwargs):
+        """
+        Custom cache update function that replaces the original DynamicCache.update method.
+        This function will be used during the calibration phase.
+        ###################################################################################################
+        NOTICE: this function hijack the cache update function, the cache is always empty when calibrating!
+        ###################################################################################################
+        """
+        # Get layer_idx from kwargs using the configured name
+        layer_idx = kwargs.get(self.input_layer_idx_name)
+        if layer_idx is None:
+            raise UnsupportedError(f"Can't find layer index from cache update function", 
+                                   action="please check the implementation of the model's cache update function")
+        for _, target_name in self.input_name_map.items():
+            states = kwargs.get(target_name)
+            if states is None:
+                raise UnsupportedError(f"Can't find {target_name} from cache update function", 
+                                   action="please check the implementation of the model's cache update function")
+            if self._attention_layers_map[layer_idx] not in self.include:
+                return tuple(kwargs.get(name) for name in CACHE_INPUT_NAME)
+
+            if self._attention_layers_map[layer_idx] in self.exclude:
+                return tuple(kwargs.get(name) for name in CACHE_INPUT_NAME)
+                
+            # Update key and value quantization observers
+            quantizer = self.cache_quantizers[layer_idx][target_name]
+            if quantizer is not None:
+                quantizer(states)
+                self.quantizer_ready[layer_idx][target_name] = True
+        
+        return tuple(kwargs.get(name) for name in CACHE_INPUT_NAME)
 

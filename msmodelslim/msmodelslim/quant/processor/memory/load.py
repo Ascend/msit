@@ -13,6 +13,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import gc
 from typing import Optional, Literal
 
 import torch
@@ -98,20 +99,27 @@ class LoadProcessor(AutoSessionProcessor):
 
             request.module.to(torch.device(self.device), non_blocking=self.non_blocking)
 
-            get_logger().debug("After move: allocated={}, reserved={}".format(
-                format_memory_size(get_device_allocated_memory()),
-                format_memory_size(get_device_reserved_memory())
-            ))
-
             if self.config.cleanup:
+
+                gc.collect()
+
                 if hasattr(torch, 'cuda') and torch.cuda.is_available():
                     torch.cuda.empty_cache()
 
                 try:
                     import torch_npu
                     torch_npu.npu.empty_cache()
-                except:
-                    pass
+                except ImportError:
+                    get_logger().warning("torch_npu module not available, skipping NPU cache cleanup")
+                except AttributeError as e:
+                    get_logger().warning(f"torch_npu.npu.empty_cache() not available: {e}")
+                except Exception as e:
+                    get_logger().warning(f"Failed to clear NPU cache: {e}")
+
+            get_logger().debug("After move: allocated={}, reserved={}".format(
+                format_memory_size(get_device_allocated_memory()),
+                format_memory_size(get_device_reserved_memory())
+            ))
 
     def is_data_free(self) -> bool:
         """

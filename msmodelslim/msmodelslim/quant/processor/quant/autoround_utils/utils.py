@@ -42,11 +42,11 @@ def register_dtype(names):
     """
 
     def register(dtype):
-        if isinstance(names, (tuple, list)):
-            for name in names:
-                QUANT_FUNC_WITH_DTYPE[name] = dtype
-        else:
-            QUANT_FUNC_WITH_DTYPE[names] = dtype
+        if isinstance(names, (tuple, list)):	
+            for name in names:	
+                QUANT_FUNC_WITH_DTYPE[name] = dtype	
+        else:	
+            QUANT_FUNC_WITH_DTYPE[names] = dtype	
 
         return dtype
 

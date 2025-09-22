@@ -529,6 +529,7 @@ class AutoroundQuantProcessor(AutoSessionProcessor):
         get_logger().debug("Applying best parameters and unwrapping blocks...")
         with torch.no_grad(), torch.device(device=self.device):
             self._unwrapper_block(request.module, self.best_params)
+            self.best_params = {}
 
         if self.enable_quanted_input:
             get_logger().debug("Running forward pass with quantized input...")
