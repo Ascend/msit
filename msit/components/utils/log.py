@@ -62,3 +62,11 @@ if hasattr(logger, 'handle'):
     logger.handle = get_filter_handle(logger.handle, logger)
 else:
     raise RuntimeError('The Python version is not suitable')
+
+
+def msg_filter(msg):
+    if not isinstance(msg, str):
+        raise RuntimeError('msg type is not string, please check.')
+    for char in SPECIAL_CHAR:
+        msg = msg.replace(char, '_')
+    return msg
