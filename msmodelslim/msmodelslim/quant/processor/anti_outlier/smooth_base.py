@@ -220,6 +220,9 @@ class BaseSmoothProcessor(AutoSessionProcessor):
         Returns:
             SmoothContext: 平滑上下文
         """
+        a_smooth_scale = None
+        shift = None
+        tensors = None
 
         for linear_module in linear_modules:
             # 获取模块名称
@@ -253,6 +256,17 @@ class BaseSmoothProcessor(AutoSessionProcessor):
                     tensors = stats[StatKey.TENSOR]
                 else:
                     tensors = None
+                
+                # 找到第一个有效的数据后就可以退出循环
+                break
+
+        # 检查是否成功获取到激活平滑尺度
+        if a_smooth_scale is None:
+            raise MisbehaviorError(
+                "Failed to get activation smooth scale from any linear module",
+                action="Please ensure that statistics collection hooks are properly installed "
+                       "and data collection is completed"
+            )
 
         w_smooth_scale = torch.ones_like(a_smooth_scale)
 

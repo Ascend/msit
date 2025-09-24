@@ -65,9 +65,9 @@ class FlexSmoothQuantProcessor(BaseSmoothProcessor):
     def preprocess(self, request: BatchProcessRequest) -> None:
         return super().preprocess(request)
 
-    def _get_stats_hook(self, name: str) -> Callable:
-        def stats_hook(name: str, module: nn.Linear, args: tuple, kwargs: dict) -> None:
-            tensor = args[0]
+    def _get_stats_hook(self, name: str, subgraph_type: str = None) -> Callable:
+        def stats_hook(module: nn.Linear, input_tensor: tuple, output: Any) -> None:
+            tensor = input_tensor[0]
 
             if name not in self.act_stats:
                 self.act_stats[name] = {}
@@ -92,7 +92,7 @@ class FlexSmoothQuantProcessor(BaseSmoothProcessor):
             else:
                 statis_dict[StatKey.STAT_KEY_SMOOTH_SCALE] = channel_max
 
-        return partial(stats_hook, name)
+        return partial(stats_hook)
 
   
     def _apply_smooth_to_subgraph(self, subgraph_obj: Any, linear_modules: List[nn.Module]) -> None:
