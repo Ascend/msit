@@ -17,19 +17,21 @@ from typing import Dict, Any, List, Optional, Literal, Tuple, Union
 
 import torch
 import transformers
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from torch import nn
 
 import msmodelslim.quant.ir as qir
 from msmodelslim.core import QDType
 from msmodelslim.core.QAL import QParam, QStorage
 from msmodelslim.core.QAL.qbase import QScheme
+from msmodelslim.core.QAL.qbase import QScope
 from msmodelslim.core.QAL.qregistry import QABCRegistry
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.quant.processor.base import AutoSessionProcessor, AutoProcessorConfig
 from msmodelslim.quant.quantizer.base import QConfig
 from msmodelslim.quant.quantizer.linear import LinearQConfig
 from msmodelslim.utils.config_map import ConfigSet
+from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from .autoround_utils.trainer import BlockQuantTrainer
 from .autoround_utils.utils import get_shared_keys
@@ -260,13 +262,23 @@ def _parse_scale_dtype(dtype_str: str) -> torch.dtype:
         
     Returns:
         对应的torch数据类型
+        
+    Raises:
+        SchemaValidateError: 当数据类型不在支持范围内时抛出异常
     """
     support_scale_dtypes = {
         "float16": torch.float16,
         "float32": torch.float32,
         "bfloat16": torch.bfloat16,
     }
-    return support_scale_dtypes.get(dtype_str, torch.float16)
+
+    if dtype_str not in support_scale_dtypes:
+        raise SchemaValidateError(
+            f"Unsupported scale dtype '{dtype_str}', supported types are: {list(support_scale_dtypes.keys())}",
+            action=f"Please use one of the supported scale dtypes: {list(support_scale_dtypes.keys())}"
+        )
+
+    return support_scale_dtypes[dtype_str]
 
 
 def _extract_activation_config(act_config: QConfig) -> Dict[str, Any]:
@@ -284,7 +296,7 @@ def _extract_activation_config(act_config: QConfig) -> Dict[str, Any]:
         'act_data_type': data_type,
         'act_sym': act_config.symmetric,
         'act_group_size': act_config.ext.get('group_size', DEFAULT_GROUP_SIZE),
-        'act_dynamic': act_config.ext.get('dynamic', True),
+        'act_dynamic': act_config.scope == QScope.PER_TOKEN,
     }
 
 
@@ -427,12 +439,103 @@ class QuantStrategyConfig(BaseModel):
     exclude: List[str] = Field(default_factory=list, description="排除的模块名称")
 
 
+def _validate_quantization_strategies(strategies: List[QuantStrategyConfig]) -> None:
+    """校验量化策略配置
+    
+    Args:
+        strategies: 量化策略配置列表
+        
+    Raises:
+        SchemaValidateError: 当校验失败时抛出异常
+    """
+    # 检查是否为空列表
+    if not strategies:
+        raise SchemaValidateError(
+            "strategies field cannot be empty, at least one quantization strategy must be configured",
+            action="Please add at least one QuantStrategyConfig to the strategies field"
+        )
+
+    for i, strategy in enumerate(strategies):
+        qconfig = strategy.qconfig
+
+        # 校验权重配置
+        _validate_qconfig_group_size(
+            qconfig.weight,
+            f"strategies[{i}].qconfig.weight"
+        )
+
+        # 校验激活配置
+        _validate_qconfig_group_size(
+            qconfig.act,
+            f"strategies[{i}].qconfig.act"
+        )
+
+
+def _validate_qconfig_group_size(qconfig: QConfig, field_path: str) -> None:
+    """校验单个QConfig的group_size字段
+    
+    Args:
+        qconfig: 量化配置对象
+        field_path: 字段路径，用于错误信息
+        
+    Raises:
+        SchemaValidateError: 当校验失败时抛出异常
+    """
+    is_per_group = qconfig.scope == QScope.PER_GROUP
+    has_group_size = "group_size" in qconfig.ext
+
+    if is_per_group:
+        # 当scope为per_group时，必须存在group_size且大于0
+        if not has_group_size:
+            raise SchemaValidateError(
+                f"When quantization config scope is per_group, "
+                f"ext field must contain group_size, "
+                f"but {field_path} does not have group_size field",
+                action=f"Please add group_size parameter to {field_path} ext field"
+            )
+
+        group_size = qconfig.ext["group_size"]
+        if not isinstance(group_size, int) or group_size <= 0:
+            raise SchemaValidateError(
+                f"When quantization config scope is per_group, "
+                f"group_size in ext field must be a positive integer, "
+                f"but {field_path} has group_size={group_size}",
+                action=f"Please set {field_path} ext.group_size to a positive integer"
+            )
+    else:
+        # 当scope不为per_group时，不应该存在group_size
+        if has_group_size:
+            raise SchemaValidateError(
+                f"When quantization config scope is not per_group, "
+                f"ext field should not contain group_size, but {field_path} has group_size field",
+                action=f"Please remove group_size parameter from {field_path} ext field"
+            )
+
+
 class AutoroundProcessorConfig(AutoProcessorConfig):
     type: Literal["autoround_quant"] = Field(default="autoround_quant", description="处理器类型标识")
     iters: int = Field(default=10, gt=0, description="迭代次数，必须大于0")
     enable_minmax_tuning: bool = Field(default=True, description="是否启用最小最大值调优")
     enable_round_tuning: bool = Field(default=True, description="是否启用舍入调优")
     strategies: List[QuantStrategyConfig] = Field(default_factory=list, description="量化策略配置列表")
+
+    @model_validator(mode='after')
+    def validate_strategies(self) -> 'AutoroundProcessorConfig':
+        """校验strategies字段中的量化配置"""
+        _validate_quantization_strategies(self.strategies)
+
+        # 调用create_layer_config进行配置与预检
+        for i, strategy in enumerate(self.strategies):
+            try:
+                _create_layer_config(strategy.qconfig)
+            except Exception as e:
+                # 明确异常配置发生的位置
+                raise SchemaValidateError(
+                    f"Configuration validation failed for strategies[{i}]: {str(e)}",
+                    action=f"Please check the configuration of strategies[{i}].qconfig and fix the error"
+                ) from e
+
+        return self
 
 
 @QABCRegistry.register(dispatch_key=AutoroundProcessorConfig, abc_class=AutoSessionProcessor)
