@@ -38,19 +38,19 @@ class QuaRotProcessorConfig(AutoProcessorConfig):
     @field_validator('max_tp_size')
     @classmethod
     def validate_max_tp_size(cls, v):
-        """校验 max_tp_size：必须大于0且为2的幂"""
-        if v <= 0:
-            raise SchemaValidateError(f"max_tp_size must be greater than 0, got {v}")
-        if not QuaRotUtils.is_power_of_two(v):
-            raise SchemaValidateError(f"max_tp_size must be a power of 2, got {v}")
+        """校验 max_tp_size：必须大于等于1且为2的幂"""
+        if v < 1 or not QuaRotUtils.is_power_of_two(v):
+            raise SchemaValidateError(f"max_tp_size must be a positive power of 2 or equal to 1, got {v}")
         return v
 
     @field_validator('block_size')
     @classmethod
     def validate_block_size(cls, v):
-        """校验 block_size：如果大于0，必须为2的幂"""
-        if v > 0 and not QuaRotUtils.is_power_of_two(v):
-            raise SchemaValidateError(f"block_size must be a power of 2 when greater than 0, got {v}")
+        """校验 block_size：取值范围为-1或大于0且为2的幂的整数"""
+        if v == -1:
+            return v
+        if v <= 0 or not QuaRotUtils.is_power_of_two(v):
+            raise SchemaValidateError(f"block_size must be -1 or a positive power of 2, got {v}")
         return v
 
 
