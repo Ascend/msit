@@ -152,8 +152,8 @@ msmodelslim analyze \
 ### 基本使用
 ```bash
 # 指定分析算法和数据集
- # model_path表示模型路径
- # calib_dataset表示校准集路径
+# model_path表示模型路径
+# calib_dataset表示校准集路径
 msmodelslim analyze \
     --model_type Qwen2.5-7B-Instruct \
     --model_path ${model_path} \

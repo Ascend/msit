@@ -13,7 +13,7 @@ FakeQuantizeCalibrator(model, dev_id, dev_type, description, safetensor)
 | ------ | ------ | ------ | ------ |
 | model | 输入 | 模型。| 必选。<br>数据类型：nn.Module。 |
 | dev_id | 输入 | Device ID。| 必选。<br>数据类型：int。<br>仅在“dev_type”配置为“npu”时生效。“dev_id”指定的Device ID优先级高于环境变量配置的Device ID。 |
-| dev_type | 输入 | Device类型。| 必选。<br>数据类型：object。<br>可选值：['cpu', 'npu']，默认为'cpu'。 |
+| dev_type | 输入 | Device类型。| 必选。<br>数据类型：str。<br>可选值：['cpu', 'npu']，默认为'cpu'。 |
 | description | 输入 | 量化后生成的json描述文件。| 必选。<br>数据类型：dict。 |
 | safetensor | 输入 | 量化后生成的safetensors格式的权重文件。| 必选。<br>数据类型：dict。 |
 

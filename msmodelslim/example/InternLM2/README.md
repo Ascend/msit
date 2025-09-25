@@ -3,14 +3,16 @@
 ## 模型介绍
 - InternLM开源了InternLM系列的多个基础模型和为实际场景量身定制的聊天模型。此代码仓中实现了一套基于NPU硬件的InternLM推理模型。配合加速库使用，旨在NPU上获得极致的推理性能。
 
-#### InternLM2 模型当前已验证的量化方法
-- W8A8量化：InternLM2-20B
-- W8A16量化：InternLM2-20B
-- KV cache量化：InternLM2-20B
+## 支持的模型版本与量化策略
 
+| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A16 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                                                                                                                                                                 |
+|---------|---------|---------------------------------------------------------------|-----|-------|-------|------|---------|----------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **InternLM2** | InternLM2-20B | [InternLM2-20B](https://huggingface.co/internlm/internlm2-chat-20b/tree/main) | ✅ | ✅ |   |   |  | ✅ |   | [W8A8](#internlm2-20b-w8a8量化) / [W8A16](#internlm2-20b-w8a16量化) / [KV Cache](#internlm2-20b-kv-cache-w8a8量化) |
 
-#### 此模型仓已适配的模型版本
-- [InternLM2-20B](https://huggingface.co/internlm/internlm2-chat-20b/tree/main)
+**说明：**
+- ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
+- 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- 点击量化命令列中的链接可跳转到对应的具体量化命令
 
 ## 环境配置
 
@@ -75,15 +77,15 @@
 
 #### InternLM2-20B 
 
-##### InternLM2-20B W8A8量化
+##### <span id="internlm2-20b-w8a8量化">InternLM2-20B W8A8量化</span>
   ```shell
   python3 quant_internlm2.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --w_bit 8 --a_bit 8 --device_type npu --trust_remote_code True
   ```
-##### InternLM2-20B W8A16量化
+##### <span id="internlm2-20b-w8a16量化">InternLM2-20B W8A16量化</span>
   ```shell
   python3 quant_internlm2.py --model_path {浮点权重路径} --save_directory {W8A16量化权重路径} --w_bit 8 --a_bit 16 --device_type npu --anti_method m1 --trust_remote_code True
   ```
-##### InternLM2-20B KV Cache W8A8量化
+##### <span id="internlm2-20b-kv-cache-w8a8量化">InternLM2-20B KV Cache W8A8量化</span>
   ```shell
   python3 quant_internlm2.py --model_path {浮点权重路径} --save_directory {W8A8C8量化权重路径} --w_bit 8 --a_bit 8 --device_type npu --use_kvcache_quant True --disable_level L5 --trust_remote_code True
   ```

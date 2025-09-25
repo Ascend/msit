@@ -9,14 +9,18 @@
     - 视觉定位：Qwen2.5-VL 可以通过生成 bounding boxes 或者 points 来准确定位图像中的物体，并能够为坐标和属性提供稳定的 JSON 输出。
     - 结构化输出：对于发票、表单、表格等数据，Qwen2.5-VL 支持其内容的结构化输出，惠及金融、商业等领域的应用。
 
+
 ### Qwen2.5-VL模型当前已验证的量化方法
 
-| 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况|
-|------------|-------------|---------|----------------|
-| Qwen2.5-VL-7B-Instruct | [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct/tree/main) | W8A8静态量化 | MindIE 预计2.2.RC1版本支持<br>vLLM Ascend v0.10.2rc2及之后版本支持 |
-| Qwen2.5-VL-72B-Instruct | [Qwen2.5-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct/tree/main) | W8A8静态量化 | MindIE 预计2.2.RC1版本支持<br>vLLM Ascend v0.10.2rc2及之后版本支持 |
-| Qwen2.5-VL-7B-Instruct | [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct/tree/main) | W4A8动态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 |
-| Qwen2.5-VL-72B-Instruct | [Qwen2.5-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct/tree/main) | W4A8动态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 |
+| 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况| 量化命令 |
+|------------|-------------|---------|----------------|---------|
+| Qwen2.5-VL-7B-Instruct | [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct/tree/main) | W8A8静态量化 | MindIE 预计2.2.RC1版本支持<br>vLLM Ascend v0.10.2rc2及之后版本支持 | [W8A8静态量化(m2)](#11-qwen25-vl-w8a8静态量化-异常值抑制算法使用m2) |
+| Qwen2.5-VL-72B-Instruct | [Qwen2.5-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct/tree/main) | W8A8静态量化 | MindIE 预计2.2.RC1版本支持<br>vLLM Ascend v0.10.2rc2及之后版本支持 | [W8A8静态量化(m2)](#11-qwen25-vl-w8a8静态量化-异常值抑制算法使用m2) |
+| Qwen2.5-VL-7B-Instruct | [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct/tree/main) | W4A8动态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W4A8动态量化](#13-qwen25-vl-w4a8动态量化-异常值抑制算法使用m4) |
+| Qwen2.5-VL-72B-Instruct | [Qwen2.5-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct/tree/main) | W4A8动态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W4A8动态量化](#13-qwen25-vl-w4a8动态量化-异常值抑制算法使用m4) |
+
+**说明：**
+- 点击量化命令列中的链接可跳转到对应的具体量化命令。
 
 ## 环境配置
 
@@ -78,8 +82,7 @@
 | trust_remote_code | 是否信任自定义代码 | False | 可选参数;<br>指定`trust_remote_code=True`让修改后的自定义代码文件能够正确地被加载(请确保所加载的自定义代码文件来源可靠，避免潜在的安全风险)。 |
 | anti_method | 异常值抑制算法 | 'm2' | 可选参数;<br>可选值：['m2', 'm4']。'm2'对应多模态理解模型场景下优化后的Outlier Suppression Plus异常值抑制算法，'m4'对应Iterative Smooth异常值抑制算法。 |
 | act_method | 激活值量化方法 | 1 | 可选参数;<br>(1) 1代表Label-Free场景的min-max量化方式。<br>(2) 2代表Label-Free场景的histogram量化方式。<br>(3) 3代表Label-Free场景的自动混合量化方式。|
-| open_outlier | 是否开启权重异常值划分 | True | 可以配置为True或者False。 <br>设置为True时开启权重异常值划分，反之则关闭。|
-| is_dynamic | 是否使用动态量化，即W8A8中的激活量化参数动态生成 | False | 可以配置为True或者False。 <br>设置为True时使用动态量化，反之则不使用。|
+| open_outlier | 是否开启权重异常值划分 | True | 可以配置为True或者False。 <br>设置为True时开启权重异常值划分，反之则关闭。| is_dynamic | 是否使用动态量化，即W8A8中的激活量化参数动态生成 | False | 可以配置为True或者False。 <br>设置为True时使用动态量化，反之则不使用。|
 | is_lowbit | 是否使用稀疏量化的lowbit算法 | False | 可以配置为True或者False。 <br>设置为True时，表示使用稀疏量化的lowbit算法，反之则不使用。 <br>在`w4a8_dynamic per-group`量化场景下需要设置为True。|
 | group_size | per-group量化的分组数量 | 64 | <br>设置为64，128，256，512。 <br>在`w4a8_dynamic per-group`量化场景下仅支持256。|
 | mindie_format | 多模态理解模型量化后的权重配置文件是否兼容MindIE现有版本 | False | 开启`mindie_format`时保存的量化权重格式能够兼容MindIE当前的版本，不开启`mindie_format`时保存的量化权重可用于vLLM Ascend部署。 |

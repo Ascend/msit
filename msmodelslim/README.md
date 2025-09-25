@@ -9,7 +9,6 @@
 [快速入门](./docs/快速入门/一键量化快速入门.md) |
 [支持矩阵](./docs/README.md#支持矩阵) |
 [功能指南](./docs/README.md#功能指南) |
-[推荐实践](./docs/README.md#推荐实践) |
 [案例集](./docs/README.md#案例集) |
 [FAQ](./docs/README.md#faq)
 
@@ -60,12 +59,6 @@ msModelSlim，全称MindStudio ModelSlim，昇腾模型压缩工具。
 功能指南基于msModelSlim不同架构下的功能支持情况，提供功能使用说明和接口说明。
 
 具体功能指南请查看[功能指南](./docs/README.md#功能指南)
-
-## 推荐实践
-
-msModelSlim以examples形式提供了推荐的推理量化/压缩实践。
-
-具体的推荐实践请查看[推荐实践](./docs/README.md#推荐实践)
 
 ## 案例集
 

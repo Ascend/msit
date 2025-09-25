@@ -2,7 +2,18 @@
 
 FLUX的推理量化依赖于FLUX.1-dev推理工程仓：[MindIE/FLUX.1-dev](https://modelers.cn/models/MindIE/FLUX.1-dev)，根据该工程仓完成配置后，使用以下示例代码进行量化。
 
-## FLUX 时间步量化
+## 支持的模型版本与量化策略
+
+| 模型系列 | 模型版本 | HuggingFace链接 | 时间步量化 | FA3量化 | 异常值抑制量化 | 量化命令 |
+|---------|---------|-------|-----|-------|-------|-------|
+| **FLUX** | FLUX.1-dev | [FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev/tree/main) | ✅ | ✅ | ✅ | [时间步量化](#flux-timestep-quantization) / [FA3量化](#flux-fa3-quantization) / [异常值抑制量化](#flux-outlier-suppression-quantization) |
+
+**说明：**
+- ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
+- 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- 点击量化命令列中的链接可跳转到对应的具体量化命令
+
+## <span id="flux-timestep-quantization">FLUX 时间步量化</span>
 
 **注意**: 在模型pipeline的去噪循环中，需要在每个timestep开始时调用`TimestepManager.set_timestep_idx()`来设置当前的时间步。
 
@@ -140,7 +151,7 @@ session_cfg.model_validate(session_cfg)
 quant_model(model, session_cfg)
 ```
 
-## FLUX FA3 量化
+## <span id="flux-fa3-quantization">FLUX FA3 量化</span>
 
 ### 量化命令和示例代码
 
@@ -249,7 +260,7 @@ session_cfg.model_validate(session_cfg)
 quant_model(model, session_cfg)
 ```
 
-## FLUX 异常值抑制量化
+## <span id="flux-outlier-suppression-quantization">FLUX 异常值抑制量化</span>
 
 ### 量化命令和示例代码
 

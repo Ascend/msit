@@ -1,39 +1,34 @@
 # Qwen 量化案例
 
 ## 模型介绍
-- 千问（qwen）语言大模型是阿里巴巴集团推出的大型语言模型，具备强大的自然语言处理能力，能够理解和生成文本，应用于智能客服、内容生成、问答系统等多个场景，助力企业智能化升级。
+- 千问（Qwen）语言大模型是阿里巴巴集团推出的大型语言模型，具备强大的自然语言处理能力，能够理解和生成文本，应用于智能客服、内容生成、问答系统等多个场景，助力企业智能化升级。
 
-#### Qwen模型当前已验证的量化方法
-- W8A8量化：Qwen-7B，Qwen-14B，Qwen1.5-14B，Qwen1.5-32B，Qwen2-7B，Qwen2-72B，Qwen2.5-7B，Qwen2.5-14B，Qwen2.5-32B，Qwen3-14B，Qwen3-32B，QwQ-32B
-- W8A16量化：Qwen-72B，Qwen1.5-72B，Qwen1.5-110B，Qwen2-72B
-- W4A4 Flatquant Dynamic量化：Qwen3-32B
-- 稀疏量化：Qwen1.5-14B，Qwen2-7B，Qwen2-72B，Qwen2.5-7B，Qwen2.5-14B，QwenCode2.5-7B，QwQ-32B，Qwen3-8B，Qwen3-14B，Qwen3-32B
-- KV cache量化：Qwen2-72B
-- Attention 量化：Qwen2.5-72B
+## 支持的模型版本与量化策略
 
-#### 此模型仓已适配的模型版本
-##### Qwen
-- [Qwen-7B](https://huggingface.co/Qwen/Qwen-7B/tree/main)
-- [Qwen-14B](https://huggingface.co/Qwen/Qwen-14B/tree/main)
-- [Qwen-72B](https://huggingface.co/Qwen/Qwen-72B/tree/main)
-##### Qwen1.5
-- [Qwen1.5-14B](https://huggingface.co/Qwen/Qwen1.5-14B/tree/main)
-- [Qwen1.5-32B](https://huggingface.co/Qwen/Qwen1.5-32B/tree/main)
-- [Qwen1.5-72B](https://huggingface.co/Qwen/Qwen1.5-72B/tree/main)
-##### Qwen2
-- [Qwen2-7B](https://huggingface.co/Qwen/Qwen2-7B/tree/main)
-- [Qwen2-7B-Instruct](https://huggingface.co/Qwen/Qwen2-7B-Instruct/tree/main)
-##### Qwen2.5
-- [Qwen2.5-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/tree/main)
-- [Qwen2.5-14B-Instruct](https://huggingface.co/Qwen/Qwen2.5-14B-Instruct/tree/main)
-- [Qwen2.5-32B-Instruct](https://huggingface.co/Qwen/Qwen2.5-32B-Instruct/tree/main)
-- [Qwen2.5-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-72B-Instruct/tree/main)
-##### Qwen3
-- [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B/tree/main)
-- [Qwen3-14B](https://huggingface.co/Qwen/Qwen3-14B/tree/main)
-- [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main)
-##### QwQ
-- [QwQ-32B](https://modelscope.cn/models/Qwen/QwQ-32B)
+| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A16 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                                                                                                                                                                 |
+|---------|---------|---------------------------------------------------------------|-----|-------|-------|------|---------|----------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Qwen** | Qwen-7B | [Qwen-7B](https://huggingface.co/Qwen/Qwen-7B/tree/main)      | ✅ |   |   |   |  |   |   | [W8A8](#qwen1-14b-w8a8量化)                                                                                                                                                            |
+| | Qwen-14B | [Qwen-14B](https://huggingface.co/Qwen/Qwen-14B/tree/main)    | ✅ |   |   |   |  |   |   | [W8A8](#qwen1-14b-w8a8量化)                                                                                                                                                            |
+| | Qwen-72B | [Qwen-72B](https://huggingface.co/Qwen/Qwen-72B/tree/main)    |  | ✅ |   |   |  |   |   | [W8A16](#qwen1-72b-w8a16量化)                                                                                                                                                          |
+| **Qwen1.5** | Qwen1.5-14B | [Qwen1.5-14B](https://huggingface.co/Qwen/Qwen1.5-14B/tree/main) | ✅ |   |   |   | ✅ |   |   | [W8A8](#qwen15-14b-qwen15-32b-w8a8-量化) / [稀疏](#qwen15-14b-qwen15-32b-稀疏量化)                                                                                                           |
+| | Qwen1.5-32B | [Qwen1.5-32B](https://huggingface.co/Qwen/Qwen1.5-32B/tree/main) | ✅ |   |   |   | ✅ |   |   | [W8A8](#qwen15-14b-qwen15-32b-w8a8-量化) / [稀疏](#qwen15-14b-qwen15-32b-稀疏量化)                                                                                                           |
+| | Qwen1.5-72B | [Qwen1.5-72B](https://huggingface.co/Qwen/Qwen1.5-72B/tree/main) |  | ✅ |   |   |  |   |   | [W8A16](#qwen15-72b-w8a16量化)                                                                                                                                                         |
+| **Qwen2** | Qwen2-7B | [Qwen2-7B](https://huggingface.co/Qwen/Qwen2-7B/tree/main)          | ✅ |   |   |   | ✅ |   |   | [W8A8](#qwen2-7b-w8a8量化) / [稀疏](#qwen2-72b-稀疏量化)                                                                                                                                     |
+| | Qwen2-72B | [Qwen2-72B](https://huggingface.co/Qwen/Qwen2-72B/tree/main)         | ✅ | ✅ |   |   | ✅ | ✅ |   | [W8A8](#qwen2-7b-w8a8量化) / [W8A16](#qwen2-72b-w8a16量化) / [稀疏](#qwen2-72b-稀疏量化) / [KV Cache](#qwen2-72b-kv-cache-w8a8量化)                                                              |
+| **Qwen2.5** | Qwen2.5-7B-Instruct | [Qwen2.5-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/tree/main) | ✅ |   |   |   | ✅ |   |   | [W8A8](#qwen25-7b-qwen25-14b-qwen25-32b-w8a8-量化) / [稀疏](#qwen25-coder-7b-稀疏量化)                                                                                                       |
+| |Qwen2.5-Coder-7B  | [Qwen2.5-Coder-7B ](https://huggingface.co/Qwen/Qwen2.5-Coder-7B/tree/main) |  |   |   |   | ✅ |   |   | [稀疏](#qwen25-coder-7b-稀疏量化)                                                                                                                                                          |
+| | Qwen2.5-14B-Instruct | [Qwen2.5-14B-Instruct](https://huggingface.co/Qwen/Qwen2.5-14B-Instruct/tree/main) | ✅ |   |   |   | ✅ |   |   | [W8A8](#qwen25-7b-qwen25-14b-qwen25-32b-w8a8-量化) / [稀疏](#qwen25-coder-7b-稀疏量化)                                                                                                       |
+| | Qwen2.5-32B-Instruct | [Qwen2.5-32B-Instruct](https://huggingface.co/Qwen/Qwen2.5-32B-Instruct/tree/main) | ✅ |   |   |   |  |   |   | [W8A8](#qwen25-7b-qwen25-14b-qwen25-32b-w8a8-量化)                                                                                                                                     |
+| | Qwen2.5-72B-Instruct | [Qwen2.5-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-72B-Instruct/tree/main) | ✅ |   | ✅ |   |  | ✅ | ✅ | [W8A8](#qwen25-7b-qwen25-14b-qwen25-32b-w8a8-量化) / [Attention](#qwen25-72b-支持attention量化) / [PDMix+KV Cache int8](#qwen25-72b-w8a8-pdmix量化) / [W4A16](#qwen25-72b-instruct-w4a16-量化) |
+| **Qwen3** | Qwen3-8B | [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main)          |  |   |   |   | ✅ |   |   | [稀疏](#qwen3-8b-稀疏量化)                                                                                                                                                                 |
+| | Qwen3-14B | [Qwen3-14B](https://huggingface.co/Qwen/Qwen3-14B/tree/main)         | ✅ |   |   |   | ✅ |   |   | [W8A8](#qwen3-14b-w8a8量化) / [稀疏](#qwen3-14b-稀疏量化)                                                                                                                                    |
+| | Qwen3-32B | [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B/tree/main)         | ✅ |   |   | ✅ | ✅ |   |   | [W8A8](#qwen3-32b-w8a8量化) / [稀疏](#qwen3-32b-稀疏量化) / [W4A4](#qwen3-32b-w4a4-flatquant-dynamic量化)                                                                                      |
+| **QwQ** | QwQ-32B | [QwQ-32B](https://modelscope.cn/models/Qwen/QwQ-32B)               | ✅ |   |   |   | ✅ |   |   | [W8A8](#qwq-32b-w8a8量化) / [稀疏](#qwq-32b-稀疏量化)                                                                                                                                        |
+
+**说明：**
+- ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
+- 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- 点击量化命令列中的链接可跳转到对应的具体量化命令
 
 ## 环境配置
 
@@ -54,12 +49,12 @@
 | calib_file | 量化校准数据文件 | teacher_qualification.jsonl | 存放校准数据的json文件。 |
 | w_bit | 权重量化bit | 8 | 大模型量化场景下，可配置为8或16； <br>大模型稀疏量化场景下，需配置为4。 |
 | a_bit | 激活值量化bit | 8 |大模型量化场景下，可配置为8或16； <br>大模型稀疏量化场景下，需配置为8。 |
-| disable_names | 手动回退的量化层名称 | qwen1 回退所有c_proj层 <br> 其他模型默认回退所有down_proj层 | 用户可根据精度要求手动设置，默认回退隐藏层的降维投影层。 |
+| disable_names | 手动回退的量化层名称 | Qwen2之前的模型回退所有c_proj层 <br> 其他模型默认回退所有down_proj层 | 用户可根据精度要求手动设置，默认回退隐藏层的降维投影层。 |
 | device_type | device类型 | cpu | 可选值：['cpu', 'npu']。 |
 | fraction | 模型权重稀疏量化过程中被保护的异常值占比  |0.01| 取值范围[0.01,0.1]。|
 | act_method | 激活值量化方法 | 1 |(1) 1代表Label-Free场景的min-max量化方式。 <br>(2) 2代表Label-Free场景的histogram量化方式。 <br>(3) 3代表Label-Free场景的自动混合量化方式，LLM大模型场景下推荐使用。|
 | co_sparse | 是否开启稀疏量化功能 | False | True: 使用稀疏量化功能；<br>False: 不使用稀疏量化功能。 |
-| anti_method | 离群值抑制参数 | 无默认值 |'m1': SmoothQuant算法。<br>'m2': SmoothQuant加强版算法。<br>'m3': AWQ算法。<br>'m4': smooth优化算法 。<br>'m5': CBQ量化算法。<br>'m6': Flex smooth量化算法。|
+| anti_method | 离群值抑制参数 | 无默认值 |'m1': SmoothQuant算法。<br>'m2': SmoothQuant加强版算法。<br>'m3': AWQ算法。<br>'m4': smooth优化算法。<br>'m5': CBQ量化算法。<br>'m6': Flex smooth量化算法。|
 | disable_level | L自动回退等级 | L0 | 配置示例如下：<br>'L0'：默认值，不执行回退。<br>'L1'：回退1层。<br>'L2'：回退2层。<br>'L3'：回退3层。<br>'L4'：回退4层。<br>'L5'：回退5层。|
 | do_smooth | 是否使用smooth量化 | False | True: 使用smooth量化；<br>False: 不使用smooth量化。 |
 | use_sigma | 是否启动sigma功能 | False|True: 开启sigma功能；<br>False: 不开启sigma功能。 |
@@ -79,7 +74,7 @@
 | tokenizer_args | 加载自定义tokenizer时传入的自定义参数 | 无 | 以字典方式传入。 |
 | disable_last_linear | 是否回退最后linear层 | True | True：回退最后linear层。<br>False：不回退最后linear层。 |
 | model_name | 模型名称，可选参数 | None | 用于控制异常值抑制参数。 |
-| model_type | qwen模型类型 | qwen2|  若使用qwen1模型，请输入该参数为qwen1。 |
+| model_type | Qwen模型类型 | qwen2|  若使用Qwen2之前的模型，请输入该参数为qwen1。 |
 | anti_calib_file | 离群值抑制校准数据文件 | None | 用于离群值抑制的校准数据文件路径(.json或.jsonl)。|
 | disable_threshold | 自动回退阈值 | 0 | 当值大于0时，会根据阈值自动选择需要回退的层。|
 | pdmix | 是否使用PDMix量化类型 | False | True: 使用PDMix量化类型；<br>False: 不使用PDMix量化类型。|
@@ -113,40 +108,42 @@
 - 若加载自定义模型，调用`from_pretrained`函数时要指定`trust_remote_code=True`让修改后的自定义代码文件能够正确的被加载。(请确保加载的自定义代码文件的安全性)
   
 #### 1. Qwen1系列
-##### Qwen1-14b W8A8量化
+##### <span id="qwen1-14b-w8a8量化">Qwen-14b W8A8量化</span>
 在`{浮点权重路径}/modeling_qwen.py`中将`SUPPORT_CUDA = torch.cuda.is_available()`手动设置为`SUPPORT_CUDA = False`；
-生成Qwen1-14b模型量化权重，antioutlier使用m2算法配置，使用min-max量化方式，在CPU上进行运算
+生成Qwen-14b模型量化权重，antioutlier使用m2算法配置，使用min-max量化方式，在CPU上进行运算
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type cpu  --anti_method m2 --act_method 1 --model_type qwen1 --trust_remote_code True
   ```
-##### Qwen1-72b W8A16量化
-生成Qwen1-14b模型量化权重，激活值量化使用自动混合量化方式，在CPU上进行运算
+##### <span id="qwen1-72b-w8a16量化">Qwen-72b W8A16量化</span>
+生成Qwen-72b模型量化权重，激活值量化使用自动混合量化方式，在CPU上进行运算
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A16量化权重路径} --calib_file ../common/ceval.jsonl --w_bit 8 --a_bit 16 --device_type cpu  --act_method 3 --model_type qwen1 --trust_remote_code True
   ```
 #### 2. Qwen1.5系列
-##### Qwen1.5-14b, Qwen1.5-32b W8A8 量化
+##### <span id="qwen15-14b-qwen15-32b-w8a8-量化">Qwen1.5-14b, Qwen1.5-32b W8A8 量化</span>
 生成量化权重，使用min-max量化方式，校准数据集使用50条BoolQ数据，在npu上进行运算
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu --trust_remote_code True
   ```
- 稀疏量化权重请使用以下指令生成
+##### <span id="qwen15-14b-qwen15-32b-稀疏量化">Qwen1.5-14b, Qwen1.5-32b 稀疏量化</span>
+稀疏量化权重请使用以下指令生成
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/cn_en.jsonl --w_bit 4 --a_bit 8 --device_type npu --fraction 0.011 --use_sigma True --is_lowbit True --trust_remote_code True
   ```
-##### Qwen1.5-72b W8A16量化
+##### <span id="qwen15-72b-w8a16量化">Qwen1.5-72b W8A16量化</span>
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A16量化权重路径}  --w_bit 8 --a_bit 16 --device_type npu --trust_remote_code True
   ```
 #### 3. Qwen2系列
-##### Qwen2-7b W8A8量化
+##### <span id="qwen2-7b-w8a8量化">Qwen2-7b W8A8量化</span>
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu --trust_remote_code True
   ```
-##### Qwen2-72b W8A16量化
+##### <span id="qwen2-72b-w8a16量化">Qwen2-72b W8A16量化</span>
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A16量化权重路径}  --w_bit 8 --a_bit 16 --device_type npu --trust_remote_code True
   ```
+##### <span id="qwen2-72b-稀疏量化">Qwen2-72b 稀疏量化</span>
 稀疏量化权重请使用以下指令生成
   ```shell
   export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
@@ -155,7 +152,7 @@
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8s量化权重路径} --calib_file ../common/cn_en.jsonl --w_bit 4 --a_bit 8 --fraction 0.011 --co_sparse True --device_type npu --use_sigma True --is_lowbit True --trust_remote_code True
   ```
 
-##### Qwen2-72b KV Cache W8A8量化
+##### <span id="qwen2-72b-kv-cache-w8a8量化">Qwen2-72b KV Cache W8A8量化</span>
   ```shell
   export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   export PYTORCH_NPU_ALLOC_CONF=expandable_segments:False
@@ -164,21 +161,21 @@
   ```
 
 #### 4. Qwen2.5系列
-##### Qwen2.5-7b, Qwen2.5-14b, Qwen2.5-32b W8A8 量化
+##### <span id="qwen25-7b-qwen25-14b-qwen25-32b-w8a8-量化">Qwen2.5-7b, Qwen2.5-14b, Qwen2.5-32b W8A8 量化</span>
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu --trust_remote_code True
   ```
-##### Qwen2.5-72B 支持Attention量化
+##### <span id="qwen25-72b-支持attention量化">Qwen2.5-72B 支持Attention量化</span>
 - 需修改`modeling_qwen2.py`文件和`config.json`文件，配置方法参考[FA量化使用说明](../../docs/功能指南/脚本量化与其他功能/pytorch/llm_ptq/FA量化使用说明.md)。 
 - 相比于W8A8量化，需额外设置`use_fa_quant`参数为True
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu --anti_method m4 --act_method 1 --use_fa_quant True --trust_remote_code True
   ```
-##### Qwen2.5-Coder-7B 稀疏量化 
+##### <span id="qwen25-coder-7b-稀疏量化">Qwen2.5-Coder-7B 稀疏量化</span> 
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W4A8量化权重路径} --calib_file ../common/humaneval_x.jsonl --w_bit 4 --a_bit 8 --device_type cpu --fraction 0.02 --co_sparse True  --use_sigma True --is_lowbit False --trust_remote_code True
   ```
-##### Qwen2.5-72b W8A8-pdmix量化(prefill阶段 W8A8动态量化, decode阶段 W8A8量化) 搭配 KV cache int8量化
+##### <span id="qwen25-72b-w8a8-pdmix量化">Qwen2.5-72b W8A8-pdmix量化</span>(prefill阶段 W8A8动态量化, decode阶段 W8A8量化) 搭配 KV cache int8量化
   ```shell
   python3 quant_qwen_pdmix.py --model_path {浮点权重路径} \
   --save_directory {W8A8-pdmix量化权重路径} \
@@ -193,7 +190,7 @@
   --disable_names model.layers.0.mlp.down_proj model.layers.1.mlp.down_proj model.layers.2.mlp.down_proj model.layers.79.mlp.down_proj
   ```
 
-##### Qwen2.5-72B-Instruct W4A16 量化
+##### <span id="qwen25-72b-instruct-w4a16-量化">Qwen2.5-72B-Instruct W4A16 量化</span>
 当传入 mindie_format 参数时，量化权重不会将 int4 打包成 int8，当不传入 mindie_format 参数时，量化权重将 int4 打包成 int8，减少存储空间，同时减少模型部署时加载时间。
   ```shell
   python quant_qwen.py \
@@ -211,7 +208,7 @@
   ```
 
 #### 5. Qwen3 系列
-##### Qwen3-32B W8A8量化
+##### <span id="qwen3-32b-w8a8量化">Qwen3-32B W8A8量化</span>
 
 该模型的量化已经集成至[一键量化](../../docs/功能指南/一键量化/使用说明.md)。
 
@@ -219,7 +216,7 @@
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8 --trust_remote_code True
   ```
 
-##### Qwen3-32B 稀疏量化
+##### <span id="qwen3-32b-稀疏量化">Qwen3-32B 稀疏量化</span>
 
 该模型的量化已经集成至[一键量化](../../docs/功能指南/一键量化/使用说明.md)。
 
@@ -227,18 +224,18 @@
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8s --trust_remote_code True
   ```
 
-##### Qwen3-32b W4A4 Flatquant Dynamic量化 
+##### <span id="qwen3-32b-w4a4-flatquant-dynamic量化">Qwen3-32b W4A4 Flatquant Dynamic量化</span> 
   ```shell
   python3 w4a4.py --model_path {浮点权重路径} --save_directory {w4a4量化权重路径} --calib_file ../common/wiki.jsonl --trust_remote_code True
   ```
-##### Qwen3-14B W8A8量化
+##### <span id="qwen3-14b-w8a8量化">Qwen3-14B W8A8量化</span>
 
 该模型的量化已经集成至[一键量化](../../docs/功能指南/一键量化/使用说明.md)。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-14B --quant_type w8a8 --trust_remote_code True
   ```
-##### Qwen3-14B 稀疏量化
+##### <span id="qwen3-14b-稀疏量化">Qwen3-14B 稀疏量化</span>
 
 该模型的量化已经集成至[一键量化](../../docs/功能指南/一键量化/使用说明.md)。
 
@@ -246,7 +243,7 @@
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-14B --quant_type w8a8s --trust_remote_code True
   ```
 
-##### Qwen3-8B 稀疏量化
+##### <span id="qwen3-8b-稀疏量化">Qwen3-8B 稀疏量化</span>
 
 该模型的量化已经集成至[一键量化](../../docs/功能指南/一键量化/使用说明.md)。
 
@@ -255,11 +252,11 @@
   ```
 
 #### QwQ 系列
-##### QwQ-32b W8A8量化
+##### <span id="qwq-32b-w8a8量化">QwQ-32b W8A8量化</span>
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu --anti_method m1
   ```
-##### QwQ-32b 稀疏量化 
+##### <span id="qwq-32b-稀疏量化">QwQ-32b 稀疏量化</span> 
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8s量化权重路径} --calib_file ../common/cn_en.jsonl --w_bit 4 --a_bit 8 --device_type npu --fraction 0.011 --use_sigma True --is_lowbit True
   ```

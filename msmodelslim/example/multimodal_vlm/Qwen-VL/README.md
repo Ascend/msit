@@ -5,9 +5,13 @@
 - [Qwen-VL](https://github.com/QwenLM/Qwen-VL)是阿里云研发的大规模视觉语言模型（Large Vision Language Model, LVLM）。能够以图像、文本和检测框作为输入，生成文本或检测框。该系列模型性能卓越，支持多语言对话、多图交错对话，具备中文开放域定位能力，以及细粒度的图像识别与理解能力。
 
 #### Qwen-VL模型当前已验证的量化方法
-| 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况|
-|------------|-------------|---------|----------------|
-| Qwen-VL | [Qwen-VL](https://huggingface.co/Qwen/Qwen-VL/tree/main) | W8A8静态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 |
+| 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况| 量化命令 |
+|------------|-------------|---------|----------------|---------|
+| Qwen-VL | [Qwen-VL](https://huggingface.co/Qwen/Qwen-VL/tree/main) | W8A8静态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#1-qwen-vl系列) |
+
+
+**说明：**
+- 点击量化命令列中的链接可跳转到对应的具体量化命令。
 
 ## 环境配置
 

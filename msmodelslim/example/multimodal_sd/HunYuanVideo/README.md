@@ -1,6 +1,17 @@
 # HunyuanVideo 量化使用说明
 
-## HunyuanVideo 时间步量化
+## 支持的模型版本与量化策略
+
+| 模型系列 | 模型版本 | HuggingFace链接 | W8A8 | W8A16 | W4A16 | W4A4 | 稀疏量化 | KV Cache | Attention | 时间步量化 | FA3量化 | 异常值抑制量化 | 量化命令 |
+|---------|---------|---------------------------------------------------------------|-----|-------|-------|------|---------|----------|-----------|----------|----------|----------|----------|
+| **HunyuanVideo** | HunyuanVideo-T2V-720P | [HunyuanVideo](https://huggingface.co/tencent/HunyuanVideo) | ✅ | | | | | | | ✅ | ✅ | ✅ | [时间步量化](#hunyuanvideo-时间步量化) / [FA3量化](#hunyuanvideo-fa3-量化) / [异常值抑制量化](#hunyuanvideo-异常值抑制量化) |
+
+**说明：**
+- ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
+- 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- 点击量化命令列中的链接可跳转到对应的具体量化命令
+
+## <span id="hunyuanvideo-时间步量化">HunyuanVideo 时间步量化</span>
 
 **注意**: 在模型pipeline的去噪循环中，需要在每个timestep开始时调用`TimestepManager.set_timestep_idx()`来设置当前的时间步。
 
@@ -157,7 +168,7 @@ with torch.autocast(device_type='cuda', dtype=torch.bfloat16, enabled=True):
 
 ```
 
-## HunyuanVideo fa3 量化
+## <span id="hunyuanvideo-fa3-量化">HunyuanVideo fa3 量化</span>
 
 ### 量化命令和示例代码
 
@@ -282,7 +293,7 @@ session_cfg.model_validate(session_cfg)
 quant_model(model, session_cfg)
 ```
 
-## HunyuanVideo 异常值抑制量化
+## <span id="hunyuanvideo-异常值抑制量化">HunyuanVideo 异常值抑制量化</span>
 
 ### 量化命令和示例代码
 
