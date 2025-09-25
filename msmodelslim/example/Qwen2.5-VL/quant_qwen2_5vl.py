@@ -11,7 +11,6 @@ sys.path.append(parent_directory)
 
 from example.common.utils import cmd_bool
 from example.common.security.path import get_valid_read_path, get_write_directory
-from example.common.vlm_utils import VlmSafeGenerator
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 
@@ -23,7 +22,7 @@ NPU = "npu"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str, default='')
-    parser.add_argument('--calib_images', type=str, default='../calibImages')
+    parser.add_argument('--calib_images', type=str, default='./coco_pic')
     parser.add_argument('--save_directory', type=str, default='')
     parser.add_argument('--part_file_size', type=int, default=None)
     parser.add_argument('--w_bit', type=int, default=8)
@@ -36,8 +35,6 @@ if __name__ == '__main__':
     parser.add_argument('--is_dynamic', type=cmd_bool, default=False)
     parser.add_argument('--is_lowbit', type=cmd_bool, default=False)
     parser.add_argument('--group_size', type=int, choices=[64, 128, 256, 512], default=64)
-    parser.add_argument('--mindie_format', action="store_true", help="Compatible with quantization formats \
-                supported by MindIE")
     args = parser.parse_args()
 
     # check args
@@ -137,12 +134,4 @@ if __name__ == '__main__':
     calibrator.run()
 
     # 7.保存权重
-    save_type = "safe_tensor" if args.mindie_format else "ascendV1"
-    calibrator.save(args.save_directory, save_type=[save_type], part_file_size=args.part_file_size)
-
-    quant_type = quant_config.model_quant_type.lower()
-    checker = VlmSafeGenerator()
-    auto_config = checker.get_config_from_pretrained(args.model_path, trust_remote_code=args.trust_remote_code)
-    checker.modify_config(args.model_path, args.save_directory, auto_config.torch_dtype, quant_type, 
-                          args, quantize_config_parts=['vision_config'])
-    checker.copy_tokenizer_files(args.model_path, args.save_directory)
+    calibrator.save(args.save_directory, save_type=["safe_tensor"], part_file_size=args.part_file_size)

@@ -11,7 +11,6 @@ sys.path.append(parent_directory)
 
 from internvl2_utils import get_tokenized_data, get_textvqa_calibration, cmd_bool
 from example.common.security.path import get_valid_read_path, get_write_directory
-from example.common.vlm_utils import VlmSafeGenerator
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 
@@ -27,12 +26,9 @@ if __name__ == '__main__':
     parser.add_argument('--part_file_size', type=int, default=None)
     parser.add_argument('--w_bit', type=int, default=8)
     parser.add_argument('--a_bit', type=int, default=8)
-    parser.add_argument('--act_method', type=int, default=1)
-    parser.add_argument('--device_type', type=str, choices=[CPU, NPU], default=NPU)
+    parser.add_argument('--device_type', type=str, choices=[CPU, NPU], default=CPU)
     parser.add_argument('--is_8B_model', action="store_true", help='whether to use 8B model')
     parser.add_argument('--trust_remote_code', type=cmd_bool, default=False)
-    parser.add_argument('--mindie_format', action="store_true", help="Compatible with quantization formats \
-                        supported by MindIE")
     args = parser.parse_args()
 
     # check args
@@ -128,19 +124,11 @@ if __name__ == '__main__':
         disable_names=disable_names,
         dev_type=args.device_type,
         dev_id=model.device.index,
-        act_method=args.act_method,
+        act_method=1,
         mm_tensor=False,
     )
     calibrator = Calibrator(model, quant_config, calib_data=calib_data, disable_level='L0')
     calibrator.run()
 
     # 7.保存权重
-    save_type = "safe_tensor" if args.mindie_format else "ascendV1"
-    calibrator.save(args.save_directory, save_type=[save_type], part_file_size=args.part_file_size)
-
-    quant_type = quant_config.model_quant_type.lower()
-    checker = VlmSafeGenerator()
-    auto_config = checker.get_config_from_pretrained(args.model_path, trust_remote_code=args.trust_remote_code)
-    checker.modify_config(args.model_path, args.save_directory, auto_config.torch_dtype, quant_type, 
-                          args, quantize_config_parts=['llm_config', 'vision_config'])
-    checker.copy_tokenizer_files(args.model_path, args.save_directory)
+    calibrator.save(args.save_directory, save_type=["safe_tensor"], part_file_size=args.part_file_size)
