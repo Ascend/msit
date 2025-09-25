@@ -112,8 +112,6 @@ class CEval5ShotProcessor(DatasetProcessorBase):
         subject_mapping_path = get_valid_read_path(subject_mapping_path)
         with open(subject_mapping_path) as f:
             subject_mapping = json.load(f)
-        if isinstance(subject_mapping, dict):
-            check_dict_character(subject_mapping, 512)
         return subject_mapping
 
     def load_csv_by_task_name(self, task_name, dataset_path):
