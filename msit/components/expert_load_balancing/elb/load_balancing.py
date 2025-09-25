@@ -31,6 +31,7 @@ from components.expert_load_balancing.elb.preprocessing import process_speculati
 from components.expert_load_balancing.elb.constant import PREFILL, DECODE, DECODE_FILE_NAME, \
                         PREFILL_FILE_NAME, ALGORITHM_C2LB, ALGORITHM_DYNAMIC_C2LB, A2, A3, \
                         SPECULATIVE_MOE_ALGORITHM
+from components.utils.security_check import get_valid_read_path
 
 
 def load_expert_popularity_csv(csv_file_path):
@@ -58,6 +59,7 @@ def load_expert_popularity_csv(csv_file_path):
             continue
         
         try:
+            file_path = get_valid_read_path(file_path)
             df = pd.read_csv(file_path)
             logger.info(f"Successfully loaded {file_name}.")
             
@@ -111,7 +113,8 @@ def merge_csv_columns(csv_path, pattern_prefix):
     
     for file in filtered_files:
         logger.debug(f"Processing file: {file}.")
-        df = pd.read_csv(file, header=None)
+        file_path = get_valid_read_path(file)
+        df = pd.read_csv(file_path, header=None)
         if df.empty:
             raise ValueError(f"File {file} is empty. Check the input decode or prefill file.")
         
@@ -439,6 +442,7 @@ def select_algorithm(args):
 def is_file_readable(file_path):
     """尝试读取CSV文件以判断是否损坏"""
     try:
+        file_path = get_valid_read_path(file_path)
         pd.read_csv(file_path)
         return True
     except Exception as e:
@@ -537,6 +541,7 @@ def process_files_by_type(src_dir, file_type, output_path):
     for file in files:
         file_path = os.path.join(src_dir, file)
         try:
+            file_path = get_valid_read_path(file_path)
             df = pd.read_csv(file_path, header=None)
             file_row_counts[file] = len(df)
             dfs[file] = df

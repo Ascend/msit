@@ -25,7 +25,7 @@ from tqdm import tqdm
 
 from speculative_moe import ExpSolver, ExpILPSolver, second_optim, all_to_all_algorithm_multi_process
 from components.utils.file_open_check import ms_open
-from components.utils.security_check import ms_makedirs
+from components.utils.security_check import ms_makedirs, get_valid_read_path
 from components.utils.log import logger
 from components.expert_load_balancing.elb.constant import A2, A3, SUPPORTED_COMBINATIONS, \
                         ALGORITHM_SPECULATIVE_MOE_LEVEL_1, ALGORITHM_SPECULATIVE_MOE_LEVEL_2, \
@@ -272,6 +272,7 @@ def get_csv_dimensions(input_csv_path):
     """
     dimensions = (None, None)
     try:
+        input_csv_path = get_valid_read_path(input_csv_path)
         df = pd.read_csv(input_csv_path)
         if df.empty:
             raise ValueError(f"文件包含空数据 {input_csv_path}")
