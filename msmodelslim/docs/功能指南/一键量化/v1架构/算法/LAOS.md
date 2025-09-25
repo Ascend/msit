@@ -10,7 +10,7 @@
 
 ### 修改配置文件使用
 
-```python
+```yaml
 apiversion: modelslim_v1
 
 default_w8a8_dynamic: &default_w8a8_dynamic
@@ -27,10 +27,6 @@ default_w8a8_dynamic: &default_w8a8_dynamic
     dtype: "int8"
     symmetric: true
     method: "minmax"
-    ext:
-      group_size: -1
-      dynamic: true
-      scale_dtype: "bfloat16"
 
 
 default_w4a4_dynamic: &default_w4a4_dynamic
@@ -47,10 +43,6 @@ default_w4a4_dynamic: &default_w4a4_dynamic
     dtype: "int4"
     symmetric: true
     method: "minmax"
-    ext:
-      group_size: -1
-      dynamic: true
-      scale_dtype: "bfloat16"
 
 
 spec:
@@ -59,7 +51,7 @@ spec:
       alpha: 0.9
       scale_min: 1e-5
       symmetric: False
-      enable_subgraph_type: ["ov", "up-down"]
+      enable_subgraph_type: [ "ov", "up-down" ]
 
     - type: "quarot"
       online: True
@@ -71,22 +63,22 @@ spec:
       alpha: 0.9
       scale_min: 1e-5
       symmetric: False
-      enable_subgraph_type: ["norm-linear"]
-  
+      enable_subgraph_type: [ "norm-linear" ]
+
     - type: "autoround_quant"
       iters: 400
       enable_minmax_tuning: True
       enable_round_tuning: True
       strategies:
-          - qconfig: *default_w8a8_dynamic
-            exclude: 
+        - qconfig: *default_w8a8_dynamic
+          exclude:
             - "*.up_proj"
             - "*.gate_proj"
             - "*.o_proj"
             - "model.layers.{1,3,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26}.mlp.down_proj"
 
-          - qconfig: *default_w4a4_dynamic
-            include: 
+        - qconfig: *default_w4a4_dynamic
+          include:
             - "*.up_proj"
             - "*.gate_proj"
             - "*.o_proj"
@@ -95,7 +87,7 @@ spec:
   save:
     - type: "ascendv1_saver"
       part_file_size: 4
-  
+
   dataset: laos_calib.jsonl
 
 ```

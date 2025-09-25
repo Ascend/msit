@@ -10,8 +10,8 @@
 
 ### 作为Processor使用：
 
-```python
-，# AutoRound支持混合量化，即对不同的层使用不同的量化配置，这里以 W8A8 和 W4A4 混合量化为例
+```yaml
+# AutoRound支持混合量化，即对不同的层使用不同的量化配置，这里以 W8A8 和 W4A4 混合量化为例
 # W8A8 动态量化配置
 default_w8a8_dynamic: &default_w8a8_dynamic
   weight:
@@ -20,17 +20,13 @@ default_w8a8_dynamic: &default_w8a8_dynamic
     symmetric: true           # 是否启用对称量化
     method: "autoround"       # 权重量化方法：AutoRound算法，即包含参数训练的权重量化
     ext:
-      group_size: 256         # 量化组大小
+      group_size: 256         # 量化组大小，分组将在待量化nn.Linear的input_features维度进行，该值必须能够被其整除
       scale_dtype: "bfloat16" # 缩放因子数据类型
   act:
     scope: "per_token"        # 激活值量化范围
     dtype: "int8"             # 激活值量化数据类型
     symmetric: true           # 是否启用对称量化
     method: "minmax"          # 激活值量化方法：MinMax算法
-    ext:
-      group_size: -1          # 组大小：-1表示不使用分组，当前激活量化仅支持per-token
-      dynamic: true           # 是否启用动态量化
-      scale_dtype: "bfloat16" # 缩放因子数据类型
 
 # W4A4 动态量化配置模板  
 default_w4a4_dynamic: &default_w4a4_dynamic
@@ -45,12 +41,8 @@ default_w4a4_dynamic: &default_w4a4_dynamic
   act:
     scope: "per_token"
     dtype: "int4"
-    symmetric: true 
+    symmetric: true
     method: "minmax"
-    ext:
-      group_size: -1
-      dynamic: true
-      scale_dtype: "bfloat16"
 
 
 spec:
@@ -60,30 +52,76 @@ spec:
       enable_minmax_tuning: True  # 是否启用最小最大值调优
       enable_round_tuning: True   # 是否启用舍入调优
       strategies:
-          # 策略1：除 up_proj、gate_proj 和 o_proj 层外，其余层均应用 W8A8 量化。
-          - qconfig: *default_w8a8_dynamic
-            exclude: 
+        # 策略1：除 up_proj、gate_proj 和 o_proj 层外，其余层均应用 W8A8 量化。
+        - qconfig: *default_w8a8_dynamic
+          exclude:
             - "*.up_proj"
             - "*.gate_proj"
             - "*.o_proj"
-          # 策略2：对up_proj、gate_proj、o_proj层使用W4A4量化
-          - qconfig: *default_w4a4_dynamic
-            include: 
+        # 策略2：对up_proj、gate_proj、o_proj层使用W4A4量化
+        - qconfig: *default_w4a4_dynamic
+          include:
             - "*.up_proj"
             - "*.gate_proj"
             - "*.o_proj"
 
 ```
 
-### 参数说明
+## 配置字段详解
 
-| 字段名               | 作用                   | 数据类型 | 默认值 | 说明                                                                                                  |
-| -------------------- | ---------------------- | -------- | ------ | ----------------------------------------------------------------------------------------------------- |
-| type                 | 处理器类型标识         | string   | -      | 固定值"autoround_quant"，用于标识该对象为 AutoRound 处理器。                                         |
-| iters                | 优化迭代次数           | int      | 10     | 迭代次数，必须大于0。                                                                                 |
-| enable_minmax_tuning | 是否启用最小最大值调优 | bool     | True   | 是否启用最小最大值调优，True表示启用，False表示不启用。                                               |
-| enable_round_tuning  | 是否启用舍入调优       | bool     | True   | 是否启用舍入调优，True表示启用，False表示不启用。                                                     |
-| strategies           | 量化策略               | list     | -      | 用于指定量化策略，支持int4和int8混合量化策略，量化粒度支持权重per_group和per-channel、激活per_token。 |
+| 字段名 | 作用 | 类型 | 说明 | 默认值 |
+|--------|------|------|------|--------|
+| type | 处理器类型标识 | `string` | 固定值，用于标识这是一个AutoRound量化处理器 | `"autoround_quant"` |
+| iters | 优化迭代次数 | `int` | 迭代次数，必须大于0，影响优化效果和计算时间 | `10` |
+| enable_minmax_tuning | 是否启用最小最大值调优 | `bool` | 是否启用最小最大值调优，True表示启用，False表示不启用 | `true` |
+| enable_round_tuning | 是否启用舍入调优 | `bool` | 是否启用舍入调优，True表示启用，False表示不启用 | `true` |
+| strategies | 量化策略配置 | `array[object]` | 用于指定量化策略，支持int4和int8混合量化策略 | 见下方详细配置 |
+
+#### strategies (量化策略配置)
+
+**作用**: 配置不同层的量化策略，支持混合量化。
+
+| 字段名 | 作用 | 类型 | 说明 | 示例值 |
+|--------|------|------|------|--------|
+| qconfig | 量化配置参数 | `object` | 包含激活值量化和权重量化的详细配置 | 见下方详细配置 |
+| include | 包含的层模式 | `array[string]` | 支持通配符匹配，指定要量化的层 | `["*"]`, `["*self_attn*"]` |
+| exclude | 排除的层模式 | `array[string]` | 支持通配符匹配，优先级高于include | `["*down_proj*"]` |
+
+#### qconfig.act (激活值量化配置)
+
+**作用**: 配置激活值的量化参数。
+
+| 参数名 | 作用 | 可选值 | 说明 | 默认值 |
+|--------|------|--------|------|--------|
+| scope | 量化范围 | `"per_token"` | 每个token独立参数（动态量化），AutoRound目前仅支持per_token | `"per_token"` |
+| dtype | 量化数据类型 | `"int8"`, `"int4"` | 8位/4位整数量化 | `"int8"` |
+| symmetric | 是否对称量化 | `true` | 对称量化，零点为0，AutoRound激活值量化仅支持对称量化 | `true` |
+| method | 量化方法 | `"minmax"` | 激活值量化方法：MinMax算法 | `"minmax"` |
+
+#### qconfig.weight (权重量化配置)
+
+**作用**: 配置权重的量化参数。
+
+| 参数名 | 作用 | 可选值 | 说明 | 默认值 |
+|--------|------|--------|------|--------|
+| scope | 量化范围 | `"per_channel"`, `"per_group"` | per_channel: 每个通道独立参数<br/>per_group: 每个组独立参数，AutoRound权重量化不支持per_tensor | `"per_group"` |
+| dtype | 量化数据类型 | `"int8"`, `"int4"` | 8位/4位整数量化 | `"int8"` |
+| symmetric | 是否对称量化 | `true`, `false` | true: 对称量化，零点为0<br/>false: 非对称量化，零点可调整 | `true` |
+| method | 量化方法 | `"autoround"` | 权重量化方法：AutoRound算法，即包含参数训练的权重量化 | `"autoround"` |
+| ext | 扩展配置 | `object` | 包含AutoRound特有的配置参数 | 见下方详细配置 |
+
+#### ext (AutoRound扩展配置)
+
+**作用**: 配置AutoRound算法特有的参数。
+
+| 参数名 | 作用 | 类型 | 说明 | 示例值 |
+|--------|------|------|------|--------|
+| group_size | 量化组大小 | `int` | 分组量化的大小，必须能被待量化nn.Linear层的input_features维度整除 | `256` |
+| scale_dtype | 缩放因子数据类型 | `string` | 缩放因子的数据类型，影响精度和内存占用 | `"bfloat16"` |
+
+## 层过滤机制
+
+层过滤机制用于指定哪些层需要量化，支持include和exclude模式匹配。详细的过滤规则、匹配模式、示例说明和常见层名模式请参考 [LinearQuantProcess层过滤机制详解](../../features/linear_quant.md#层过滤机制详解)。
 
 ## 原理与实现
 
@@ -211,3 +249,16 @@ class AutoroundQuantProcessor(AutoSessionProcessor):
 
 - **现象**：量化后模型精度下降超过预期。
 - **解决方案**：增加优化步数，调整量化配置，减少使用w4a4量化的层数，或使用更多更优质的校准数据。
+
+### 3. group_size配置错误
+
+- **现象**：在量化过程中抛出了shape相关的异常如： shape '[-1, 257]' is invalid for input of size 512。
+- **原因**：group_size参数必须能够被待量化nn.Linear层的input_features维度整除，否则会导致分组量化失败。
+- **解决方案**：
+  - 检查模型各层的input_features维度，确保group_size能够被其整除
+  - 常见的input_features维度包括：4096、8192、11008等
+  - 推荐的group_size值：128、256、512等，这些值通常能够被大多数层的input_features整除
+
+### 4. 层匹配告警
+
+层匹配告警的处理机制与LinearQuantProcess相同。当include/exclude模式未匹配到任何层时，工具会进行告警。详细的常见匹配失败原因和排查步骤请参考 [LinearQuantProcess层匹配告警](../../features/linear_quant.md#层匹配告警)。

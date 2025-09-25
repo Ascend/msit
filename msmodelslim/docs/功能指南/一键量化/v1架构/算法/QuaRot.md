@@ -3,7 +3,8 @@
 ## 背景和作用
 
 - **来源**：学术研究/业界 proposed 方法。
-- **概述**：QuaRot (Quantization with Rotation) 是一种用于大语言模型量化的创新算法，通过数学变换有效抑制激活张量中的异常值。该算法通过对权重和激活值进行特定的旋转变换，将异常值“分散”到多个通道中，从而在量化前显著平滑数据的分布，有效降低量化误差。
+- **概述**：QuaRot (Quantization with Rotation)
+  是一种用于大语言模型量化的创新算法，通过数学变换有效抑制激活张量中的异常值。该算法通过对权重和激活值进行特定的旋转变换，将异常值“分散”到多个通道中，从而在量化前显著平滑数据的分布，有效降低量化误差。
 - **核心思想**：QuaRot 的核心思想是应用一个精心构造的正交变换（旋转矩阵），使得变换后的激活张量在每个通道上的最大值尽可能均衡，从而避免单个通道因存在极端异常值而需要过大的缩放因子，进而提升整体量化精度。
 
 ## 使用方式
@@ -13,20 +14,20 @@
 ```yaml
 - type: "quarot"                         # 固定为 `quarot`，用于指定 Processor 类型。
   online: False                          # 控制是否启用在线旋转，默认为 False。
-  block_size: -1                         # 整数, 取值范围为-1或2的幂次方，如果大于0必须为2的幂，表示启用块对角矩阵时每个块的大小，若为-1，表示不进行块对角矩阵处理.
-  max_tp_size: 4                         # 整数，默认为4，该配置项仅在启用在线旋转时生效。最大张量并行大小，必须大于0且为2的幂，拉起模型时设置的tp值必须<=max_tp_size
-  down_proj_online_layers: []            # 整数列表，默认为空。用于指定哪些层的down_proj使用在线旋转
+  block_size: -1                         # 整数, 取值范围为-1或大于0的2的幂，表示启用块对角矩阵时每个块的大小，若为-1，表示不进行块对角矩阵处理。
+  max_tp_size: 4                         # 整数，默认为4，该配置项仅在启用在线旋转时生效。最大张量并行大小，必须大于0且为2的幂或等于1，拉起模型时设置的tp值必须<=max_tp_size。
+  down_proj_online_layers: [ ]            # 整数列表，默认为空。用于指定哪些层的down_proj使用在线旋转。
 ```
 
-### 参数说明
+## 配置字段详解
 
-| 字段名                  | 作用                     | 数据类型  | 默认值 | 说明                                                                                                    |
-| ----------------------- | ------------------------ | --------- | ------ | ------------------------------------------------------------------------------------------------------- |
-| type                    | 处理器类型标识           | string    | -      | 固定值"quarot"，用于标识该对象为 QuaRot 处理器。                                                        |
-| online                  | 在线旋转开关             | bool      | False  | 是否启用在线旋转，True表示使用在线旋转，False表示不使用。                                               |
-| block_size              | 旋转矩阵的对角块大小     | int       | -1     | 旋转矩阵的对角块大小，取值范围为-1或2的幂次方，如果大于0必须为2的幂，若为-1，表示不进行块对角矩阵处理。 |
-| max_tp_size             | 最大张量并行大小         | int       | 4      | 最大张量并行大小，必须大于0且为2的幂，仅在启用在线旋转时生效，拉起模型时设置的tp值必须<=max_tp_size。                           |
-| down_proj_online_layers | 指定使用在线旋转的down层 | list[int] | []     | 用于指定哪些层的down_proj使用在线旋转，类型为由层索引组成的列表，默认为空。         
+| 字段名 | 作用 | 类型 | 说明 | 默认值 |
+|--------|------|------|------|--------|
+| type | 处理器类型标识 | `string` | 固定值，用于标识这是一个QuaRot量化处理器 | `"quarot"` |
+| online | 在线旋转开关 | `bool` | 是否启用在线旋转，True表示使用在线旋转，False表示不使用 | `false` |
+| block_size | 旋转矩阵的对角块大小 | `int` | 旋转矩阵的对角块大小，取值范围为-1或大于0的2的幂，若为-1表示不进行块对角矩阵处理 | `-1` |
+| max_tp_size | 最大张量并行大小 | `int` | 该配置项仅在启用在线旋转时生效，最大张量并行大小，必须大于0且为2的幂或等于1 | `4` |
+| down_proj_online_layers | 指定使用在线旋转的down层 | `array[int]` | 用于指定哪些层的down_proj使用在线旋转，类型为由层索引组成的列表 | `[]` |
 
 ## 原理和实现
 
@@ -35,11 +36,12 @@
 1. **核心概念**：
    QuaRot 采用正交旋转矩阵**（如 Hadamard 矩阵）对模型权重和激活值进行变换。正交矩阵满足 Q × Qᵀ = I 的关键性质，确保变换前后模型数学等价。
 2. **旋转变换操作：**
-   对权重矩阵 W 应用变换：W' =  Qᵀ × W
+   对权重矩阵 W 应用变换：W' = Qᵀ × W
    对激活值 X 应用变换：X' = X × Q
    变换保持计算等价：X' × W' = (X × Q) × (Qᵀ × W) = X × W
 3. **计算不变性**：
-   旋转变换保持 Transformer 各层的输入-输出映射关系不变。即使层间包含 RMSNorm 操作，因 RMSNorm(X) = RMSNorm(X × Qᵀ) × Q，计算不变性依然成立。
+   旋转变换保持 Transformer 各层的输入-输出映射关系不变。即使层间包含 RMSNorm 操作，因 RMSNorm(X) = RMSNorm(X × Qᵀ) ×
+   Q，计算不变性依然成立。
 4. **优化效果**：
    通过旋转重新分布参数，有效抑制激活值中的异常值，使数值分布更平滑，显著降低后续量化操作的误差，为低比特量化奠定基础。
 
@@ -88,7 +90,7 @@
 class QuaRotAdapter:
     # 获取模型隐藏层维度信息
     def get_hidden_dim(self) -> int: ...
-  
+
     # 获取模型头维度信息
     def get_head_dim(self) -> int: ...
 
@@ -97,22 +99,22 @@ class QuaRotAdapter:
 
     # 获取获取键值头数量
     def get_num_key_value_heads(self) -> int: ...
-  
+
     # 获取模型lm_head层名称
     def get_lm_head(self) -> str: ...
-  
+
     # 获取模型pre_head_layernorm层名称
     def get_pre_head_layernorm(self) -> str: ...
-  
+
     # 获取模型embedding层名称
     def get_embedding(self) -> str: ...
 
     # 获取单个decoder层对应的norm_linear对
     def get_layer_wise_norm_liner_pair(self, decoder_module: nn.Module) -> Dict[nn.Module, List[nn.Module]]: ...
-  
+
     # 获取单个decoder层对应的ov_pair对
     def get_layer_wise_ov_pair(self, decoder_module: nn.Module) -> Dict[nn.Module, List[nn.Module]]: ...
-  
+
     # # 获取单个decoder层对应的up_down对
     def get_layer_wise_up_down_pair(self, decoder_module: nn.Module) -> Dict[nn.Module, List[nn.Module]]: ...
 
@@ -121,22 +123,53 @@ class QuaRotAdapter:
 ### 适配步骤
 
 - **前置要求**：
-  - 确保所有返回的模块引用都是实际模型中的模块对象。
-  - 模块路径必须与model.named_modules()返回的路径完全一致。
+    - 确保所有返回的模块引用都是实际模型中的模块对象。
+    - 模块路径必须与model.named_modules()返回的路径完全一致。
 - **步骤**：
-  1. 模型适配器继承 `QuaRotAdapter`接口，并实现所有抽象方法，可参考 `msmodelslim/model/qwen3.py`。
-  2. 提供模型全局结构信息：`get_hidden_dim()`、`get_head_dim()`、`get_num_attention_heads()`、`get_num_key_value_heads()`。
-  3. 提供decoder外部的模型结构信息：`get_lm_head()`、`get_pre_head_layernorm()`、`get_embedding()`。
-  4. 提供decoder内部的模型结构信息：`get_layer_wise_norm_liner_pair()`、`get_layer_wise_ov_pair()`、`get_layer_wise_up_down_pair()`。
+    1. 模型适配器继承 `QuaRotAdapter`接口，并实现所有抽象方法，可参考 `msmodelslim/model/qwen3.py`。
+    2. 提供模型全局结构信息：`get_hidden_dim()`、`get_head_dim()`、`get_num_attention_heads()`、`get_num_key_value_heads()`。
+    3. 提供decoder外部的模型结构信息：`get_lm_head()`、`get_pre_head_layernorm()`、`get_embedding()`。
+    4. 提供decoder内部的模型结构信息：`get_layer_wise_norm_liner_pair()`、`get_layer_wise_ov_pair()`、
+       `get_layer_wise_up_down_pair()`。
 
 ### 适用范围与局限性
 
-- **模型结构限制**：当前的适配器仅支持Qwen3-dense模型类似结构，模型必须基于Transformer decoder架构，包含标准的自注意力机制和前馈网络(FFN)。
+- **模型结构限制**：当前的适配器仅支持Qwen3-dense模型类似结构，模型必须基于Transformer
+  decoder架构，包含标准的自注意力机制和前馈网络(FFN)。
 - **张量并行限制**：若在配置中启用了在线旋转，在使用推理引擎以TP并行的方式进行部署时，需要保证tp_size为2的幂，并且tp_size需要小于等于Quarot的配置参数max_tp_size，否则必然导致精度异常。
-- **在线旋转限制**：使用在线旋转通常可以获得更好的精度，但需要在部署时插入在线旋转的算子，这依赖于推理框架的支持，也会一定程度降低性能，在推理引擎都支持的背景下 ，用户需要自行权衡精度与性能。
+- **在线旋转限制**：使用在线旋转通常可以获得更好的精度，但需要在部署时插入在线旋转的算子，这依赖于推理框架的支持，也会一定程度降低性能，在推理引擎都支持的背景下
+  ，用户需要自行权衡精度与性能。
 
 ## 常见问题排查
 
-1. **旋转矩阵创建失败**
-   - **现象**：输入模型的维度暂未被支持，导致旋转矩阵创建失败。
-   - **解决方案**：请先确定指定维度的 Hadamard 矩阵存在，参考 `msmodelslim/quant/processor/quarot/hadamard_txt`添加特定维度的矩阵，并且在 `msmodelslim/quant/processor/quarot/hadamard.py`进行补充。
+### 1. 旋转矩阵创建失败
+
+- **现象**：输入模型的维度暂未被支持，导致旋转矩阵创建失败。
+- **解决方案**：请先确定指定维度的 Hadamard 矩阵存在，参考 `msmodelslim/quant/processor/quarot/hadamard_txt` 添加特定维度的矩阵，并且在 `msmodelslim/quant/processor/quarot/hadamard.py` 进行补充。
+
+### 2. 张量并行配置错误
+
+- **现象**：在使用推理引擎以TP并行的方式进行部署时出现精度异常。
+- **原因**：tp_size不是2的幂，或者tp_size大于QuaRot配置的max_tp_size。
+- **解决方案**：
+  - 确保tp_size为2的幂（如1、2、4、8等）
+  - 确保tp_size ≤ max_tp_size
+  - 检查推理引擎是否支持在线旋转算子
+
+### 3. 在线旋转性能问题
+
+- **现象**：启用在线旋转后推理性能下降明显。
+- **原因**：在线旋转需要插入额外的算子，会增加计算开销。
+- **解决方案**：
+  - 根据精度要求权衡是否启用在线旋转
+  - 考虑使用离线旋转（online: false）来平衡精度和性能
+  - 确保推理框架对在线旋转算子有良好支持
+
+### 4. 模型适配失败
+
+- **现象**：模型适配器无法正确识别模型结构，导致旋转操作插入失败。
+- **原因**：模型结构不兼容或适配器实现不完整。
+- **解决方案**：
+  - 确保模型基于Transformer decoder架构
+  - 检查适配器是否正确实现了所有QuaRotAdapter接口方法
+  - 参考 `msmodelslim/model/qwen3.py` 的实现示例
