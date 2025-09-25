@@ -38,9 +38,12 @@ class SpeculativeArgs:
         self.n_nodes = args.num_nodes
         self.n_devices = args.num_npus
         self.redundant_experts = args.num_redundancy_expert
+        
+        # 新生成的专家配置表中 分给共享专家的卡数
         self.n_share_expert_devices = args.share_expert_devices
-        self.n_share_expert_devices = 0
-        self.n_share_expert_devices_files = args.share_expert_devices
+
+        # 输入的专家热点数据中 分给共享专家的卡数 对应的卡rank靠前 在统计共享专家热度时应当舍去
+        self.n_share_expert_devices_of_input = 0
 
         if "config_json" in args:
             self.process_split_format_args(args)
@@ -94,14 +97,14 @@ class SpeculativeArgs:
             check_int(self.n_selected_expert, min_value=1, param_name="num_of_selected_expert")
         else:
             raise ValueError("num_of_selected_expert in model_gen_config.json should be valued list.")
-        n_shared_expert_devices_files = config.get("num_dangling_shared_experts", 0)
-        check_int(n_shared_expert_devices_files, param_name="num_dangling_shared_experts")
-        self.n_share_expert_devices_files = max(n_shared_expert_devices_files, 0)
+        n_share_expert_devices_of_input = config.get("num_dangling_shared_experts", 0)
+        check_int(n_share_expert_devices_of_input, param_name="num_dangling_shared_experts")
+        self.n_share_expert_devices_of_input = max(n_share_expert_devices_of_input, 0)
 
         eplb_map_path = config.get("eplb_expert_map_file", None)
         if eplb_map_path is not None:
             eplb_map_path = get_valid_read_path(eplb_map_path)
-            self.eplb_map = parse_ep_file(eplb_map_path, n_share_expert_devices=self.n_share_expert_devices_files)
+            self.eplb_map = parse_ep_file(eplb_map_path, n_share_expert_devices=self.n_share_expert_devices_of_input)
         else:
             self.eplb_map = None
 
@@ -171,15 +174,16 @@ def process_data(data, args, data_type, topk_data=None):
 
 
 def process_split_data(target_data, args, topk_data):
-    rank_num = len(target_data)
-    target_data = np.concatenate(target_data, axis=-1)
-    length = target_data.shape[0] // args.n_layers * args.n_layers
+    rank_num = len(target_data) - args.n_share_expert_devices_of_input
+    target_data = np.concatenate(target_data[args.n_share_expert_devices_of_input:], axis=-1)
+    iteration = target_data.shape[0] // args.n_layers
+    if iteration <= 1:
+        raise ValueError("Infernece iteration in input data should be larger than 1.")
+    length = iteration * args.n_layers
     target_data = target_data[:length, :]
-    if args.n_experts != target_data.shape[1]:
-        raise ValueError("Shape of exeprt hot does not match num_epxerts in model_gen_config.json.")
-    target_data = target_data.reshape([-1, args.n_layers, args.n_experts])  # iteration, num_layers, total_experts
+
+    target_data = target_data.reshape([iteration, args.n_layers, -1])  # iteration, num_layers, total_experts
     target_data[1:] -= target_data[:-1].copy()  # 相邻取差，data从累加数据变为单次数据
-    iteration = target_data.shape[0]
     heat = target_data.sum(axis=(1, 2))
     threadshold = 2 * rank_num * args.n_selected_expert * args.collection_interval * args.n_layers
     mask = heat > threadshold
@@ -190,7 +194,7 @@ def process_split_data(target_data, args, topk_data):
         topk_length = min(min([data.shape[0] for data in topk_data]), length)
         topk_iteration = topk_length // args.n_layers
         topk_length = topk_iteration * args.n_layers
-        topk_data = np.array([data[:topk_length, :] for data in topk_data[args.n_share_expert_devices_files:]])
+        topk_data = np.array([data[:topk_length, :] for data in topk_data[args.n_share_expert_devices_of_input:]])
 
         # shape: [rank, iteration * layer, topk] -> [iteration * layer, rank, topk]
         topk_data = topk_data.transpose([1, 0, 2])
@@ -226,8 +230,9 @@ def process_split_data(target_data, args, topk_data):
             for j in range(target_data.shape[-1]):
                 dynamic_expert_hot[i, j, :] += target_data[:, i, j]
     else:
-        if dynamic_expert_hot.shape[:2] != args.eplb_map.shape:
-            raise ValueError("eplb_expert_map_file does not match args in model_gen_config.json.")
+        if args.n_experts != np.max(args.eplb_map) + 1 or np.min(args.eplb_map) != 0:
+            raise ValueError("Max or min routing expert idx in eplb map dose not match " \
+                             "num of experts in model_gen_config.json.")
         for i in range(args.n_layers):
             for j in range(target_data.shape[-1]):
                 expert_id = args.eplb_map[i][j]

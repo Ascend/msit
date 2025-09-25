@@ -36,7 +36,7 @@ msit_sub_task_entry_points = [
 
 setup(
     name='msit-elb',
-    version='8.1.0',
+    version='8.2.0',
     description='Deepseek model load balancing affinity expert optimization in static and dynamic scenarios',
     packages=find_packages(), 
     license='Apache-2.0',
