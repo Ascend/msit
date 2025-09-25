@@ -175,6 +175,8 @@ def process_data(data, args, data_type, topk_data=None):
 
 def process_split_data(target_data, args, topk_data):
     rank_num = len(target_data) - args.n_share_expert_devices_of_input
+    if rank_num <= 0:
+        raise ValueError("N_shared_expert_devices should be larger than n_ranks in expert hot data.")
     target_data = np.concatenate(target_data[args.n_share_expert_devices_of_input:], axis=-1)
     iteration = target_data.shape[0] // args.n_layers
     if iteration <= 1:
@@ -194,6 +196,8 @@ def process_split_data(target_data, args, topk_data):
         topk_length = min(min([data.shape[0] for data in topk_data]), length)
         topk_iteration = topk_length // args.n_layers
         topk_length = topk_iteration * args.n_layers
+        if len(topk_data <= args.n_share_expert_devices_of_input):
+            raise ValueError("N_shared_expert_devices should be larger than n_ranks in topk data.")
         topk_data = np.array([data[:topk_length, :] for data in topk_data[args.n_share_expert_devices_of_input:]])
 
         # shape: [rank, iteration * layer, topk] -> [iteration * layer, rank, topk]
