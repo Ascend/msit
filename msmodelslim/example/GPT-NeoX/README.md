@@ -3,11 +3,16 @@
 ## 模型介绍
 - [GPT-NeoX-20B](https://github.com/EleutherAI/gpt-neox)是一个 200 亿参数的自回归语言模型，在 Pile 数据集上训练。它的架构类似于 GPT-3，并且与 GPT-J-6B 的架构几乎相同。其训练数据集包含大量英语文本，反映了该模型的通用性质。
 
-#### GPT-NeoX模型当前已验证的量化方法
-- W8A8量化：GPT-NeoX-20B
- 
-#### 此模型仓已适配的模型版本
-- [GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)
+## 支持的模型版本与量化策略
+
+| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A16 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                                                                                                                                                                 |
+|---------|---------|---------------------------------------------------------------|-----|-------|-------|------|---------|----------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **GPT-NeoX** | GPT-NeoX-20B | [GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)      | ✅ |   |   |   |  |   |   | [W8A8](#gpt-neox-20b-w8a8量化)                                                                                                                                                            |
+
+**说明：**
+- ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
+- 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- 点击量化命令列中的链接可跳转到对应的具体量化命令
 
 ## 环境配置
 
@@ -70,7 +75,7 @@
 - 若加载自定义模型，调用`from_pretrained`函数时要指定`trust_remote_code=True`让修改后的自定义代码文件能够正确的被加载。(请确保加载的自定义代码文件的安全性)
 
 #### GPT-NeoX-20B模型量化
-##### GPT-NeoX-20B w8a8量化
+##### <span id="gpt-neox-20b-w8a8量化">GPT-NeoX-20B W8A8量化</span>
 - 生成GPT-NeoX-20B模型w8a8量化权重，使用自动混合min-max和histogram的激活值量化方式，SmoothQuant加强版算法，自动回退前34层，在NPU上进行运算
   ```shell
   python3 quant_gpt_neox.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --w_bit 8 --a_bit 8 --device_type npu --anti_method m2  --disable_level L34

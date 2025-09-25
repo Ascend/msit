@@ -10,10 +10,13 @@
 
 ### Qwen2-VL模型当前已验证的量化方法
 
-| 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况|
-|------------|-------------|---------|----------------|
-| Qwen2-VL-7B-Instruct | [Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct/tree/main) | W8A8静态量化 | MindIE 2.1.RC1及之后版本支持<br>vLLM Ascend当前不支持 |
-| Qwen2-VL-72B-Instruct | [Qwen2-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-72B-Instruct/tree/main) | W8A8静态量化 | MindIE 2.1.RC1及之后版本支持<br>vLLM Ascend当前不支持 |
+| 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况| 量化命令 |
+|------------|-------------|---------|----------------|---------|
+| Qwen2-VL-7B-Instruct | [Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct/tree/main) | W8A8静态量化 | MindIE 2.1.RC1及之后版本支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#1-qwen2-vl系列) |
+| Qwen2-VL-72B-Instruct | [Qwen2-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-72B-Instruct/tree/main) | W8A8静态量化 | MindIE 2.1.RC1及之后版本支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#1-qwen2-vl系列) |
+
+**说明：**
+- 点击量化命令列中的链接可跳转到对应的具体量化命令。
 
 ## 环境配置
 

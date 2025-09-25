@@ -2,7 +2,18 @@
 
 Open-Sora-Plan V1.2的推理量化依赖于推理工程仓：[MindIE/open_sora_planv1_2](https://modelers.cn/models/MindIE/open_sora_planv1_2)，根据该工程仓完成配置后，使用以下示例代码进行量化。
 
-## Open-Sora-Plan V1.2 W8A8静态量化
+## 支持的模型版本与量化策略
+
+| 模型系列 | 模型版本 | HuggingFace链接 | W8A8 | W8A16 | W4A16 | W4A4 | 稀疏量化 | KV Cache | Attention | 时间步量化 | FA3量化 | 异常值抑制量化 | 量化命令 |
+|---------|---------|---------------------------------------------------------------|-----|-------|-------|------|---------|----------|-----------|----------|----------|----------|----------|
+| **Open-Sora-Plan** | Open-Sora-Plan v1.2 | [Open-Sora-Plan v1.2](https://huggingface.co/LanguageBind/Open-Sora-Plan-v1.2.0) | ✅ | | | | | | | | | | [W8A8静态量化](#open-sora-plan-v12-w8a8静态量化) |
+
+**说明：**
+- ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
+- 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- 点击量化命令列中的链接可跳转到对应的具体量化命令
+
+## <span id="open-sora-plan-v12-w8a8静态量化">Open-Sora-Plan V1.2 W8A8静态量化</span>
 
 ### 量化命令和示例代码
 

@@ -259,7 +259,7 @@ from transformers.models.qwen2.configuration_qwen2 import Qwen2Config
 此处可以参考：[量化脚本（NPU）](#量化脚本npu)
 
 
-3. 启动模型量化任务，并在指定的输出目录获取模型量化参数，量化后权重文件的介绍请参见[量化后权重文件](#量化后权重文件)，若使用MindIE进行后续的推理部署任务，请保存为safetensors格式，具体请参见[大语言模型列表](https://www.hiascend.com/document/detail/zh/mindie/10RC3/whatismindie/mindie_what_0003.html)章节中已适配量化的模型。
+3. 启动模型量化任务，并在指定的输出目录获取模型量化参数，量化后权重文件的介绍请参见[量化后权重文件](#量化后权重文件)，若使用MindIE进行后续的推理部署任务，请保存为safetensors格式，具体请参见[大语言模型列表](https://www.hiascend.com/software/mindie/modellist)章节中已适配量化的模型。
 
 ###  量化后权重文件
 

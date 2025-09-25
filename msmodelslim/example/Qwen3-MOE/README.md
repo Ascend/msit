@@ -4,14 +4,15 @@
 
 - [Qwen3-235B-A22B](https://huggingface.co/Qwen/Qwen3-235B-A22B)、[Qwen3-30B-A3B](https://huggingface.co/Qwen/Qwen3-30B-A3B) Qwen3 是 Qwen 系列中最新一代大型语言模型，提供全面的密集模型和混合专家 (MoE) 模型。Qwen3 基于丰富的训练经验，在推理、指令遵循、代理能力和多语言支持方面取得了突破性进展。其中Qwen3-MoE结构模型典型代表模型有Qwen3-235B-A22B和Qwen3-30B-A3B。
 
-#### Qwen3-MoE模型当前已验证的量化方法
+| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A16 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                                                                                                                                                                 |
+|---------|---------|---------------------------------------------------------------|-----|-------|-------|------|---------|----------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Qwen3-MOE** | Qwen3-30B-A3B | [Qwen3-30B-A3B](https://huggingface.co/Qwen/Qwen3-30B-A3B)   | ✅ |   |   |   |  |   |   | [W8A8](#qwen3-30b-a3b-w8a8-混合量化)                                                                                                                                                    |
+| | Qwen3-235B-A22B | [Qwen3-235B-A22B](https://huggingface.co/Qwen/Qwen3-235B-A22B) | ✅ |   |   |   |  |   |   | [W8A8](#qwen3-235b-a22b-w8a8-混合量化)                                                                                                                                                  |
 
-- W8A8量化：Qwen3-235B-A22B, Qwen3-30B-A3B
-
-#### 此模型仓已适配的模型版本
-
-- [Qwen3-235B-A22B](https://huggingface.co/Qwen/Qwen3-235B-A22B)
-- [Qwen3-30B-A3B](https://huggingface.co/Qwen/Qwen3-30B-A3B)
+**说明：**
+- ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
+- 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- 点击量化命令列中的链接可跳转到对应的具体量化命令
 
 ## 环境配置
 
@@ -55,16 +56,14 @@
 
 #### Qwen3-30B-A3B
 
-##### Qwen3-30B-A3B w8a8 混合量化(Attention:w8a8量化，MoE:w8a8 dynamic量化)
-- 生成Qwen3-30B-A3B模型 w8a8 混合量化权重
+##### <span id="qwen3-30b-a3b-w8a8-混合量化">Qwen3-30B-A3B W8A8混合量化</span>
+生成Qwen3-30B-A3B模型W8A8混合量化权重（Attention:w8a8量化，MoE:w8a8 dynamic量化）
   ```shell
   python3 quant_qwen_moe_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --trust_remote_code True
   ```
-
 #### Qwen3-235B-A22B
-
-##### Qwen3-235B-A22B w8a8 混合量化(Attention:w8a8量化，MoE:w8a8 dynamic量化)
-- 生成Qwen3-235B-A22B模型 w8a8 混合量化权重
+##### <span id="qwen3-235b-a22b-w8a8-混合量化">Qwen3-235B-A22B W8A8混合量化</span>
+生成Qwen3-235B-A22B模型W8A8混合量化权重（Attention:w8a8量化，MoE:w8a8 dynamic量化）
   ```shell
   python3 quant_qwen_moe_w8a8.py --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --trust_remote_code True --rot
   ```
