@@ -103,6 +103,7 @@ class ExpertLoadBalanceCommmand(BaseCommand):
     def handle(self, args, **kwargs) -> None:
         logger.info("===================load balancing algorithm start====================")
         cann_path = os.environ.get("ASCEND_TOOLKIT_HOME", "/usr/local/Ascend/ascend-toolkit/latest")
+        cann_path = check_input_path_legality(cann_path)
         if not os.path.exists(cann_path):
             logger.error("CANN toolkit path does not exist. Please check your environment variables.")
             raise FileNotFoundError(f"CANN toolkit path does not exist: {cann_path}")
