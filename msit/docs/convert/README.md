@@ -1,5 +1,11 @@
 # msit convert功能使用指南
 
+## 🚨 重要通知
+msit convert aie依赖MindIE包中的MindIE-RT后端进行模型转换，由于MindIE 2.2.RC1版本中MindIE-RT已废弃，如使用该版本MindIE，msit convert aie不可用。<br>
+使用MindIE 2.1.RC1版本及之前版本，msit convert aie不受影响。<br>
+msit convert aie功能计划MindStudio 8.3.0版本正式下线。
+
+
 ## 简介
 convert模型转换工具依托ATC（Ascend Tensor Compiler），AOE（Ascend Optimization Engine），MindIE（Mind Inference Engine）推理引擎，提供由ONNX、TensorFlow、Caffe、MindSpore模型至om模型的转换及调优功能。
 
