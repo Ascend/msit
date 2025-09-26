@@ -6,7 +6,7 @@ import subprocess
 import numpy as np 
 from ascend_utils.common.security import safe_delete_path_if_exists, get_valid_write_path, SafeWriteUmask
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantType
-
+from msmodelslim import logger
 
 HIGH_SPARSE_MODE = 1
 LOW_SPARSE_MODE = 0
@@ -56,8 +56,24 @@ def compress_weight_fun(weights, record_detail_root='./', sparse_type=None):
             raise ValueError(f"Invalid sparse type: {sparse_type}")
 
         with SafeWriteUmask(umask=0o077):
-            process = subprocess.Popen(command.split(), shell=False, stdout=subprocess.PIPE)
-            process.wait(timeout=600)
+            process = subprocess.Popen(command.split(), shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            try:
+                stdout, stderr = process.communicate(timeout=600)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                stdout, stderr = process.communicate()
+                logger.warning("Command timeout")
+            if process.returncode != 0:
+                stdout_str = stdout.decode('utf-8', errors='replace').strip() if stdout else None
+                stderr_str = stderr.decode('utf-8', errors='replace').strip() if stderr else None
+
+                msg = ["Command failed (return code: %r)" % process.returncode]
+                if stdout_str:
+                    msg.append("stdout: %r" % stdout_str)
+                if stderr_str:
+                    msg.append("stderr: %r" % stderr_str)
+
+                raise Exception("\n".join(msg))
 
         is_output_exist = os.path.exists(compress_output_path)
         is_index_exist = os.path.exists(compress_index_path)
