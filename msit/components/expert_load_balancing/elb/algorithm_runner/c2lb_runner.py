@@ -53,6 +53,8 @@ class StaticC2lbA3Runner(BaseAlgorithmRunner):
         self.algorithm_type = AlgorithmType.C2LB
 
     def run_algorithm(self, data):
+        if self.args.share_expert_devices != 0:
+            raise ValueError("Input incorrect share expert devices parameters.")
         for period, period_data in data.items():
             if "topk" in period:
                 continue
