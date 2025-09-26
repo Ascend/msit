@@ -29,9 +29,9 @@ from msmodelslim.quant.ir.w16a16s import W16A16sLinear
 class FloatSparseProcessorConfig(AutoProcessorConfig):
     """浮点稀疏处理器配置类：继承自自动处理器配置基类"""
     type: Literal["float_sparse"] = "float_sparse"
-    sparse_ratio: float = Field(default=0.3, ge=0.0, le=1.0, description="稀疏比例")
-    include: List[str] = Field(default_factory=list, description="包含的模块名称")
-    exclude: List[str] = Field(default_factory=list, description="排除的模块名称")
+    sparse_ratio: float = Field(default=0.3, ge=0.0, le=1.0, description="Sparse ratio")
+    include: List[str] = Field(default_factory=list, description="Included module names")
+    exclude: List[str] = Field(default_factory=list, description="Excluded module names")
 
 
 def _warning_unmatched_pattern(name: str, config_set: ConfigSet) -> None:
@@ -105,7 +105,10 @@ class FloatSparseProcessor(AutoSessionProcessor):
         Args:
             request: 批处理请求
         """
-        get_logger().info(f"浮点稀疏预处理模块: {request.name}，浮点稀疏比率: {self.config.sparse_ratio}")
+        get_logger().info(
+            f"Float sparse preprocessing module: {request.name}, "
+            f"float sparse ratio: {self.config.sparse_ratio}"
+        )
         self._install_extract_input_hook(request.name, request.module)
 
     def postprocess(self, request: BatchProcessRequest) -> None:
@@ -115,8 +118,11 @@ class FloatSparseProcessor(AutoSessionProcessor):
         Args:
             request: 批处理请求
         """
-        get_logger().info(f"浮点稀疏后处理模块: {request.name}，浮点稀疏比率: {self.config.sparse_ratio}")
-        
+        get_logger().info(
+            f"Float sparse postprocessing module: {request.name}, "
+            f"float sparse ratio: {self.config.sparse_ratio}"
+        )
+
         # 卸载输入提取hook
         self._uninstall_extract_input_hook()
 
@@ -193,8 +199,8 @@ class FloatSparseProcessor(AutoSessionProcessor):
         # 注册hook并保存句柄
         hook_handle = module.register_forward_hook(forward_hook)
         self.hook_handles[full_name] = hook_handle
-        
-        get_logger().debug(f"为模块 {full_name} 安装了前向 hook")
+
+        get_logger().debug(f"Installed forward hook for module {full_name}")
 
     def _apply_sparse(self, prefix: str, module: nn.Module) -> None:
         """
@@ -213,14 +219,14 @@ class FloatSparseProcessor(AutoSessionProcessor):
                 continue
                 
             admm_pruner = self.admm_pruners[full_name]
-                     
-            # 执行ADMM稀疏
-            get_logger().debug(f"执行ADMM稀疏: {full_name}")
+
+            # Execute ADMM sparsification
+            get_logger().debug(f"Executing ADMM sparsification: {full_name}")
             admm_pruner.fasterprune(
                 sparse_ratio=self.config.sparse_ratio,
             )
-            
-            get_logger().debug(f"完成ADMM稀疏: {full_name}")
+
+            get_logger().debug(f"Completed ADMM sparsification: {full_name}")
 
     def _deploy(self, prefix: str, module: nn.Module) -> None:
         """
@@ -244,7 +250,7 @@ class FloatSparseProcessor(AutoSessionProcessor):
 
             # 将稀疏化后的Linear模块转换为W16A16s量化模块
             self.model.set_submodule(full_name, W16A16sLinear(submodule.weight, submodule.bias))
-            get_logger().debug(f"将模块 {full_name} 替换为 W16A16s 模块")
+            get_logger().debug(f"Replaced module {full_name} with W16A16s module")
 
     def _free_admm_pruners(self) -> None:
         """释放所有ADMM稀疏器的内存"""

@@ -168,7 +168,7 @@ class PrecisionTest:
             self.logger.error("Dataset should be a string")
             return False
         if self.dataset not in supported_dataset:
-            self.logger.error(f"Dataset {self.dataset} is not supported. Use {supported_dataset} instead.")
+            self.logger.error("Dataset %r is not supported. Use %s instead." % (self.dataset, supported_dataset))
             return False
         if self.dataset == DATASET_HUMAN_EVAL:
             try:

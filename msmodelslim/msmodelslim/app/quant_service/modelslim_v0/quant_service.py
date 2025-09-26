@@ -71,7 +71,7 @@ class ModelslimV0QuantService(BaseQuantService):
             torch.npu.set_compile_mode(jit_compile=False)
 
         # handle dataset
-        get_logger().info(f"==========QUANTIZATION: Prepare Dataset==========")
+        get_logger().info(f"==========QUANTIZATION: PREPARE DATASET==========")
         anti_dataset = quant_config.spec.anti_dataset
         calib_dataset = quant_config.spec.calib_dataset
         batch_size = quant_config.spec.batch_size
@@ -93,7 +93,7 @@ class ModelslimV0QuantService(BaseQuantService):
             get_logger().info(f"prepare anti_data from {anti_dataset} success")
 
         # load model
-        get_logger().info(f"==========QUANTIZATION: Load Model==========")
+        get_logger().info(f"==========QUANTIZATION: LOAD MODEL==========")
         model = model_adapter.load_model(device=device)
         get_logger().info(f"load model from {model_adapter.model_path} success")
 
