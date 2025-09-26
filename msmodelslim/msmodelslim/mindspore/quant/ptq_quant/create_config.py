@@ -35,4 +35,4 @@ def generate_config(config_file, name_list):
     for name in name_list:
         raw_data[name] = {"quant": True}
     json_safe_dump(raw_data, config_file, indent=4)
-    logger.info("Config file generated successfully: %s", config_file)
+    logger.info("Config file generated successfully: %r", config_file)

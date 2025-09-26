@@ -888,10 +888,12 @@ class Calibrator(object):
     def _init_model_torch_dtype(self, model):
         if hasattr(model.config, 'torch_dtype'):
             if model.dtype != model.config.torch_dtype:
-                self.logger.warning(f'The model dtype {model.dtype} is not consistent with the ' + \
-                                    f'model.config.torch_dtype {model.config.torch_dtype}. ' + \
-                                    f'The model will be regarded as {model.config.torch_dtype}'
-                                    f' type in subsequent process.')
+                self.logger.warning(
+                    'The model dtype %r is not consistent with the '
+                    'model.config.torch_dtype %r. '
+                    'The model will be regarded as %r type in subsequent process.' %
+                    (model.dtype, model.config.torch_dtype, model.config.torch_dtype)
+                )
             return model.config.torch_dtype
         else:
             return model.dtype

@@ -110,7 +110,7 @@ def set_logger_level(level="info"):
     if level.lower() in LOG_LEVEL:
         logger.setLevel(LOG_LEVEL.get(level.lower()))
     else:
-        logger.warning("Set %s log level failed.", level)
+        logger.warning("Set %r log level failed.", level)
 
 
 def progress_bar(iterable, desc: str = None, total: int = -1, interval: int = 1):
