@@ -26,7 +26,7 @@ with open(os.path.join(abs_path, "requirements.txt")) as f:
 
 setup(
     name='msmodelslim',
-    version='7.0.0c912',
+    version='8.2.0',
     description='msModelSlim, MindStudio ModelSlim Tools',
     long_description_content_type='text/markdown',
     url=config.get('URL', 'repository_url'),
