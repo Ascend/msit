@@ -107,7 +107,7 @@
   ```
 - 若加载自定义模型，调用`from_pretrained`函数时要指定`trust_remote_code=True`让修改后的自定义代码文件能够正确的被加载。(请确保加载的自定义代码文件的安全性)
   
-#### 1. Qwen1系列
+#### 1. Qwen系列
 ##### <span id="qwen1-14b-w8a8量化">Qwen-14b W8A8量化</span>
 在`{浮点权重路径}/modeling_qwen.py`中将`SUPPORT_CUDA = torch.cuda.is_available()`手动设置为`SUPPORT_CUDA = False`；
 生成Qwen-14b模型量化权重，antioutlier使用m2算法配置，使用min-max量化方式，在CPU上进行运算
