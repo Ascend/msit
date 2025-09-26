@@ -1,3 +1,112 @@
+ref:
+  - from: mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].dp
+    as: p_dp
+    default: 1
+  - from: mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].tp
+    as: p_tp
+    default: 1
+  - from: mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].cp
+    as: p_cp
+    default: 1
+  - from: mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].sp
+    as: p_sp
+    default: 1
+  - from: mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].pp
+    as: p_pp
+    default: 1
+  - from: mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].moe_ep
+    as: p_moe_ep
+    default: 1
+  - from: mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].moe_tp
+    as: p_moe_tp
+    default: 1
+  - from: deploy_config.single_p_instance_pod_num
+    as: single_p_instance_pod_num
+  - from: deploy_config.p_pod_npu_num
+    as: p_pod_npu_num
+  - from: mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].dp
+    as: d_dp
+    default: 1
+  - from: mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].tp
+    as: d_tp
+    default: 1
+  - from: mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].cp
+    as: d_cp
+    default: 1
+  - from: mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].sp
+    as: d_sp
+    default: 1
+  - from: mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].pp
+    as: d_pp
+    default: 1
+  - from: mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].moe_ep
+    as: d_moe_ep
+    default: 1
+  - from: mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].moe_tp
+    as: d_moe_tp
+    default: 1
+  - from: deploy_config.single_d_instance_pod_num
+    as: single_d_instance_pod_num
+  - from: deploy_config.d_pod_npu_num
+    as: d_pod_npu_num
+  - from: mindie_server_prefill_config.BackendConfig.ModelDeployConfig.maxSeqLen
+    as: max_seq_len
+
+ref.p_dp:
+  expected:
+    case: "${ref.p_dp} * ${ref.p_tp} * ${ref.p_cp} * ${ref.p_pp} == ${ref.single_p_instance_pod_num} * ${ref.p_pod_npu_num}"
+    reason: "P实例并行策略要求保证dp * tp * cp * pp = p_pod_npu_num * single_p_instance_pod_num，其中没配置的并行策略默认值为1"
+    severity: high
+
+ref.p_sp:
+  expected:
+    type: enum
+    value: [1, "${ref.p_tp}"]
+    reason: "P实例并行策略中，sp取值只能等于1或者等于tp取值"
+    severity: high
+
+ref.max_seq_len:
+  expected:
+    if: "${ref.max_seq_len} <= 18000"
+    then:
+      case: "${ref.p_dp} == 2 and ${ref.p_tp} == 8 and ${ref.p_sp} == 1"
+      reason: "maxSeqLen小于等于18000时,P实例并行策略建议设置为：dp=2, tp=8, sp=1，其中没配置的并行策略默认值为1"
+      severity: low
+    else:
+      case: "${ref.p_cp} == 2 and ${ref.p_tp} == 8 and ${ref.p_sp} == 8"
+      reason: "maxSeqLen大于18000时，D实例并行策略建议设置为：cp=2, tp=8, sp=8，其中没配置的并行策略默认值为1"
+      severity: low
+
+ref.p_moe_ep:
+  expected:
+    case: "${ref.p_moe_ep} * ${ref.p_moe_tp} == ${ref.single_p_instance_pod_num} * ${ref.p_pod_npu_num}"
+    reason: "P实例并行策略中，专家并行策略需要满足moe_ep * moe_tp = p_pod_npu_num * single_p_instance_pod_num，其中没配置的并行策略默认值为1"
+    severity: high
+
+ref.p_moe_tp:
+  expected:
+    if: "${ref.max_seq_len} <= 18000"
+    then:
+      case: "${ref.p_moe_ep} == 4 and ${ref.p_moe_tp} == 4"
+      reason: "maxSeqLen小于等于18000时，P实例专家并行策略建议设置为：moe_ep=4, moe_tp=4, 其中没配置的并行策略默认值为1"
+      severity: low
+    else:
+      case: "${ref.p_moe_ep} == 16 and ${ref.p_moe_tp} == 1"
+      reason: "maxSeqLen大于18000时，P实例专家并行策略建议设置为：moe_ep=16, moe_tp=1, 其中没配置的并行策略默认值为1"
+      severity: low
+
+ref.d_dp:
+  expected:
+    case: "${ref.d_tp} == 1 and ${ref.d_cp} == 1 and ${ref.d_pp} == 1 and ${ref.d_sp} == 1 and ${ref.d_dp} == ${ref.single_d_instance_pod_num} * ${ref.d_pod_npu_num}"
+    reason: "D实例并行策略要求保证dp = d_pod_npu_num * single_d_instance_pod_num, tp = 1, cp = 1, pp = 1, sp = 1，其中没配置的并行策略默认值为1"
+    severity: high
+
+ref.d_moe_ep:
+  expected:
+    case: "${ref.d_moe_ep} == ${ref.single_d_instance_pod_num} * ${ref.d_pod_npu_num} and ${ref.d_moe_tp} == 1"
+    reason: "D实例并行策略中，专家并行策略需要满足moe_ep = d_pod_npu_num * single_d_instance_pod_num, moe_tp = 1，其中没配置的并行策略默认值为1"
+    severity: high
+
 deploy_config:
   p_instances_num:
     expected:
@@ -37,10 +146,8 @@ deploy_config:
     severity: high
   prefill_distribute_enable:
     expected:
-      type: eq
-      value: 0
-    reason: "prefill_distribute_enable A3场景应该是 0"
-    severity: high
+      case: alert
+      reason: "该参数需要以实际MindIE版本配套的user_config_base_A3.json中该参数默认值为准"
   decode_distribute_enable:
     expected:
       type: eq
@@ -56,8 +163,8 @@ deploy_config:
   mindie_env_path:
     expected:
       type: eq
-      value: "./conf/mindie_env_a3.json"
-    reason: "A2场景下默认应该是./conf/mindie_env_a3.json，在版本配套的config没有mindie_env_path字段时忽略此检查"
+      value: "'./conf/mindie_env_a3.json'"
+    reason: "A3场景下默认应该是./conf/mindie_env_a3.json，在版本配套的config没有mindie_env_path字段时忽略此检查"
     severity: low
 
 mindie_ms_controller_config:
@@ -106,8 +213,8 @@ mindie_ms_coordinator_config:
       expected:
         type: eq
         value: 4096
-      reason: "single_node_max_requests需要为4096，表示单个server节点可处理的最大请求数"
-      severity: high
+      reason: "single_node_max_requests建议设置为4096，表示单个server节点可处理的最大请求数"
+      severity: medium
     max_requests:
       expected:
         type: ">="
@@ -156,10 +263,8 @@ mindie_server_prefill_config:
       severity: low
     distDPServerEnabled:
       expected:
-        type: eq
-        value: false
-      reason: "distDPServerEnabled应该是false"
-      severity: high
+        case: alert
+        reason: "该参数需要以实际MindIE版本配套的user_config.json中该参数默认值为准"
   BackendConfig:
     npuDeviceIds:
       expected:
@@ -171,20 +276,18 @@ mindie_server_prefill_config:
       expected:
         type: eq
         value: 1
-      reason: "tokenizerProcessNumber应该是1"
-      severity: high
+      reason: "tokenizerProcessNumber建议设置为1"
+      severity: medium
     multiNodesInferEnabled:
       expected:
-        type: eq
-        value: false
-      reason: "A3场景下P节点multiNodesInferEnabled应该是false"
-      severity: high
+        case: alert
+        reason: "该参数需要以实际MindIE版本配套的user_config.json中该参数默认值为准"
     ModelDeployConfig:
       maxSeqLen:
         expected:
-          type: ">"
+          type: ">="
           value: ${mindie_server_prefill_config.BackendConfig.ModelDeployConfig.maxInputTokenLen}
-        reason: "maxSeqLen应该大于maxInputTokenLen，表示输入token加输出token的上限"
+        reason: "maxSeqLen应该大于等于maxInputTokenLen，表示输入token加输出token的上限"
         severity: high
       maxInputTokenLen:
         expected:
@@ -205,30 +308,6 @@ mindie_server_prefill_config:
               value: 16
             reason: "A3场景下P节点worldSize应该是16"
             severity: high
-          dp:
-            expected:
-              type: eq
-              value: ${deploy_config.single_p_instance_pod_num} * ${deploy_config.p_pod_npu_num} // ${mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].tp}
-            reason: "mindie_server_prefill_config中并行策略需要调整为dp * tp = p_pod_npu_num * single_p_instance_pod_num"
-            severity: high
-          tp:
-            expected:
-              type: eq
-              value: ${deploy_config.single_p_instance_pod_num} * ${deploy_config.p_pod_npu_num} // ${mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].dp}
-            reason: "mindie_server_prefill_config中并行策略需要调整为dp * tp = p_pod_npu_num * single_p_instance_pod_num"
-            severity: high
-          moe_ep:
-            expected:
-              type: eq
-              value: ${deploy_config.single_p_instance_pod_num} * ${deploy_config.p_pod_npu_num} // ${mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].moe_tp}
-            reason: "mindie_server_prefill_config中并行策略需要调整为moe_ep * moe_tp = p_pod_npu_num * single_p_instance_pod_num"
-            severity: high
-          moe_tp:
-            expected:
-              type: eq
-              value: ${deploy_config.single_p_instance_pod_num} * ${deploy_config.p_pod_npu_num} // ${mindie_server_prefill_config.BackendConfig.ModelDeployConfig.ModelConfig[0].moe_ep}
-            reason: "mindie_server_prefill_config中并行策略需要调整为moe_ep * moe_tp = p_pod_npu_num * single_p_instance_pod_num"
-            severity: high
           modelCutPolicy:
             expected:
               type: eq
@@ -237,10 +316,17 @@ mindie_server_prefill_config:
             severity: high
           plugin_params:
             expected:
-              type: eq
-              value: "'{\"plugin_type\":\"mtp\",\"num_speculative_tokens\": 1}'"
-            reason: "MTP特性开关，建议开启，值为\"{\"plugin_type\":\"mtp\",\"num_speculative_tokens\": 1}\""
-            severity: low
+              if: "${ref.max_seq_len} <= 68000"
+              then:
+                case:
+                  type: eq
+                  value: "'{\"plugin_type\":\"mtp\",\"num_speculative_tokens\": 1}'"
+                reason: "在上下文长度（maxSeqLen）在68000以下场景，建议开启MTP特性，值为\"{\"plugin_type\":\"mtp\",\"num_speculative_tokens\": 1}\""
+                severity: low
+              else:
+                case: absent
+                reason: "在上下文长度（maxSeqLen）大于68000场景，由于显存不充足，建议不开启MTP特性，需要移除plugin_type中的mtp特性"
+                severity: low
           models:
             deepseekv2:
               ep_level:
@@ -318,8 +404,8 @@ mindie_server_decode_config:
       expected:
         type: eq
         value: 1
-      reason: "tokenizerProcessNumber应该是1"
-      severity: high
+      reason: "tokenizerProcessNumber建议设置为1"
+      severity: medium
     multiNodesInferEnabled:
       expected:
         type: eq
@@ -358,30 +444,6 @@ mindie_server_decode_config:
               value: 1
             reason: "worldSize 应该是 1"
             severity: high
-          dp:
-            expected:
-              type: eq
-              value: ${deploy_config.single_d_instance_pod_num} * ${deploy_config.d_pod_npu_num} // ${mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].tp}
-            reason: "mindie_server_decode_config中并行策略需要调整为dp * tp = d_pod_npu_num * single_d_instance_pod_num"
-            severity: high
-          tp:
-            expected:
-              type: eq
-              value: ${deploy_config.single_d_instance_pod_num} * ${deploy_config.d_pod_npu_num} // ${mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].dp}
-            reason: "mindie_server_decode_config中并行策略需要调整为dp * tp = d_pod_npu_num * single_d_instance_pod_num"
-            severity: high
-          moe_ep:
-            expected:
-              type: eq
-              value: ${deploy_config.single_d_instance_pod_num} * ${deploy_config.d_pod_npu_num} // ${mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].moe_tp}
-            reason: "mindie_server_decode_config中并行策略需要调整为moe_ep * moe_tp = d_pod_npu_num * single_d_instance_pod_num"
-            severity: high
-          moe_tp:
-            expected:
-              type: eq
-              value: ${deploy_config.single_d_instance_pod_num} * ${deploy_config.d_pod_npu_num} // ${mindie_server_decode_config.BackendConfig.ModelDeployConfig.ModelConfig[0].moe_ep}
-            reason: "mindie_server_decode_config中并行策略需要调整为moe_ep * moe_tp = d_pod_npu_num * single_d_instance_pod_num"
-            severity: high
           modelCutPolicy:
             expected:
               type: eq
@@ -390,10 +452,17 @@ mindie_server_decode_config:
             severity: high
           plugin_params:
             expected:
-              type: eq
-              value: "'{\"plugin_type\":\"mtp\",\"num_speculative_tokens\": 1}'"
-            reason: "MTP特性开关，建议开启，值为\"{\"plugin_type\":\"mtp\",\"num_speculative_tokens\": 1}\""
-            severity: low
+              if: "${ref.max_seq_len} <= 68000"
+              then:
+                case:
+                  type: eq
+                  value: "'{\"plugin_type\":\"mtp\",\"num_speculative_tokens\": 1}'"
+                reason: "在上下文长度（maxSeqLen）在68000以下场景，建议开启MTP特性，值为\"{\"plugin_type\":\"mtp\",\"num_speculative_tokens\": 1}\""
+                severity: low
+              else:
+                case: absent
+                reason: "在上下文长度（maxSeqLen）大于68000场景，由于显存不充足，建议不开启MTP特性，需要移除plugin_type中的mtp特性"
+                severity: low
           models:
             deepseekv2:
               ep_level:

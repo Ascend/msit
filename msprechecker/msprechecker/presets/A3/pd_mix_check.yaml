@@ -1,4 +1,40 @@
 mies_config:
+  ref:
+    - from: BackendConfig.ModelDeployConfig.ModelConfig[0].dp
+      as: dp
+      default: 1
+    - from: BackendConfig.ModelDeployConfig.ModelConfig[0].tp
+      as: tp
+      default: 1
+    - from: BackendConfig.ModelDeployConfig.ModelConfig[0].cp
+      as: cp
+      default: 1
+    - from: BackendConfig.ModelDeployConfig.ModelConfig[0].sp
+      as: sp
+      default: 1
+    - from: BackendConfig.ModelDeployConfig.ModelConfig[0].pp
+      as: pp
+      default: 1
+    - from: BackendConfig.ModelDeployConfig.ModelConfig[0].worldSize
+      as: world_size
+    - from: BackendConfig.multiNodesInferEnabled
+      as: multi_nodes_infer_enabled
+
+  ref.world_size:
+    expected:
+      if: "${ref.multi_nodes_infer_enabled} == false"
+      then:
+        case: "int(${ref.dp}) * int(${ref.tp}) * int(${ref.cp}) * int(${ref.pp}) == ${ref.world_size}"
+        reason: "在非跨机场景下，并行策略要求保证dp * tp * cp * pp = worldSize，其中没配置的并行策略默认值为1"
+        severity: high
+
+  ref.sp:
+    expected:
+      type: enum
+      value: [1, "${ref.tp}"]
+      reason: "sp取值只能等于1或者等于tp取值"
+      severity: high
+
   ServerConfig:
     tokenTimeout:
       expected:
@@ -21,7 +57,7 @@ mies_config:
     inferMode:
       expected:
         type: eq
-        value: "'Standard'"
+        value: "'standard'"
       reason: "PD混部场景下，inferMode应该是standard"
       severity: high
     interCommTLSEnabled:
@@ -31,12 +67,16 @@ mies_config:
       reason: "如果确实配置了安全证书，建议开启为true，此条校验为提示"
       severity: low
   BackendConfig:
+    npuDeviceIds[0]:
+      expected:
+        len: ${ref.world_size}
+        contains_all: null
     multiNodesInferEnabled:
       expected:
         type: eq
         value: false
-      reason: "multiNodesInferEnabled表示服务跨机推理，非DeepSeek模型场景不支持"
-      severity: high
+      reason: "multiNodesInferEnabled表示服务跨机推理，请确认推理场景是否存在server示例跨机，如果没有跨机需求则需要关闭"
+      severity: low
     ModelDeployConfig:
       maxSeqLen:
         expected:
@@ -93,14 +133,14 @@ mies_config:
 env:
   MINDIE_LOG_TO_FILE:
     expected:
-      type: eq
-      value: "'1'"
+      type: enum
+      value: ["'1'", "'true'"]
     reason: "建议将MindIE日志写入文件，便于排查问题"
     severity: low
   MINDIE_LOG_TO_STDOUT:
     expected:
-      type: eq
-      value: "'1'"
+      type: enum
+      value: ["'1'", "'true'"]
     reason: "建议将MindIE日志打屏，便于通过查看k8s日志查看程序运行状态"
     severity: low
   MINDIE_LOG_LEVEL:
@@ -109,6 +149,6 @@ env:
       then:
         case:
           type: enum
-          value: ["'1'", "'INFO'"]
-        reason: "如果配置了MINDIE_LOG_LEVEL，建议设置为1或INFO，表示日志级别为info"
+          value: ["'info'", "'INFO'"]
+        reason: "如果配置了MINDIE_LOG_LEVEL，建议设置为info或INFO"
         severity: low
