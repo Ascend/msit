@@ -57,6 +57,7 @@ class Evaluator:
         r'|(?P<COMMA>,)'
         r'|(?P<STR>\'[^\']+\')'
         r'|(?P<NONE>\bNone\b)'
+        r'|(?P<BOOL>\b(?:(?:t|T)rue|(?:f|F)alse)\b)'
         r'|(?P<SKIP>\s+)'
     )
     
@@ -114,7 +115,11 @@ class Evaluator:
                 output.append(val.strip("'"))
             elif kind == "NONE":
                 output.append(None)
-
+            elif kind == "BOOL":
+                output.append(val == "true" or val == "True")
+            else:
+                output.append(val)
+    
         while stack:
             if stack[-1] in ('(', ')'):
                 raise ValueError("Mismatched parentheses in expression")

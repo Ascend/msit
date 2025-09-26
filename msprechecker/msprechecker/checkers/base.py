@@ -100,7 +100,8 @@ class NodeChecker(BaseChecker):
             scope = ref_item['from']
             variable_name = ref_item['as']
             full_var_name = f'ref.{variable_name}'
-            temporary_variables[full_var_name] = None # default to None, in case ref_item is not found
+            # in case scope does not found, we accept a default value, if 'default' not present, set to None
+            temporary_variables[full_var_name] = ref_item.get('default')
 
             if scope not in visited_nodes:
                 continue
@@ -216,12 +217,36 @@ class NodeChecker(BaseChecker):
 
         if not isinstance(actual, list):
             raise WaMLError(f"Expected a list for search operation, got {type(actual).__name__}")
+    
+        results = []
+        if 'len' in block:
+            expected_length = block['len']
+            reason = f"{path} 元素个数和 'worldSize' 不一致"
+            severity = "high"
+            suggest = expected_length
+
+            if isinstance(expected_length, int):
+                result = len(actual) == expected_length
+            elif isinstance(expected_length, str):
+                expected_expr = MacroExpander.expand(expected_length, path, visited_nodes)
+                evaluated_expr = Evaluator.evaluate(expected_expr)
+                result = len(actual) == evaluated_expr
+                suggest = evaluated_expr
+            else:
+                raise TypeError(
+                    f"Expected 'len' to be int or basic block, got {type(expected_length).__name__} instead"
+                )
+
+            if not result:
+                self.error_handler.add_error(
+                    path=path, reason=reason, severity=severity,
+                    expected=list(range(suggest)), actual=actual
+                )
 
         search_items = block['contains_all']
         if not search_items:
             return True, "", "", ""  # 空搜索列表视为成功
 
-        results = []
         for item in search_items:
             found = False
             for i, _ in enumerate(visited_nodes[path]):

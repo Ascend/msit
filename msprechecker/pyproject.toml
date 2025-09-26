@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "msprechecker"
-version = "0.1.2"
+version = "0.1.3"
 description = "MindStudio Prechecker"
 readme = "README.md"
 license = {text = "Apache-2.0"}
