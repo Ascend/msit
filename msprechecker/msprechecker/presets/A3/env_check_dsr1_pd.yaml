@@ -31,20 +31,20 @@ mindie_common_env:
     severity: low
   MINDIE_LOG_TO_FILE:
     expected:
-      type: eq
-      value: 1
+      type: enum
+      value: ["1", "'true'"]
     reason: "建议将MindIE日志输出到文件，便于后续查看和分析"
     severity: low
   MINDIE_LOG_TO_STDOUT:
     expected:
-      type: eq
-      value: 1
+      type: enum
+      value: ["1", "'true'"]
     reason: "建议将MindIE日志打屏，便于通过查看k8s日志查看程序运行状态"
     severity: low
   MINDIE_LOG_LEVEL:
     expected:
-      type: eq
-      value: "'INFO'"
+      type: enum
+      value: ["'info'", "'INFO'"]
     reason: "建议将MindIE日志级别设置为INFO，不影响执行效率且能提供必要的日志信息"
     severity: low
   ASCEND_SLOG_PRINT_TO_STDOUT:
@@ -121,12 +121,6 @@ mindie_server_prefill_env:
       value: 7200
     reason: "HCCL建链超时时间建议设置为7200秒"
     severity: high
-  HCCL_EXEC_TIMEOUT:
-    expected:
-      type: eq
-      value: 0
-    reason: "HCCL执行超时时间建议设置为0，不限制超时"
-    severity: high
   HCCL_ENTRY_LOG_ENABLE:
     expected:
       type: eq
@@ -139,12 +133,6 @@ mindie_server_prefill_env:
       value: 1
     reason: "需要开启该特性，padding构造从组图上移至mindie-llm侧"
     severity: high
-  MINDIE_ASYNC_SCHEDULING_ENABLE:
-    expected:
-      type: eq
-      value: 0
-    reason: "A3场景下P节点建议关闭MindIE异步调度特性"
-    severity: low
   HCCL_OP_EXPANSION_MODE:
     expected:
       type: eq
@@ -176,12 +164,6 @@ mindie_server_decode_env:
       type: eq
       value: 7200
     reason: "HCCL建链超时时间建议设置为7200秒"
-    severity: high
-  HCCL_EXEC_TIMEOUT:
-    expected:
-      type: eq
-      value: 0
-    reason: "HCCL执行超时时间建议设置为0，不限制超时"
     severity: high
   HCCL_ENTRY_LOG_ENABLE:
     expected:
@@ -272,16 +254,4 @@ mindie_server_decode_env:
       type: eq
       value: 0
     reason: "不开启此变量，对溢出值进行截断"
-    severity: high
-  HCCL_INTRA_PCIE_ENABLE:
-    expected:
-      type: eq
-      value: 0
-    reason: "和HCCL_INTRA_ROCE_ENABLE一同设置为0，Server内采用PCIe环路进行多卡间的通信"
-    severity: high
-  HCCL_INTRA_ROCE_ENABLE:
-    expected:
-      type: eq
-      value: 0
-    reason: "和HCCL_INTRA_PCIE_ENABLE一同设置为0，Server内采用PCIe环路进行多卡间的通信"
     severity: high
