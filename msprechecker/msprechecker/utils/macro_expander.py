@@ -50,10 +50,10 @@ class MacroExpander:
             raise ExpandError(full_path)
 
         val = visited_path[full_path]
-        if val is None:
-            return 'None'
+        if isinstance(val, str):
+            return repr(val)
 
-        return f"{type(val).__name__}({val})"
+        return str(val)
 
     @classmethod
     def _build_full_path(cls, path: str, context: str) -> str:

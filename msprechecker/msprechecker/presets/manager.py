@@ -144,7 +144,10 @@ class RuleManager:
                 rule_path = os.path.join(cur_dir, "A3", rule_file)
         
         with open_s(rule_path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
+            try:
+                return yaml.safe_load(f)
+            except Exception as e:
+                raise ValueError("Invalid rule yaml file: %r" % rule_path) from e
     
     def _get_custom_rules(self):
         """获取用户自定义规则，如果没有则返回空字典"""

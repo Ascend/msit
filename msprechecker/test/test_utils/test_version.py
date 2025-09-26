@@ -100,7 +100,7 @@ class TestVersion(unittest.TestCase):
         """测试较高版本号的小于比较"""
         v1 = Version("1.2.4")
         v2 = Version("1.2.3")
-        self.assertLess(v1, v2)
+        self.assertGreater(v1, v2)
 
     def test_properties_access(self):
         """测试版本对象属性的正确访问"""
