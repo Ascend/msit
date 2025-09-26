@@ -32,9 +32,9 @@ requires-python = ">=3.7"
 msprechecker = "msprechecker.cli:main"
 
 [project.urls]
-source = "https://gitcode.com/ascend/msit/tree/master/msprechecker"
-documentation = "https://gitcode.com/ascend/msit/tree/master/msprechecker"
-tracker = "https://gitcode.com/ascend/msit/issues"
+source = "https://gitcode.com/Ascend/msit/tree/master/msprechecker"
+documentation = "https://gitcode.com/Ascend/msit/tree/master/msprechecker"
+tracker = "https://gitcode.com/Ascend/msit/issues"
 
 [tool.setuptools]
 packages = {find = {}}
