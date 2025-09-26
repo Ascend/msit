@@ -18,7 +18,7 @@
 - 根据不同版本需求，参考 [Ascend-vLLM 准备推理环境](https://support.huaweicloud.com/bestpractice-modelarts/modelarts_llm_infer_91203.html)，或 [vLLM Ascend installation](https://vllm-ascend.readthedocs.io/en/latest/installation.html) 成功启动推理服务
 - **通过源码方式使用 msserviceprofiler（推荐）**
   ```sh
-  git clone https://gitcode.com/ascend/msit.git
+  git clone https://gitcode.com/Ascend/msit.git
   export PYTHONPATH=$PWD/msit/msserviceprofiler/:$PYTHONPATH
   ```
 - **pip 安装 msserviceprofiler（目前仅支持v0.8.5.RC1及之前的版本）**
