@@ -128,11 +128,12 @@ class FloatSparseProcessor(AutoSessionProcessor):
   5. 模块部署：转换为W16A16s模块，用于保存浮点稀疏后的模型。
 
 ### 完整示例
-
+注：下面完整示例只能在 NPU 环境上运行
 ```python
 import torch
 import torch.nn as nn
 from msmodelslim.quant.processor.sparse.float_sparse import FloatSparseProcessor, FloatSparseProcessorConfig
+from msmodelslim.core.base.protocol import BatchProcessRequest
 
 # 1. 定义模型
 class SimpleModel(nn.Module):
@@ -146,7 +147,9 @@ class SimpleModel(nn.Module):
         x = self.linear2(x)
         return x
 
-model = SimpleModel()
+device = "npu"
+model = SimpleModel().to(device)
+model = model.half()
 
 # 2. 创建配置
 config = FloatSparseProcessorConfig(
@@ -159,22 +162,22 @@ config = FloatSparseProcessorConfig(
 processor = FloatSparseProcessor(model, config)
 
 # 4. 预处理：收集统计信息
-calibration_data = torch.randn(2, 2048)  # 校准数据
+calibration_data = torch.randn(1, 784).to(device)  # 校准数据
+calibration_data = calibration_data.half()
 for batch in calibration_data:
-    processor.preprocess(BatchProcessRequest(
+    batch = batch.unsqueeze(0)
+    # 预处理：安装hook并运行前向传播
+    request = BatchProcessRequest(
         name="", 
         module=model, 
-        inputs=[batch], 
+        datas=[((batch,), {})],  # 正确的数据格式：(args, kwargs)
         outputs=None
-    ))
+    )
+    processor.preprocess(request)
+    processor.process(request)
+    processor.postprocess(request)
 
-# 5. 后处理：应用稀疏化
-processor.postprocess(BatchProcessRequest(
-    name="", 
-    module=model, 
-    inputs=None, 
-    outputs=None
-))
+print("稀疏化完成！")
 ```
 
 ## 算法参数
