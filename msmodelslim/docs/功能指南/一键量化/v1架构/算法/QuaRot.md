@@ -118,7 +118,7 @@ class QuaRotAdapter:
     # 获取模型头数量信息
     def get_num_attention_heads(self) -> int: ...
 
-    # 获取获取键值头数量
+    # 获取键值头数量
     def get_num_key_value_heads(self) -> int: ...
 
     # 获取模型lm_head层名称
