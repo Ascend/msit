@@ -312,13 +312,6 @@ def rotate_oproj_input(layer, rot) -> None:
 
 
 def rotate_uv_output(layer, rot) -> None:
-    """ 
-    self.kv_b_proj weight -> num_heads*(self.q_head_dim - self.qk_rope_head_dim + self.v_head_dim), config.kv_lora_rank
-    kv_b_proj(self.kv_a_layernorm(compressed_kv)) ->
-             bsz, q_len, self.num_heads, self.qk_nope_head_dim + self.v_head_dim)
-             .transpose(1, 2)
-         
-    """
     with PrepareWeight(layer.self_attn.kv_b_proj, True, True):
         weight = layer.self_attn.kv_b_proj
         

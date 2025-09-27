@@ -41,16 +41,16 @@ spec:
 ### 原理
 
 - 平滑 KVCache 的激活值 `key_states` ，实现方式是把缩放系数 s 融合进 RoPE 之前的 Q/K 投影或归一化权重：
-    - K' = K / s
-    - Q' = Q × s
-    - 有 Q'K'^T = QK^T，注意力分数保持不变，同时 K 的动态范围被压缩，量化更稳健。
+    - `K' = K / s`
+    - `Q' = Q × s`
+    - 有 `Q'K'^T = QK^T`，注意力分数保持不变，同时 K 的动态范围被压缩，量化更稳健。
 - 离群值从 `key_states` 迁移到 `query_states`。由于推理时仅对写入 KVCache 的 `key_states` 做量化，而不量化 `query_states`
   ，该迁移是可接受的，不会引入额外的量化误差。
 - RoPE 将通道成对旋转，通道维度呈两两配对关系。算法先在配对通道间取最大，之后再恢复到配对结构进行缩放。
 
 ### 实现
 
-- 算法在 [`msmodelslim/quant/processor/kv_smooth`](../../../../../msmodelslim/quant/processor/kv_smooth) 中实现，处理流程分两阶段：
+- 算法在 `msmodelslim/quant/processor/kv_smooth` 中实现，处理流程分两阶段：
     1. **观察阶段（preprocess）**：
         - 通过注入观察器封装 `past_key_values`，在注意力模块调用 `Cache.update()` 时捕获 `key_states`。
         - 使用观测器在维度 [batch, seq] 上聚合 min/max，得到每层每通道的绝对值的最大值，作为缩放的统计基准。
@@ -102,7 +102,7 @@ class KVSmoothFusedInterface(ABC):
     - 目标通路符合 `Linear/Norm → RoPE → KVCache` 的结构。
 - **步骤**：
     1. 模型适配器继承`KVSmoothFusedInterface`接口，并实现所有方法， 可参考
-       [`msmodelslim/model/qwen3.py`](../../../../../msmodelslim/model/qwen3.py)。
+       `msmodelslim/model/qwen3.py`。
     2. 在 `get_kvsmooth_fused_subgraph()` 中，为每层返回 `KVSmoothFusedUnit`，指定：
         - `attention_name`：与 `named_modules()` 一致的完整路径（如 `model.layers.{i}.self_attn`）。
         - `layer_idx`：层索引， 用于 Cache.update()。

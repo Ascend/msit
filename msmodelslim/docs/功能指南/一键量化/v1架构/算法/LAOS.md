@@ -1,10 +1,20 @@
 # LAOS：w4a4量化方案说明
 
+## 硬件产品支持
+
+| 产品系列 | 支持 |
+|---------|------|
+| Atlas A3 训练系列产品/Atlas A3 推理系列产品 | ✓ |
+| Atlas A2 训练系列产品/Atlas 800I A2 推理产品 | ✓ |
+| Atlas 推理系列产品 | ✗ |
+
+**注：算法实现包含训练过程，对NPU显存有一定的要求，仅支持NPU显存>=64G的设备。**
+
 ## 背景和作用
 
 - **来源**：华为自研。
 - **背景**：在低比特量化（如W4A4）场景下，模型精度损失尤为显著，其核心难点在于权重和激活值中的极端离群值会显著扭曲量化区间，导致数值表示精度急剧下降，传统方法难以解决。
-- **核心思想**：核心思想是“协同优化”。通过 QuaRot 和 Iterative Smooth 技术对激活分布进行平滑处理，有效抑制离群值，为后续量化创造良好条件；再利用 AutoRound 自适应功能为不同权重确定最优舍入策略，从而提高大模型在低比特量化场景的精度。
+- **核心思想**：核心思想是“协同优化”。通过 [QuaRot](./QuaRot.md) 和 [Iterative Smooth](./Iterative_Smooth算法说明.md) 技术对激活分布进行平滑处理，有效抑制离群值，为后续量化创造良好条件；再利用 [AutoRound](./AutoRound.md) 自适应功能为不同权重确定最优舍入策略，从而提高大模型在低比特量化场景的精度。
 
 ## 使用方式
 
@@ -17,7 +27,7 @@ default_w8a8_dynamic: &default_w8a8_dynamic
   weight:
     scope: "per_group"
     dtype: "int8"
-    symmetric: true
+    symmetric: True
     method: "autoround"
     ext:
       group_size: 256
@@ -25,7 +35,7 @@ default_w8a8_dynamic: &default_w8a8_dynamic
   act:
     scope: "per_token"
     dtype: "int8"
-    symmetric: true
+    symmetric: True
     method: "minmax"
 
 
@@ -33,7 +43,7 @@ default_w4a4_dynamic: &default_w4a4_dynamic
   weight:
     scope: "per_group"
     dtype: "int4"
-    symmetric: true
+    symmetric: True
     method: "autoround"
     ext:
       group_size: 256
@@ -41,7 +51,7 @@ default_w4a4_dynamic: &default_w4a4_dynamic
   act:
     scope: "per_token"
     dtype: "int4"
-    symmetric: true
+    symmetric: True
     method: "minmax"
 
 
@@ -104,7 +114,7 @@ spec:
 
   - 确保所有返回的模块引用都是实际模型中的模块对象。
   - 模块路径必须与model.named_modules()返回的路径完全一致。
-  - 优化过程需要额外的内存来存储中间变量和梯度信息，支持Atlas A3 训练系列产品、Atlas A2 训练系列产品以及Atalas 800I A2推理产品。
+
 - **步骤**：
 
   1. 在配置文件中定义量化策略，支持针对不同的层使用不同的量化策略。
@@ -119,12 +129,12 @@ spec:
 - **计算资源**：需要额外的优化过程，计算成本高于简单量化方法。
 - **使用限制**：
   - 需要足够的校准数据或训练迭代次数来优化参数。
-  - QuaRot适配器仅支持Qwen3-dense模型类似结构，模型结构必须基于Transformer decoder架构，包含标准的自注意力机制和前馈网络(FFN)。
-  - 若在Quarot配置中启用了在线旋转，在使用推理引擎以TP并行的方式进行部署时，需要保证tp_size为2的幂，并且tp_size需要小于等于Quarot的配置参数max_tp_size，否则必然导致精度异常。
+  - 受限于由于QuaRot算法的接口实现，当前该方案仅支持Qwen3稠密系列模型（如Qwen3-8B/14B/32B），未具备泛化至其他系列模型的能力，具体限制请参考 [QuaRot适用范围与局限性](./QuaRot.md#适用范围与局限性)。
+  - 若在QuaRot配置中启用了在线旋转，在使用推理引擎以TP并行的方式进行部署时，需要保证`tp_size`需要小于等于QuaRot的配置参数`max_tp_size`，否则必然导致精度异常，具体限制请参考 [QuaRot适用范围与局限性](./QuaRot.md#适用范围与局限性)。
 
 ## 常见问题排查
 
 ### 1. 多种离群值抑制方法配合问题
 
-- **现象**：quarot和iterative smooth的顺序设置不当，会产生互斥效应，影响方案执行的正确性。
+- **现象**：量化配置的`process`配置中，`quarot`和`iter_smooth`的顺序设置不当，会产生互斥效应，影响方案执行的正确性。
 - **解决方案**：严格参考示例中的离群值配置顺序进行配置。
