@@ -27,7 +27,7 @@
 | **DeepSeek-V3** | DeepSeek-V3 | [DeepSeek-V3](https://huggingface.co/deepseek-ai/DeepSeek-V3) | ✅ |   |   |   |   |   |   | ✅ |   | [W8A8](#deepseek-v3-w8a8-混合量化mlaw8a8量化moew8a8-dynamic量化) / [FA3](#deepseek-v3-w8a8-fa3-混合量化)                                                                                     |
 | | DeepSeek-V3.1  | [DeepSeek-V3.1 ](https://huggingface.co/deepseek-ai/DeepSeek-V3.1 ) | ✅ |   | ✅ | ✅ |   |   |   |   | ✅ | [W8A8](#deepseek-v31-w8a8-混合量化--mtp-量化) / [W8A8C8](#deepseek-v31-w8a8c8-混合量化--mtp-量化) / [W4A8](#deepseek-v31-w4a8-混合量化) / [MTP量化](#deepseek-v31-w8a8c8-混合量化--mtp-量化)                                              |
 | **DeepSeek-R1** | DeepSeek-R1 | [DeepSeek-R1](https://huggingface.co/deepseek-ai/DeepSeek-R1) | ✅ |   | ✅ |   |   |   |   | ✅ | ✅ | [W8A8](#deepseek-r1-w8a8-混合量化) / [W4A8](#deepseek-r1-w4a8-混合量化) / [W8A8动态](#deepseek-r1-w8a8-动态量化) / [FA3](#deepseek-r1-w8a8-fa3-混合量化) / [MTP量化](#deepseek-r1-w8a8-混合量化--mtp-量化) |
-| | DeepSeek-R1-0528 | [DeepSeek-R1-0528](https://huggingface.co/deepseek-ai/DeepSeek-R1-0528) | ✅ |   | ✅ |   |   |   |   |   | ✅ | [W8A8](#deepseek-r1-0528-w8a8-混合量化--mtp-量化) / [W4A8](#deepseek-r1-0528-w4a8-per-channel量化) / [MTP量化](#deepseek-r1-0528-w8a8-混合量化--mtp-量化) |
+| | DeepSeek-R1-0528 | [DeepSeek-R1-0528](https://huggingface.co/deepseek-ai/DeepSeek-R1-0528) | ✅ |   | ✅ |   |   |   |   | ✅ | ✅ | [W8A8](#deepseek-r1-0528-w8a8-混合量化--mtp-量化) / [W4A8](#deepseek-r1-0528-w4a8-per-channel量化) /[FA3](#deepseek-r1-0528-w8a8c8-混合量化--mtp-量化) / [MTP量化](#deepseek-r1-0528-w8a8-混合量化--mtp-量化) |
 
 **说明：**
 - ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
@@ -320,7 +320,21 @@ python3 quant_deepseek_W8A8.py --model_path ${model_path} --save_path ${save_pat
   --quant_mtp mix \
   --rot
   ```
+##### <span id="deepseek-r1-0528-w8a8c8-混合量化--mtp-量化">DeepSeek-R1 0528 W8A8C8 混合量化 + MTP 量化</span>
 
+- 生成DeepSeek-R1 0528模型 W8A8C8 混合量化 + MTP 量化
+  ```shell
+  python3 quant_deepseek_w8a8.py \
+  --model_path ${model_path} \
+  --save_path ${save_path} \
+  --batch_size 8 \
+  --anti_dataset ./calib_prompt_0528.json \
+  --calib_dataset ./calib_prompt_0528.json \
+  --anti_method m4 \
+  --quant_mtp mix \
+  --rot
+  --fa_quant
+  ```
 
 ##### DeepSeek-V3/R1量化QA
 
