@@ -56,7 +56,8 @@ spec:
 4. **精度保护**：使用L2量化保持重要位置的精度，避免关键权重被过度压缩。
 
 算法流程：
-```
+
+```text
 1. 预处理阶段：安装前向hook，收集激活统计信息，构建Hessian矩阵。
 2. ADMM稀疏化：使用ADMM算法求解最优稀疏模式。
 3. 迭代优化：通过多次迭代优化稀疏结果。
@@ -237,6 +238,159 @@ FloatSparseProcessorConfig(
   - 需要校准数据集收集激活统计信息，校准数据的 token id 个数 >= 2048。
   - 稀疏比例建议在 `0.3` 附近逐步调整。
 
+## <span id="一键量化使用">一键量化使用</span>
+
+### 步骤1：校准集生成
+
+为了获得精度较好的浮点稀疏模型，校准集需要满足以下要求：
+
+- **数据量**：包含多条代表性数据样本
+- **数据长度**：每条数据经过tokenizer编码后的token数量 ≥ 1024
+- **数据质量**：选择与目标任务相关的数据，确保覆盖模型的主要使用场景
+
+#### 基于 aisbench 的校准集生成方法
+
+以下提供基于 aisbench 工具的校准集生成流程，以 GPQA 数据集为例：
+
+#### 1：模型配置修改
+- 修改模型权重目录下的 config.json 文件，将 torch_dtype 字段修改为 "float16"
+
+#### 2：启动服务化推理
+拉起模型服务化，准备接收推理请求
+
+#### 3：数据采集
+
+```bash
+# 使用 aisbench 采集指定数据集，添加 --dump-eval-details 参数获取详细评估结果
+aisbench --models vllm_api_general_chat --datasets gpqa_gen --dump-eval-details
+```
+
+#### 4：校准集生成
+
+使用以下 Python 脚本处理 aisbench 采集的数据，生成符合要求的校准集：
+
+```python
+import json
+from transformers import AutoTokenizer
+
+def process_input(tokenizer, data_name, json_path, select_num=5, final_count=0, max_seq_length=4096):
+    """
+    处理单个数据集，提取符合条件的数据样本
+    
+    Args:
+        tokenizer: 模型对应的tokenizer
+        data_name: 数据集名称
+        json_path: aisbench生成的结果文件路径
+        select_num: 选择的数据条数
+        final_count: 全局计数
+        max_seq_length: 最大序列长度
+    
+    Returns:
+        list: 处理后的数据列表
+    """
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+    
+    results = []
+    count = 0
+
+    for key, value in data['details'].items():
+        if count >= select_num:
+            break
+        if value['correct']:  # 只选择正确答案的样本
+            combined_text = f"{value['prompt']}\n{value['origin_prediction']}"
+
+            inputs = tokenizer(
+                combined_text,
+                truncation=True,
+                return_tensors='pt',
+                add_special_tokens=True
+            )
+
+            token_count = inputs['input_ids'].shape[1]
+
+            if token_count > max_seq_length:
+                truncated_ids = inputs['input_ids'][0, :max_seq_length]
+                truncated_text = tokenizer.decode(truncated_ids, skip_special_tokens=True)
+            else:
+                truncated_text = combined_text
+
+            results.append({
+                "id": final_count,
+                'inputs_pretokenized': truncated_text,
+                'token_count': token_count
+            })
+
+            count += 1
+            final_count += 1
+            print(f"Processed {count} out of {select_num} data")
+
+    return results
+
+# 配置数据集信息
+dataset = {
+    "GPQA": {
+        "path": "aisbench生成的results中的GPQA_diamond.json",
+        "select_num": 10
+    }
+}
+
+# 模型路径配置
+model_path = "模型权重路径"
+tokenizer = AutoTokenizer.from_pretrained(
+    model_path,
+    use_fast=False,
+    legacy=False,
+    trust_remote_code=True
+)
+
+# 生成校准集
+final_count = 0
+final_results = []
+for key, value in dataset.items():
+    print(f"Processing {key} dataset")
+    processed_data = process_input(tokenizer, key, value['path'], value['select_num'], final_count)
+    final_results.extend(processed_data)
+
+# 保存校准集
+output_path = "输出校准集路径.jsonl"
+with open(output_path, 'w') as f:
+    for result in final_results:
+        f.write(json.dumps(result) + '\n')
+```
+
+### 步骤2：创建 YAML 配置文件
+
+创建浮点稀疏量化配置文件 `float_sparse_config.yaml`：
+
+```yaml
+apiversion: modelslim_v1
+spec:
+  process:
+    - type: "float_sparse"
+      sparse_ratio: 0.25          # 稀疏比例，建议在0.3附近调整
+      include: ["*"]              # 处理所有模块
+      exclude: []                 # 不排除任何模块
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4           # 分片文件大小（GB）
+  dataset: "校准集文件路径.jsonl"  # 替换为实际的校准集路径
+```
+
+### 步骤3：执行浮点稀疏量化
+
+使用以下命令执行浮点稀疏量化：
+
+```bash
+msmodelslim quant \
+  --model_path {浮点权重路径} \
+  --save_path {W16A16S保存路径} \
+  --device npu \
+  --model_type {模型类型} \
+  --trust_remote_code True \
+  --config_path {YAML配置文件路径}
+```
+
 ## 性能特点
 
 ### 优势
@@ -255,21 +409,31 @@ FloatSparseProcessorConfig(
 ## 常见问题排查
 
 ### 1. 执行模型压缩时报错
+
 **现象**：执行模型压缩时报错：ValueError：quant_model_json_description must have model quant type
+
 **解决方案**：将生成的浮点稀疏权重中的 quant_model_description.json 文件中添加 model_quant_type 字段，值为 W16A16S。
 
 ### 2. 浮点稀疏不支持叠加 w8a8 稀疏量化
+
 **现象**：用户尝试对已经进行W8A8S（权重INT8稀疏量化）处理的模型，再应用浮点稀疏算法进行进一步稀疏化。
+
 **解决方案**：浮点稀疏算法（W16A16S）和W8A8S稀疏量化是两种不同的技术路径，不支持叠加使用。多次稀疏化处理会累积精度损失，可能严重影响模型性能。
 
 ### 3. 稀疏比例设置过高
+
 **现象**：稀疏比例过高导致模型精度严重下降。
+
 **解决方案**：降低 sparse_ratio 配置参数，建议在 0.3 附近逐步调整。
 
 ### 4. 校准数据长度不够，导致求矩阵逆失败
+
 **现象**：处理大模型时出现求矩阵逆失败错误。
+
 **解决方案**：增加校准集中每条数据长度，保证经过 tokenizer 编码后的 token id 数量 >= 2048。
 
 ### 5. 校准集数量过多导致显存溢出
+
 **现象**：处理大模型时出现显存溢出错误。
+
 **解决方案**：减少校准集数量，或使用单卡显存更大的机器进行浮点稀疏。
