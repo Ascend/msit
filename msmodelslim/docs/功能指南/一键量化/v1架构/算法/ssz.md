@@ -19,12 +19,35 @@ config = QConfig(
     dtype="int8",           # 量化数据类型
     scope="per_channel",    # 量化范围：per_channel
     method="ssz",          # 量化方法：ssz
-    symmetric=True         # 对称量化
+    symmetric=true         # 对称量化
 )
 
 # 创建量化器
 quantizer = WeightPerChannelSsz(config)
 ```
+
+## YAML配置示例
+
+```yaml
+spec:
+  process:
+    - type: "linear_quant" 
+      qconfig:
+        weight:
+          scope: "per_channel"
+          dtype: "int8" 
+          symmetric: true
+          method: "ssz"
+```
+
+## YAML配置字段详解
+
+| 参数名 | 作用 | 可选值 | 说明 | 默认值 |
+|--------|------|--------|------|--------|
+| scope | 量化范围 | `"per_tensor"`, `"per_channel"` | per_tensor: 整个张量使用相同参数<br/>per_channel: 每个通道独立参数 | `"per_channel"` |
+| dtype | 量化数据类型 | `"int8"`, `"int4"` | 8位/4位整数量化 | `"int8"` |
+| symmetric | 是否对称量化 | `true`, `false` | true: 对称量化，零点为0<br/>false: 非对称量化，零点可调整 | `true` |
+| method | 量化方法 | `"ssz"` | ssz: ssz权重量化 | `"ssz"` |
 
 ## 原理和实现
 

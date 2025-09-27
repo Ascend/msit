@@ -1,12 +1,12 @@
-### Histogram：直方图激活值量化算法说明
+# Histogram：直方图激活值量化算法说明
 
-#### 背景和作用
+## 背景和作用
 
 - **来源**：修改自PyTorch的相关实现。
 - **问题**：传统MinMax量化器容易受到离群值影响，导致量化范围过大，有效比特位利用率低，量化精度损失严重。
 - **目标**：通过分析激活值的直方图分布，自动搜索最优的截断区间，过滤离群值，提高量化精度和模型性能。
 
-#### 使用方式
+## 使用方式
 
 作为量化器使用，支持per tensor量化粒度的int8对称和非对称量化，通过配置一键量化yaml中的qconfig.act.method部分启用。下面以W8A8的linear为例，也可适配其他存在激活值量化的场景，具体请查看对应的quantizer配置中是否使用了AutoActQuantizer。
 
@@ -16,22 +16,50 @@
    act:
      scope: "per_tensor" # 目前只支持per_tensor
      dtype: "int8" # 目前只支持int8
-     symmetric: False # 支持对称/非对称量化，取值分别为True/False
+     symmetric: false # 支持对称/非对称量化，取值分别为True/False
      method: "histogram" # 配置为"histogram", 即启用直方图激活值量化
    weight:
      scope: "per_channel"
      dtype: "int8" 
-     symmetric: True
+     symmetric: true
      method: "minmax" # 不支持直方图权重量化，此处不应配置为"histogram"
 ```
 
-#### 原理和实现
+## YAML配置示例
 
-##### 原理
+```yaml
+spec:
+  process:
+  - type: "linear_quant" 
+    qconfig:
+      act:
+        scope: "per_tensor" # 目前只支持per_tensor
+        dtype: "int8" # 目前只支持int8
+        symmetric: false # 支持对称/非对称量化，取值分别为True/False
+        method: "histogram" # 配置为"histogram", 即启用直方图激活值量化
+      weight:
+        scope: "per_channel"
+        dtype: "int8" 
+        symmetric: true
+        method: "minmax" # 不支持直方图权重量化，此处不应配置为"histogram"
+```
+
+## YAML配置字段详解
+
+| 参数名 | 作用 | 可选值 | 说明 | 默认值 |
+|--------|------|--------|------|--------|
+| scope | 量化范围 | `"per_tensor"`, `"per_token"` | per_tensor: 整个张量使用相同参数<br/>per_token: 每个token独立参数（动态量化） | `"per_tensor"` |
+| dtype | 量化数据类型 | `"int8"`, `"int4"` | 8位/4位整数量化 | `"int8"` |
+| symmetric | 是否对称量化 | `true`, `false` | true: 对称量化，零点为0<br/>false: 非对称量化，零点可调整 | `false` |
+| method | 量化方法 | `"histogram"` | histogram: 直方图量化 | `"histogram"` |
+
+## 原理和实现
+
+### 原理
 
 直方图激活值量化算法的核心思想是通过分析输入张量的分布直方图，自动搜索最优的截断区间（clip_min, clip_max），以避免量化范围过大。
 
-##### 实现
+### 实现
 
 - 算法在 `msmodelslim/quant/quantizer/impl/histogram.py` 和 `msmodelslim/quant/observer/histogram.py` 中实现，处理流程分4步。
 
@@ -52,9 +80,9 @@
    - 以最优截断区间的上下界为max/min，计算并保存scale和zero_point。
    - 执行伪量化操作，返回量化后的张量。
 
-#### 核心组件
+## 核心组件
 
-##### 直方图观察器（HistogramObserver）
+### 直方图观察器（HistogramObserver）
 
 ```python
 class HistogramObserver(TorchHistogramObserver):
@@ -66,7 +94,7 @@ class HistogramObserver(TorchHistogramObserver):
         self.upsample_rate = 16  # 上采样率，减少量化误差
 ```
 
-###### 核心方法实现
+#### 核心方法实现
 
 1. **forward方法**：
    ```python
@@ -140,7 +168,7 @@ class HistogramObserver(TorchHistogramObserver):
        """
    ```
 
-##### 直方图量化器（ActPerTensorHistogram）
+### 直方图量化器（ActPerTensorHistogram）
 
 ```python
 class ActPerTensorHistogram(AutoActQuantizer):
@@ -152,7 +180,7 @@ class ActPerTensorHistogram(AutoActQuantizer):
         self.q_param: Optional[QParam] = None
 ```
 
-###### 核心方法
+#### 核心方法
 
 1. **forward方法**：
    ```python
@@ -191,9 +219,9 @@ class ActPerTensorHistogram(AutoActQuantizer):
        return self.q_param
    ```
 
-#### 配置参数
+## 配置参数
 
-##### HistogramObserverConfig
+### HistogramObserverConfig
 目前由量化器自行配置，用户不需要调整。
 ```python
 class HistogramObserverConfig(BaseModel):
@@ -203,7 +231,7 @@ class HistogramObserverConfig(BaseModel):
     scope: QScope = QScope.PER_TENSOR        # 量化范围
 ```
 
-##### 搜索方法枚举
+### 搜索方法枚举
 
 ```python
 class SearchMethod(str, Enum):
@@ -211,9 +239,9 @@ class SearchMethod(str, Enum):
     KL_DIVERGENCE = "kl_divergence"  # KL散度搜索
 ```
 
-#### 常见问题排查
+## 常见问题排查
 
-##### 1. 配置错误
+### 1. 配置错误
 
 **问题描述**：日志提示中，出现ValidationError。
 

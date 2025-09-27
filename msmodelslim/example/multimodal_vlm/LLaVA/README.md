@@ -8,7 +8,7 @@
 
 | 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况| 量化命令 |
 |------------|-------------|---------|----------------|---------|
-| LLaVA-v1.5-7B | [llava-1.5-7b-hf](https://huggingface.co/llava-hf/llava-1.5-7b-hf/tree/main) | W8A8静态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#llava-v1-5-7b-w8a8) |
+| LLaVA-v1.5-7B | [llava-1.5-7b-hf](https://huggingface.co/llava-hf/llava-1.5-7b-hf/tree/a272c74b2481d8aff3aa6fc2c4bf891fe57334fb) | W8A8静态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#llava-v1-5-7b-w8a8) |
 
 **说明：**
 - 点击量化命令列中的链接可跳转到对应的具体量化命令。

@@ -1,16 +1,27 @@
-### KVSmooth：KVCache量化离群值抑制算法说明
+# KVSmooth：KVCache量化离群值抑制算法说明
 
-#### 背景和作用
+## 背景和作用
 
 - **来源**：华为自研
 - **问题**：在 KVCache 量化中，Key 的少量离群值会显著抬高量化尺度，导致大部分通道有效比特不足，从而使注意力打分退化、生成质量下降。
 - **目标**：在不改变注意力打分 QK^T 期望值的前提下，压缩 K 的动态范围，使其更易量化，同时保持数值稳定与准确率。
 
-#### 使用方式
+## 使用方式
 
 KVSmooth 算法通过 ModelSlimV1 的 YAML 配置文件使用。
 
-##### 参数说明
+## YAML配置示例
+
+```yaml
+spec:
+  process:
+    - type: "kv_smooth"
+      smooth_factor: 1.0                    # 控制平滑激进程度，>0，越大平滑越激进
+      include: ["*"]                        # 包含的层模式，支持通配符
+      exclude: ["model.layers.0.self_attn"] # 排除的层模式，支持通配符
+```
+
+## YAML配置字段详解
 
 | 参数名             | 作用        | 类型        | 默认值         | 说明              | 示例                             |
 |-----------------|-----------|-----------|-------------|-----------------|--------------------------------|
@@ -25,23 +36,9 @@ KVSmooth 算法通过 ModelSlimV1 的 YAML 配置文件使用。
 - `include` 和 `exclude` 支持通配符匹配，如 `"model.layers.*.self_attn"`
 - `exclude` 的优先级高于 `include`，即如果模块同时匹配 include 和 exclude，则会被排除
 
-##### 配置文件使用说明
+## 原理和实现
 
-在 ModelSlimV1 的量化配置文件中，将 kv_smooth 作为 processor 添加到 process 列表中，无关部分已省略
-
-```yaml
-apiversion: "modelslim_v1"
-spec:
-  process:
-    - type: "kv_smooth"
-      smooth_factor: 1.0
-      include: [ "*" ]
-      exclude: [ "model.layers.0.self_attn" ]
-```
-
-#### 原理和实现
-
-##### 原理
+### 原理
 
 - 平滑 KVCache 的激活值 `key_states` ，实现方式是把缩放系数 s 融合进 RoPE 之前的 Q/K 投影或归一化权重：
     - K' = K / s
@@ -51,7 +48,7 @@ spec:
   ，该迁移是可接受的，不会引入额外的量化误差。
 - RoPE 将通道成对旋转，通道维度呈两两配对关系。算法先在配对通道间取最大，之后再恢复到配对结构进行缩放。
 
-##### 实现
+### 实现
 
 - 算法在 [`msmodelslim/quant/processor/kv_smooth`](../../../../../msmodelslim/quant/processor/kv_smooth) 中实现，处理流程分两阶段：
     1. **观察阶段（preprocess）**：
@@ -63,9 +60,9 @@ spec:
             - `state-rope-linear`：沿 `Linear → RoPE → KVCache` 的通路，将缩放折叠进 `k_proj`/`q_proj`。
             - `state-rope-norm`：沿 `Norm → RoPE → KVCache` 的通路，将缩放折叠进 `k_norm`/`q_norm`。
 
-#### 模型适配
+## 模型适配
 
-##### 接口与数据结构
+### 接口与数据结构
 
 ```python
 # 融合方式枚举
@@ -98,7 +95,7 @@ class KVSmoothFusedInterface(ABC):
     def get_num_key_value_heads(self) -> int: ...
 ```
 
-##### 适配步骤
+### 适配步骤
 
 - **前置要求**：
     - 注意力前向需通过 kwargs 接受 `past_key_values` 或 `past_key_value` 并在内部调用 `Cache.update()`，否则观察器无法工作。
@@ -114,7 +111,7 @@ class KVSmoothFusedInterface(ABC):
         - `fused_type`：融合方式枚举，StateViaRopeToNorm 或 StateViaRopeToLinear。
     3. 提供模型全局结构信息：`get_head_dim()`、`get_num_key_value_heads()`、`get_num_key_value_groups()`。
 
-#### 适用范围与局限性
+## 适用范围与局限性
 
 - **校准集数据依赖**：需要推理标定以观测抑制缩放尺度，若校准集数据分布偏离实际业务，将影响效果。
 - **模型实现限制**：注意力前向必须接受并使用 `past_key_values` 或  `past_key_value`，否则无法观测抑制缩放尺度。
@@ -124,7 +121,7 @@ class KVSmoothFusedInterface(ABC):
 - **量化方式假设**：算法基于仅量化 KVCache 的 `key_states`/`value_states`，不量化 `query_states` 的假设，若对
   `query_states` 做量化，请谨慎评估该方法的适用性。
 
-#### 常见问题排查
+## 常见问题排查
 
 1. **回退未命中**
     - **现象**：日志告警 `are not matched any module`

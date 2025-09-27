@@ -25,6 +25,34 @@
     - "*self_attn*"
 ```
 
+## YAML配置示例
+
+```yaml
+spec:
+  process:
+    - type: "flex_smooth_quant"
+      alpha: 0.8                          # 激活缩放的权重系数，0-1之间，默认None（自动搜索）。
+      beta: 0.7                           # 权重缩放的权重系数，0-1之间，默认None（自动搜索）。
+      enable_subgraph_type:               # 开启的子图类型。
+        - 'norm-linear'
+        - 'linear-linear'
+        - 'ov'
+        - 'up-down'
+      include: ["*"]                      # 包含的层模式，支持通配符。
+      exclude: ["*self_attn*"]            # 排除的层模式，支持通配符。
+```
+
+## YAML配置字段详解
+
+| 字段名 | 作用 | 说明 |
+|--------|------|------|
+| type | 处理器类型标识 | 固定值"flex_smooth_quant"，用于标识这是一个灵活平滑量化处理器。 |
+| alpha | 激活缩放权重系数 | 0-1之间的浮点数，控制激活对缩放因子的影响程度，默认None（自动搜索）。 |
+| beta | 权重缩放权重系数 | 0-1之间的浮点数，控制权重对缩放因子的影响程度，默认None（自动搜索）。 |
+| enable_subgraph_type | 开启的子图类型 | 支持的子图类型列表，包括"norm-linear"、"linear-linear"、"ov"、"up-down" 。|
+| include | 包含的层模式 | 支持通配符匹配。 |
+| exclude | 排除的层模式 | 支持通配符匹配。 |
+
 ## 原理和实现
 
 ### 原理

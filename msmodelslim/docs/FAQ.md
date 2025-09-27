@@ -1,7 +1,7 @@
 # FAQ
 ## 1. 为什么我的程序会显示'Killed'并异常退出？
 
-在使用msmodelslim工具运行推理量化时，出现类似以下报错信息：
+在使用msModelSlim工具运行推理量化时，出现类似以下报错信息：
 ```
 Killed
 ...
@@ -26,7 +26,7 @@ pkill python
 
 ## 2. 为什么安装时提示pydantic版本冲突？
 
-msmodelslim依赖pydantic>=2.10.1，请确保环境中的pydantic版本满足此要求。
+msModelSlim依赖pydantic>=2.10.1，请确保环境中的pydantic版本满足此要求。
 
 ### pip安装时的错误信息
 ```
@@ -36,4 +36,4 @@ check-wheel-contents 0.6.0 requires pydantic~=2.0, but you have pydantic 1.0 whi
 
 ### 解决方法
 
-请尝试升级或卸载环境中依赖低版本pydantic的软件包。
+请尝试升级pydantic或卸载环境中依赖低版本pydantic的其他软件包，直至环境无版本冲突。
