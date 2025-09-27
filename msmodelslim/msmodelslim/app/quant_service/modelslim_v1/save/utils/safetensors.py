@@ -131,8 +131,6 @@ class BufferedSafetensorsWriter(SafetensorsWriter):
         self.wait_save_keys[key] = tensor
         self.total_size += tensor_size
         self._wait_save_size += tensor_size
-        # self.logger.debug(
-        #     f"Add new tensor {key}, device: {tensor.device}, size: {tensor_size}, total: {self._wait_save_size}")
 
     def close(self) -> None:
         # save last file if needed
