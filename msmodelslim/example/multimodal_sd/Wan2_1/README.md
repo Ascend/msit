@@ -118,7 +118,7 @@ spec:
         act:
           scope: "per_token"   # 激活值量化范围
           dtype: "int8"        # 激活值量化数据类型
-          symmetric: False      # 是否对称量化
+          symmetric: True      # 是否对称量化
           method: "minmax"      # 量化方法
         weight:
           scope: "per_channel"   # 权重量化范围
@@ -150,7 +150,7 @@ spec:
 - **qconfig.act**: 激活值量化配置
   - `scope`: 量化范围，推荐使用"per_token"
   - `dtype`: 数据类型，固定为"int8"
-  - `symmetric`: 是否对称量化，推荐False
+  - `symmetric`: 是否对称量化，推荐True，"per_token"量化下仅支持设置为True
   - `method`: 量化方法，推荐"minmax"
 - **qconfig.weight**: 权重量化配置
   - `scope`: 量化范围，固定为"per_channel"

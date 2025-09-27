@@ -4,7 +4,7 @@
 
 - **来源**：华为自研。
 - **背景**：在低比特量化（如W4A4）场景下，模型精度损失尤为显著，其核心难点在于权重和激活值中的极端离群值会显著扭曲量化区间，导致数值表示精度急剧下降，传统方法难以解决。
-- **核心思想**：核心思想是“协同优化”。通过 Quart 和 Iterative Smooth 技术对激活分布进行平滑处理，有效抑制离群值，为后续量化创造良好条件；再利用 Autoround 自适应功能为不同权重确定最优舍入策略，从而提高大模型在低比特量化场景的精度。
+- **核心思想**：核心思想是“协同优化”。通过 QuaRot 和 Iterative Smooth 技术对激活分布进行平滑处理，有效抑制离群值，为后续量化创造良好条件；再利用 AutoRound 自适应功能为不同权重确定最优舍入策略，从而提高大模型在低比特量化场景的精度。
 
 ## 使用方式
 
@@ -91,6 +91,10 @@ spec:
   dataset: laos_calib.jsonl
 
 ```
+
+### YAML配置字段详解
+
+配置字段来自Iterative Smooth、QuaRot、AutoRound三者结合，详见[Iterative Smooth YAML配置字段详解](./Iterative_Smooth算法说明.md#yaml配置字段详解)、[QuaRot YAML配置字段详解](./QuaRot.md#yaml配置字段详解)、[AutoRound YAML配置字段详解](./AutoRound.md#yaml配置字段详解)。
 
 ## 模型适配
 

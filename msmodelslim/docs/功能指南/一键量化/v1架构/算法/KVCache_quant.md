@@ -1,12 +1,12 @@
-### KVCache量化：缓存量化算法说明
+# KVCache量化：缓存量化算法说明
 
-#### 背景和作用
+## 背景和作用
 
 - **简介**：KVcache量化机制。
 - **问题**：在大模型推理中，KVCache 存储的 Key/Value 状态占用大量显存，随序列长度线性增长，成为推理瓶颈。
 - **目标**：对写入 KVCache 的 `key_states` 和 `value_states` 进行量化，在保持生成质量的前提下显著降低缓存内存占用。
 
-#### 使用方式
+## 使用方式
 
 作为Processor使用
 
@@ -23,9 +23,37 @@
     - "model.layers.0.self_attn"
 ```
 
-#### 原理和实现
+## YAML配置示例
 
-##### 原理
+```yaml
+spec:
+  process:
+    - type: "dynamic_cache"
+      qconfig:
+        scope: "per_channel"    # 量化粒度：仅支持per_channel。
+        dtype: "int8"          # 量化数据类型，目前支持int8。
+        symmetric: true        # 是否使用对称量化，默认True。
+        method: "minmax"       # 量化方法，目前支持minmax。
+      include: [ "*" ]           # 包含的注意力层模式。
+      exclude: [ "model.layers.0.self_attn" ] # 排除的注意力层模式。
+```
+
+## YAML配置字段详解
+
+| 字段名 | 作用 | 数据类型 | 默认值 | 说明 |
+|--------|------|----------|--------|------|
+| type | 处理器类型标识 | string | - | 固定值"dynamic_cache"，用于标识该对象为KVCache量化处理器。 |
+| qconfig | KVCache量化配置 | object | - | 包含KVCache的量化参数配置。 |
+| scope | 量化粒度 | string | "per_channel" | 量化粒度设置，当前仅支持配置为"per_channel"，表示按隐藏层维度计算量化参数。 |
+| dtype | 量化数据类型 | string | "int8" | 量化后的数据类型，当前仅支持配置为"int8"。 |
+| symmetric | 对称量化开关 | boolean | true | 是否使用对称量化。true表示使用对称量化，false表示使用非对称量化。 |
+| method | 量化方法 | string | "minmax" | 量化算法方法，当前仅支持"minmax"算法。 |
+| include | 包含的注意力层模式 | array[string] | ["*"] | 支持通配符匹配，指定要执行KVCache量化的注意力层。 |
+| exclude | 排除的注意力层模式 | array[string] | [] | 支持通配符匹配，优先级高于include。 |
+
+## 原理和实现
+
+### 原理
 
 - **量化目标**：对注意力机制中写入 KVCache 的 `key_states` 和 `value_states` 进行 INT8 量化。
 - **量化时机**：在 `DynamicCache.update()` 调用时，拦截 Key/Value 状态应用量化校准。
@@ -33,7 +61,7 @@
   - **per_channel**：按隐藏层维度计算量化参数，平衡精度和效率。
 - **内存优化**：量化后的缓存状态理论上可减少约 50% 的cache内存占用（FP16→INT8）。
 
-##### 实现
+### 实现
 
 - 算法在 `msmodelslim/quant/processor/quant/attention.py` 中实现，处理流程分三阶段：
   1. **检测阶段（pre_run）**：
@@ -48,9 +76,9 @@
      - 将校准完成的量化器转换为推理优化的 `FakeQuantDynamicCache` IR。
      - 保持与原有缓存机制的兼容性，无需修改上层推理逻辑。
 
-#### 量化器实现
+### 量化器实现
 
-##### 核心组件
+#### 核心组件
 
 ```python
 # DynamicCacheQuantizer：校准阶段的量化器
@@ -81,18 +109,18 @@ class FakeQuantDynamicCache(AutoFakeQuantDynamicCache):
         return x_q_dq
 ```
 
-#### 缓存兼容性
+## 缓存兼容性
 
-##### 支持的缓存类型
+### 支持的缓存类型
 
 - **DynamicCache**：Transformers 标准动态缓存，完全支持。
 - **自定义Cache**：需要实现 `update(key_states, value_states, layer_idx)` 接口。
 
-##### 已验证模型列表
+## 已验证模型列表
 - Qwen2.5系列
 - Qwen3系列
 
-##### 新缓存类接入步骤
+## 新缓存类接入步骤
 
 1. **接口要求**：
    ```python
@@ -111,7 +139,7 @@ class FakeQuantDynamicCache(AutoFakeQuantDynamicCache):
    - 注意力模块需要通过 `layer_idx` 参数指示当前层索引。
    - 支持嵌套调用和递归量化。
 
-#### 适用范围与局限性
+## 适用范围与局限性
 
 - **模型结构限制**：
   - 注意力模块forward函数必须接受一个DynamicCache对象并调用 `cache.update()`。
@@ -126,7 +154,7 @@ class FakeQuantDynamicCache(AutoFakeQuantDynamicCache):
   - 伪量化阶段仍需原精度内存，真实内存节省需要底层算子支持。
   - 量化参数本身占用少量额外内存。
 
-#### 常见问题排查
+## 常见问题排查
 
 1. 缓存未被量化
 

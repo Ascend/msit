@@ -6,7 +6,7 @@
 
 | 模型 | 支持量化 | 权重链接 | 量化部署支持 | 量化推荐实践 |
 |-----------|-----------|---------|---------|---------|
-| LLaVA | W8A8静态量化 | [LLaVA-1.5-7b-hf](https://huggingface.co/llava-hf/llava-1.5-7b-hf/tree/main) | MindIE当前不支持<br>vLLM Ascend当前不支持 | [LLaVA 量化使用说明](./LLaVA/README.md) |
+| LLaVA | W8A8静态量化 | [LLaVA-1.5-7b-hf](https://huggingface.co/llava-hf/llava-1.5-7b-hf/tree/a272c74b2481d8aff3aa6fc2c4bf891fe57334fb) | MindIE当前不支持<br>vLLM Ascend当前不支持 | [LLaVA 量化使用说明](./LLaVA/README.md) |
 | Qwen-VL | W8A8静态量化 | [Qwen-VL](https://huggingface.co/Qwen/Qwen-VL/tree/main) | MindIE当前不支持<br>vLLM Ascend当前不支持 | [Qwen-VL 量化使用说明](./Qwen-VL/README.md) |
 | InternVL2 | W8A8静态量化 | [InternVL2-8B](https://huggingface.co/OpenGVLab/InternVL2-8B/tree/main)<br>[InternVL2-40B](https://huggingface.co/OpenGVLab/InternVL2-40B/tree/main) | MindIE当前不支持<br>vLLM Ascend当前不支持 | [InternVL2 量化使用说明](./InternVL2/README.md) |
 | Qwen2-VL | W8A8静态量化 | [Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct/tree/main)<br>[Qwen2-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-72B-Instruct/tree/main) | MindIE 2.1.RC1及之后版本支持<br>vLLM Ascend当前不支持 | [Qwen2-VL 量化使用说明](./Qwen2-VL/README.md) |

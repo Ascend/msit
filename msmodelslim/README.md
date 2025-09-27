@@ -7,10 +7,11 @@
 
 [安装指南](./docs/安装指南.md) |
 [快速入门](./docs/快速入门/一键量化快速入门.md) |
-[支持矩阵](./docs/README.md#支持矩阵) |
+[支持矩阵](./docs/支持矩阵/大模型支持矩阵.md) |
 [功能指南](./docs/README.md#功能指南) |
+[自主量化](./docs/自主量化/模型接入.md) |
 [案例集](./docs/README.md#案例集) |
-[FAQ](./docs/README.md#faq)
+[FAQ](./docs/FAQ.md)
 
 </div>
 
@@ -40,35 +41,40 @@ msModelSlim，全称MindStudio ModelSlim，昇腾模型压缩工具。
 
 ## 安装指南
 
-具体安装步骤请查看[安装指南](./docs/安装指南.md)
+具体安装步骤请查看[安装指南](./docs/安装指南.md)。
 
 ## 快速入门
 
 快速入门旨在帮助用户快速通过一键量化的方式完成大模型量化功能。
 
-具体快速入门请查看[快速入门](./docs/快速入门/一键量化快速入门.md)
+具体快速入门请查看[快速入门](./docs/快速入门/一键量化快速入门.md)。
 
 ## 支持矩阵
 
 支持矩阵旨在以表格形式呈现不同功能和模型已适配场景的情况。
 
-具体支持矩阵请查看[支持矩阵](./docs/README.md#支持矩阵)
+具体支持矩阵请查看[支持矩阵](./docs/支持矩阵/大模型支持矩阵.md)。
 
 ## 功能指南
 
 功能指南基于msModelSlim不同架构下的功能支持情况，提供功能使用说明和接口说明。
 
-具体功能指南请查看[功能指南](./docs/README.md#功能指南)
+具体功能指南请查看[功能指南](./docs/README.md#功能指南)。
+
+## 自主量化
+面向需要将自有模型接入 msModelSlim 的开发者，提供自主将模型接入msModelSlim一键量化的指导。
+
+具体模型接入指南请查看[自主量化模型接入指南](./docs/自主量化/模型接入.md)。
 
 ## 案例集
 
 案例集通过具体的文字说明和代码示例，以实际应用场景为基础，旨在指导用户快速熟悉特定场景下msModelSlim工具的使用，包括一些精度调优方法等，msModelSlim将持续完善案例集。
 
-具体案例集请查看[案例集](./docs/README.md#案例集)
+具体案例集请查看[案例集](./docs/README.md#案例集)。
 
 ## 常见问题
 
-相关FAQ请参考链接：[FAQ](./docs/README.md#faq)
+相关FAQ请参考链接：[FAQ](./docs/FAQ.md)
 
 ## 其他资源
 - [提issue](https://gitcode.com/Ascend/msit/issues/create?type=template&title=Bug-Report|%E7%BC%BA%E9%99%B7%E5%8F%8D%E9%A6%88&template=.gitcode%252FISSUE_TEMPLATE%252Fbug-report.yml&default_branch=master&project_path_with_namespace=Ascend%252F.gitcode)

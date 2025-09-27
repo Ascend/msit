@@ -16,6 +16,26 @@
 ## 环境配置
 
 - 基础环境配置请参考[安装指南](../../../docs/安装指南.md)
+- 为避免出现类似[读取不到模型目录下的 SimSun.ttf 文件](https://github.com/QwenLM/Qwen-VL/issues/319)的问题，建议手动下载[SimSun.ttf](https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/SimSun.ttf)并移动到原始浮点权重路径中，并修改tokenization_qwen.py中FONT_PATH，例如：
+  ```python
+  # 代码30行
+  # FONT_PATH = try_to_load_from_cache("Qwen/Qwen-VL-Chat", "SimSun.ttf")
+  # if FONT_PATH is None:
+  #     if not os.path.exists("SimSun.ttf"):
+  #         ttf = requests.get("https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/SimSun.ttf")
+  #         open("SimSun.ttf", "wb").write(ttf.content)
+  #     FONT_PATH = "SimSun.ttf"
+  FONT_PATH = "SimSun.ttf"
+  ```
+- 提前修改modeling_qwen.py中SUPPORT_CUDA字段
+  ```python
+  # 代码35行
+  SUPPORT_CUDA = False
+  ```
+- 另需安装依赖：
+  ```
+  pip install transformers-stream-generator
+  ```
 
 ## 生成量化权重
 

@@ -26,6 +26,36 @@
     - "*self_attn*"
 ```
 
+## YAML配置示例
+
+```yaml
+spec:
+  process:
+    - type: "iter_smooth"
+      alpha: 0.9                           # 平衡参数，控制激活和权重的相对重要性，默认0.9。
+      scale_min: 1e-5                      # 缩放因子的最小值，防止数值不稳定，默认1e-5。
+      symmetric: True                     # 是否启用对称量化，默认True。
+      enable_subgraph_type:                # 开启的子图类型。
+        - 'norm-linear'
+        - 'linear-linear'
+        - 'ov'
+        - 'up-down'
+      include: ["*"]                       # 包含的层模式，支持通配符。
+      exclude: ["*self_attn*"]             # 排除的层模式，支持通配符。
+```
+
+## YAML配置字段详解
+
+| 字段名 | 作用      | 说明 |
+|--------|---------|------|
+| type | 处理器类型标识 | 固定值"iter_smooth"，用于标识这是一个迭代平滑处理器。|
+| alpha | 平衡参数    | 大于0的浮点数，控制激活和权重的相对重要性，默认0.9。 |
+| scale_min | 缩放因子最小值 | 大于0的浮点数，防止数值不稳定，默认1e-5。 |
+| symmetric | 是否对称量化  | 布尔值，True为对称，False为非对称，默认True。 |
+| enable_subgraph_type | 开启的子图类型 | 支持的子图类型列表，包括"norm-linear"、"linear-linear"、"ov"、"up-down"。 |
+| include | 包含的层模式  | 支持通配符匹配。 |
+| exclude | 排除的层模式  | 支持通配符匹配。|
+
 ## 原理和实现
 
 ### 原理
