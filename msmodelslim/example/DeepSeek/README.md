@@ -332,7 +332,7 @@ python3 quant_deepseek_W8A8.py --model_path ${model_path} --save_path ${save_pat
   --calib_dataset ./calib_prompt_0528.json \
   --anti_method m4 \
   --quant_mtp mix \
-  --rot
+  --rot \
   --fa_quant
   ```
 
