@@ -98,28 +98,26 @@ class TlsCollector(HCCNCollector):
 class HCCLCollector(BaseCollector):
     CMD_NAME = "ping"
 
-    def __init__(self, error_handler=None, *, rank_table=None):
-        super().__init__(error_handler)
+    def __init__(self, rank_table, npu_count=None):
+        super().__init__()
         self.rank_table = rank_table
+        self.npu_count = npu_count if npu_count else get_npu_count()
         self.option = "-hccs_ping" if getattr(rank_table, 'version', "1.0") == "1.2" else "-ping"
-    
+
     def _run_cmd(self, device_id: int, device_ip: str):
         cmd = f"{HCCN_TOOL_CMD} -i {device_id} {self.option} -g address {device_ip}"
+        proc = subprocess.Popen(
+            shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
 
-        output = None
-        try:
-            output = subprocess.check_output(
-                shlex.split(cmd), stderr=subprocess.DEVNULL, text=True
-            )
-        except Exception as e:
-            output = "100% packet loss"
-
-        return output
+        ret = proc.wait()
+        output = proc.stdout.read()
+        return cmd, ret, output
 
     def _collect_data(self):
-        if not shutil.which(HCCN_TOOL_CMD):
-            working_place = "宿主机" if not is_in_container() else "容器"
-            self.error_handler.add_error(
+        if not shutil.which(HCCN_TOOL_CMD):	
+            working_place = "宿主机" if not is_in_container() else "容器"	
+            self.error_handler.add_error(	
                 filename=__file__,
                 function='_collect_data', lineno=63,
                 what=f"{working_place}上没有找到 'hccn_tool' 命令",
@@ -127,12 +125,11 @@ class HCCLCollector(BaseCollector):
             )
             return {}
 
-        npu_count = get_npu_count()
-        max_workers = min(npu_count * 8, os.cpu_count() or 1) # each device has maximum concurrency 8
+        max_workers = min(self.npu_count, os.cpu_count() or 1) # if exceeds npu count will cause error
 
         all_devices = (
-            device_info 
-            for device_info_list in self.rank_table.host_to_devices.values() 
+            device_info
+            for device_info_list in self.rank_table.host_to_devices.values()
             for device_info in device_info_list
         )
 
@@ -141,14 +138,12 @@ class HCCLCollector(BaseCollector):
             futures = {
                 executor.submit(self._run_cmd, device_id, device_info.device_ip): (device_id, device_info.rank_id)
                 for device_info in all_devices
-                for device_id in range(npu_count)
+                for device_id in range(self.npu_count)
             }
 
-        results = [[] for _ in range(npu_count)]
+        results = {}
         for future in as_completed(futures):
-            device_id, rank_id = futures[future]
-            results[device_id].append(
-                {"rank_id": rank_id, "result": future.result()}
-            )
+            cmd, ret, output = future.result()
+            results[cmd] = ret, output
 
         return results

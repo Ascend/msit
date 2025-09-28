@@ -91,16 +91,9 @@ class HCCLChecker(BaseChecker):
         """
         if not results:
             raise ValueError(f"Expected 'result' not empty. Got '{results}'")
-
-        success_pattern = "3 received, 0.00% packet loss"
-        for device_id, ping_results in enumerate(results):
-            for info in ping_results:
-                result = info.get('result', '')
-                rank_id = info.get('rank_id', 'Unknown')
-                if success_pattern not in result:
-                    self.error_handler.add_error(
-                        path=f'Device ID: {device_id} -x-> Rank ID: {rank_id}', 
-                        expected=success_pattern, actual=result,
-                        reason=f'Ping 第 {rank_id} 个 rank 的 device 失败',
-                        severity="high"
-                    )
+        
+        for cmd, (ret, out) in results.items():
+            if ret:
+                self.error_handler.add_error(
+                    path=cmd, reason=out, severity='high'
+                )
