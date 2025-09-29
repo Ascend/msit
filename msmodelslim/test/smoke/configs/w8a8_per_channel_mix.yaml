@@ -44,3 +44,4 @@ spec:
     - type: "ascendv1_saver"
       part_file_size: 4
 
+  dataset: test.json

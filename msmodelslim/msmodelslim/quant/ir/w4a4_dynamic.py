@@ -62,7 +62,7 @@ class W4A4DynamicPerChannelFakeQuantLinear(AutoFakeQuantLinear):
         self.w_scheme = w_q_param.scheme
         self.weight_scale = nn.Parameter(w_q_param.ext.pop("scale"), requires_grad=False)
         self.weight_offset = nn.Parameter(w_q_param.ext.pop("offset"), requires_grad=False)
-        self.weight = nn.Parameter(w_q.value, requires_grad=False)
+        self.weight = nn.Parameter(w_q.value.to(torch.int8), requires_grad=False)
         self.bias = nn.Parameter(bias, requires_grad=False) if bias is not None else None
 
     def __repr__(self) -> str:
@@ -118,7 +118,7 @@ class W4A4DynamicPerGroupFakeQuantLinear(AutoFakeQuantLinear):
         self.w_scheme = w_q_param.scheme
         self.weight_scale = nn.Parameter(w_q_param.ext.pop("scale"), requires_grad=False)
         self.weight_offset = nn.Parameter(w_q_param.ext.pop("offset"), requires_grad=False)
-        self.weight = nn.Parameter(w_q.value, requires_grad=False)
+        self.weight = nn.Parameter(w_q.value.to(torch.int8), requires_grad=False)
         self.bias = nn.Parameter(bias, requires_grad=False) if bias is not None else None
 
     def __repr__(self) -> str:

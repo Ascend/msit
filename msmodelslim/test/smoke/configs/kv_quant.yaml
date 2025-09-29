@@ -9,3 +9,5 @@ spec:
         method: "minmax"
       include: [ "*" ]
       exclude: [ "model.layers.0.self_attn" ]
+
+  dataset: test.json

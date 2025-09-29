@@ -31,6 +31,8 @@ def check_quant_model_description(tmp_dir: str, expected_quant_types: Union[str,
     with open(quant_desc_file, "r") as f:
         config_data = json.load(f)
 
+    print(json.dumps(config_data, indent=4, ensure_ascii=False))
+
     assert isinstance(config_data, dict), "Config data should be a dictionary"
     assert "version" in config_data, "Config data should have version field"
     assert config_data["version"] == "1.0.0", "version should be 1.0.0"
@@ -315,9 +317,16 @@ def run_fake_quantization_test(
     # 测试 __repr__
     print(model_adapter.loaded_model)
 
+    try:
+        import accelerate
+        device_map = accelerate.infer_auto_device_map(model_adapter.loaded_model)
+        model_adapter.loaded_model = accelerate.dispatch_model(model_adapter.loaded_model, device_map=device_map)
+    except ImportError:
+        pass
+
     # 测试伪量化
     tokenizer = model_adapter.loaded_tokenizer
-    input_ids = tokenizer(input_text, return_tensors="pt", truncation=True)
+    input_ids = tokenizer(input_text, return_tensors="pt", truncation=True).to(device=model_adapter.loaded_model.device)
     model_adapter.loaded_model(**input_ids)
 
     # 检查quant_model_description.json包含基本的正确的内容

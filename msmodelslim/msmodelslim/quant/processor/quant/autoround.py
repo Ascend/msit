@@ -16,7 +16,6 @@
 from typing import Dict, Any, List, Optional, Literal, Tuple, Union
 
 import torch
-import transformers
 from pydantic import BaseModel, Field, model_validator
 from torch import nn
 
@@ -44,7 +43,7 @@ DEFAULT_GROUP_SIZE = -1
 QUANTIZATION_THRESHOLD = 8
 
 # 支持的层类型
-SUPPORTED_LAYER_TYPES = (torch.nn.Linear, transformers.modeling_utils.Conv1D)
+SUPPORTED_LAYER_TYPES = (torch.nn.Linear,)
 
 # 平滑层模式
 SMOOTH_LAYER_PATTERNS = ['.down_proj', '.o_proj', 'kv_b_proj']
@@ -599,8 +598,8 @@ class AutoroundQuantProcessor(AutoSessionProcessor):
             iters=self.iters,
             enable_minmax_tuning=self.enable_minmax_tuning,
             enable_quanted_input=self.enable_quanted_input,
-            not_use_best_mse=False,
             shared_cache_keys=self.shared_cache_keys,
+            gradient_accumulate_steps=8,
         )
         get_logger().debug(
             f"Trainer initialized with minmax_tuning={self.enable_minmax_tuning}, "
@@ -628,18 +627,18 @@ class AutoroundQuantProcessor(AutoSessionProcessor):
             for data, out_q in zip(request.datas, self.quantized_output):
                 data[0][0][0] = out_q
 
-        # 应用最佳参数
-        get_logger().debug("Applying best parameters and unwrapping blocks...")
-        with torch.no_grad(), torch.device(device=self.device):
-            self._unwrapper_block(request.module, self.best_params)
-            self.best_params = {}
-
         if self.enable_quanted_input:
             get_logger().debug("Running forward pass with quantized input...")
             self._run_forward_if_need(request)
             self.quantized_output = [output[0] for output in request.outputs]
             request.outputs = [(output_f,) + data[1:] for output_f, data in zip(self.float_output, request.outputs)]
             get_logger().debug(f"Generated {len(self.quantized_output)} quantized outputs")
+
+        # 应用最佳参数
+        get_logger().debug("Applying best parameters and unwrapping blocks...")
+        with torch.no_grad(), torch.device(device=self.device):
+            self._unwrapper_block(request.module, self.best_params)
+            self.best_params = {}
 
     def post_run(self) -> None:
         for n, m in self.model.named_modules():

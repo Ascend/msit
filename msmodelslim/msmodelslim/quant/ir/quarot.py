@@ -53,20 +53,20 @@ class QuarotOnlineRotationInfo:
         self.heads_rotation_layers: List[str] = []
         self.kronecker_rotation_layers: List[str] = []
 
-    def add_rotation_layer(self, layer_index: str) -> None:
-        """添加使用全局旋转矩阵的层索引。"""
-        self.heads_rotation_layers.append(layer_index)
+    def add_rotation_layer(self, layer_name: str) -> None:
+        """添加使用全局旋转矩阵的层名称。"""
+        self.heads_rotation_layers.append(layer_name)
 
-    def add_kronecker_rotation_layer(self, layer_index: str) -> None:
-        """添加使用全局Kronecker旋转矩阵的层索引。"""
-        self.kronecker_rotation_layers.append(layer_index)
+    def add_kronecker_rotation_layer(self, layer_name: str) -> None:
+        """添加使用全局Kronecker旋转矩阵的层名称。"""
+        self.kronecker_rotation_layers.append(layer_name)
 
     def get_quarot_save_info(self) -> Dict[str, Any]:
         """
         获取quarot相关的保存信息。
         
         Returns:
-            包含旋转矩阵和层索引的字典
+            包含旋转矩阵和层名称的字典
         """
         return {
             "max_tp_size": self.max_tp_size,
@@ -90,7 +90,7 @@ class QuarotOnlineHeadRotationWrapper(WrapperIR):
     def __init__(
             self,
             module: nn.Module,
-            layer_index: str,
+            layer_name: str,
             rotation_info: QuarotOnlineRotationInfo
     ):
         """
@@ -98,13 +98,13 @@ class QuarotOnlineHeadRotationWrapper(WrapperIR):
         
         Args:
             module: 被包装的AutoFakeQuantLinear实例
-            layer_index: 层索引，用于保存时标识
+            layer_name: 层名称，用于保存时标识
             rotation_info: 旋转矩阵信息
         """
         super().__init__(module)
-        self.layer_index = layer_index
+        self.layer_name = layer_name
         self.rotation_info = rotation_info
-        self.rotation_info.add_rotation_layer(layer_index)
+        self.rotation_info.add_rotation_layer(layer_name)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -162,7 +162,7 @@ class QuarotOnlineKroneckerRotationWrapper(WrapperIR):
     def __init__(
             self,
             module: nn.Module,
-            layer_index: str,
+            layer_name: str,
             rotation_info: QuarotOnlineRotationInfo
     ):
         """
@@ -170,13 +170,13 @@ class QuarotOnlineKroneckerRotationWrapper(WrapperIR):
         
         Args:
             module: 被包装的AutoFakeQuantLinear实例
-            layer_index: 层索引，用于保存时标识
+            layer_name: 层名称，用于保存时标识
             rotation_info: 旋转矩阵信息
         """
         super().__init__(module)
-        self.layer_index = layer_index
+        self.layer_name = layer_name
         self.rotation_info = rotation_info
-        self.rotation_info.add_kronecker_rotation_layer(layer_index)
+        self.rotation_info.add_kronecker_rotation_layer(layer_name)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -231,15 +231,15 @@ class QuarotHeadsRotationHookIR(HookIR):
     该类实现了HookIR抽象基类，将hook信息转换为QuarotOnlineRotationWrapper。
     """
 
-    def __init__(self, layer_index: str, rotation_info: QuarotOnlineRotationInfo):
+    def __init__(self, layer_name: str, rotation_info: QuarotOnlineRotationInfo):
         """
         初始化QuarotHookIR。
         
         Args:
-            layer_index: 层索引
+            layer_name: 层名称
             rotation_info: 旋转矩阵信息
         """
-        self.layer_index = layer_index
+        self.layer_name = layer_name
         self.rotation_info = rotation_info
 
     def __call__(
@@ -283,7 +283,7 @@ class QuarotHeadsRotationHookIR(HookIR):
             QuarotOnlineRotationWrapper实例
         """
         # 将hook信息转换为WrapperIR
-        return QuarotOnlineHeadRotationWrapper(module, self.layer_index, self.rotation_info)
+        return QuarotOnlineHeadRotationWrapper(module, self.layer_name, self.rotation_info)
 
 
 class QuarotKroneckerRotationHookIR(HookIR):
@@ -293,15 +293,15 @@ class QuarotKroneckerRotationHookIR(HookIR):
     该类实现了HookIR抽象基类，将hook信息转换为QuarotOnlineKroneckerRotationWrapper。
     """
 
-    def __init__(self, layer_index: str, rotation_info: QuarotOnlineRotationInfo):
+    def __init__(self, layer_name: str, rotation_info: QuarotOnlineRotationInfo):
         """
         初始化QuarotKroneckerHookIR。
         
         Args:
-            layer_index: 层索引
+            layer_name: 层名称
             rotation_info: 旋转矩阵信息
         """
-        self.layer_index = layer_index
+        self.layer_name = layer_name
         self.rotation_info = rotation_info
 
     def __call__(
@@ -346,4 +346,4 @@ class QuarotKroneckerRotationHookIR(HookIR):
             QuarotOnlineKroneckerRotationWrapper实例
         """
         # 将hook信息转换为WrapperIR
-        return QuarotOnlineKroneckerRotationWrapper(module, self.layer_index, self.rotation_info)
+        return QuarotOnlineKroneckerRotationWrapper(module, self.layer_name, self.rotation_info)

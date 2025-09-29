@@ -29,13 +29,13 @@ from .base import invoke_test, is_npu_available
     pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
 ])
 @pytest.mark.smoke
-def test_w8a8_dynamic_per_channel_quantization(test_device, test_dtype):
+def test_w8a8_dynamic_per_channel_quantization(test_device: str, test_dtype: torch.dtype):
     """测试W8A8 per_token量化功能（act: per_token, weight: per_channel）"""
-    torch.set_default_dtype(test_dtype)
+
     tmp_dir = tempfile.mkdtemp()
 
     try:
-        model_adapter = invoke_test("kv_smooth.yaml", tmp_dir)
+        model_adapter = invoke_test("kv_smooth.yaml", tmp_dir, device=test_device)
     finally:
         # 清理临时目录
         if os.path.exists(tmp_dir):

@@ -122,7 +122,7 @@ def quant_tensor_asym(
         tensor: Tensor containing the tensor to be quantized
         bits: Number of bits for quantization (e.g., 2, 3, 4, 8)
         group_size: Number of elements to share scale for quantization
-        v: Rounding value perturbation
+        w_corr: Rounding value perturbation
         min_scale: Minimum scale coefficient for tensor
         max_scale: Maximum scale coefficient for tensor
         tensor_min (Tensor, optional): Minimum tensor value for quantization. Defaults to None.
@@ -184,7 +184,7 @@ def quant_tensor_sym(
         scale_dtype=torch.float16,
         tensor_min=None,
         tensor_max=None,
-        q_scale_thresh=1e-5,
+        q_scale_thresh=torch.finfo(torch.float32).eps,
         output_qdq=True,
         **kwargs
 ):
@@ -194,7 +194,7 @@ def quant_tensor_sym(
         tensor: Tensor containing the tensor to be quantized
         bits: Number of bits for quantization (e.g., 2, 3, 4, 8)
         group_size: Number of elements to share scale for quantization
-        v: Rounding value perturbation
+        w_corr: Rounding value perturbation
         min_scale: Minimum scale coefficient for tensor
         max_scale: Maximum scale coefficient for tensor
         tensor_min (Tensor, optional): Minimum tensor value for quantization. Defaults to None.
@@ -211,6 +211,10 @@ def quant_tensor_sym(
     maxq = 2 ** (bits - 1) - 1
 
     if tensor_min is None or tensor_max is None:
+
+        if bits != 4:
+            robust_quantile = 1.0
+
         q_lo = torch.quantile(tensor.to(torch.float32), 1 - robust_quantile, dim=-1)
         q_hi = torch.quantile(tensor.to(torch.float32), robust_quantile, dim=-1)
 

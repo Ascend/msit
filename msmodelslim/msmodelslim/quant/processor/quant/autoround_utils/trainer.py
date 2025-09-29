@@ -31,7 +31,7 @@ class BlockQuantTrainer:
             amp: bool = False,
             amp_dtype: torch.dtype = torch.float16,
             not_use_best_mse: bool = False,
-            dynamic_max_gap: int = 10,
+            dynamic_max_gap: int = -1,
             infer_bs_coeff: int = 1,
             shared_cache_keys: tuple = (),
             lr_scheduler=None
@@ -155,8 +155,6 @@ class BlockQuantTrainer:
             input_ids: 输入ID
             input_others: 其他输入数据
             float_output: 原始浮点输出
-            quantized_layer_names: 已量化层名称列表
-            unquantized_layer_names: 未量化层名称列表
             device: 计算设备
             
         Returns:
@@ -207,7 +205,7 @@ class BlockQuantTrainer:
             mse_reduction = "sum"
 
         mse_loss = torch.nn.MSELoss(reduction="none")
-        init_loss = None
+        init_loss = best_loss
         best_params = {}
         total_loss = 0
 
@@ -229,6 +227,8 @@ class BlockQuantTrainer:
 
             for tmp_step in range(self.gradient_accumulate_steps):
                 indices = whole_indices[tmp_step * self.batch_size: (tmp_step + 1) * self.batch_size]
+                if len(indices) == 0:
+                    indices = [0]
                 current_input_ids, current_input_others = self.sampling_inputs(
                     input_ids,
                     input_others,
@@ -269,6 +269,8 @@ class BlockQuantTrainer:
                     loss = mse_loss(  # pylint: disable=not-callable
                         output_q.to(torch.float32), current_output.to(torch.float32)
                     )
+
+                get_logger().debug(f"Loss for iter {i}: {total_loss}")
 
                 valid_mask = valid_mask.to(loss.device)
 
@@ -355,5 +357,3 @@ class BlockQuantTrainer:
             inputs = inputs_res
 
         return inputs
-
-

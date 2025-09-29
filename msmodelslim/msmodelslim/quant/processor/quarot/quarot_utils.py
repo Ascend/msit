@@ -96,25 +96,32 @@ class QuaRotUtils:
         return
 
     @staticmethod
-    def rotate_embedding(embedding_module: nn.Module, rot: torch.Tensor) -> None:
+    def rotate_embedding(embedding_module: nn.Module, rot: torch.Tensor, device: torch.device) -> None:
         """旋转嵌入层权重"""
         # embedding_module 就是嵌入层 (通常是 nn.Embedding)
+        ori_device = embedding_module.weight.device
+        embedding_module.to(device=device)
         dtype = embedding_module.weight.dtype
         device = embedding_module.weight.device
         weight = embedding_module.weight.to(device=device, dtype=torch.float32)
         embedding_module.weight.data.copy_(torch.matmul(weight, rot.to(device)).to(device=device, dtype=dtype))
+        embedding_module.to(device=ori_device)
         del weight
 
         return
 
     @staticmethod
-    def rotate_head(lm_head_module: nn.Module, rot: torch.Tensor) -> None:
+    def rotate_head(lm_head_module: nn.Module, rot: torch.Tensor, device: torch.device) -> None:
         """旋转输出头权重"""
+        ori_device = lm_head_module.weight.device
+        lm_head_module.to(device=device)
+        
         dtype = lm_head_module.weight.dtype
         device = lm_head_module.weight.device
 
         weight = lm_head_module.weight.to(device=device, dtype=torch.float32)
         lm_head_module.weight.data.copy_(torch.matmul(weight, rot.to(device)).to(device=device, dtype=dtype))
+        lm_head_module.to(device=ori_device)
         del weight
 
         return

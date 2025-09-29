@@ -183,9 +183,6 @@ class AscendV1Saver(AutoSaverProcessor):
             self.json_writer.write(key, val)
 
         if self.quarot_info is not None:
-            self.safetensors_writer.write("model.heads_rotation", self.quarot_info.heads_rotation)
-            self.safetensors_writer.write("model.kronecker_rotation_m", self.quarot_info.kronecker_rotation_m)
-            self.safetensors_writer.write("model.kronecker_rotation_n", self.quarot_info.kronecker_rotation_n)
             self.metadata['quarot'] = self.quarot_info.get_quarot_save_info()
 
         self.json_writer.write("version", self.version)
@@ -281,8 +278,9 @@ class AscendV1Saver(AutoSaverProcessor):
                 self.write_tensor(prefix + ".bias", "W8A8_DYNAMIC", module.bias.to(torch.float32))
 
     @save_this_rank_only()
-    def on_w8a8_dynamic_per_group(self, prefix: str, module: qir.W8A8DynamicPerChannelFakeQuantLinear):
+    def on_w8a8_dynamic_per_group(self, prefix: str, module: qir.W8A8DynamicPerGroupFakeQuantLinear):
         self.update_quant_type("W8A8_DYNAMIC")
+        self.group_size = module.group_size
 
         with torch.device(module.weight.device):
             weight_scale = module.weight_scale
@@ -313,6 +311,7 @@ class AscendV1Saver(AutoSaverProcessor):
     @save_this_rank_only()
     def on_w4a4_dynamic_per_channel(self, prefix: str, module: qir.W4A4DynamicPerChannelFakeQuantLinear):
         self.update_quant_type("W4A4_DYNAMIC")
+
         with torch.device(module.weight.device):
             weight_scale = module.weight_scale.unsqueeze(-1)
             weight_offset = module.weight_offset.unsqueeze(-1)
@@ -325,6 +324,8 @@ class AscendV1Saver(AutoSaverProcessor):
     @save_this_rank_only()
     def on_w4a4_dynamic_per_group(self, prefix: str, module: qir.W4A4DynamicPerGroupFakeQuantLinear):
         self.update_quant_type("W4A4_DYNAMIC")
+        self.group_size = module.group_size
+
         with torch.device(module.weight.device):
             self.write_tensor(prefix + ".weight", "W4A4_DYNAMIC", module.weight.to(torch.int8))
             self.write_tensor(prefix + ".weight_scale", "W4A4_DYNAMIC", module.weight_scale.to(torch.float32))
@@ -377,6 +378,7 @@ class AscendV1Saver(AutoSaverProcessor):
             module: RotationWrapper模块实例
         """
         self.quarot_info = module.rotation_info
+        self.safetensors_writer.write(f"{prefix}.heads_rotation", self.quarot_info.heads_rotation.clone())
 
     @save_this_rank_only()
     def on_kronecker_rotation_wrapper(self, prefix: str, module: qir.QuarotOnlineKroneckerRotationWrapper):
@@ -390,6 +392,8 @@ class AscendV1Saver(AutoSaverProcessor):
             module: KroneckerRotationWrapper模块实例
         """
         self.quarot_info = module.rotation_info
+        self.safetensors_writer.write(f"{prefix}.kronecker_rotation_m", self.quarot_info.kronecker_rotation_m.clone())
+        self.safetensors_writer.write(f"{prefix}.kronecker_rotation_n", self.quarot_info.kronecker_rotation_n.clone())
 
     def update_quant_type(self, quant_type: str):
         if quant_type not in self.QUANT_TYPE_PRIORITY:
