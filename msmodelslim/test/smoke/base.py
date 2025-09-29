@@ -78,7 +78,7 @@ class FakeLlamaModelAdapter(Qwen3ModelAdapter):
         ]
 
 
-def invoke_test(config_name: str, model_save_path: str, offload_device: str = 'cpu'):
+def invoke_test(config_name: str, model_save_path: str, device: str = 'cpu', offload_device: str = 'cpu'):
     """使用真正的CLI parser来模拟命令行参数并返回model_adapter"""
     import sys
     from msmodelslim.cli.__main__ import main as cli_main
@@ -98,7 +98,7 @@ def invoke_test(config_name: str, model_save_path: str, offload_device: str = 'c
             '--model_type', 'fake_llama',
             '--model_path', './',
             '--save_path', model_save_path,
-            '--device', 'cpu',
+            '--device', device,
             '--config_path', config_path,
             '--trust_remote_code', 'False'
         ]
@@ -121,14 +121,14 @@ def invoke_test(config_name: str, model_save_path: str, offload_device: str = 'c
 
             # Mock LayerWiseRunner 构造时的 offload_device 参数
             from msmodelslim.core.runner.layer_wise_runner import LayerWiseRunner
-            
+
             # 保存原始的 __init__ 方法
             original_init = LayerWiseRunner.__init__
-            
+
             # 创建新的 __init__ 方法来设置 offload_device 参数
             def mock_init(self, adapter, offload_device=offload_device):
                 original_init(self, adapter, offload_device)
-            
+
             # 替换 __init__ 方法
             LayerWiseRunner.__init__ = mock_init
 

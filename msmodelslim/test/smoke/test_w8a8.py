@@ -19,7 +19,6 @@ import tempfile
 
 import pytest
 import torch
-from safetensors.torch import safe_open
 
 from msmodelslim.quant.ir import W8A8StaticFakeQuantLinear, W8A8DynamicPerChannelFakeQuantLinear, \
     W8A8DynamicPerGroupFakeQuantLinear
@@ -34,17 +33,17 @@ from .utils import run_fake_quantization_test, check_w8a8_static_export, check_w
     pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
 ])
 @pytest.mark.smoke
-def test_w8a8_static_per_channel_quantization(test_device, test_dtype):
+def test_w8a8_static_per_channel_quantization(test_device: str, test_dtype: torch.dtype):
     """测试W8A8 per_channel量化功能（act: per_tensor, weight: per_channel）"""
-    torch.set_default_dtype(test_dtype)
+
     tmp_dir = tempfile.mkdtemp()
 
     try:
-        # 执行per_channel量化测试（w8a8-static-per-channel.yaml使用per_tensor+per_channel）
-        model_adapter = invoke_test("w8a8_static_per_channel.yaml", tmp_dir)
+        # 执行per_channel量化测试
+        model_adapter = invoke_test("w8a8_static_per_channel.yaml", tmp_dir, device=test_device)
 
         assert isinstance(model_adapter, FakeLlamaModelAdapter), "model_adapter should be FakeLlamaModelAdapter"
-        
+
         print(model_adapter.loaded_model)
 
         # 使用公共函数进行伪量化测试
@@ -68,14 +67,14 @@ def test_w8a8_static_per_channel_quantization(test_device, test_dtype):
     pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
 ])
 @pytest.mark.smoke
-def test_w8a8_mixed_quantization(test_device, test_dtype):
+def test_w8a8_mixed_quantization(test_device: str, test_dtype: torch.dtype):
     """测试W8A8混合量化功能（MOE模型）"""
-    torch.set_default_dtype(test_dtype)
+
     tmp_dir = tempfile.mkdtemp()
 
     try:
         # 执行混合量化测试
-        model_adapter = invoke_test("w8a8_per_channel_mix.yaml", tmp_dir)
+        model_adapter = invoke_test("w8a8_per_channel_mix.yaml", tmp_dir, device=test_device)
 
         assert isinstance(model_adapter, FakeLlamaModelAdapter), "model_adapter should be FakeLlamaModelAdapter"
 
@@ -103,13 +102,13 @@ def test_w8a8_mixed_quantization(test_device, test_dtype):
     pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
 ])
 @pytest.mark.smoke
-def test_w8a8_dynamic_per_channel_quantization(test_device, test_dtype):
+def test_w8a8_dynamic_per_channel_quantization(test_device: str, test_dtype: torch.dtype):
     """测试W8A8 per_token量化功能（act: per_token, weight: per_channel）"""
-    torch.set_default_dtype(test_dtype)
+
     tmp_dir = tempfile.mkdtemp()
 
     try:
-        model_adapter = invoke_test("w8a8_dynamic_per_channel.yaml", tmp_dir)
+        model_adapter = invoke_test("w8a8_dynamic_per_channel.yaml", tmp_dir, device=test_device)
 
         assert isinstance(model_adapter, FakeLlamaModelAdapter), "model_adapter should be FakeLlamaModelAdapter"
 
@@ -134,13 +133,13 @@ def test_w8a8_dynamic_per_channel_quantization(test_device, test_dtype):
     pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
 ])
 @pytest.mark.smoke
-def test_w8a8_dynamic_per_group_quantization(test_device, test_dtype):
+def test_w8a8_dynamic_per_group_quantization(test_device: str, test_dtype: torch.dtype):
     """测试W8A8 per_token量化功能（act: per_token, weight: per_channel）"""
-    torch.set_default_dtype(test_dtype)
+
     tmp_dir = tempfile.mkdtemp()
 
     try:
-        model_adapter = invoke_test("w8a8_dynamic_per_group.yaml", tmp_dir)
+        model_adapter = invoke_test("w8a8_dynamic_per_group.yaml", tmp_dir, device=test_device)
 
         assert isinstance(model_adapter, FakeLlamaModelAdapter), "model_adapter should be FakeLlamaModelAdapter"
 

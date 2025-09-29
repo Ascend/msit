@@ -137,10 +137,11 @@ def matmul_had_u_t(x: torch.Tensor) -> torch.Tensor:
 
 
 def random_hadamard_matrix(size: int, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
-    rot: torch.Tensor = torch.randint(low=0, high=2, size=(size,)).to(dtype)
-    rot = rot * 2 - 1
-    rot = torch.diag(rot)
-    return matmul_had_u(rot).to(device)
+    with torch.device(device=device):
+        rot: torch.Tensor = torch.randint(low=0, high=2, size=(size,)).to(dtype)
+        rot = rot * 2 - 1
+        rot = torch.diag(rot)
+        return matmul_had_u(rot).to(device)
 
 
 def is_pow2(n: int) -> bool:

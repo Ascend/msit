@@ -30,13 +30,12 @@ from .utils import run_fake_quantization_test
     pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
 ])
 @pytest.mark.smoke
-def test_w4a8_dynamic_per_channel_quantization(test_device, test_dtype):
-    torch.set_default_dtype(test_dtype)
+def test_w4a8_dynamic_per_channel_quantization(test_device: str, test_dtype: torch.dtype):
     tmp_dir = tempfile.mkdtemp()
 
     try:
-        # 执行per_channel量化测试（w8a8-static-per-channel.yaml使用per_tensor+per_channel）
-        model_adapter = invoke_test("w4a8_dynamic_per_channel.yaml", tmp_dir)
+        # 执行per_channel量化测试
+        model_adapter = invoke_test("w4a8_dynamic_per_channel.yaml", tmp_dir, device=test_device)
 
         assert isinstance(model_adapter, FakeLlamaModelAdapter), "model_adapter should be FakeLlamaModelAdapter"
 

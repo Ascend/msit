@@ -23,7 +23,8 @@ import msmodelslim.quant.ir as qir
 from msmodelslim.core.QAL.qregistry import QABCRegistry
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.quant.processor.base import AutoProcessorConfig, AutoSessionProcessor
-from msmodelslim.utils.exception import SchemaValidateError
+from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
+from msmodelslim.utils.logging import get_logger
 from .quarot_interface import QuaRotAdapter
 from .quarot_utils import QuaRotUtils
 
@@ -82,24 +83,39 @@ class QuaRotProcessor(AutoSessionProcessor):
         # 计算旋转矩阵
         model_dim = self.adapter.get_hidden_dim()
         head_dim = self.adapter.get_head_dim()
-        device = self.model.device
+        device = self.get_available_device()
+
+        get_logger().info(f"Creating rotation matrices on device: {device}")
+
         self.rot = QuaRotUtils.create_rot(model_dim, block_size=self.config.block_size, device=device)
         self.rot_att_v = QuaRotUtils.create_rot(head_dim, block_size=self.config.block_size, device=device)
 
+        get_logger().info(f"Rotation matrices created on device: {device}")
+
         if self.config.online:
+            get_logger().info(f"Creating online rotation matrices on device: {device}")
             rot1, rot2, self.rot_online_o_proj = self._add_online_rotations(self.model)
             identity = torch.eye(int(self.adapter.get_head_dim())).to(self.rot_online_o_proj)
             self.rot_online_down_proj = (rot1, rot2)
             self.online_rotation_info = qir.QuarotOnlineRotationInfo(self.rot_online_o_proj, identity, rot1, rot2,
                                                                      self.config.max_tp_size)
+            get_logger().info(f"Online rotation matrices created on device: {device}")
+
         # 层融合
+        get_logger().info(f"Fusing layer norm and linear on device: {device}")
         QuaRotUtils.fuse_ln_linear(
             self.model.get_submodule(self.adapter.get_pre_head_layernorm()),
             [self.model.get_submodule(self.adapter.get_lm_head())])
+        get_logger().info(f"Layer norm and linear fused on device: {device}")
         # 旋转
-        QuaRotUtils.rotate_embedding(self.model.get_submodule(self.adapter.get_embedding()), self.rot)
+        get_logger().info(f"Rotating embedding on device: {device}")
+        QuaRotUtils.rotate_embedding(self.model.get_submodule(self.adapter.get_embedding()), self.rot, device)
+        get_logger().info(f"Embedding rotated on device: {device}")
+
         if hasattr(self.model.config, 'tie_word_embeddings') and not self.model.config.tie_word_embeddings:
-            QuaRotUtils.rotate_head(self.model.get_submodule(self.adapter.get_lm_head()), self.rot)
+            get_logger().info(f"Rotating head on device: {device}")
+            QuaRotUtils.rotate_head(self.model.get_submodule(self.adapter.get_lm_head()), self.rot, device)
+            get_logger().info(f"Head rotated on device: {device}")
 
     def preprocess(self, request: BatchProcessRequest) -> None:
 
@@ -129,24 +145,59 @@ class QuaRotProcessor(AutoSessionProcessor):
         if self.config.online:
             if layer_idx in self.config.down_proj_online_layers:
                 for _, down_proj in up_down_pairs.items():
-                    # 使用with_kwargs注册Kronecker HookIR实例作为hook（用于down_proj）
+                    # 获取完整的模块名称
+                    full_module_name = self._get_full_module_name(down_proj, request)
+                    # 使用完整的layer_name注册Kronecker HookIR实例作为hook（用于down_proj）
                     hook_ir = qir.QuarotKroneckerRotationHookIR(
-                        str(layer_idx),
+                        full_module_name,
                         self.online_rotation_info
                     )
                     down_proj.register_forward_pre_hook(hook_ir)
 
             if online_oproj_rotation:
                 for o_proj, _ in ov_pairs.items():
-                    # 使用with_kwargs注册普通HookIR实例作为hook（用于o_proj）
+                    # 获取完整的模块名称
+                    full_module_name = self._get_full_module_name(o_proj, request)
+                    # 使用完整的layer_name注册普通HookIR实例作为hook（用于o_proj）
                     hook_ir = qir.QuarotHeadsRotationHookIR(
-                        str(layer_idx),
+                        full_module_name,
                         self.online_rotation_info
                     )
                     o_proj.register_forward_pre_hook(hook_ir)
 
     def post_run(self) -> None:
         pass
+
+    def get_available_device(self) -> torch.device:
+        if hasattr(torch, 'npu') and torch.npu.is_available():
+            return torch.device("npu:0")
+        elif hasattr(torch, 'cuda') and torch.cuda.is_available():
+            return torch.device("cuda:0")
+        else:
+            return torch.device("cpu")
+
+    def _get_full_module_name(self, target_module: nn.Module, request: BatchProcessRequest) -> str:
+        """
+        通过遍历request.module获取完整的模块名称。
+        
+        Args:
+            target_module: 目标模块
+            request: 处理请求，包含模块前缀信息
+            
+        Returns:
+            完整的模块名称
+            
+        Raises:
+            UnsupportedError: 如果找不到完整的模块名称
+        """
+        for name, module in request.module.named_modules():
+            if module is target_module:
+                # 拼接完整路径：request.name + 相对路径
+                full_name = f"{request.name}.{name}" if name else request.name
+                return full_name
+        
+        # 如果找不到，抛出UnsupportedError
+        raise UnsupportedError(f"Cannot find full module name for {target_module}")
 
     def _add_online_rotations(self, model: nn.Module) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         if not hasattr(model.config, 'intermediate_size'):

@@ -26,6 +26,7 @@ from msmodelslim.core.runner.pipeline_interface import PipelineInterface
 from msmodelslim.core.runner.pipeline_parallel_runner import PPRunner
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import get_logger, logger_setter
+from msmodelslim.utils.seed import seed_all
 from .quant_config import ModelslimV1QuantConfig
 
 
@@ -85,8 +86,7 @@ class ModelslimV1QuantService(BaseQuantService):
                       ):
 
         common_seed = 42
-        torch.manual_seed(common_seed)
-        torch.cuda.manual_seed(common_seed)
+        seed_all(seed=common_seed, mode=True)
 
         if device == DeviceType.NPU:
             # 如果使用npu进行量化需开启二进制编译，避免在线编译算子

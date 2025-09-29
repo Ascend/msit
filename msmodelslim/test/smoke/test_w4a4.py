@@ -32,13 +32,12 @@ from .utils import run_fake_quantization_test, check_w4a4_dynamic_per_group_expo
     pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
 ])
 @pytest.mark.smoke
-def test_w4a4_dynamic_per_group_quantization(test_device, test_dtype):
-    torch.set_default_dtype(test_dtype)
+def test_w4a4_dynamic_per_group_quantization(test_device: str, test_dtype: torch.dtype):
     tmp_dir = tempfile.mkdtemp()
 
     try:
-        # 执行per_channel量化测试（w8a8-static-per-channel.yaml使用per_tensor+per_channel）
-        model_adapter = invoke_test("w4a4_dynamic_per_group.yaml", tmp_dir)
+        # 执行per_group量化测试
+        model_adapter = invoke_test("w4a4_dynamic_per_group.yaml", tmp_dir, device=test_device)
 
         assert isinstance(model_adapter, FakeLlamaModelAdapter), "model_adapter should be FakeLlamaModelAdapter"
 
@@ -64,13 +63,12 @@ def test_w4a4_dynamic_per_group_quantization(test_device, test_dtype):
     pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
 ])
 @pytest.mark.smoke
-def test_w4a4_dynamic_per_channel_quantization(test_device, test_dtype):
-    torch.set_default_dtype(test_dtype)
+def test_w4a4_dynamic_per_channel_quantization(test_device: str, test_dtype: torch.dtype):
     tmp_dir = tempfile.mkdtemp()
 
     try:
-        # 执行per_channel量化测试（w8a8-static-per-channel.yaml使用per_tensor+per_channel）
-        model_adapter = invoke_test("w4a4_dynamic_per_channel.yaml", tmp_dir)
+        # 执行per_channel量化测试
+        model_adapter = invoke_test("w4a4_dynamic_per_channel.yaml", tmp_dir, device=test_device)
 
         assert isinstance(model_adapter, FakeLlamaModelAdapter), "model_adapter should be FakeLlamaModelAdapter"
 
@@ -95,13 +93,12 @@ def test_w4a4_dynamic_per_channel_quantization(test_device, test_dtype):
     pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
 ])
 @pytest.mark.smoke
-def test_w4a4_laos_pipeline(test_device, test_dtype):
-    torch.set_default_dtype(test_dtype)
+def test_w4a4_laos_pipeline(test_device: str, test_dtype: torch.dtype):
     tmp_dir = tempfile.mkdtemp()
 
     try:
         # 执行per_channel量化测试（w8a8-static-per-channel.yaml使用per_tensor+per_channel）
-        model_adapter = invoke_test("w4a4_laos.yaml", tmp_dir)
+        model_adapter = invoke_test("w4a4_laos.yaml", tmp_dir, device=test_device)
 
         assert isinstance(model_adapter, FakeLlamaModelAdapter), "model_adapter should be FakeLlamaModelAdapter"
 

@@ -128,8 +128,6 @@ class WrapperLinear(torch.nn.Module):
         self.orig_layer.weight.grad = None
 
         shape = q_weight.shape
-        if isinstance(self.orig_layer, transformers.modeling_utils.Conv1D):
-            shape = q_weight.t().shape
 
         def _set_dict_attr(attr_dict, attr_name):
             for key in attr_dict.keys():
@@ -187,10 +185,12 @@ class WrapperLinear(torch.nn.Module):
             torch.Tensor: Output tensor after applying the wrapped layer.
         """
 
+        w_corr = torch.clamp(self.value, min=-0.5, max=0.5)
+
         if self.enable_trainable_smooth:
-            weight_q, _, _ = self._qdq_weight(self.value, self.min_scale, self.max_scale, self.act_smooth_scale)
+            weight_q, _, _ = self._qdq_weight(w_corr, self.min_scale, self.max_scale, self.act_smooth_scale)
         else:
-            weight_q, _, _ = self._qdq_weight(self.value, self.min_scale, self.max_scale)
+            weight_q, _, _ = self._qdq_weight(w_corr, self.min_scale, self.max_scale)
 
         # Online ratation Hood
         if self.orig_layer._forward_pre_hooks:
@@ -221,8 +221,6 @@ class WrapperLinear(torch.nn.Module):
 
         orig_layer = self.orig_layer
         orig_weight = getattr(orig_layer, "get_weight", lambda: orig_layer.weight)()
-        if isinstance(self.orig_layer, transformers.modeling_utils.Conv1D):
-            orig_weight = orig_weight.t()
         weight_reshape = reshape_and_pad_tensor(orig_weight.data, orig_layer.group_size)
         self.weight_min = torch.clamp(weight_reshape.min(1)[0], max=0)
         self.weight_max = torch.clamp(weight_reshape.max(1)[0], min=0)
@@ -282,9 +280,6 @@ class WrapperLinear(torch.nn.Module):
         max_scale.data.clamp_(0, 1.0)
         weight = self.orig_layer.weight
 
-        if isinstance(self.orig_layer, transformers.modeling_utils.Conv1D):
-            weight = weight.t()
-
         quant_kwargs = {}
         if hasattr(self.orig_layer, "super_bits"):
             quant_kwargs["super_bits"] = self.orig_layer.super_bits
@@ -317,8 +312,6 @@ class WrapperLinear(torch.nn.Module):
             **quant_kwargs,
         )
         weight_q = weight_q.to(weight.dtype)
-        if isinstance(self.orig_layer, transformers.modeling_utils.Conv1D):
-            weight_q = weight_q.t()
         return weight_q, scale, zp
 
     def _qdq_act(self, x, act_max_scale, act_smooth_scale=None, act_max=None):

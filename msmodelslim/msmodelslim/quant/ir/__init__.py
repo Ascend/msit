@@ -20,6 +20,7 @@ __all__ = [
     "AutoFakeQuantDynamicCache",
     "W8A8StaticFakeQuantLinear",
     "W8A8DynamicPerChannelFakeQuantLinear",
+    "W8A8DynamicPerGroupFakeQuantLinear",
     "W4A4DynamicPerChannelFakeQuantLinear",
     "W4A4DynamicPerGroupFakeQuantLinear",
     "W4A8DynamicFakeQuantLinear",
