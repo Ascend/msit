@@ -134,6 +134,9 @@ def _read_and_process_csv(csv_path, process_func, node_output_show_list):
         with ms_open(csv_path, 'r', max_size=TENSOR_MAX_SIZE) as f:
             reader = csv.reader(f)
             rows = [row for row in reader]
+        if len(rows) < 1:
+            utils.logger.error("csv is empty, please check.")
+            raise AccuracyCompareException(utils.ACCURACY_COMPARISON_EMPTY_CSV_ERROR)
         header = rows[0]
         rows = process_func(header, rows, node_output_show_list)
     return rows
@@ -224,7 +227,11 @@ def mindir_to_om_process(args: CmpArgsAdapter):
     if model_path_ext in [".onnx", ] and offline_model_path_ext in [".mindir", ]:
         is_mindir_compare_accuracy = True
         ld_preload = os.getenv("LD_PRELOAD")
-        save_om_so_path = os.path.join(site.getsitepackages()[0], "msquickcmp", "libsaveom.so")
+        site_packages = site.getsitepackages()
+        if len(site_packages) < 1:
+            utils.logger.error("getsitepackages return empty, please check.")
+            raise AccuracyCompareException(utils.ACCURACY_COMPARISON_INDEX_OUT_OF_BOUNDS_ERROR)
+        save_om_so_path = os.path.join(site_packages[0], "msquickcmp", "libsaveom.so")
         if not os.path.exists(save_om_so_path):
             utils.logger.error("libsaveom.so not found, check the installation process")
             raise AccuracyCompareException(utils.ACCURACY_COMPARISON_INVALID_PARAM_ERROR)
