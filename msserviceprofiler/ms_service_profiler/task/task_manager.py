@@ -44,8 +44,16 @@ class SubprocessInfo:
     
     def new_process(self, send_queue, args):
         recv_queue = Queue()
-        args = TaskRunArgs(args + (recv_queue, send_queue))
-        process = Process(target=task_run, args=args)
+        input_data, src_dag, pool_index, args_part = args
+        task_args = TaskRunArgs(
+            input_data=input_data,
+            src_dag=src_dag,
+            pool_index=pool_index,
+            args=args_part,
+            recv_queue=recv_queue,
+            send_queue=send_queue
+        )
+        process = Process(target=task_run, args=(task_args,))
         self.queues.append(recv_queue)
         self.processes.append(process)
         process.start()

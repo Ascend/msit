@@ -19,7 +19,7 @@ def filter_batch_df(batch_name, batch_df):
     batch_df['batch_size'] = batch_df['batch_size'].astype(float)
     batch_df = batch_df[batch_df['name'].isin(['modelExec', batch_name])]
     ori_columns = ['name', 'res_list', 'start_time', 'end_time', 'batch_size', \
-        'batch_type', 'during_time']
+        'batch_type', 'during_time', 'prof_id']
     existing_columns = [col for col in ori_columns if col in batch_df.columns]
     batch_df = batch_df[existing_columns]
     batch_df['during_time'] = batch_df['during_time'] / US_PER_MS

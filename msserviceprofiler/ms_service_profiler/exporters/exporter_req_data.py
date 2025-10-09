@@ -45,7 +45,7 @@ def get_req_base_info(df):
         # 获取 httpRes
         # 由于存在httpRes提前被调用，导致请求结束时间过早的情况，所以当前取httpRes和DecodeEnd中最晚一个点作为请求结束时间
         # mindIE重构后，取最后一个sendResponse的结束时间
-        http_res_df = pre_req_data[pre_req_data['name'].isin(['httpRes', 'DecodeEnd', 'sendResponse'])]
+        http_res_df = pre_req_data[pre_req_data['name'].isin(['httpRes', 'DecodeEnd', 'sendResponse', 'outputSync'])]
         if not http_res_df.empty:
             last_row = http_res_df.iloc[-1]
             new_req['end_time'] = last_row.get("end_time", 0)
@@ -59,6 +59,11 @@ def get_req_base_info(df):
         if 'recvTokenSize=' in pre_req_data.columns and pre_req_data['recvTokenSize='].notna().any():
             # 获取当replyTokenSize列中值不为空时，获取其中的第一个值
             new_req['recvTokenSize='] = pre_req_data['recvTokenSize='].dropna().iloc[0]
+
+        # 特殊字段，从outputSync获取输出长度
+        output_sync_count = http_res_df[http_res_df['name'] == 'outputSync'].shape[0]
+        if output_sync_count > 0:
+            new_req['replyTokenSize='] = output_sync_count
 
         # 计算 execution_time
         if new_req['start_time'] != '' and new_req['end_time'] != '':
