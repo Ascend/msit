@@ -97,3 +97,7 @@ class HCCLChecker(BaseChecker):
                 self.error_handler.add_error(
                     path=cmd, reason=out, severity='high'
                 )
+            elif '3 received' not in out:
+                self.error_handler.add_error(
+                    path=cmd, reason=out, severity='high'
+                )
