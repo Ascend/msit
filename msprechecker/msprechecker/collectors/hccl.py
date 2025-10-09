@@ -114,6 +114,15 @@ class HCCLCollector(BaseCollector):
         output = proc.stdout.read()
         return cmd, ret, output
 
+    def _run_per_device(self, device_id, device_ips):
+        """Each device has max concurrency 1"""
+        result = {}
+        for device_ip in device_ips:
+            cmd, ret, output = self._run_cmd(device_id, device_ip)
+            result[cmd] = ret, output
+
+        return result
+
     def _collect_data(self):
         if not shutil.which(HCCN_TOOL_CMD):	
             working_place = "宿主机" if not is_in_container() else "容器"	
@@ -125,25 +134,22 @@ class HCCLCollector(BaseCollector):
             )
             return {}
 
-        max_workers = min(self.npu_count, os.cpu_count() or 1) # if exceeds npu count will cause error
+        max_workers = min(self.npu_count, os.cpu_count() or 1) # each device can proceed parallel
 
-        all_devices = (
-            device_info
+        all_device_ips = (
+            device_info.device_ip
             for device_info_list in self.rank_table.host_to_devices.values()
             for device_info in device_info_list
         )
 
-        futures = {}
         with ThreadPoolExecutor(max_workers) as executor:
-            futures = {
-                executor.submit(self._run_cmd, device_id, device_info.device_ip): (device_id, device_info.rank_id)
-                for device_info in all_devices
+            futures = [
+                executor.submit(self._run_per_device, device_id, all_device_ips)
                 for device_id in range(self.npu_count)
-            }
+            ]
 
-        results = {}
-        for future in as_completed(futures):
-            cmd, ret, output = future.result()
-            results[cmd] = ret, output
+            results = {}
+            for future in as_completed(futures):
+                results.update(future.result())
 
         return results
