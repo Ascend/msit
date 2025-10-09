@@ -41,7 +41,7 @@ class ExporterTrace(TaskExporterBase):
             all_data_df = data.get('tx_data_df', pd.DataFrame(columns=["name", "domain"])).copy()
 
             # 对domain进行预处理，以便相同domain的数据在同一个泳道中显示
-            prepare_domain_for_process(all_data_df)
+            all_data_df = prepare_domain_for_process(all_data_df)
 
             if 'pid_label_map' in data:
                 pid_label_map = data['pid_label_map']
@@ -115,6 +115,11 @@ def prepare_domain_for_process(all_data_df):
     # 过滤显示数据, Meta不显示
     meta_mask = all_data_df['domain'].isin(['Meta'])
     all_data_df.drop(all_data_df[meta_mask].index, inplace=True)
+
+    # 适配vllm解析特殊打点字段
+    if (all_data_df['name'] == 'outputSync').any():
+        all_data_df = all_data_df[~all_data_df['name'].isin(['httpReq', 'httpRes', "getOutputAsync"])]
+
     
     # 对于非Request, RequestState, KVCache泳道区分tid显示
     mask = ~all_data_df['domain'].isin(['Request', 'RequestState', 'KVCache'])
@@ -126,6 +131,7 @@ def prepare_domain_for_process(all_data_df):
     )
 
     all_data_df['domain'] = all_data_df['domain'].replace('PDSplit', 'PDCommunication')
+    return all_data_df
 
 
 def process_prof_trace_events(events, index):
@@ -281,7 +287,7 @@ def add_flow_event(flow_event_df):
 
 
 def create_trace_events(all_data_df, pid_label_map=None, pid_ppid_map=None):
-    metric_event = ['npu', 'KVCache', 'PullKVCache']
+    metric_event = ['npu', 'KVCache', 'PullKVCache', 'Queue']
 
     # name 非空
     name_notna_condition = all_data_df['name'].notna()
@@ -307,6 +313,9 @@ def create_trace_events(all_data_df, pid_label_map=None, pid_ppid_map=None):
 
         kv_trace_events = add_kvcache_events(all_data_df[all_data_df['domain'] == 'KVCache'], pid_label_map)
         trace_events.extend(kv_trace_events)
+
+        queue_trace_events = add_queue_events(all_data_df[all_data_df['domain'] == 'Queue'])
+        trace_events.extend(queue_trace_events)
 
         pull_kvcache_events = add_pull_kvcache_events(all_data_df[all_data_df['domain'] == 'PullKVCache'])
         trace_events.extend(pull_kvcache_events)
@@ -630,6 +639,21 @@ def add_kvcache_events(kv_data_df, pid_label_map=None):
     kv_trace_df['args'] = [{'Device Block': usage} for usage in kv_data_df['deviceBlock=']]
     kv_trace_events = kv_trace_df[['name', 'ph', 'ts', 'pid', 'tid', 'args']].to_dict(orient='records')
     return kv_trace_events
+
+
+def add_queue_events(queue_data_df):
+    if 'QueueSize=' not in queue_data_df:
+        return []
+    queue_data_df.loc[queue_data_df['scope#QueueName'] == 'WAITING', ['name', 'domain']] = 'WaitingQueue'
+    queue_data_df.loc[queue_data_df['scope#QueueName'] == 'RUNNING', ['name', 'domain']] = 'RunningQueue'
+
+    queue_trace_df = queue_data_df.copy()
+    queue_trace_df['ph'] = 'C'
+    queue_trace_df['ts'] = queue_trace_df['start_time']
+    queue_trace_df['tid'] = queue_trace_df['domain']
+    queue_trace_df['args'] = [{'Queue Size': size} for size in queue_trace_df['QueueSize=']]
+    queue_trace_events = queue_trace_df[['name', 'ph', 'ts', 'pid', 'tid', 'args']].to_dict(orient='records')
+    return queue_trace_events
 
 
 def add_pull_kvcache_events(df):
