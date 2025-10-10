@@ -554,13 +554,20 @@ def parse_dym_shape_range(dym_shape_range):
             if "~" in content:
                 content_split = content.split("~")
                 _check_content_split_length(content_split)
-                start = int(content_split[0])
-                end = int(content_split[1])
-                step = int(content_split[2]) if len(content_split) == 3 else 1
+                start_str = content_split[0]
+                end_str = content_split[1]
+                step_str = content_split[2] if len(content_split) == 3 else "1"
+                if not start_str.isdigit() or not end_str.isdigit() or not step_str.isdigit():
+                    raise ValueError(f"--dym-shape parameter should be digit.")
+                start = int(start_str)
+                end = int(end_str)
+                step = int(step_str)
                 if start > end or start < 0:
                     raise ValueError("The input of --dym-shape parameter is unreasonable, " \
                                      "possibly because the upper bound of the shape is greater than the lower bound" \
                                      "or the upper bound is smaller than 0.")
+                if step <= 0:
+                    raise ValueError(f"Step in --dym-shape parameter should be greater than 0, now is {step}.")
                 prompt = "The --dym-shape-range %r is larger than expected. " \
                             "Attempting to input such a shape could potentially impact system performance.\n" \
                             "Please confirm your awareness of the risks associated with this action ([y]/n): " % content
