@@ -239,6 +239,7 @@ class QuarotHeadsRotationHookIR(HookIR):
             layer_name: 层名称
             rotation_info: 旋转矩阵信息
         """
+        super().__init__()
         self.layer_name = layer_name
         self.rotation_info = rotation_info
 
@@ -283,6 +284,7 @@ class QuarotHeadsRotationHookIR(HookIR):
             QuarotOnlineRotationWrapper实例
         """
         # 将hook信息转换为WrapperIR
+        self.remove_hook()
         return QuarotOnlineHeadRotationWrapper(module, self.layer_name, self.rotation_info)
 
 
@@ -301,6 +303,7 @@ class QuarotKroneckerRotationHookIR(HookIR):
             layer_name: 层名称
             rotation_info: 旋转矩阵信息
         """
+        super().__init__()
         self.layer_name = layer_name
         self.rotation_info = rotation_info
 
@@ -346,4 +349,5 @@ class QuarotKroneckerRotationHookIR(HookIR):
             QuarotOnlineKroneckerRotationWrapper实例
         """
         # 将hook信息转换为WrapperIR
+        self.remove_hook()
         return QuarotOnlineKroneckerRotationWrapper(module, self.layer_name, self.rotation_info)

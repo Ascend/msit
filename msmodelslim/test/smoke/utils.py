@@ -358,3 +358,141 @@ def run_fake_quantization_test(
                 check_func(module, name, all_tensors, group_size)
             else:
                 check_func(module, name, all_tensors)
+
+
+def load_all_tensors_from_safetensors(tmp_dir: str) -> dict:
+    """
+    一次性加载所有safetensors文件中的tensor到字典中
+
+    Args:
+        tmp_dir: 临时目录路径，包含保存的safetensors文件
+
+    Returns:
+        dict: 包含所有tensor的字典，key为tensor名称，value为tensor数据
+    """
+    from safetensors.torch import safe_open
+
+    all_tensors = {}
+    safetensors_files = [f for f in os.listdir(tmp_dir) if f.endswith('.safetensors')]
+    assert len(safetensors_files) > 0, "No safetensors files found in tmp_dir"
+
+    for safetensors_file in safetensors_files:
+        file_path = os.path.join(tmp_dir, safetensors_file)
+        with safe_open(file_path, framework="pt") as f:
+            for key in f.keys():
+                all_tensors[key] = f.get_tensor(key)
+
+    return all_tensors
+
+
+def check_tensor_in_dict(tensor_dict: dict, tensor_name: str, expected_shape: tuple = None,
+                         expected_dtype: torch.dtype = None, should_exist: bool = True) -> bool:
+    """
+    检查指定的tensor是否存在于tensor字典中，并验证其形状和数据类型
+
+    Args:
+        tensor_dict: 包含所有tensor的字典
+        tensor_name: 要检查的tensor名称
+        expected_shape: 期望的tensor形状，如果为None则不检查形状
+        expected_dtype: 期望的tensor数据类型，如果为None则不检查数据类型
+        should_exist: 是否期望tensor存在，True表示应该存在，False表示不应该存在
+
+    Returns:
+        bool: 检查是否通过
+
+    Raises:
+        AssertionError: 当检查失败时抛出异常
+    """
+    tensor_found = tensor_name in tensor_dict
+    tensor_data = tensor_dict.get(tensor_name) if tensor_found else None
+
+    if should_exist:
+        assert tensor_found, f"Tensor '{tensor_name}' should exist in tensor dict but was not found"
+
+        if expected_shape is not None:
+            assert tensor_data.shape == expected_shape, \
+                f"Tensor '{tensor_name}' shape mismatch: expected {expected_shape}, got {tensor_data.shape}"
+
+        if expected_dtype is not None:
+            assert tensor_data.dtype == expected_dtype, \
+                f"Tensor '{tensor_name}' dtype mismatch: expected {expected_dtype}, got {tensor_data.dtype}"
+
+        print(f"[PASS] Tensor '{tensor_name}' found with shape {tensor_data.shape} and dtype {tensor_data.dtype}")
+        return True
+    else:
+        assert not tensor_found, f"Tensor '{tensor_name}' should not exist in tensor dict but was found"
+        print(f"[PASS] Tensor '{tensor_name}' correctly not found in tensor dict")
+        return True
+
+
+def check_tensor_in_safetensors(tmp_dir: str, tensor_name: str, expected_shape: tuple = None,
+                                expected_dtype: torch.dtype = None, should_exist: bool = True) -> bool:
+    """
+    检查指定的tensor是否存在于保存的safetensors文件中，并验证其形状和数据类型
+    （为了向后兼容保留此函数，但推荐使用load_all_tensors_from_safetensors + check_tensor_in_dict）
+
+    Args:
+        tmp_dir: 临时目录路径，包含保存的safetensors文件
+        tensor_name: 要检查的tensor名称
+        expected_shape: 期望的tensor形状，如果为None则不检查形状
+        expected_dtype: 期望的tensor数据类型，如果为None则不检查数据类型
+        should_exist: 是否期望tensor存在，True表示应该存在，False表示不应该存在
+
+    Returns:
+        bool: 检查是否通过
+
+    Raises:
+        AssertionError: 当检查失败时抛出异常
+    """
+    all_tensors = load_all_tensors_from_safetensors(tmp_dir)
+    return check_tensor_in_dict(all_tensors, tensor_name, expected_shape, expected_dtype, should_exist)
+
+
+def check_tensors_by_mapping(tmp_dir: str, assert_in_map: dict = None, assert_not_in_map: set = None) -> None:
+    """
+    基于映射字典批量检查tensor的存在性、形状和数据类型
+    自动加载safetensors文件并打印调试信息
+
+    Args:
+        tmp_dir: 临时目录路径，包含保存的safetensors文件
+        assert_in_map: 应该存在的tensor映射，格式为 {tensor_name: TensorInfo(dtype, shape)}
+        assert_not_in_map: 不应该存在的tensor映射，格式为 {tensor_name: TensorInfo(dtype, shape)}
+
+    Raises:
+        AssertionError: 当检查失败时抛出异常
+    """
+    # 加载所有tensor
+    all_tensors = load_all_tensors_from_safetensors(tmp_dir)
+
+    # 打印调试信息
+    print(f"Total saved tensors: {len(all_tensors)}")
+    rotation_tensors = [name for name in all_tensors.keys() if 'rotation' in name.lower()]
+    print(f"Rotation tensors found: {rotation_tensors}")
+
+    # 打印旋转tensor的实际形状
+    for tensor_name in rotation_tensors:
+        if tensor_name in all_tensors:
+            tensor_data = all_tensors[tensor_name]
+            print(f"Tensor '{tensor_name}' shape: {tensor_data.shape}, dtype: {tensor_data.dtype}")
+
+    # 检查应该存在的tensor
+    if assert_in_map:
+        print(f"Checking {len(assert_in_map)} tensors that should exist...")
+        for tensor_name, tensor_info in assert_in_map.items():
+            check_tensor_in_dict(
+                tensor_dict=all_tensors,
+                tensor_name=tensor_name,
+                expected_shape=tensor_info.shape,
+                expected_dtype=tensor_info.dtype,
+                should_exist=True
+            )
+
+    # 检查不应该存在的tensor
+    if assert_not_in_map:
+        print(f"Checking {len(assert_not_in_map)} tensors that should NOT exist...")
+        for tensor_name in assert_not_in_map:
+            check_tensor_in_dict(
+                tensor_dict=all_tensors,
+                tensor_name=tensor_name,
+                should_exist=False
+            )

@@ -55,6 +55,60 @@ class QuaRotProcessorConfig(AutoProcessorConfig):
         return v
 
 
+def _get_available_device(index: int = 0) -> torch.device:
+    if hasattr(torch, 'npu') and torch.npu.is_available():
+        return torch.device("npu:{}".format(index))
+    elif hasattr(torch, 'cuda') and torch.cuda.is_available():
+        return torch.device("cuda:{}".format(index))
+    else:
+        return torch.device("cpu")
+
+
+def _get_full_module_name(target_module: nn.Module, request: BatchProcessRequest) -> str:
+    """
+    通过遍历request.module获取完整的模块名称。
+
+    Args:
+        target_module: 目标模块
+        request: 处理请求，包含模块前缀信息
+
+    Returns:
+        完整的模块名称
+
+    Raises:
+        UnsupportedError: 如果找不到完整的模块名称
+    """
+    for name, module in request.module.named_modules():
+        if module is target_module:
+            # 拼接完整路径：request.name + 相对路径
+            full_name = f"{request.name}.{name}" if name else request.name
+            return full_name
+
+    # 如果找不到，抛出UnsupportedError
+    raise UnsupportedError(f"Cannot find full module name for {target_module}")
+
+
+def _convert_hookir_to_wrapper(module: nn.Module) -> None:
+    """
+    将模块中的HookIR转换为Wrapper
+
+    Args:
+        module: 要处理的模块
+    """
+    # 遍历模块中的所有子模块
+    for name, sub_module in module.named_modules():
+        if hasattr(sub_module, '_forward_pre_hooks'):
+            # 遍历模块的所有前向钩子
+            for hook in sub_module._forward_pre_hooks.values():
+                # 检查是否是HookIR类型
+                if isinstance(hook, qir.HookIR):
+                    # 将hook_ir转换为wrapper
+                    wrapper = hook.wrapper_module(sub_module)
+                    # 将wrapper替换模块
+                    module.set_submodule(name, wrapper)
+                    get_logger().info(f"Converted {type(hook)} to wrapper for module: {name}")
+
+
 @QABCRegistry.register(dispatch_key=QuaRotProcessorConfig, abc_class=AutoSessionProcessor)
 class QuaRotProcessor(AutoSessionProcessor):
 
@@ -83,7 +137,7 @@ class QuaRotProcessor(AutoSessionProcessor):
         # 计算旋转矩阵
         model_dim = self.adapter.get_hidden_dim()
         head_dim = self.adapter.get_head_dim()
-        device = self.get_available_device()
+        device = _get_available_device()
 
         get_logger().info(f"Creating rotation matrices on device: {device}")
 
@@ -146,58 +200,30 @@ class QuaRotProcessor(AutoSessionProcessor):
             if layer_idx in self.config.down_proj_online_layers:
                 for _, down_proj in up_down_pairs.items():
                     # 获取完整的模块名称
-                    full_module_name = self._get_full_module_name(down_proj, request)
+                    full_module_name = _get_full_module_name(down_proj, request)
                     # 使用完整的layer_name注册Kronecker HookIR实例作为hook（用于down_proj）
                     hook_ir = qir.QuarotKroneckerRotationHookIR(
                         full_module_name,
                         self.online_rotation_info
                     )
-                    down_proj.register_forward_pre_hook(hook_ir)
+                    hook_handle = down_proj.register_forward_pre_hook(hook_ir)
+                    hook_ir.set_hook_handle(hook_handle)
 
             if online_oproj_rotation:
                 for o_proj, _ in ov_pairs.items():
                     # 获取完整的模块名称
-                    full_module_name = self._get_full_module_name(o_proj, request)
+                    full_module_name = _get_full_module_name(o_proj, request)
                     # 使用完整的layer_name注册普通HookIR实例作为hook（用于o_proj）
                     hook_ir = qir.QuarotHeadsRotationHookIR(
                         full_module_name,
                         self.online_rotation_info
                     )
-                    o_proj.register_forward_pre_hook(hook_ir)
+                    hook_handle = o_proj.register_forward_pre_hook(hook_ir)
+                    hook_ir.set_hook_handle(hook_handle)
 
     def post_run(self) -> None:
-        pass
-
-    def get_available_device(self) -> torch.device:
-        if hasattr(torch, 'npu') and torch.npu.is_available():
-            return torch.device("npu:0")
-        elif hasattr(torch, 'cuda') and torch.cuda.is_available():
-            return torch.device("cuda:0")
-        else:
-            return torch.device("cpu")
-
-    def _get_full_module_name(self, target_module: nn.Module, request: BatchProcessRequest) -> str:
-        """
-        通过遍历request.module获取完整的模块名称。
-        
-        Args:
-            target_module: 目标模块
-            request: 处理请求，包含模块前缀信息
-            
-        Returns:
-            完整的模块名称
-            
-        Raises:
-            UnsupportedError: 如果找不到完整的模块名称
-        """
-        for name, module in request.module.named_modules():
-            if module is target_module:
-                # 拼接完整路径：request.name + 相对路径
-                full_name = f"{request.name}.{name}" if name else request.name
-                return full_name
-        
-        # 如果找不到，抛出UnsupportedError
-        raise UnsupportedError(f"Cannot find full module name for {target_module}")
+        """遍历模型中的HookIR，如果是自己添加的HookIR则进行转换"""
+        _convert_hookir_to_wrapper(self.model)
 
     def _add_online_rotations(self, model: nn.Module) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         if not hasattr(model.config, 'intermediate_size'):

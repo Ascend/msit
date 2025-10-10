@@ -14,9 +14,12 @@
 #  limitations under the License.
 
 from abc import abstractmethod
-from typing import Optional, Set, Iterator, Tuple, Callable
+from typing import Optional, Callable, Set, Iterator, Tuple
 
 from torch import nn
+from torch.utils.hooks import RemovableHandle
+
+from msmodelslim.utils.logging import get_logger
 
 
 class WrapperIR(nn.Module):
@@ -59,12 +62,12 @@ class WrapperIR(nn.Module):
     ) -> Iterator[Tuple[str, nn.Module]]:
         """
         重写named_modules方法，如果is_atomic()返回True，则只返回自身。
-        
+
         Args:
             memo: 用于避免重复访问的模块集合
             prefix: 模块名称前缀
             remove_duplicate: 是否移除重复的模块
-            
+
         Yields:
             模块名称和模块实例的元组
         """
@@ -72,6 +75,33 @@ class WrapperIR(nn.Module):
 
 
 class HookIR(Callable):
+    """
+    HookIR基类，持有一个hook句柄，可以随时移除hook
+    """
+
+    def __init__(self):
+        """初始化HookIR，创建hook句柄"""
+        self.hook_handle: Optional[RemovableHandle] = None
+
+    def set_hook_handle(self, hook_handle: RemovableHandle):
+        """
+        设置hook句柄
+
+        Args:
+            hook_handle: hook的句柄
+        """
+        self.hook_handle = hook_handle
+
+    def remove_hook(self):
+        """
+        移除hook
+        """
+        if self.hook_handle is not None:
+            try:
+                self.hook_handle.remove()
+                get_logger().info(f"Removed hook with handle: {self.hook_handle}")
+            except Exception as e:
+                get_logger().warning(f"Failed to remove hook: {e}")
 
     @abstractmethod
     def wrapper_module(self, module: nn.Module) -> WrapperIR:
