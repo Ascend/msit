@@ -72,6 +72,7 @@ spec:
             - "*.up_proj"
             - "*.gate_proj"
             - "*.o_proj"
+          exclude:
             - "model.layers.1.mlp.down_proj"
   save:
     - type: "ascendv1_saver"

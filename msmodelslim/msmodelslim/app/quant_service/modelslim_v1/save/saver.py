@@ -26,6 +26,7 @@ import msmodelslim.quant.ir as qir
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.quant.processor.base import AutoSessionProcessor, AutoProcessorConfig
 from msmodelslim.utils.dist import DistHelper
+from msmodelslim.utils.logging import get_logger
 
 
 class AutoSaverBaseConfig(AutoProcessorConfig):
@@ -56,6 +57,27 @@ AutoSaverConfigList = Annotated[
     List[AutoSaverBaseConfig],
     BeforeValidator(validate_auto_saver_processor_config_list)
 ]
+
+
+def _convert_hookir_to_wrapper(module: nn.Module) -> None:
+    """
+    将模块中的HookIR转换为Wrapper
+
+    Args:
+        module: 要处理的模块
+    """
+    # 遍历模块中的所有子模块
+    for name, sub_module in module.named_modules():
+        if hasattr(sub_module, '_forward_pre_hooks'):
+            # 遍历模块的所有前向钩子
+            for hook in sub_module._forward_pre_hooks.values():
+                # 检查是否是HookIR类型
+                if isinstance(hook, qir.HookIR):
+                    # 将hook_ir转换为wrapper
+                    wrapper = hook.wrapper_module(sub_module)
+                    # 将wrapper替换模块
+                    module.set_submodule(name, wrapper)
+                    get_logger().info(f"Converted {type(hook)} to wrapper for module: {name}")
 
 
 class AutoSaverProcessor(AutoSessionProcessor):
@@ -112,6 +134,10 @@ class AutoSaverProcessor(AutoSessionProcessor):
 
     def postprocess(self, request: BatchProcessRequest) -> None:
         prefix, module = request.name, request.module
+
+        # 处理hookir转换
+        _convert_hookir_to_wrapper(module)
+
         for name, sub_module in module.named_modules(memo=self.processed_modules, prefix=prefix):
             # 优先判断是否为WrapperIR
             if isinstance(sub_module, qir.WrapperIR):
