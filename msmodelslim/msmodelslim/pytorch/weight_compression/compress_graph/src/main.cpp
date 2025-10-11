@@ -160,7 +160,7 @@ static int RunSession(uint8_t *data, vector<int64_t> &shape, vector<string> path
 
     // creat session
     std::map<ge::AscendString, ge::AscendString> options;
-    ge::Session *session = new Session(options);
+    ge::Session *session = new (std::nothrow) Session(options);
     if (session == nullptr) {
         std::cout << "Create session failed." << std::endl;
         return GraphUtils::FAILED;
