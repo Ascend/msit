@@ -95,49 +95,82 @@ class BastCheckTestCase(unittest.TestCase):
 
 
 class TestCheckModelPathLegality(BastCheckTestCase):
-    def test_normal_file_success(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_normal_file_success(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                 mock_path_owner_consistent):
         """测试普通文件的成功场景"""
         mock_env = ModelPathMock(is_dir=False)
         with self.apply_patches(mock_env):
             result = check_model_path_legality("test_model.onnx")
             self.assertEqual(result, "test_model.onnx")
 
-    def test_basic_legality_check_fails(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_basic_legality_check_fails(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                        mock_path_owner_consistent):
         """测试基本合法性检查失败的场景"""
         mock_env = ModelPathMock(is_dir=False, is_basically_legal=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_model_path_legality("test_model.onnx")
 
-    def test_file_type_check_fails(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_type_check_fails(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                   mock_path_owner_consistent):
         """测试文件类型检查失败的场景"""
         mock_env = ModelPathMock(is_dir=False, is_legal_file_type=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_model_path_legality("test_model.invalid")
 
-    def test_file_size_check_fails(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_size_check_fails(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                   mock_path_owner_consistent):
         """测试文件大小检查失败的场景"""
         mock_env = ModelPathMock(is_dir=False, is_legal_file_size=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_model_path_legality("test_model.onnx")
 
-    def test_directory_valid_saved_model(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_directory_valid_saved_model(self, mock_path_exists, mock_path_readability,
+                                         mock_path_owner_consistent):
         """测试有效的保存模型目录"""
         mock_env = ModelPathMock(is_dir=True, is_saved_model_valid_=True)
         with self.apply_patches(mock_env):
             result = check_model_path_legality("valid_model_dir")
             self.assertEqual(result, "valid_model_dir")
 
-    def test_directory_invalid_saved_model(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_directory_invalid_saved_model(self, mock_path_exists, mock_path_readability,
+                                           mock_path_owner_consistent):
         """测试无效的保存模型目录"""
         mock_env = ModelPathMock(is_dir=True, is_saved_model_valid_=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_model_path_legality("invalid_model_dir")
 
-    def test_file_stat_raises_exception(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_stat_raises_exception(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                        mock_path_owner_consistent):
         """测试FileStat初始化异常的场景"""
         mock_env = ModelPathMock(is_dir=False, file_stat_exception=Exception("File stat error"))
         with self.apply_patches(mock_env):
@@ -146,49 +179,80 @@ class TestCheckModelPathLegality(BastCheckTestCase):
 
 
 class TestCheckOmPathLegality(BastCheckTestCase):
-    def test_normal_file_success(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_normal_file_success(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                 mock_path_owner_consistent):
         """测试普通om文件的成功场景"""
         mock_env = ModelPathMock(is_dir=False)
         with self.apply_patches(mock_env):
             result = check_om_path_legality("test_model.om")
             self.assertEqual(result, "test_model.om")
 
-    def test_basic_legality_check_fails(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_basic_legality_check_fails(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                        mock_path_owner_consistent):
         """测试基本合法性检查失败的场景"""
         mock_env = ModelPathMock(is_dir=False, is_basically_legal=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_om_path_legality("test_model.om")
 
-    def test_file_type_check_fails(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_type_check_fails(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                   mock_path_owner_consistent):
         """测试文件类型检查失败的场景"""
         mock_env = ModelPathMock(is_dir=False, is_legal_file_type=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_om_path_legality("test_model.invalid")
 
-    def test_file_size_check_fails(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_size_check_fails(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                   mock_path_owner_consistent):
         """测试文件大小检查失败的场景"""
         mock_env = ModelPathMock(is_dir=False, is_legal_file_size=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_om_path_legality("test_model.om")
 
-    def test_directory_valid_saved_model(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_directory_valid_saved_model(self, mock_path_exists, mock_path_readability, mock_path_owner_consistent):
         """测试有效的保存模型目录"""
         mock_env = ModelPathMock(is_dir=True, is_saved_model_valid_=True)
         with self.apply_patches(mock_env):
             result = check_om_path_legality("valid_model_dir")
             self.assertEqual(result, "valid_model_dir")
 
-    def test_directory_invalid_saved_model(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_directory_invalid_saved_model(self, mock_path_exists, mock_path_readability, mock_path_owner_consistent):
         """测试无效的保存模型目录"""
         mock_env = ModelPathMock(is_dir=True, is_saved_model_valid_=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_om_path_legality("invalid_model_dir")
 
-    def test_file_stat_raises_exception(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_stat_raises_exception(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                        mock_path_owner_consistent):
         """测试FileStat初始化异常的场景"""
         mock_env = ModelPathMock(is_dir=False, file_stat_exception=Exception("File stat error"))
         with self.apply_patches(mock_env):
@@ -319,35 +383,60 @@ class TestIsSavedModelValid(BastCheckTestCase):
 
 
 class TestCheckWeightPathLegality(BastCheckTestCase):
-    def test_normal_file_success(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_normal_file_success(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                 mock_path_owner_consistent):
         """测试普通caffemodel文件的成功场景"""
         mock_env = ModelPathMock(is_dir=False)
         with self.apply_patches(mock_env):
             result = check_weight_path_legality("test_model.caffemodel")
             self.assertEqual(result, "test_model.caffemodel")
 
-    def test_basic_legality_check_fails(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_basic_legality_check_fails(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                        mock_path_owner_consistent):
         """测试基本合法性检查失败的场景"""
         mock_env = ModelPathMock(is_dir=False, is_basically_legal=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_weight_path_legality("test_model.caffemodel")
 
-    def test_file_type_check_fails(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_type_check_fails(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                   mock_path_owner_consistent):
         """测试文件类型检查失败的场景"""
         mock_env = ModelPathMock(is_dir=False, is_legal_file_type=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_weight_path_legality("test_model.invalid")
 
-    def test_file_size_check_fails(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_size_check_fails(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                   mock_path_owner_consistent):
         """测试文件大小检查失败的场景"""
         mock_env = ModelPathMock(is_dir=False, is_legal_file_size=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_weight_path_legality("test_model.caffemodel")
 
-    def test_file_stat_raises_exception(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_stat_raises_exception(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                        mock_path_owner_consistent):
         """测试FileStat初始化异常的场景"""
         mock_env = ModelPathMock(is_dir=False, file_stat_exception=Exception("File stat error"))
         with self.apply_patches(mock_env):
@@ -361,28 +450,47 @@ class TestCheckInputPathLegality(BastCheckTestCase):
         self.assertIsNotNone(check_input_path_legality(""))
         self.assertIsNone(check_input_path_legality(None))
 
-    def test_single_valid_path(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_single_valid_path(self, mock_path_exists, mock_path_readability, mock_file_size,
+                               mock_path_owner_consistent):
         """测试单个有效路径"""
         mock_env = ModelPathMock(is_basically_legal=True)
         with self.apply_patches(mock_env):
             result = check_input_path_legality("valid/path")
             self.assertEqual(result, "valid/path")
 
-    def test_multiple_valid_paths(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_multiple_valid_paths(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                  mock_path_owner_consistent):
         """测试多个有效路径"""
         mock_env = ModelPathMock(is_basically_legal=True)
         with self.apply_patches(mock_env):
             result = check_input_path_legality("path1,path2,path3")
             self.assertEqual(result, "path1,path2,path3")
 
-    def test_invalid_path(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_invalid_path(self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent):
         """测试无效路径"""
         mock_env = ModelPathMock(is_basically_legal=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_input_path_legality("invalid/path")
 
-    def test_file_stat_exception(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_stat_exception(self, mock_path_exists, mock_path_readability, mock_file_size,
+                                 mock_path_owner_consistent):
         """测试FileStat异常"""
         mock_env = ModelPathMock(file_stat_exception=Exception("File stat error"))
         with self.apply_patches(mock_env):
@@ -391,14 +499,20 @@ class TestCheckInputPathLegality(BastCheckTestCase):
 
 
 class TestCheckCannPathLegality(BastCheckTestCase):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
     @patch('components.debug.compare.msquickcmp.common.args_check.is_legal_args_path_string', return_value=True)
-    def test_valid_path(self, mock_is_legal):
+    def test_valid_path(self, mock_is_legal, mock_path_exists, mock_path_readability, mock_path_owner_consistent):
         """测试有效路径"""
         result = check_cann_path_legality("valid/path")
         self.assertEqual(result, "valid/path")
 
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
     @patch('components.debug.compare.msquickcmp.common.args_check.is_legal_args_path_string', return_value=False)
-    def test_invalid_path(self, mock_is_legal):
+    def test_invalid_path(self, mock_is_legal, mock_path_exists, mock_path_readability, mock_path_owner_consistent):
         """测试无效路径"""
         with self.assertRaises(argparse.ArgumentTypeError):
             check_cann_path_legality("invalid/path")
@@ -410,21 +524,27 @@ class TestCheckOutputPathLegality(BastCheckTestCase):
         self.assertIsNotNone(check_output_path_legality(""))
         self.assertIsNone(check_output_path_legality(None))
 
-    def test_valid_path(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_path_writability", return_value=None)
+    def test_valid_path(self, mock_path_writability, mock_path_owner_consistent):
         """测试有效输出路径"""
         mock_env = ModelPathMock(is_basically_legal=True)
         with self.apply_patches(mock_env):
             result = check_output_path_legality("valid/path")
             self.assertEqual(result, "valid/path")
 
-    def test_invalid_path(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_path_writability", return_value=None)
+    def test_invalid_path(self, mock_path_writability, mock_path_owner_consistent):
         """测试无效输出路径"""
         mock_env = ModelPathMock(is_basically_legal=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_output_path_legality("invalid/path")
 
-    def test_file_stat_exception(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_path_writability", return_value=None)
+    def test_file_stat_exception(self, mock_path_writability, mock_path_owner_consistent):
         """测试FileStat异常"""
         mock_env = ModelPathMock(file_stat_exception=Exception("File stat error"))
         with self.apply_patches(mock_env):
@@ -608,21 +728,34 @@ class TestCheckFusionCfgPathLegality(BastCheckTestCase):
         self.assertIsNotNone(check_fusion_cfg_path_legality(""))
         self.assertIsNone(check_fusion_cfg_path_legality(None))
 
-    def test_valid_cfg_file(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_valid_cfg_file(self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent):
         """测试有效的配置文件"""
         mock_env = ModelPathMock(is_basically_legal=True, is_legal_file_type=True, is_legal_file_size=True)
         with self.apply_patches(mock_env):
             result = check_fusion_cfg_path_legality("valid.cfg")
             self.assertEqual(result, "valid.cfg")
 
-    def test_invalid_file_type(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_invalid_file_type(self, mock_path_exists, mock_path_readability, mock_file_size,
+                               mock_path_owner_consistent):
         """测试无效的文件类型"""
         mock_env = ModelPathMock(is_basically_legal=True, is_legal_file_type=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_fusion_cfg_path_legality("invalid.txt")
 
-    def test_file_too_large(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_too_large(self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent):
         """测试文件过大"""
         mock_env = ModelPathMock(is_basically_legal=True, is_legal_file_type=True, is_legal_file_size=False)
         with self.apply_patches(mock_env):
@@ -636,21 +769,34 @@ class TestCheckQuantJsonPathLegality(BastCheckTestCase):
         self.assertIsNotNone(check_quant_json_path_legality(""))
         self.assertIsNone(check_quant_json_path_legality(None))
 
-    def test_valid_json_file(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_valid_json_file(self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent):
         """测试有效的JSON文件"""
         mock_env = ModelPathMock(is_basically_legal=True, is_legal_file_type=True, is_legal_file_size=True)
         with self.apply_patches(mock_env):
             result = check_quant_json_path_legality("valid.json")
             self.assertEqual(result, "valid.json")
 
-    def test_invalid_file_type(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_invalid_file_type(self, mock_path_exists, mock_path_readability, mock_file_size,
+                               mock_path_owner_consistent):
         """测试无效的文件类型"""
         mock_env = ModelPathMock(is_basically_legal=True, is_legal_file_type=False)
         with self.apply_patches(mock_env):
             with self.assertRaises(argparse.ArgumentTypeError):
                 check_quant_json_path_legality("invalid.txt")
 
-    def test_file_too_large(self):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("components.utils.file_utils.check_file_size", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_file_too_large(self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent):
         """测试文件过大"""
         mock_env = ModelPathMock(is_basically_legal=True, is_legal_file_type=True, is_legal_file_size=False)
         with self.apply_patches(mock_env):

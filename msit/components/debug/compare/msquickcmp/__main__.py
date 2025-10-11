@@ -24,7 +24,7 @@ from components.debug.compare.msquickcmp.common.args_check import (
     check_model_path_legality, check_om_path_legality, check_weight_path_legality, check_input_path_legality,
     check_cann_path_legality, check_output_path_legality, check_dict_kind_string, check_device_range_valid,
     check_number_list, check_dym_range_string, check_fusion_cfg_path_legality, check_quant_json_path_legality,
-    safe_string, str2bool, check_path_exit
+    safe_string, str2bool, check_alone_compare_dir_path, check_alone_compare_file_path
 )
 from msquickcmp.common.utils import logger
 from components.utils.util import filter_cmd
@@ -211,20 +211,20 @@ class CompareCommand(BaseCommand):
             '--my-path',
             required=False,
             dest="my_path",
-            type=check_path_exit,
+            type=check_alone_compare_dir_path,
             help='The npu dump data path')
         parser.add_argument(
             '-gp',
             '--golden-path',
             required=False,
             dest="golden_path",
-            type=check_path_exit,
+            type=check_alone_compare_dir_path,
             help='The cpu(golden) dump data path')
         parser.add_argument(
             '--ops-json',
             required=False,
             dest="ops_json",
-            type=check_path_exit,
+            type=check_alone_compare_file_path,
             help='The npu and cpu ops matching rule json')
         self.parser = parser
 

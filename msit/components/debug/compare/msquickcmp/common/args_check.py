@@ -18,6 +18,7 @@ import os
 import re
 
 from components.utils.file_open_check import FileStat, is_legal_args_path_string
+from components.utils.file_utils import check_input_file_path, check_input_dir_path, check_output_dir_path
 
 STR_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9\"'><=\[\])(,}{: /.~-]")
 MAX_SIZE_LIMITE_NORMAL_MODEL = 32 * 1024 * 1024 * 1024  # 32GB
@@ -27,11 +28,13 @@ MAX_SIZE_LIMITE_FUSION_FILE = 1 * 1024 * 1024 * 1024  # 1GB
 def check_model_path_legality(value):
     path_value = value
     if os.path.isdir(path_value):
+        check_input_dir_path(path_value)
         if not is_saved_model_valid(path_value):
             raise argparse.ArgumentTypeError(f"model path:{path_value} is not qualified saved_model file. "
                                              f"Please check.")
         return path_value
     else:
+        check_input_file_path(path_value, file_max_size=MAX_SIZE_LIMITE_NORMAL_MODEL)
         try:
             file_stat = FileStat(path_value)
         except Exception as err:
@@ -60,11 +63,13 @@ def is_saved_model_valid(directory):
 def check_om_path_legality(value):
     path_value = value
     if os.path.isdir(path_value):
+        check_input_dir_path(path_value)
         if not is_saved_model_valid(path_value):
             raise argparse.ArgumentTypeError(f"model path:{path_value} is not qualified saved_model file. "
                                              f"Please check.")
         return path_value
     else:
+        check_input_file_path(path_value, file_max_size=MAX_SIZE_LIMITE_NORMAL_MODEL)
         try:
             file_stat = FileStat(path_value)
         except Exception as err:
@@ -80,6 +85,7 @@ def check_om_path_legality(value):
 
 def check_weight_path_legality(value):
     path_value = value
+    check_input_file_path(path_value, file_max_size=MAX_SIZE_LIMITE_NORMAL_MODEL)
     try:
         file_stat = FileStat(path_value)
     except Exception as err:
@@ -98,6 +104,7 @@ def check_input_path_legality(value):
         return value
     inputs_list = value.split(',')
     for input_path in inputs_list:
+        check_input_file_path(input_path)
         try:
             file_stat = FileStat(input_path)
         except Exception as err:
@@ -109,6 +116,7 @@ def check_input_path_legality(value):
 
 def check_cann_path_legality(value):
     path_value = value
+    check_input_dir_path(path_value)
     if not is_legal_args_path_string(path_value):
         raise argparse.ArgumentTypeError(f"cann path:{path_value} is illegal. Please check.")
     return path_value
@@ -118,6 +126,7 @@ def check_output_path_legality(value):
     if not value:
         return value
     path_value = value
+    check_output_dir_path(path_value)
     try:
         file_stat = FileStat(path_value)
     except Exception as err:
@@ -132,6 +141,16 @@ def check_path_exit(value):
         raise ValueError
 
     return value
+
+
+def check_alone_compare_file_path(path):
+    check_input_file_path(path)
+    return path
+
+
+def check_alone_compare_dir_path(path):
+    check_input_dir_path(path)
+    return path
 
 
 def valid_json_file_or_dir(value):
@@ -208,6 +227,7 @@ def check_fusion_cfg_path_legality(value):
     if not value:
         return value
     path_value = value
+    check_input_file_path(path_value)
     try:
         file_stat = FileStat(path_value)
     except Exception as err:
@@ -225,6 +245,7 @@ def check_quant_json_path_legality(value):
     if not value:
         return value
     path_value = value
+    check_input_file_path(path_value)
     try:
         file_stat = FileStat(path_value)
     except Exception as err:

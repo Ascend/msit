@@ -786,3 +786,41 @@ def split_zip_file_path(zip_file_path):
     check_file_suffix(zip_file_path, FileCheckConst.ZIP_SUFFIX)
     zip_file_path = os.path.realpath(zip_file_path)
     return os.path.dirname(zip_file_path), os.path.basename(zip_file_path)
+
+
+def check_input_file_path(path, file_max_size=FileCheckConst.MAX_COMMON_FILE_SIZE, check_executable=False):
+    path = os.path.realpath(path)
+    check_path_exists(path)
+    check_link(path)
+    check_path_length(path)
+    check_path_pattern_valid(path)
+    check_path_readability(path)
+    check_file_size(path, file_max_size)
+    check_path_owner_consistent(path)
+    if check_executable:
+        check_path_executable(path)
+
+
+def check_input_dir_path(path):
+    path = os.path.realpath(path)
+    check_path_exists(path)
+    check_link(path)
+    check_path_length(path)
+    check_path_pattern_valid(path)
+    check_path_readability(path)
+    check_path_owner_consistent(path)
+
+
+def check_output_file_path(path):
+    path = os.path.realpath(path)
+    check_link(path)
+    check_path_pattern_valid(path)
+    check_path_owner_consistent(path)
+
+
+def check_output_dir_path(path):
+    path = os.path.realpath(path)
+    check_link(path)
+    check_path_pattern_valid(path)
+    check_path_writability(path)
+    check_path_owner_consistent(path)
