@@ -52,10 +52,14 @@ def apply_order(
     order: List[int] = None,
 ):
     pack_num = STORAGE_BITS // w_bit
-    if direction == "column":
-        iweight = iweight.view(-1, pack_num)[:, order].view(iweight.shape)
-    elif direction == "row":
-        iweight = iweight.view(pack_num, -1)[order, :].view(iweight.shape)
+    try:
+        if direction == "column":
+            iweight = iweight.view(-1, pack_num)[:, order].view(iweight.shape)
+        elif direction == "row":
+            iweight = iweight.view(pack_num, -1)[order, :].view(iweight.shape)
+    except IndexError as ide:
+        raise IndexError(f"Order index {order} out of range for pack_num {pack_num}. "
+                           f"Order indices must be < {pack_num} for w_bit={w_bit}") from ide
     return iweight
 
 
