@@ -136,7 +136,10 @@ class SingleOpAnalyzer:
         origin_op_df = origin_op_df[PERFORMANCE_COLUMNS]
         origin_duration_sum = sum(origin_op_df["Task Duration(us)"].to_list())
         analyze_result["Origin Durations(us)"].append(origin_duration_sum)
-        analyze_result["Time Ratio"].append(fused_duration_sum / origin_duration_sum)
+        if abs(origin_duration_sum) < 1e-15:
+            analyze_result["Time Ratio"].append(0)
+        else:
+            analyze_result["Time Ratio"].append(fused_duration_sum / origin_duration_sum)
         analyze_result["Time Difference"].append(fused_duration_sum - origin_duration_sum)
         analyze_result["HBMs Difference"].append(hbms_diff[0])
         analyze_result["HBMs Ratio"].append(hbms_ratio[0])
