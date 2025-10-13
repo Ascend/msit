@@ -26,7 +26,7 @@ mies_config:
       then:
         case: "int(${ref.dp}) * int(${ref.tp}) * int(${ref.cp}) * int(${ref.pp}) == ${ref.world_size}"
         reason: "在非跨机场景下，并行策略要求保证dp * tp * cp * pp = worldSize，其中没配置的并行策略默认值为1"
-        severity: high
+        severity: medium
 
   ref.sp:
     expected:

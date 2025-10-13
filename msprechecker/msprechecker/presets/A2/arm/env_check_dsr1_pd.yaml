@@ -101,6 +101,12 @@ mindie_common_env:
       value: 1
     reason: "需要开启分布式PD分离特性"
     severity: high
+  HCCL_EXEC_TIMEOUT:
+    expected:
+      type: range
+      value: [0, 2147483647]
+    reason: "HCCL执行超时时间合法范围为[0, 2147483647],设置为0表示不限制超时"
+    severity: high
 
 mindie_server_prefill_env:
   PYTORCH_NPU_ALLOC_CONF: 
@@ -255,3 +261,15 @@ mindie_server_decode_env:
       value: 0
     reason: "不开启此变量，对溢出值进行截断"
     severity: high
+  HCCL_INTRA_PCIE_ENABLE:
+    expected:
+      type: eq
+      value: 1
+    reason: "建议设置为1，开启HCCL的PCIe通信，需要配合HCCL_INTRA_ROCE_ENABLE一同设置"
+    severity: low
+  HCCL_INTRA_ROCE_ENABLE:
+    expected:
+      type: eq
+      value: 0
+    reason: "建议设置为0，关闭HCCL的RoCE通信，需要配合HCCL_INTRA_PCIE_ENABLE一同设置"
+    severity: low

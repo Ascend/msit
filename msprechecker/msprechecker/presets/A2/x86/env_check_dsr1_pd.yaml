@@ -101,6 +101,12 @@ mindie_common_env:
       value: 1
     reason: "需要开启分布式PD分离特性"
     severity: high
+  HCCL_EXEC_TIMEOUT:
+    expected:
+      type: range
+      value: [0, 2147483647]
+    reason: "HCCL执行超时时间合法范围为[0, 2147483647],设置为0表示不限制超时"
+    severity: high
 
 mindie_server_prefill_env:
   PYTORCH_NPU_ALLOC_CONF: 
