@@ -224,16 +224,34 @@ mindie_ms_coordinator_config:
   exception_config:
     first_token_timeout:
       expected:
-        type: eq
-        value: 600
-      reason: "first_token_timeout建议值为600，表示首token的超时时间，在测试推理性能时可以适当增大"
-      severity: low
+        if: "${.} != 0"
+        then:
+          if: "${.} < 0 or ${.} > 3600"
+          then:
+            case: false
+            reason: "first_token_timeout取值范围为[0, 3600]，0表示不限制超时时间，建议设置大于等于600"
+            severity: high
+          else:
+            case:
+              type: ">="
+              value: 600
+            reason: "first_token_timeout建议设置大于等于600，且不超过3600（需要关闭超时时间限制可以设置为0），该参数设置过小可能导致请求超时"
+            severity: low
     infer_timeout:
       expected:
-        type: eq
-        value: 3600
-      reason: "infer_timeout建议值为3600，表示推理的超时时间，在测试推理性能时可以适当增大"
-      severity: low
+        if: "${.} != 0"
+        then:
+          if: "${.} < 0 or ${.} > 65535"
+          then:
+            case: false
+            reason: "infer_timeout取值范围为[0, 65535]，0表示不限制超时时间"
+            severity: high
+          else:
+            case:
+              type: ">="
+              value: 0.05 * ${ref.max_seq_len}
+            reason: "infer_timeout建议设置大于等于0.05 * max_seq_len，且不超过65535（需要关闭超时时间限制可以设置为0），该参数设置过小可能导致请求超时"
+            severity: low
 
 mindie_server_prefill_config:
   ServerConfig:
@@ -251,16 +269,34 @@ mindie_server_prefill_config:
       severity: high
     tokenTimeout:
       expected:
-        type: eq
-        value: 60
-      reason: "tokenTimeout建议值为60，表示每token的超时时间，在测试推理性能时可以适当增大"
-      severity: low
+        if: "${.} != 0"
+        then:
+          if: "${.} < 0 or ${.} > 3600"
+          then:
+            case: false
+            reason: "tokenTimeout取值范围为[0, 3600]，建议设置大于等于60"
+            severity: high
+          else:
+            case:
+              type: ">="
+              value: 60
+            reason: "tokenTimeout建议设置大于等于60，且不超过3600，该参数设置过小可能导致请求超时"
+            severity: low
     e2eTimeout:
       expected:
-        type: eq
-        value: 600
-      reason: "e2eTimeout建议值为600，表示端到端推理的超时时间，在测试推理性能时可以适当增大"
-      severity: low
+        if: "${.} != 0"
+        then:
+          if: "${.} < 0 or ${.} > 65535"
+          then:
+            case: false
+            reason: "e2eTimeout取值范围为[0, 65535]，建议设置大于等于600"
+            severity: high
+          else:
+            case:
+              type: ">="
+              value: 600
+            reason: "e2eTimeout建议设置大于等于600，且不超过65535，该参数设置过小可能导致请求超时"
+            severity: low
     distDPServerEnabled:
       expected:
         case: alert
@@ -363,16 +399,34 @@ mindie_server_decode_config:
       severity: high
     tokenTimeout:
       expected:
-        type: eq
-        value: 60
-      reason: "tokenTimeout建议值为60，表示每token的超时时间，在测试推理性能时可以适当增大"
-      severity: low
+        if: "${.} != 0"
+        then:
+          if: "${.} < 0 or ${.} > 3600"
+          then:
+            case: false
+            reason: "tokenTimeout取值范围为[0, 3600]，建议设置大于等于60"
+            severity: high
+          else:
+            case:
+              type: ">="
+              value: 60
+            reason: "tokenTimeout建议设置大于等于60，且不超过3600，该参数设置过小可能导致请求超时"
+            severity: low
     e2eTimeout:
       expected:
-        type: eq
-        value: 600
-      reason: "e2eTimeout建议值为600，表示端到端推理的超时时间，在测试推理性能时可以适当增大"
-      severity: low
+        if: "${.} != 0"
+        then:
+          if: "${.} < 0 or ${.} > 65535"
+          then:
+            case: false
+            reason: "e2eTimeout取值范围为[0, 65535]，建议设置大于等于600"
+            severity: high
+          else:
+            case:
+              type: ">="
+              value: 600
+            reason: "e2eTimeout建议设置大于等于600，且不超过65535，该参数设置过小可能导致请求超时"
+            severity: low
     distDPServerEnabled:
       expected:
         type: eq
