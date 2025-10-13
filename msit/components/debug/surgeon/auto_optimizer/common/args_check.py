@@ -19,6 +19,7 @@ import subprocess
 from glob import glob
 
 from components.utils.file_open_check import FileStat, is_legal_args_path_string
+from components.utils.file_utils import check_input_file_path, check_input_dir_path
 from components.utils.util import filter_cmd
 
 MAX_SIZE_LIMITE_NORMAL_MODEL = 32 * 1024 * 1024 * 1024  # 32GB
@@ -30,6 +31,10 @@ def check_in_path_legality(value):
         file_stat = FileStat(path_value)
     except Exception as err:
         raise argparse.ArgumentTypeError("Input path or file is illegal, please check.") from err
+    if file_stat.is_file:
+        check_input_file_path(path_value)
+    if file_stat.is_dir:
+        check_input_dir_path(path_value)
     if not file_stat.is_basically_legal('read'):
         raise argparse.ArgumentTypeError("The current input file does not have right read permission, please check.")
     if file_stat.is_file and not file_stat.is_legal_file_type(["onnx"]):
@@ -45,6 +50,8 @@ def check_in_model_path_legality(value):
         file_stat = FileStat(path_value)
     except Exception as err:
         raise argparse.ArgumentTypeError("Input model path is illegal, please check.") from err
+    if file_stat.is_file:
+        check_input_file_path(path_value)
     if not file_stat.is_basically_legal('read'):
         err_msg = "The current input model file does not have right read permission, please check."
         raise argparse.ArgumentTypeError(err_msg)

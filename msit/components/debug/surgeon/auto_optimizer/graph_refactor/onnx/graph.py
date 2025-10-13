@@ -13,38 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+import itertools
+import os
 import tempfile
 import warnings
-import os
-import itertools
-import copy
-
-from typing import List, Dict, Union, Sequence, Optional, Tuple, Set
 from collections import deque
+from typing import List, Dict, Union, Sequence, Optional, Tuple, Set
 
-import onnx
 import numpy as np
-from onnx import helper, GraphProto, ModelProto, OperatorSetIdProto, version_converter
+import onnx
 
+from auto_optimizer.common.utils import check_output_model_path
 from auto_optimizer.graph_refactor import BaseGraph, Initializer, PlaceHolder, Node
 from auto_optimizer.graph_refactor.onnx.node import OnnxPlaceHolder, OnnxInitializer, OnnxNode
 from components.debug.common import logger
-from auto_optimizer.common.utils import check_output_model_path
 from components.utils.check.rule import Rule
 from components.utils.constants import ONNX_MODEL_MAX_SIZE
+from components.utils.file_utils import check_input_file_path
+from onnx import helper, GraphProto, ModelProto, OperatorSetIdProto, version_converter
 
 
 class OnnxGraph(BaseGraph):
 
     def __init__(
-        self,
-        name: str,
-        nodes: Optional[List[OnnxNode]] = None,
-        inputs: Optional[List[OnnxPlaceHolder]] = None,
-        outputs: Optional[List[OnnxPlaceHolder]] = None,
-        initializers: Optional[List[OnnxInitializer]] = None,
-        value_infos: Optional[List[OnnxPlaceHolder]] = None,
-        **kwargs: Dict[str, object],
+            self,
+            name: str,
+            nodes: Optional[List[OnnxNode]] = None,
+            inputs: Optional[List[OnnxPlaceHolder]] = None,
+            outputs: Optional[List[OnnxPlaceHolder]] = None,
+            initializers: Optional[List[OnnxInitializer]] = None,
+            value_infos: Optional[List[OnnxPlaceHolder]] = None,
+            **kwargs: Dict[str, object],
     ):
         super(OnnxGraph, self).__init__(name, nodes, inputs, outputs, initializers, value_infos)
 
@@ -150,8 +150,7 @@ class OnnxGraph(BaseGraph):
     @classmethod
     def parse(cls, path_or_bytes: Union[str, ModelProto, GraphProto], add_name_suffix: bool = False) -> 'OnnxGraph':
         if isinstance(path_or_bytes, str):
-            if os.path.getsize(path_or_bytes) > ONNX_MODEL_MAX_SIZE:
-                raise Exception("The onnx file size has exceeded 2GB and cannot be read.")
+            check_input_file_path(path_or_bytes, file_max_size=ONNX_MODEL_MAX_SIZE)
             onnx_model = onnx.load(path_or_bytes)
         if isinstance(path_or_bytes, ModelProto):
             onnx_model = path_or_bytes
@@ -191,7 +190,7 @@ class OnnxGraph(BaseGraph):
 
     @classmethod
     def check_overlapping_names(
-        cls, graph1: 'OnnxGraph', graph2: 'OnnxGraph', io_map: Optional[List[Tuple[str, str]]]
+            cls, graph1: 'OnnxGraph', graph2: 'OnnxGraph', io_map: Optional[List[Tuple[str, str]]]
     ) -> List[Tuple[str, str]]:
         """Check whether there are name collisions between two graphs
 
@@ -249,7 +248,8 @@ class OnnxGraph(BaseGraph):
 
     @classmethod
     def add_prefix_graph(
-        cls, graph: 'OnnxGraph', prefix: str, inplace: Optional[bool] = False, name_map: Optional[Dict[str, str]] = None
+            cls, graph: 'OnnxGraph', prefix: str, inplace: Optional[bool] = False,
+            name_map: Optional[Dict[str, str]] = None
     ) -> 'OnnxGraph':
         """Adds a prefix to names of elements in a graph: nodes, edges, inputs, outputs,
         initializers and value infos.
@@ -312,12 +312,12 @@ class OnnxGraph(BaseGraph):
 
     @classmethod
     def concat_graph(
-        cls,
-        graph1: 'OnnxGraph',
-        graph2: 'OnnxGraph',
-        io_map: List[Tuple[str, str]],
-        prefix: str = "pre_",
-        graph_name: Optional[str] = None,
+            cls,
+            graph1: 'OnnxGraph',
+            graph2: 'OnnxGraph',
+            io_map: List[Tuple[str, str]],
+            prefix: str = "pre_",
+            graph_name: Optional[str] = None,
     ) -> 'OnnxGraph':
         """Combine two ONNX graphs into a single one.
 
@@ -388,13 +388,13 @@ class OnnxGraph(BaseGraph):
         return self._add_initializer(initializer)
 
     def add_node(
-        self,
-        name: str,
-        op_type: str,
-        inputs: Optional[List[str]] = None,
-        outputs: Optional[List[str]] = None,
-        attrs: Optional[Dict[str, object]] = None,
-        domain: str = '',
+            self,
+            name: str,
+            op_type: str,
+            inputs: Optional[List[str]] = None,
+            outputs: Optional[List[str]] = None,
+            attrs: Optional[Dict[str, object]] = None,
+            domain: str = '',
     ) -> OnnxNode:
         node = OnnxNode(name, op_type, inputs, outputs, attrs=attrs, domain=domain)
         self.update_map()
@@ -415,9 +415,9 @@ class OnnxGraph(BaseGraph):
         return helper.make_model(self.proto(), **self._meta)
 
     def save(self, path: str,
-            save_as_external_data: bool = False,
-            all_tensors_to_one_file: bool = True) -> None:
-        
+             save_as_external_data: bool = False,
+             all_tensors_to_one_file: bool = True) -> None:
+
         # Threshold set to 1.9GB (instead of 2GB) due to calculation differences
         threshold = 1.9 * 1024 * 1024 * 1024
 
@@ -426,24 +426,24 @@ class OnnxGraph(BaseGraph):
             model_size = len(serialized_model)
             # Save as external data if model_size exceeds the threshold
             if model_size > threshold:
-                save_as_external_data = True 
+                save_as_external_data = True
         except ValueError:
             # Save as external data if model_size is too large and raises a ValueError
-            save_as_external_data = True 
+            save_as_external_data = True
 
-        # Remove duplicate data file when saving as a single external data file 
+            # Remove duplicate data file when saving as a single external data file
         base_name = os.path.basename(path) + '.data'
         file_name = os.path.join(os.path.dirname(path), base_name)
         if os.path.exists(file_name):
             os.remove(file_name)
-            
+
         onnx.save(
-                self.model(),
-                path,
-                save_as_external_data=save_as_external_data,
-                all_tensors_to_one_file=all_tensors_to_one_file,
-                location=os.path.basename(path) + '.data',
-            )
+            self.model(),
+            path,
+            save_as_external_data=save_as_external_data,
+            all_tensors_to_one_file=all_tensors_to_one_file,
+            location=os.path.basename(path) + '.data',
+        )
 
     def infer_shape(self) -> None:
         # clear value_infos
@@ -472,11 +472,11 @@ class OnnxGraph(BaseGraph):
         self._value_map = {v.name: v for v in self._value_infos}
 
     def extract(
-        self,
-        new_model_save_path: str,
-        input_name_list: List[str],
-        output_name_list: List[str],
-        enable_model_check: bool = True,
+            self,
+            new_model_save_path: str,
+            input_name_list: List[str],
+            output_name_list: List[str],
+            enable_model_check: bool = True,
     ) -> 'OnnxGraph':
 
         def check_model(model):
@@ -498,13 +498,13 @@ class OnnxGraph(BaseGraph):
         return OnnxGraph.parse(new_model_save_path)
 
     def extract_subgraph(
-        self,
-        start_node_names: List[str] = None,
-        end_node_names: List[str] = None,
-        subgraph_path: str = None,
-        is_check_subgraph: bool = False,
-        input_shape: str = None,
-        input_dtype: str = None,
+            self,
+            start_node_names: List[str] = None,
+            end_node_names: List[str] = None,
+            subgraph_path: str = None,
+            is_check_subgraph: bool = False,
+            input_shape: str = None,
+            input_dtype: str = None,
     ):
 
         # do shape info by default
@@ -579,8 +579,8 @@ class OnnxGraph(BaseGraph):
 
         # remove isolated inputs
         valid_inputs = [
-            inp 
-            for node in self.nodes 
+            inp
+            for node in self.nodes
             for inp in node.inputs
         ]
         input_name_list = list(set(valid_inputs) & set(input_name_list))
