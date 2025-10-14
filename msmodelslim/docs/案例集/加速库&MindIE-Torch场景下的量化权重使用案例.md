@@ -5,7 +5,7 @@
 1.环境的安装与配置
 请参考《[MindIE安装指南](https://www.hiascend.com/document/detail/zh/mindie/10RC3/envdeployment/instg/mindie_instg_0001.html)》安装MindIE，并参考《MindIE安装指南》中“配置MindIE > [配置MindIE LLM](https://www.hiascend.com/document/detail/zh/mindie/10RC3/envdeployment/instg/mindie_instg_0028.html)”章节配置MindIE LLM。
 
-量化环境安装指南：[msModelSlim安装指南](../安装指南.md)
+量化环境安装指南：[安装指南](../安装指南.md)
 
 2.量化权重生成
 
@@ -23,7 +23,7 @@
 ├── pytorch_model-00006-of-00006.bin
 ├── pytorch_model.bin.index.json
 ├── special_tokens_map.json
-├── tokenizer_config.json.py
+├── tokenizer_config.json
 ├── tokenizer.json
 ├── tokenizer.model
 ```
@@ -35,7 +35,7 @@ cd ${ATB_SPEED_HOME_PATH}
 # 运行脚本生成量化权重
 bash examples/models/llama/generate_quant_weight.sh -src {浮点权重路径} -dst {W8A8量化权重保存路径} -type llama2_13b_w8a8
 
-# 以上指令展示了生成LLama2-13b-hf W8A8权重，不同模型的参数配置不同，请参考模型Readme文件。
+# 以上指令展示了生成Llama2-13b-hf W8A8权重，不同模型的参数配置不同，请参考模型Readme文件。
 # W8A8量化权重的config.json中应包含quantize字段，其值为"w8a8"。
 # MindIE量化脚本除了调用msmodelslim量化工具生成权重及权重描述外，还复制了tokenizer文件以及复制并修改了config.json到量化权重保存路径中。
 ```
@@ -53,7 +53,7 @@ bash examples/models/llama/generate_quant_weight.sh -src {浮点权重路径} -d
 
 目录中的其余文件为推理时所需的配置文件，不同模型略有差异。
 
-safetensors中储存格式为字典，包含量化权重和量化不修改的浮点权重。其中量化权重的key值为各层Linear的名字加上对应权重的名字。
+在 safetensors 中，数据以字典格式存储，包含两部分内容：量化后的权重，以及未经过量化处理的浮点权重。其中，量化权重的键（key）命名规则是：各层 Linear 的名称加上其对应权重的名称。
 
 以下展示了量化后权重文件quant_model_weight_w8a8.safetensors中的部分内容：
 
@@ -104,14 +104,3 @@ Answer: Deep learning is a subset of machine learning that uses artificial neura
 ```
 
 昇腾社区开发指南参考链接：https://www.hiascend.com/document/detail/zh/mindie/10RC3/mindiellm/llmdev/mindie_llm0281.html
-
-
-### 二、MindIE-Torch下W8A8使用案例
-
-MindIE安装指南：请参考《[MindIE安装指南](https://www.hiascend.com/document/detail/zh/mindie/10RC3/envdeployment/instg/mindie_instg_0001.html)》安装MindIE。
-
-量化环境安装指南：[msModelSlim安装指南](../安装指南.md)
-
-推理验证参考链接：
-参考MindIE-Torch的模型参考样例
-https://gitee.com/ascend/ModelZoo-PyTorch/tree/master/MindIE/MindIE-Torch/built-in/foundation/stable_diffusion_xl#%E9%87%8F%E5%8C%96%E5%8A%9F%E8%83%BD%E5%8F%AF%E9%80%89

@@ -17,7 +17,7 @@ AutoGPTQ：GPU
 
 # 1.msModelSlim量化
 环境准备如下：  
-[大模型量化工具使用前的开发环境的部署](../安装指南.md)  
+[安装指南](../安装指南.md)  
 [大模型量化工具依赖安装](../功能指南/脚本量化与其他功能/pytorch/llm_ptq/大模型训练后量化.md)  
 
 ## 1.1 msModelSlim量化
@@ -115,7 +115,7 @@ data = load_dataset("json", data_files='./val.jsonl')['train']
 calib_data = [text for text in data["text"] if text.strip() != '' and len(text.split(' ')) > 20]
 
 # Quantize
-model.quantize(tokenizer, )
+model.quantize(tokenizer, quant_config=quant_config)
 
 # Save quantized model
 model.save_quantized(quant_path)
