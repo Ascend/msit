@@ -52,7 +52,7 @@ class EnvChecker(NodeChecker):
                 actual="missing",
                 expected="",
                 reason="LD_PRELOAD环境变量未设置，建议设置jemalloc库以提高内存分配性能",
-                severity="medium"
+                severity="low"
             )
             return
         
@@ -72,5 +72,5 @@ class EnvChecker(NodeChecker):
                 actual=ld_preload,
                 expected=ld_preload,
                 reason="LD_PRELOAD环境变量未包含jemalloc库，建议添加jemalloc库以提高内存分配性能",
-                severity="medium"
+                severity="low"
             )

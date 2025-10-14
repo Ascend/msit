@@ -52,7 +52,7 @@ class SysChecker(NodeChecker):
                 reason="jemalloc未通过apt/yum安装，建议安装以提高性能: "
                        "Ubuntu/Debian: sudo apt-get install libjemalloc-dev, "
                        "CentOS/RHEL: sudo yum install jemalloc",
-                severity="high"
+                severity="low"
             )
 
     def _is_jemalloc_installed(self) -> bool:

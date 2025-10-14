@@ -182,6 +182,10 @@ class CheckErrorHandler(ErrorHandler):
         if severity < self._severity:
             return
 
+        path = context.get('path', '')
+        if '%' in path:
+            context['path'] = path.replace('%', '')
+
         error_context = ErrorContext(**context)
         self._errors.append(CheckError(
             reason=reason,
@@ -205,23 +209,30 @@ class ConfigErrorHandler(ErrorHandler):
             return
 
         path = context.get('path', '')
+        if '%' in path:
+            percent_pos = path.index('%')
+            dot_pos = path[:percent_pos].rfind('.')
+            path = path.replace('%', '')
+            context['path'] = path[dot_pos + 1:]
+        else:
+            context['path'] = path.rsplit('.', 1)[-1]
+
         orig_lineno, shifted_lineno, start_col = self._find_lineno_and_col(path)
-        
-        context['path'] = path.split('.')[-1]
+
         context['lineno'] = shifted_lineno + 1
         context['start_col'] = start_col
         context['context_lines'] = {
             context_lineno + 1: self._file_lines[context_lineno] 
             for context_lineno in self._context_hierarchy[orig_lineno]
         }
-        
+
         error_context = ErrorContext(**context)
         self._errors.append(ConfigError(
             reason=reason,
             severity=severity,
             context=error_context
         ))
-    
+
     def _find_lineno_and_col(self, path):
         if path in self._key_mapping:
             lineno, start_col = self._key_mapping[path]
@@ -232,7 +243,7 @@ class ConfigErrorHandler(ErrorHandler):
         lineno_shift = (len(self._errors) + 1) / len(self._file_lines)
 
         return lineno, lineno + lineno_shift, start_col
-    
+
     def _find_nearest_path(self, path):
         path_pos = bisect.bisect_left(self._sorted_key, path)
         if path_pos == 0:
