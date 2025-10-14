@@ -27,32 +27,6 @@ class ConfigCollector(BaseCollector):
         self.config_path = config_path
 
     @staticmethod
-    def _parse_file_structure(file):
-        """解析配置文件结构，记录缩进层级变化"""
-        lines = []
-        depth_changes = {}
-        current_depth = 0
-
-        for line_num, line_content in enumerate(file):
-            line_content = line_content.rstrip('\n')
-            lines.append(line_content)
-
-            if not line_content.strip():
-                continue
-
-            previous_depth = current_depth
-            for char in line_content:
-                if char in '{[':
-                    current_depth += 1
-                elif char in '}]':
-                    current_depth -= 1
-
-            if previous_depth != current_depth:
-                depth_changes[line_num] = current_depth
-        
-        return lines, depth_changes
-
-    @staticmethod
     def _build_context_hierarchy(lines, depth_changes):
         """构建每行的上下文层级关系"""
         line_count = len(lines)
@@ -80,78 +54,51 @@ class ConfigCollector(BaseCollector):
 
         return context_hierarchy
 
-    @staticmethod
-    def _create_key_mapping(lines, json_data):
-        """创建JSON键到文件位置的映射"""
+    def _collect_data(self):
+        lines = []
+        depth_changes = {}
         key_location_map = {}
 
-        def _map_keys(node, current_path, start_line, processed_lines):
-            if isinstance(node, dict):
-                for key, value in node.items():
-                    full_path = key if not current_path else f"{current_path}.{key}"
-                    
-                    # 在文件中查找键的位置
-                    for line_num in range(start_line, len(lines)):
-                        line_content = lines[line_num]
-                        match = re.search(rf'\s*"{re.escape(key)}"\s*:', line_content)
-                        
-                        if match:
-                            col_start = match.start(0) + len(match.group(0).split('"')[0])
-                            key_location_map[full_path] = (line_num, col_start)
-                            
-                            if line_num not in processed_lines:
-                                processed_lines.add(line_num)
-                                _map_keys(value, full_path, line_num, processed_lines)
-                            break
-            elif isinstance(node, list):
-                for index, item in enumerate(node):
-                    list_path = f"{current_path}[{index}]"
-                    _map_keys(item, list_path, start_line, processed_lines)
+        current_depth = 0
+        parent_key = ''
+        last_key = ''
 
-        processed_lines = set()
-        _map_keys(json_data, "", 0, processed_lines)
-        return key_location_map
+        key_pattern = re.compile('\s*"([^"]+)"\s*:\s*')
+        with open_s(self.config_path, 'r', encoding='utf-8') as f:
+            for line_no, line in enumerate(f):
+                line = line.rstrip('\n')
+                lines.append(line)
 
-    def _collect_data(self):
-        file_lines, depth_info = self._read_file_lines_and_depth()
-        if not file_lines:
-            return {}, [], {}, []
+                if not line.strip():
+                    continue
 
-        json_content = self._parse_json_content(file_lines)
-        if not json_content:
-            return {}, file_lines, {}, []
-
-        key_mapping = self._create_key_mapping(file_lines, json_content)
-        context_hierarchy = self._build_context_hierarchy(file_lines, depth_info)
-
-        return json_content, file_lines, key_mapping, context_hierarchy
-
-    def _read_file_lines_and_depth(self):
-        try:
-            with open_s(self.config_path, 'r', encoding='utf-8') as config_file:
-                return self._parse_file_structure(config_file)
-        except Exception as error:
-            self.error_handler.add_error(
-                filename=__file__,
-                function='_read_file_lines_and_depth',
-                lineno=131,
-                what=f"尝试打开文件失败: {self.config_path!r}",
-                reason=str(error)
+                mo = key_pattern.search(line)
+                if mo:
+                    key = mo.group(1)
+                    key = f'{parent_key}.{key}' if parent_key else key
+                    col_start = line.find('"')
+                    key_location_map[key] = (line_no, col_start)
+                    last_key = key
+                
+                previous_depth = current_depth
+                for char in line:
+                    if char in '{[':
+                        current_depth += 1
+                    elif char in '}]':
+                        current_depth -= 1
+                
+                if current_depth > previous_depth:
+                    parent_key = last_key
+                    depth_changes[line_no] = current_depth
+                elif current_depth < previous_depth:
+                    dot_num = parent_key.count('.')
+                    parent_key = '' if dot_num < 2 else parent_key.rsplit('.', 2)[0]
+                    depth_changes[line_no] = current_depth
+            
+            return (
+                json.loads('\n'.join(lines)), lines,
+                key_location_map, self._build_context_hierarchy(lines, depth_changes)
             )
-            return [], {}
-
-    def _parse_json_content(self, file_lines):
-        try:
-            return json.loads('\n'.join(file_lines)) if file_lines else {}
-        except Exception as error:
-            self.error_handler.add_error(
-                filename=__file__,
-                function='_parse_json_content',
-                lineno=143,
-                what=f"尝试用 Json 格式解析文件失败: {self.config_path!r}",
-                reason=str(error)
-            )
-            return {}
 
 
 class UserConfigCollector(ConfigCollector):

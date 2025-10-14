@@ -325,26 +325,14 @@ class NodeChecker(BaseChecker):
         for k, v in node.items():
             new_path = k if not path else f"{path}.{k}"
             if new_path not in visited_nodes:
-                self._handle_missing_key(v, new_path, visited_nodes)
-                continue
+                new_path += '%'
+                visited_nodes[new_path] = None
             queue.append((v, new_path))
-
-    def _handle_missing_key(self, node, path, visited_nodes):
-        if node is None or not isinstance(node, dict) or 'expected' not in node:
-            self.error_handler.add_error(
-                path=path, actual="missing",
-                expected="-", reason='这个字段应该存在',
-                severity="high"
-            )
-            return
-        
-        visited_nodes[path] = None
-        self._validate_expect(node, path, visited_nodes)
 
     def _validate_list(self, node: list, path: str, queue: deque, visited_nodes: dict):
         for i, v in enumerate(node):
             new_path = f"[{i}]" if not path else f"{path}[{i}]"
             if new_path not in visited_nodes:
-                self._handle_missing_key(v, new_path, visited_nodes)
-                continue
+                new_path += '%'
+                visited_nodes[new_path] = None
             queue.append((v, new_path))

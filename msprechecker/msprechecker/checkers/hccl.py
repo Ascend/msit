@@ -22,7 +22,7 @@ class LinkChecker(BaseChecker):
         check if results are full of 'link status: UP'
         """
         if not results:
-            raise ValueError(f"Expected 'result' not empty. Got '{results}'")
+            return
 
         success_pattern = "link status: UP"
         for device_id, result in enumerate(results):
@@ -41,7 +41,7 @@ class VnicChecker(BaseChecker):
         check if results are full of 'vnic link status: UP' and 'ipaddr: xxx'
         """
         if not results:
-            raise ValueError(f"Expected 'result' not empty. Got '{results}'")
+            return
 
         for device_id, result in enumerate(results):
             fields = result.strip().split("\n")
@@ -90,7 +90,7 @@ class HCCLChecker(BaseChecker):
         check if results are full of [[{'3 received, 0.00% packet loss'}, ...]]'
         """
         if not results:
-            raise ValueError(f"Expected 'result' not empty. Got '{results}'")
+            return
         
         for cmd, (ret, out) in results.items():
             if ret:

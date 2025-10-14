@@ -22,7 +22,7 @@ env:
       type: eq
       value: "'1024'"
     reason: "HCCL通信缓存，PD分离场景，P节点设置为512，D节点设置为1024"
-    severity: high
+    severity: low
   TASK_QUEUE_ENABLE:
     expected:
       type: eq
