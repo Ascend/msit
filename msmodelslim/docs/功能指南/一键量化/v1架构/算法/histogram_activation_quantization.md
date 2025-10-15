@@ -8,7 +8,7 @@
 
 ## 使用方式
 
-作为量化器使用，支持per tensor量化粒度的int8对称和非对称量化，通过配置一键量化yaml中的qconfig.act.method部分启用。下面以W8A8的linear为例，也可适配其他存在激活值量化的场景，具体请查看对应的quantizer配置中是否使用了AutoActQuantizer。
+作为量化器使用，支持per_tensor量化粒度的int8对称和非对称量化，通过配置一键量化yaml中的qconfig.act.method部分启用。下面以W8A8的linear为例，也可适配其他存在激活值量化的场景，具体请查看对应的quantizer配置中是否使用了AutoActQuantizer。
 
 ```yaml
 - type: "linear_quant" 
@@ -253,7 +253,7 @@ class SearchMethod(str, Enum):
 **解决方案**：
 - 排查yaml是否配置错误。
 ```yaml
-- type: "linear" 
+- type: "linear_quant" 
   qconfig:
    act:
      scope: "per_tensor" # 目前只支持per_tensor
