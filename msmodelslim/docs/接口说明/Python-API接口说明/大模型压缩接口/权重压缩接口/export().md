@@ -3,7 +3,7 @@
 ### 功能说明
 权重压缩参数配置类，通过Compressor类封装压缩算法来保存压缩后的权重及相关参数。
 
-说明:Compressor中的选择weight_path参数时，需要用此函数导出。
+说明：若在Compressor中使用'weight_path'参数，需通过'compressor.export'函数将压缩后的权重导出。
 
 ### 函数原型
 ```python
@@ -17,7 +17,7 @@ compressor.export(arr, path, dtype=numpy.int8)
 | path | 输入 |	压缩结果的保存路径。| 必选。<br>数据类型：str。 |
 | dtype | 输入 |压缩结果的保存格式。| 可选。<br>数据类型：numpy.dtype。<br>默认值：numpy.int8。 |
 ### 调用示例
-- 使用weight_path参数进行权重压缩。
+- 使用weight_path参数指定待压缩的权重文件路径。
 ```python
 from modeslim.pytorch.weight_compression import CompressConfig, Compressor
 compress_config = CompressConfig(do_pseudo_sparse=False, sparse_ratio=1, is_debug=True, compress_disable_layers=None, record_detail_root=save_root)

@@ -12,13 +12,14 @@ AntiOutlier(model, calib_data=None, cfg=None, norm_class_name = None)
 | 参数名| 输入/返回值 | 含义 | 使用限制 |
 | ------ | ------ | ------ | ------ |
 | model | 输入 | 用于大模型离群值抑制的模型。| 必选。<br>数据类型：PyTorch模型。 |
-| calib_data | 输入 | 用于离群值抑制的校准数据。| 必选。<br>数据类型：object。<br>默认值为None。<br>输入模板：\[[input1],[input2],[input3]]。 |
+| calib_data | 输入 | 用于离群值抑制的校准数据。| 可选。<br>数据类型：object。<br>默认值为None。<br>输入模板：\[[input1],[input2],[input3]]。 |
 | cfg | 输入 | 已配置的AntiOutlierConfig类。| 可选。<br>数据类型：Config。 |
 | norm_class_name | 输入 | 用户自定义的norm类名。| 可选。<br>数据类型：str。<br>默认为None，若系统自动识别norm失败，则需要用户手动输入自定义的norm类名，例如norm_class_name = 'LlamaRMSNorm'。 |
 
 ### 调用示例
-根据实际需求，在QuantConfig初始化中完成所有参数的配置。
+根据实际需求，在AntiOutlier初始化中完成所有参数的配置。
 ```python
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlier, AntiOutlierConfig
 anti_config = AntiOutlierConfig(anti_method="m2")
 anti_outlier = AntiOutlier(model, calib_data=dataset_calib, cfg=anti_config)

@@ -9,12 +9,12 @@ add_output_soft_label(config)
 ```
 
 ### 参数说明
-参数名：config；输入参数；配置项如下所示：
+参数名：config；数据类型：dict；包含的配置项如下所示：
 |配置项 | 含义 | 使用限制 |
 | --- | --- | --- |
-| t_output_idx | 用于配置t_module输出的index。<br> 若t_module存在多个输出，需要使用该参数指定用于计算loss的输出。若只有一个输出，使用0即可。| 必选。<br>数据类型：int。<br>可以为None。| 
-| s_output_idx | 用于配置s_module输出的index。<br>若s_module存在多个输出，需要使用该参数指定用于计算loss的输出。若只有一个输出，使用0即可。 |必选。<br>数据类型：int。<br>可以为None。| 
-| loss_func | 用于指定t_module 与s_module 的loss function，每一个loss function作为一个字典存入该list中，字典内部包含如下字段：(1)func_name:loss function的名称。MindSpore和PyTorch模型配置为KDCrossEntropy。自定义：使用add_custom_loss_func方法新增loss function。(2)func_weight：loss的权重。(3)temperature：蒸馏的温度。(4)func_param：部分loss function的参数。 |必选。<br>数据类型：list。字典内参数：<br>(1)func_name必选，数据类型：string。(2)func_weight必选，数据类型：int。(3)temperature可选，数据类型：float，默认值为1。(4)func_param可选，数据类型：list，默认值为[]。| 
+| t_output_idx | 用于配置t_module输出的index。<br> 若t_module存在多个输出，需要使用该参数指定用于计算loss的输出。若只有一个输出，使用0即可。| 必选。<br>数据类型：int。| 
+| s_output_idx | 用于配置s_module输出的index。<br>若s_module存在多个输出，需要使用该参数指定用于计算loss的输出。若只有一个输出，使用0即可。 |必选。<br>数据类型：int。| 
+| loss_func | 用于指定t_module 与s_module 的loss function，每一个loss function作为一个字典存入该list中，字典内部包含如下字段：<br>(1)func_name:loss function的名称。MindSpore和PyTorch模型配置为KDCrossEntropy。自定义：使用add_custom_loss_func方法新增loss function。<br>(2)func_weight：loss的权重。<br>(3)temperature：蒸馏的温度。<br>(4)func_param：部分loss function的参数。 |必选。<br>数据类型：list。<br>字典内参数：<br>(1)func_name必选，数据类型：string。<br>(2)func_weight必选，数据类型：int。<br>(3)temperature可选，数据类型：float，默认值为1。<br>(4)func_param可选，数据类型：list，默认值为[]。| 
 
 ### 调用示例
 ```python

@@ -1,7 +1,7 @@
 ## get_compress_heads
 
 ### 功能说明 
-执行RARopeCompressor后，可在指定路径下，通过get_compress_heads()函数生成.pt文件。
+执行RARopeCompressor后，可通过调用get_compress_heads()函数在指定路径下生成.pt文件。
 
 ### 函数原型
 ```python
