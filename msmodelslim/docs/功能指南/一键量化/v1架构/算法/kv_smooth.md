@@ -128,7 +128,7 @@ class KVSmoothFusedInterface(ABC):
     - **解决方案**：核对完整模块名，是否填错 `include` 或 `exclude`
 
 2. **头维度信息缺失**
-    - **现象**：抛出 `UnspportedError`，指明 `get_head_dim`、`get_num_key_value_groups`、`get_num_key_value_heads` 缺失
+    - **现象**：抛出 `UnsupportedError`，指明 `get_head_dim`、`get_num_key_value_groups`、`get_num_key_value_heads` 缺失
     - **解决方案**：对应模型适配器确保实现 `KVSmoothFusedInterface` 接口，否则模型不适用算法
 
 3. **注意力不适用**

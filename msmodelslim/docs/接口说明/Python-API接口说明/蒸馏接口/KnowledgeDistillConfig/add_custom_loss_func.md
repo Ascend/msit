@@ -19,6 +19,8 @@ add_custom_loss_func(name, instance)
 ### 调用示例
 ```python
 from msmodelslim.common.knowledge_distill.knowledge_distill import KnowledgeDistillConfig
+from mindspore.nn import Cell
+
 #用户自定义loss function的实例
 class CustomLoss(Cell):
     def __init__(self):
