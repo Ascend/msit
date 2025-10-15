@@ -126,7 +126,7 @@ class LayerAnalysisApplication:
                                    action='Please implement PipelineInterface for model analyzing')             
 
         result = self.analysis_service.analyze(
-
+            device=device,
             model_adapter=model_adapter,
             patterns=patterns,
             analysis_config=analysis_config
