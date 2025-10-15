@@ -190,7 +190,7 @@ class EnvCheckErrorDisplayDecorator(ErrorDisplayStrategy):
             else:
                 activate_cmds.append(f'export {var}="{expected}" # {reason}')
 
-            if actual == "missing":
+            if actual == "<missing>":
                 deactivate_cmds.append(f"unset {var}")
             else:
                 deactivate_cmds.append(f'export {var}="{actual}"')
