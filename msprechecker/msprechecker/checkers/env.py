@@ -49,7 +49,7 @@ class EnvChecker(NodeChecker):
         if not ld_preload:
             self.error_handler.add_error(
                 path="LD_PRELOAD",
-                actual="missing",
+                actual="<missing>",
                 expected="",
                 reason="LD_PRELOAD环境变量未设置，建议设置jemalloc库以提高内存分配性能",
                 severity="low"
