@@ -29,7 +29,7 @@ from msmodelslim.quant.processor.anti_outlier.smooth_base import BaseSmoothProce
 from msmodelslim.quant.processor.base import AutoSessionProcessor
 from msmodelslim.utils.validation.value import validate_normalized_value, is_string_list
 from msmodelslim.utils.dist import DistHelper
-from msmodelslim.utils.exception import UnsupportedError
+from msmodelslim.utils.exception import UnsupportedError, SchemaValidateError, SecurityError
 from msmodelslim.utils.logging import get_logger, logger_setter
 
 
@@ -67,6 +67,11 @@ class FlexSmoothQuantProcessor(BaseSmoothProcessor):
 
     def _get_stats_hook(self, name: str, subgraph_type: str = None) -> Callable:
         def stats_hook(module: nn.Linear, input_tensor: tuple, output: Any) -> None:
+            if not isinstance(input_tensor, tuple):
+                raise SchemaValidateError('input tensor must be a tuple')
+            if not input_tensor:
+                raise SecurityError('input tensor cannot be empty')
+
             tensor = input_tensor[0]
 
             if name not in self.act_stats:
