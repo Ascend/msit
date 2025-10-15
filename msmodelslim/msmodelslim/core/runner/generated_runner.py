@@ -28,7 +28,7 @@ from msmodelslim.quant.processor import AutoProcessorConfig
 from msmodelslim.quant.processor.base import AutoSessionProcessor
 from msmodelslim.utils.cache import to_device
 from msmodelslim.utils.cache.memory import load_cached
-from msmodelslim.utils.exception import ToDoError, UnsupportedError, InvalidDatasetError
+from msmodelslim.utils.exception import ToDoError, UnsupportedError, InvalidDatasetError, SecurityError
 from msmodelslim.utils.logging import get_logger
 
 KEY_DATA_LOADER = "data_loader"
@@ -84,6 +84,9 @@ class GeneratedProcessUnit:
                 requests.append(request)
             except StopIteration:
                 return False
+
+        if not requests:
+            raise SecurityError('requests cannot be empty')
 
         batch_request = BatchProcessRequest(name=requests[0].name,
                                             module=requests[0].module,
