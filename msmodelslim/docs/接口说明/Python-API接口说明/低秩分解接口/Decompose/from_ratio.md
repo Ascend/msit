@@ -12,7 +12,7 @@ from_ratio(channel_ratio, excludes=None, divisor=64)
 | 参数名| 输入/返回值 | 含义 | 使用限制 |
 | ------ | ------ | ------ | ------ |
 | channel_ratio | 输入 | 需要分解的层按照该值计算分解后的channel 数。| 必选。<br>数据类型：float。范围 0-1。|
-| excludes | 输入 | 指定不分解的层名称。| 可选。<br>数据类型:None或列表或元组。<br>默认值为None。 |
+| excludes | 输入 | 指定不分解的层名称。| 可选。<br>数据类型：None或列表或元组。<br>默认值为None。 |
 | divisor | 输入 | 指定分解后channel的倍率，如指定16，则分解后的channel数为16的倍数。| 可选。<br>数据类型：整数，需大于0，默认值为64。 <br>说明：divisor设置为1时，表示禁用此功能。|
 
 ### 调用示例

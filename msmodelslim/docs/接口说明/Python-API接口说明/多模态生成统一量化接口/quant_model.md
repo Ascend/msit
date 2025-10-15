@@ -30,7 +30,7 @@ session_config = SessionConfig(
             disable_names=[]
         ),
         "save": SaveProcessorConfig(
-            output_path="./"
+            output_path="./",
             safetensors_name=None,
             json_name=None,
             save_type=['safe_tensor'],

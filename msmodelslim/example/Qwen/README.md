@@ -110,9 +110,9 @@
 #### 1. Qwen系列
 ##### <span id="qwen1-14b-w8a8量化">Qwen-14b W8A8量化</span>
 在`{浮点权重路径}/modeling_qwen.py`中将`SUPPORT_CUDA = torch.cuda.is_available()`手动设置为`SUPPORT_CUDA = False`；
-生成Qwen-14b模型量化权重，antioutlier使用m2算法配置，使用min-max量化方式，在CPU上进行运算
+生成Qwen-14b模型量化权重，antioutlier使用m2算法配置，使用min-max量化方式，在npu上进行运算
   ```shell
-  python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type cpu  --anti_method m2 --act_method 1 --model_type qwen1 --trust_remote_code True
+  python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu  --anti_method m2 --act_method 1 --model_type qwen1 --trust_remote_code True
   ```
 ##### <span id="qwen1-72b-w8a16量化">Qwen-72b W8A16量化</span>
 生成Qwen-72b模型量化权重，激活值量化使用自动混合量化方式，在CPU上进行运算

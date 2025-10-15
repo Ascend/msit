@@ -24,7 +24,7 @@ get_distill_model(teacher, student, config)
 from msmodelslim.common.knowledge_distill.knowledge_distill import KnowledgeDistillConfig, get_distill_model
 #定义配置
 distill_config = KnowledgeDistillConfig()
-distill_config.set_hard_label (0.5, 0) \
+distill_config.set_hard_label(0.5, 0) \
   .add_inter_soft_label({
     't_module': 'uniter.encoder.encoder.blocks.11.output',
     's_module': 'uniter.encoder.encoder.blocks.5.output',

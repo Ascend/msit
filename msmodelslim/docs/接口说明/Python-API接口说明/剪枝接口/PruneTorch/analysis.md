@@ -17,6 +17,8 @@ analysis(reserved_ratio=0.75, un_prune_list=None)
 
 ### 调用示例
 ```python
+import torch
+import torchvision
 from msmodelslim.pytorch.prune.prune_torch import PruneTorch
 model = torchvision.models.vgg16(pretrained=False)
 model.eval()
