@@ -195,12 +195,6 @@ mies_config:
         severity: high
 
 env:
-  MIES_CONTAINER_IP:
-    expected:
-      type: eq
-      value: "${global.cur_ip}"
-    reason: "MIES_CONTAINER_IP表示当前容器IP地址，建议设置为当前容器IP"
-    severity: high
   PYTORCH_NPU_ALLOC_CONF:
     expected:
       type: eq
