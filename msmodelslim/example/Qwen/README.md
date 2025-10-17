@@ -227,9 +227,8 @@
 ##### <span id="qwen3-32b-w16a16s-浮点稀疏量化">Qwen3-32B W16A16S 浮点稀疏量化</span>
 该模型的量化已经集成至[一键量化](../../docs/功能指南/一键量化/使用说明.md)。
 
-yaml 配置文件生成参考[float_sparse.md](../../docs/功能指南/一键量化/v1架构/算法/float_sparse.md#一键量化使用)，“一键量化使用” 章节。
   ```shell
-  msmodelslim quant --model_path {浮点权重路径} --save_path {W16A16S量化权重路径} --device npu --model_type Qwen3-32B --trust_remote_code True --config_path {yaml配置路径} 
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3-32B --quant_type w16a16s --trust_remote_code True
   ```
 
 ##### <span id="qwen3-32b-w4a4-flatquant-dynamic量化">Qwen3-32b W4A4 Flatquant Dynamic量化</span> 
