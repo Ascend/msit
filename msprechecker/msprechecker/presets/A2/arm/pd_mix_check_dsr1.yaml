@@ -36,8 +36,8 @@ mies_config:
     expected:
       type: enum
       value: [1, "${ref.tp}"]
-      reason: "sp取值只能等于1或者等于tp取值"
-      severity: high
+    reason: "sp取值只能等于1或者等于tp取值"
+    severity: high
 
   ref.max_seq_len:
     expected:

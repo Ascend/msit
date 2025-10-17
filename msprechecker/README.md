@@ -74,7 +74,9 @@ msprechecker precheck --mies-config-path <mindie-service-config>
 预检工具会对当前终端和配置文件字段进行校验，校验等级分为 `NOK`, `WARNING` 和 `RECOMMEND`，如果当前终端存在环境变量不符合最佳配置要求，则会在当前目录下输出 `msprechecker_env.sh` 文件，便于一键更改配置。校验等级可以通过 `--severity-level [low|medium|high]` 来进行对应更改
 
 > **注意**：部分环境变量需要用户**自行进行确认**，工具无法自动推荐最佳值。比如环境变量 `RANK_TABLE_FILE`，需要用户确认其不仅路径存在，且符合 *rank table* 规范。这种环境变量无法直接通过 source 来进行一键修改。<br><br>
-另外，如果是多机混部 PD 场景，则需要在多台机器上 <strong>手动执行</strong> 预检命令，工具 <strong>不支持</strong> 一台机器控制多台机器执行
+另外，如果是多机混部 PD 场景，则需要在多台机器上 <strong>手动执行</strong> 预检命令，工具 <strong>不支持</strong> 一台机器控制多台机器执行 
+> 
+> 只有 PD 混部场景才会校验环境变量配置，MindIE 其他部署模式都是通过 k8s 的方式进行 pod 中的环境变量设置，校验配置文件即可
 
 ### 单机、多机 PD 分离场景
 
