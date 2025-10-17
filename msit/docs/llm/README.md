@@ -32,9 +32,9 @@ msit install llm
 > * [异常检测使用说明](../llm/工具-异常检测使用说明.md)
 
 #### 场景列表
-> * [加速库场景-输出Token的logits精度比对](/msit/docs/llm/加速库场景-输出Token的logits精度比对.md)
-> * [工具-大模型精度比对](/msit/docs/llm/工具-大模型精度比对.md)
-> * [TorchAir场景-整网算子精度比对](/msit/docs/llm/TorchAir场景-整网算子精度比对.md)
+> * [加速库场景-输出Token的logits精度比对](../llm/加速库场景-输出Token的logits精度比对.md)
+> * [工具-大模型精度比对](../llm/工具-大模型精度比对.md)
+> * [TorchAir场景-整网算子精度比对](../llm/TorchAir场景-整网算子精度比对.md)
 
 ## 大模型精度调试步骤
 
