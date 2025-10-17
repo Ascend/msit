@@ -75,14 +75,17 @@ class CollectorFactory:
     @staticmethod
     def create(args: argparse.Namespace):
         default_collectors = [
-            EnvCollector(filter_env=getattr(args, "filter", False)),
             SysCollector(),
             AscendCollector(),
         ]  # all scenes applies
+        if getattr(args, 'framework', 'mindie') == 'vllm' or \
+            getattr(args, 'command') == CommandType.CMD_DUMP:
+            default_collectors.append(EnvCollector(filter_env=getattr(args, 'filter_env', False)))
+
         special_collectors = CollectorFactory.dispatch_collectors_by_scene(args)
         extra_collectors = CollectorFactory.dispatch_extra_collectors(args)
 
-        return default_collectors + special_collectors + extra_collectors
+        return list(set(default_collectors + special_collectors + extra_collectors))
 
     @staticmethod
     def dispatch_collectors_by_scene(args: argparse.Namespace) -> List[BaseCollector]:
@@ -99,6 +102,7 @@ class CollectorFactory:
 
         # PD Mix
         elif getattr(args, "mies_config_path", None):
+            collectors.append(EnvCollector(filter_env=getattr(args, 'filter_env', False)))
             collectors.append(MIESConfigCollector(config_path=args.mies_config_path))
 
         return collectors
