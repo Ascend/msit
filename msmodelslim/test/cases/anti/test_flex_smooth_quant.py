@@ -117,9 +117,9 @@ class TestQuantizationFunctions:
         beta = 0.7
         
         # 测试对称激活
-        result_sym = scale_descale(act, fc_weights, alpha, beta, act_asym=True)
+        result_sym = scale_descale(act, fc_weights, alpha, beta, act_sym=True)
         # 测试非对称激活
-        result_asym = scale_descale(act, fc_weights, alpha, beta, act_asym=False)
+        result_asym = scale_descale(act, fc_weights, alpha, beta, act_sym=False)
         
         assert isinstance(result_sym, torch.Tensor)
         assert isinstance(result_asym, torch.Tensor)

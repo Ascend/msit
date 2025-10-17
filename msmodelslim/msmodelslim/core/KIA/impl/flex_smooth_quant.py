@@ -55,7 +55,7 @@ def quant_int8tasym(x: torch.Tensor):
 
 
 @torch.no_grad()
-def scale_descale(act, fc_weights, alpha, beta, act_asym=True):
+def scale_descale(act, fc_weights, alpha, beta, act_sym=True):
     fp_golden = torch.matmul(act, fc_weights.T)
     normal = torch.mean(fp_golden ** 2) ** 0.5
     scale = torch.max(torch.abs(act), dim=0, keepdims=True)[0] ** alpha * \
@@ -66,7 +66,7 @@ def scale_descale(act, fc_weights, alpha, beta, act_asym=True):
 
     quant_weight = quant_int8sym(scaled_w_scale)
 
-    if act_asym:
+    if act_sym:
         quant_act = quant_int8sym(scaled_act)
     else:
         quant_act = quant_int8tasym(scaled_act)
