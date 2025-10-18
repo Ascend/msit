@@ -12,7 +12,7 @@ metadata:
 spec:
   process:
     - type: "float_sparse"                  
-      sparse_ratio: 0.25                      
+      sparse_ratio: 0.4                      
       include: ["*"]
       exclude: []
 
