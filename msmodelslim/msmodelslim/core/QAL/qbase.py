@@ -35,6 +35,7 @@ class QScope(Enum):
     PER_GROUP = "per_group"
     PER_BLOCK = "per_block"
     PER_TOKEN = "per_token"
+    PD_MIX = "pd_mix"
 
     PLACEHOLDER = "placeholder"
 

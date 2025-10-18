@@ -12,7 +12,7 @@ metadata:
 spec:
   process:
     - type: "iter_smooth"                  
-      alpha: 0.9                      
+      alpha: 0.5               
       scale_min: 1e-5                                     
       enable_subgraph_type:                
         - 'norm-linear'
@@ -21,12 +21,10 @@ spec:
         - 'up-down'
       include:                             
         - "*"
-    - type: "kv_smooth"
-      smooth_factor: 1.0
     - type: "linear_quant"
       qconfig:
         act:
-          scope: "per_tensor"  
+          scope: "pd_mix"  
           dtype: "int8"        
           symmetric: False    
           method: "minmax"      
@@ -36,7 +34,16 @@ spec:
           symmetric: True      
           method: "minmax"     
       include: ["*"]
-      exclude: ["*down_proj*"]
+      exclude: 
+        - 'model.layers.1.mlp.down_proj'
+        - 'model.layers.2.mlp.down_proj'
+        - 'model.layers.6.mlp.down_proj'
+        - 'model.layers.7.mlp.down_proj'
+        - 'model.layers.11.mlp.down_proj'
+        - 'model.layers.43.mlp.down_proj'
+        - 'model.layers.44.mlp.down_proj'
+        - 'model.layers.45.mlp.down_proj'
+        - 'model.layers.62.mlp.down_proj'
     - type: "dynamic_cache" 
       qconfig:
         scope: "per_channel"
