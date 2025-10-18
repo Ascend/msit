@@ -16,11 +16,12 @@
 __all__ = [
     "ActPerTokenMinmax",
     "ActPerTensorMinmax",
+    "ActPDMixMinmax",
     "WeightPerChannelMinmax",
     "WeightPerChannelSsz",
     "ActPerTensorHistogram",
 ]
 
 from .impl.histogram import ActPerTensorHistogram
-from .impl.minmax import ActPerTokenMinmax, ActPerTensorMinmax, WeightPerChannelMinmax
+from .impl.minmax import ActPerTokenMinmax, ActPerTensorMinmax, WeightPerChannelMinmax, ActPDMixMinmax
 from .impl.ssz import WeightPerChannelSsz

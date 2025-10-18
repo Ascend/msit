@@ -138,6 +138,56 @@ class ActPerChannelMinmax(AutoActQuantizer):
 
 @QABCRegistry.multi_register(
     dispatch_key=[
+        (qir.int8_pd_mix_asym, "minmax")
+    ],
+    abc_type=AutoActQuantizer
+)
+@logger_setter()
+class ActPDMixMinmax(AutoActQuantizer):
+
+    def __init__(self, config: QConfig):
+        super().__init__()
+        self.config = config
+        minmax_config = MinMaxObserverConfig.model_validate({})
+        self.prefilling_observer = MsMinMaxObserver(minmax_config)
+        self.decoding_observer = MsMinMaxObserver(minmax_config)
+        self.q_param: Optional[QParam] = None
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # calculate decoding static param
+        self.decoding_observer.update(x)
+        min_val, max_val = self.decoding_observer.get_min_max()
+        self.q_param = calculate_qparam(
+            min_val=min_val,
+            max_val=max_val,
+            q_dtype=QDType(self.config.dtype),
+            q_scope=QScope.PER_TENSOR,
+            symmetric=False,
+        )
+
+        # calibration as prefilling as dynamic
+        x_shape = x.shape
+        x_reshaped = x.reshape(-1, x.shape[-1])
+        self.prefilling_observer.reset()
+        self.prefilling_observer.update(x_reshaped)
+        min_val, max_val = self.prefilling_observer.get_min_max()
+        tmp_q_param = calculate_qparam(
+            min_val=min_val,
+            max_val=max_val,
+            q_dtype=QDType(self.config.dtype),
+            q_scope=QScope.PER_TOKEN,
+            symmetric=True,
+        )
+        return fake_quantize(QStorage(dtype=QDType.FLOAT, value=x), tmp_q_param).value.reshape(x_shape)
+
+    def get_q_param(self) -> QParam:
+        if self.q_param is None:
+            raise SpecError("No q_param was set", action="Please call forward first")
+        return QParam(scheme=qir.int8_pd_mix_asym, ext=self.q_param.ext)
+
+
+@QABCRegistry.multi_register(
+    dispatch_key=[
         (qir.int8_per_channel_sym, "minmax"),
         (qir.int4_per_channel_sym, "minmax")
     ],
