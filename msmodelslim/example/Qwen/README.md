@@ -22,7 +22,7 @@
 | | Qwen2.5-72B-Instruct | [Qwen2.5-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-72B-Instruct/tree/main) | ✅ |   | ✅ |   |   |  | ✅ | ✅ | [W8A8](#qwen25-7b-qwen25-14b-qwen25-32b-w8a8-量化) / [Attention](#qwen25-72b-支持attention量化) / [PDMix+KV Cache int8](#qwen25-72b-w8a8-pdmix量化) / [W4A16](#qwen25-72b-instruct-w4a16-量化) |
 | **Qwen3** | Qwen3-8B | [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main)          |  |   |   |   |   | ✅ |   |   | [稀疏](#qwen3-8b-稀疏量化)                                                                                                                                                                 |
 | | Qwen3-14B | [Qwen3-14B](https://huggingface.co/Qwen/Qwen3-14B/tree/main)         | ✅ |   |   |   |   | ✅ |   |   | [W8A8](#qwen3-14b-w8a8量化) / [稀疏](#qwen3-14b-稀疏量化)                                                                                                                                    |
-| | Qwen3-32B | [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B/tree/main)         | ✅ |   |   | ✅ | ✅ | ✅ |   |   | [W8A8](#qwen3-32b-w8a8量化) / [稀疏](#qwen3-32b-稀疏量化) / [W4A4](#qwen3-32b-w4a4-flatquant-dynamic量化) / [W16A16S](#qwen3-32b-w16a16s-浮点稀疏量化)                                                                                      |
+| | Qwen3-32B | [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B/tree/main)         | ✅ |   |   | ✅ | ✅ | ✅ | ✅ |   | [W8A8](#qwen3-32b-w8a8量化) / [稀疏](#qwen3-32b-稀疏量化) / [W4A4](#qwen3-32b-w4a4-flatquant-dynamic量化) / [W16A16S](#qwen3-32b-w16a16s-浮点稀疏量化)/[W8A8C8](#qwen3-32b-w8a8c8量化)                                                                                      |
 | **QwQ** | QwQ-32B | [QwQ-32B](https://modelscope.cn/models/Qwen/QwQ-32B)               | ✅ |   |   |   |   | ✅ |   |   | [W8A8](#qwq-32b-w8a8量化) / [稀疏](#qwq-32b-稀疏量化)                                                                                                                                        |
 
 **说明：**
@@ -214,6 +214,14 @@
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8 --trust_remote_code True
+  ```
+
+##### <span id="qwen3-32b-w8a8c8量化">Qwen3-32B W8A8C8量化</span>
+
+该模型的量化已经集成至[一键量化](../../docs/功能指南/一键量化/使用说明.md)。
+
+  ```shell
+  msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8C8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8c8 --trust_remote_code True
   ```
 
 ##### <span id="qwen3-32b-稀疏量化">Qwen3-32B 稀疏量化</span>
