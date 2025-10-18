@@ -81,7 +81,7 @@ class DynamicC2lbRunner(BaseAlgorithmRunner):
         for period, period_data in data.items():
             if "topk" in period:
                 continue
-            period_data = data = process_data(data, self.args)
+            period_data = process_data(period_data, self.args)
             global_deployment = lb_redundancy_deploy_for_dynamic(
                 period_data,
                 self.args.num_redundancy_expert,
