@@ -22,6 +22,7 @@ from example.common.utils import SafeGenerator, cmd_bool
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 from msmodelslim.utils.logging import set_logger_level
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 
 
 def seed_everything(seed=0) -> None:
@@ -116,16 +117,33 @@ def main():
                                                      device_map="auto",
                                                      torch_dtype="auto",
                                                      attn_implementation='eager')
-
-    calib_dataset_path = get_valid_read_path(args.calib_file, "jsonl", is_dir=False)
-    calib_prompt = []
-    with open(calib_dataset_path, "r", encoding="utf-8") as file:
-        lines = file.readlines()
-        for line in lines:
-            calib_prompt.append(json.loads(line)['inputs_pretokenized'])
+    if args.calib_file.endswith('.jsonl'):
+        calib_dataset_path = get_valid_read_path(args.calib_file, "jsonl", is_dir=False)
+        calib_prompt = []
+        with open(calib_dataset_path, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+            for line in lines:
+                calib_prompt.append(json.loads(line)['inputs_pretokenized'])
+    elif args.calib_file.endswith('.json'):
+        calib_dataset_path = get_valid_read_path(args.calib_file, "json", is_dir=False)
+        with open(calib_dataset_path, "r", encoding="utf-8") as file:
+            calib_prompt = json.load(file)
+    else:
+        raise ValueError("calib_file must be a jsonl or json file")
     dataset_calib = get_calib_dataset_batch(tokenizer, calib_prompt, batch_size, model.device)
-
+    anti_disable_names = ["model.layers.{}.self_attn.o_proj".format(i) for i in range(config.num_hidden_layers)]
+    anti_config = AntiOutlierConfig(w_bit=8,
+                                    a_bit=8,
+                                    anti_method='m6',
+                                    dev_type='npu',
+                                    disable_anti_names=anti_disable_names,
+                                    flex_config={'alpha': 0.4, 'beta': 0.325},
+                                    dev_id=model.device.index)
+    anti_outlier = AntiOutlier(model, calib_data=dataset_calib, cfg=anti_config)
+    anti_outlier.process()
     disable_names = []
+    for i in range(config.num_hidden_layers):
+        disable_names.append(f'model.layers.{i}.mlp.down_proj')
 
     quant_config = QuantConfig(
         a_bit=4,
