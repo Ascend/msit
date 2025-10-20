@@ -617,4 +617,4 @@ class BaseSmoothProcessor(AutoSessionProcessor):
         # 删除所有已安装的hook
         self._remove_all_hooks()
 
-        get_logger().debug(f"Completed M4 smoothing, cleared statistics and hooks")
+        get_logger().debug(f"Completed smoothing, cleared statistics and hooks")
