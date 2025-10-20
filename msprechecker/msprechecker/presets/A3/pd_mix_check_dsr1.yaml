@@ -32,6 +32,13 @@ mies_config:
       reason: "在Atlas 800I A3单机混部DeepSeek部署场景下，并行策略要求保证dp * tp * cp * pp = 16，其中没配置的并行策略默认值为1"
       severity: high
 
+  ref.pp:
+    expected:
+      type: eq
+      value: 1
+    reason: "pp取值只能等于1"
+    severity: high
+
   ref.sp:
     expected:
       type: enum

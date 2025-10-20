@@ -58,6 +58,13 @@ ref.p_dp:
     reason: "P实例并行策略要求保证dp * tp * cp * pp = p_pod_npu_num * single_p_instance_pod_num，其中没配置的并行策略默认值为1"
     severity: high
 
+ref.p_pp:
+  expected:
+    type: eq
+    value: 1
+  reason: "P实例并行策略中，pp取值只能等于1"
+  severity: high
+
 ref.p_sp:
   expected:
     type: enum
@@ -85,15 +92,9 @@ ref.p_moe_ep:
 
 ref.p_moe_tp:
   expected:
-    if: "${ref.max_seq_len} <= 18000"
-    then:
-      case: "${ref.p_moe_ep} == 4 and ${ref.p_moe_tp} == 4"
-      reason: "maxSeqLen小于等于18000时，P实例专家并行策略建议设置为：moe_ep=4, moe_tp=4, 其中没配置的并行策略默认值为1"
-      severity: low
-    else:
-      case: "${ref.p_moe_ep} == 16 and ${ref.p_moe_tp} == 1"
-      reason: "maxSeqLen大于18000时，P实例专家并行策略建议设置为：moe_ep=16, moe_tp=1, 其中没配置的并行策略默认值为1"
-      severity: low
+    case: "${ref.p_moe_ep} == 16 and ${ref.p_moe_tp} == 1"
+    reason: "在Atlas 800I A3环境上部署Deepseek大规模专家并行，P实例专家并行策略建议设置为：moe_ep=16, moe_tp=1, 其中没配置的并行策略默认值为1"
+    severity: low
 
 ref.d_dp:
   expected:

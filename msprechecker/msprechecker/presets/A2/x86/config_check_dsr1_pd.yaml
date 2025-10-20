@@ -58,6 +58,13 @@ ref.p_dp:
     reason: "P实例并行策略要求保证dp * tp * cp * pp = p_pod_npu_num * single_p_instance_pod_num，其中没配置的并行策略默认值为1"
     severity: high
 
+ref.p_pp:
+  expected:
+    type: eq
+    value: 1
+  reason: "P实例并行策略中，pp取值只能等于1"
+  severity: high
+
 ref.p_sp:
   expected:
     type: enum

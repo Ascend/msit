@@ -28,6 +28,13 @@ mies_config:
         reason: "在非跨机场景下，并行策略要求保证dp * tp * cp * pp = worldSize，其中没配置的并行策略默认值为1"
         severity: medium
 
+  ref.pp:
+    expected:
+      type: eq
+      value: 1
+    reason: "pp取值只能等于1"
+    severity: high
+
   ref.sp:
     expected:
       type: enum
