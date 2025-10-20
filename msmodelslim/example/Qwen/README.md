@@ -265,7 +265,7 @@
 
 ##### <span id="qwen3-32b-w4a4-flatquant-dynamic量化">Qwen3-32b W4A4 Flatquant Dynamic量化</span> 
   ```shell
-  python3 w4a4.py --model_path {浮点权重路径} --save_directory {w4a4量化权重路径} --calib_file ../common/wiki.jsonl --trust_remote_code True
+  python3 w4a4.py --model_path {浮点权重路径} --save_directory {w4a4量化权重路径} --calib_file ../calib_data/qwen3_cot_w4a4.jsonl --trust_remote_code True --batch_size 1
   ```
 ##### <span id="qwen3-14b-w8a8量化">Qwen3-14B W8A8量化</span>
 
