@@ -9,9 +9,7 @@ add_inter_soft_label(config)
 ```
 
 ### 参数说明
-参数： config（dict）
-
-描述： 模型蒸馏的配置参数，包含以下字段：
+参数名：config；数据类型：dict；包含的配置项如下所示：
 |配置项 | 含义 | 使用限制 |
 | --- | --- | --- |
 | t_module | 用于配置teacher模型中计算soft label的layer名称。 | 必选。<br>数据类型：string。 | 

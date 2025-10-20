@@ -102,7 +102,7 @@
 
 ### 使用案例
 - 请将{浮点权重路径}和{量化权重路径}替换为用户实际路径。
-- 如果需要使用npu多卡量化，请先配置环境变量，支持多卡量化：
+- 如果需要使用NPU多卡量化，请先配置环境变量，支持多卡量化：
   ```shell
   export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   export PYTORCH_NPU_ALLOC_CONF=expandable_segments:False
@@ -112,7 +112,7 @@
 #### 1. Qwen系列
 ##### <span id="qwen1-14b-w8a8量化">Qwen-14b W8A8量化</span>
 在`{浮点权重路径}/modeling_qwen.py`中将`SUPPORT_CUDA = torch.cuda.is_available()`手动设置为`SUPPORT_CUDA = False`；
-生成Qwen-14b模型量化权重，antioutlier使用m2算法配置，使用min-max量化方式，在npu上进行运算
+生成Qwen-14b模型量化权重，antioutlier使用m2算法配置，使用min-max量化方式，在NPU上进行运算
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu  --anti_method m2 --act_method 1 --model_type qwen1 --trust_remote_code True
   ```
@@ -123,7 +123,7 @@
   ```
 #### 2. Qwen1.5系列
 ##### <span id="qwen15-14b-qwen15-32b-w8a8-量化">Qwen1.5-14b, Qwen1.5-32b W8A8 量化</span>
-生成量化权重，使用min-max量化方式，校准数据集使用50条BoolQ数据，在npu上进行运算
+生成量化权重，使用min-max量化方式，校准数据集使用50条BoolQ数据，在NPU上进行运算
   ```shell
   python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 8 --a_bit 8 --device_type npu --trust_remote_code True
   ```
