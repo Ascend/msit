@@ -16,6 +16,7 @@ from .transformers import TransformersModel
 
 
 @ModelFactory.register("Qwen3-30B")
+@ModelFactory.register("Qwen3-235B")
 @logger_setter()
 class Qwen3MoeModelAdapter(TransformersModel,
                            ModelInfoInterface,
