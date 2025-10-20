@@ -302,11 +302,7 @@ class TestIterSmoothProcessor:
         assert smooth_config.alpha == config.alpha
         assert smooth_config.shift == (not config.symmetric)
         assert smooth_config.scale_min == config.scale_min
-        
-        # 验证日志记录
-        mock_logger.return_value.info.assert_called_with(
-            "[IterSmoothProcessor] Smooth application completed successfully for subgraph"
-        )
+
 
     @patch('msmodelslim.quant.processor.anti_outlier.iter_smooth.iter_smooth')
     @patch('msmodelslim.quant.processor.anti_outlier.iter_smooth.get_logger')

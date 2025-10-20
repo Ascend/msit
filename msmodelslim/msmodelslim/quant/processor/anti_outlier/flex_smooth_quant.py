@@ -21,6 +21,12 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 from msmodelslim.core.QAL.qregistry import QABCRegistry
+from msmodelslim.core.QAL.qtypes import (
+    OVSubgraph,
+    NormLinearSubgraph,
+    LinearLinearSubgraph,
+    UpDownSubgraph
+)
 from msmodelslim.core.QAL.qtypes import FlexSmoothQuantConfig
 from msmodelslim.core.api import flex_smooth_quant
 from msmodelslim.core.base.protocol import BatchProcessRequest
@@ -45,6 +51,14 @@ class FlexSmoothQuantProcessorConfig(BaseSmoothProcessorConfig):
 @QABCRegistry.register(dispatch_key=FlexSmoothQuantProcessorConfig, abc_class=AutoSessionProcessor)
 @logger_setter()
 class FlexSmoothQuantProcessor(BaseSmoothProcessor):
+    # 子图类型映射表
+    SUBGRAPH_TYPE_MAP = {
+        NormLinearSubgraph: "norm-linear",
+        LinearLinearSubgraph: "linear-linear",
+        OVSubgraph: "ov",
+        UpDownSubgraph: "up-down"
+    }
+
     def __init__(self, model: nn.Module, config: FlexSmoothQuantProcessorConfig, adapter: object, **kwargs):
         super().__init__(model, config, adapter)
         if not isinstance(adapter, FlexSmoothQuantInterface):
@@ -109,7 +123,8 @@ class FlexSmoothQuantProcessor(BaseSmoothProcessor):
             linear_modules: 线性模块列表
         """
         try:
-        # 构建SmoothContext
+            # 获取子图类型名称（表驱动方式）
+            subgraph_type = self.SUBGRAPH_TYPE_MAP.get(type(subgraph_obj), "unknown")
             smooth_context = self._build_smooth_context(linear_modules)
 
             # 创建平滑配置
@@ -120,7 +135,10 @@ class FlexSmoothQuantProcessor(BaseSmoothProcessor):
 
             # 应用平滑
             flex_smooth_quant(subgraph_obj, smooth_quant_cfg, smooth_context)
-            get_logger().info(f"[FlexSmoothQuantProcessor] Smooth application completed successfully for subgraph")
+            get_logger().info(
+                f"[FlexSmoothQuantProcessor] Smooth application completed successfully for "
+                f"subgraph type: {subgraph_type}"
+            )
 
         except Exception as e:
             get_logger().error(f"[FlexSmoothQuantProcessor] Failed to apply smooth to subgraph: {e}")

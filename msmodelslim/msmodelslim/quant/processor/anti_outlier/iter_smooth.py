@@ -25,7 +25,10 @@ from msmodelslim.core.QAL.qregistry import QABCRegistry
 from msmodelslim.core.QAL.qtypes import (
     RMSNormBias,
     IterSmoothConfig,
-    OVSubgraph
+    OVSubgraph,
+    NormLinearSubgraph,
+    LinearLinearSubgraph,
+    UpDownSubgraph
 )
 from msmodelslim.core.api import iter_smooth
 from msmodelslim.core.base.protocol import BatchProcessRequest
@@ -50,6 +53,17 @@ class IterSmoothProcessorConfig(BaseSmoothProcessorConfig):
 @QABCRegistry.register(dispatch_key=IterSmoothProcessorConfig, abc_class=AutoSessionProcessor)
 @logger_setter()
 class IterSmoothProcessor(BaseSmoothProcessor):
+    # 子图类型映射表
+    SUBGRAPH_TYPE_MAP = {
+        NormLinearSubgraph: "norm-linear",
+        LinearLinearSubgraph: "linear-linear",
+        OVSubgraph: "ov",
+        UpDownSubgraph: "up-down"
+    }
+    
+    # 非对称模式支持的子图类型，默认只支持norm-linear；其他子图走对称逻辑
+    ASYM_SUPPORT_SUBGRAPH_TYPES = ["norm-linear"]
+
     def __init__(self, model: nn.Module, config: IterSmoothProcessorConfig, adapter: object, **kwargs):
         super().__init__(model, config, adapter)
         self.config = config
@@ -59,6 +73,13 @@ class IterSmoothProcessor(BaseSmoothProcessor):
 
         # 存储hook句柄，用于后续删除
         self.hook_handles = {}
+        
+        # 检测非对称配置并发出警告
+        if not self.config.symmetric:
+            supported_types = ', '.join(self.ASYM_SUPPORT_SUBGRAPH_TYPES)
+            get_logger().warning(
+                f"Detected asymmetric IterSmooth; currently only supports {supported_types} subgraph types"
+            )
 
     def support_distributed(self) -> bool:
         return True
@@ -132,15 +153,9 @@ class IterSmoothProcessor(BaseSmoothProcessor):
             else:
                 statis_dict[StatKey.STAT_KEY_SHIFT] = (coming_max + coming_min) / 2
 
-            # 判断是否是OV子图且symmetric为False的特殊情况
-            if subgraph_type == "ov" and not self.config.symmetric:
-                # OV子图且symmetric为False时，使用tensor.abs()计算channel_max
-                channel_max = torch.max(tensor.abs().detach(), dim=0)[0]
-            elif not self.config.symmetric:
-                # 其他非对称情况，使用shift后的绝对值
+            if not self.config.symmetric and subgraph_type in self.ASYM_SUPPORT_SUBGRAPH_TYPES:
                 channel_max = torch.max((tensor - statis_dict[StatKey.STAT_KEY_SHIFT]).abs().detach(), dim=0)[0]
             else:
-                # 对称情况，使用tensor.abs()
                 channel_max = torch.max(tensor.abs().detach(), dim=0)[0]
 
             if StatKey.STAT_KEY_SMOOTH_SCALE in statis_dict:
@@ -160,11 +175,14 @@ class IterSmoothProcessor(BaseSmoothProcessor):
             linear_modules: 线性模块列表
         """
         try:
+            # 获取子图类型名称（
+            subgraph_type = self.SUBGRAPH_TYPE_MAP.get(type(subgraph_obj), "unknown")
+            
             # 构建SmoothContext
             smooth_context = self._build_smooth_context(linear_modules)
-            if isinstance(subgraph_obj, OVSubgraph):
+            if subgraph_type not in self.ASYM_SUPPORT_SUBGRAPH_TYPES:
                 shift_value = False
-                get_logger().debug("[IterSmoothProcessor] OV subgraph detected, setting shift=False")
+                get_logger().debug("[IterSmoothProcessor] Non-asym subgraph detected, setting shift=False")
             else:
                 # 如果symmetric为True，shift取False；如果symmetric为False，shift取True
                 shift_value = not self.config.symmetric
@@ -179,7 +197,10 @@ class IterSmoothProcessor(BaseSmoothProcessor):
 
             # 应用平滑
             iter_smooth(subgraph_obj, smooth_quant_cfg, smooth_context)
-            get_logger().info("[IterSmoothProcessor] Smooth application completed successfully for subgraph")
+            get_logger().info(
+                f"[IterSmoothProcessor] Smooth application completed successfully for "
+                f"subgraph type: {subgraph_type}, shift: {shift_value}"
+            )
 
         except Exception as e:
             get_logger().error(f"[IterSmoothProcessor] Failed to apply smooth to subgraph: {e}")
