@@ -33,6 +33,8 @@
 ## 环境配置
 
 - 环境配置请参考[使用说明](../../docs/安装指南.md)
+- Qwen3 系列transformers版本需要配置安装4.51.0版本
+    - pip install transformers==4.51.0
 
 ## 量化权重生成
 
