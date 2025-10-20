@@ -64,7 +64,7 @@
 
 ### 使用案例
 - 请将{浮点权重路径}和{量化权重路径}替换为用户实际路径。
-- 如果需要使用npu多卡量化，请先配置环境变量，支持多卡量化：
+- 如果需要使用NPU多卡量化，请先配置环境变量，支持多卡量化：
   ```shell
   export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   export PYTORCH_NPU_ALLOC_CONF=expandable_segments:False
