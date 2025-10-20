@@ -21,12 +21,11 @@ from msguard.security import open_s
 
 from ..utils import (
     NpuType, ErrorSeverity,
-    get_npu_count, get_npu_type, singleton,
+    get_npu_count, get_npu_type,
     global_logger
 )
 
 
-@singleton
 class RuleManager:
     """规则管理器，负责加载内置规则和用户自定义规则并进行合并"""
     
