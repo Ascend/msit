@@ -168,14 +168,18 @@ class CheckerFactory:
     def config_param_extractor(args, collect_result):
         data, file_lines, key_mapping, context_hierarchy = collect_result.data
         return {
-            "rule_manager": RuleManager(custom_rule_path=args.custom_config_path),
+            "rule_manager": RuleManager(
+                scene=args.scene, framework=args.framework, custom_rule_path=args.custom_config_path
+            ),
             "error_handler": ConfigErrorHandler(args.severity_level, file_lines, key_mapping, context_hierarchy),
         }
 
     @staticmethod
     def stress_param_extractor(args, collect_result):
         return {
-            "rule_manager": RuleManager(custom_rule_path=args.custom_config_path),
+            "rule_manager": RuleManager(
+                scene=args.scene, framework=args.framework, custom_rule_path=args.custom_config_path
+            ),
             "error_handler": CheckErrorHandler(severity=args.severity_level),
             "threshold": getattr(args, "threshold", None),
         }
