@@ -10,12 +10,16 @@ from msmodelslim.core.graph.adapter_types import AdapterConfig, MappingConfig
 from msmodelslim.quant.processor.kv_smooth import KVSmoothFusedType, KVSmoothFusedUnit
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
+from msmodelslim.quant.processor.quarot import (
+                                                QuaRotInterface, 
+                                                QuaRotOnelineInterface, 
+                                                )
 from .common.layer_wise_forward import generated_decoder_layer_visit_func, transformers_generated_forward_func
 from .factory import ModelFactory
 from .interface_hub import ModelInfoInterface, ModelSlimPipelineInterfaceV0, ModelSlimPipelineInterfaceV1, \
     AnalyzePipelineInterface, KVSmoothFusedInterface, IterSmoothInterface, FlexSmoothQuantInterface
 from .transformers import TransformersModel
-from ..quant.processor.quarot import QuaRotAdapter
+
 
 
 @ModelFactory.register("Qwen3-8B")
@@ -30,7 +34,8 @@ class Qwen3ModelAdapter(TransformersModel,
                         KVSmoothFusedInterface,
                         IterSmoothInterface,
                         FlexSmoothQuantInterface,
-                        QuaRotAdapter,
+                        QuaRotInterface,
+                        QuaRotOnelineInterface
                         ):
     def get_model_type(self) -> str:
         return self.model_type
@@ -193,3 +198,76 @@ class Qwen3ModelAdapter(TransformersModel,
     def get_layer_wise_up_down_pair(self, decoder_module: nn.Module):
         up_down_pairs = {decoder_module.mlp.up_proj: decoder_module.mlp.down_proj}
         return up_down_pairs
+
+    def get_ln_fuse_map(self):
+        return {}, qwen3_get_ln_fuse_map(self.config)
+    
+    def get_bake_names(self):
+        return [], []
+    
+    def get_rotate_map(self, block_size):
+        pre_run, rot_pairs, _, _ = qwen3_get_rotate_map(self.config, block_size)
+        return [pre_run], [pair for pair in rot_pairs.values()]
+
+
+def qwen3_get_ln_fuse_map(config):
+    # for quarot rotate interface
+    ln_linear_map = {}
+    for layer_idx in range(config.num_hidden_layers):
+        ln_linear_map[f"model.layers.{layer_idx}.input_layernorm"] = [
+            f"model.layers.{layer_idx}.self_attn.q_proj",
+            f"model.layers.{layer_idx}.self_attn.k_proj",
+            f"model.layers.{layer_idx}.self_attn.v_proj"
+        ]
+
+        # mlp
+        ln_linear_map[f"model.layers.{layer_idx}.post_attention_layernorm"] = [
+            f"model.layers.{layer_idx}.mlp.{proj}"
+            for proj in ["gate_proj", "up_proj"]
+        ]
+    ln_linear_map["model.norm"] = ['lm_head']
+    return ln_linear_map
+
+
+def qwen3_get_rotate_map(config, block_size):
+    rot = QuaRotInterface.get_rotate_command(
+        size=config.hidden_size,
+        block_size=block_size,
+        mode=QuaRotInterface.QuaRotMode.HADAMARD,
+    )
+    rot_uv = QuaRotInterface.get_rotate_command(
+        size=config.head_dim,
+        block_size=block_size,
+        mode=QuaRotInterface.QuaRotMode.HADAMARD,
+    )
+    # pre run 
+    left_rot = {}
+    right_rot = {}
+    # embedding weight is transposed, right is output channel
+    right_rot[f"model.embed_tokens"] = rot
+    pre_run = QuaRotInterface.RotatePair(left_rot=left_rot, right_rot=right_rot)
+    rot_pairs = {}
+    # rot
+    left_rot = {}
+    right_rot = {}
+    right_rot[f"lm_head"] = rot
+    for layer_idx in range(config.num_hidden_layers):
+        right_rot[f"model.layers.{layer_idx}.self_attn.q_proj"] = rot
+        right_rot[f"model.layers.{layer_idx}.self_attn.k_proj"] = rot
+        right_rot[f"model.layers.{layer_idx}.self_attn.v_proj"] = rot
+        left_rot[f"model.layers.{layer_idx}.self_attn.o_proj"] = rot
+        # mlp
+        right_rot[f"model.layers.{layer_idx}.mlp.gate_proj"] = rot
+        right_rot[f"model.layers.{layer_idx}.mlp.up_proj"] = rot
+        left_rot[f"model.layers.{layer_idx}.mlp.down_proj"] = rot
+    rot_pairs['rot'] = QuaRotInterface.RotatePair(left_rot=left_rot, right_rot=right_rot)
+    
+    # rot_uv
+    left_rot_uv = {}
+    right_rot_uv = {}
+    for layer_idx in range(config.num_hidden_layers):
+        left_rot_uv[f"model.layers.{layer_idx}.self_attn.v_proj"] = rot_uv
+        right_rot_uv[f"model.layers.{layer_idx}.self_attn.o_proj"] = rot_uv
+    rot_pairs["rot_uv"] = QuaRotInterface.RotatePair(left_rot=left_rot_uv, right_rot=right_rot_uv)
+    
+    return pre_run, rot_pairs, rot, rot_uv

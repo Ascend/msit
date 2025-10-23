@@ -40,7 +40,7 @@ def seed_all(seed=1234, mode=False):
         if cuda_version is not None and version.parse(cuda_version) >= version.parse("10.2"):
             os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
         os.environ['HCCL_DETERMINISTIC'] = str(mode)
-        torch.use_deterministic_algorithms(mode)
+        torch.use_deterministic_algorithms(False)
         if is_gpu:
             torch.cuda.manual_seed_all(seed)
             torch.cuda.manual_seed(seed)

@@ -17,8 +17,9 @@ from msmodelslim.utils.logging import logger_setter
 from msmodelslim.utils.security.model import SafeGenerator
 from .convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, get_module_by_name
 from .mtp_quant_module import warp_mtp_model, remove_zero_and_shift
-from ..interface_hub import ModelInfoInterface, ModelSlimPipelineInterfaceV1, \
-    IterSmoothInterface, FlexSmoothQuantInterface, ModelHookInterface
+from ..interface_hub import ModelInfoInterface, ModelSlimPipelineInterfaceV1, IterSmoothInterface, \
+    FlexSmoothQuantInterface, ModelHookInterface, QuaRotInterface
+from .quarot import get_ln_fuse_map, get_rotate_map
 
 
 @ModelFactory.register("DeepSeek-V3")
@@ -33,6 +34,7 @@ class DeepSeekV3ModelAdapter(TransformersModel,
                              ModelHookInterface,  # support spec ops for model in runner
                              IterSmoothInterface,  # support iter smooth
                              FlexSmoothQuantInterface,  # support flex smooth quant
+                             QuaRotInterface,
                              ):
     def get_model_type(self) -> str:
         return self.model_type
@@ -222,3 +224,13 @@ class DeepSeekV3ModelAdapter(TransformersModel,
             ])
 
         return adapter_config
+
+    def get_ln_fuse_map(self):
+        return {}, get_ln_fuse_map(self.config)
+    
+    def get_bake_names(self):
+        return [], []
+    
+    def get_rotate_map(self, block_size):
+        pre_run, rot_pairs, _ = get_rotate_map(self.config, block_size)
+        return [pre_run], [pair for pair in rot_pairs.values()]

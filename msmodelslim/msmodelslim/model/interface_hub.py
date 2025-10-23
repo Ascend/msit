@@ -40,6 +40,10 @@ __all__ = [
     'MultimodalSDPipelineInterface',  # For MultimodalSD quant service, describing the pipeline of model inference.
     'ModelSlimPipelineInterfaceV1',  # For ModelSlim V1 quant service, describing the pipeline of model inference.
     'ModelHookInterface', # For ModelSlim V1 quant service, describing model specific process.
+
+    # QuaRot interface
+    'QuaRotInterface', # For QuaRot.
+    'QuaRotOnelineInterface', # For QuaRotOnline.
 ]
 
 from msmodelslim.app.analysis_service.pipeline_interface import PipelineInterface as AnalyzePipelineInterface
@@ -54,3 +58,4 @@ from msmodelslim.quant.processor.anti_outlier.smooth_interface import IterSmooth
 from msmodelslim.quant.processor.kv_smooth import KVSmoothFusedInterface
 from msmodelslim.core.runner.model_hook_interface import ModelHookInterface
 
+from msmodelslim.quant.processor.quarot.quarot_interface import QuaRotInterface, QuaRotOnelineInterface
