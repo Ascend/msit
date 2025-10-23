@@ -6,16 +6,6 @@
 
 书生·万象支持图像、视频、文本、语音、三维、医疗等多种模态，能完成百余种下游任务，性能可与专用任务模型媲美。在处理复杂的多模态数据时，该模型展现出卓越的能力，尤其在数学、科学图表、通用图表、文档解析、信息图表及OCR等任务中表现尤为突出。
 
-#### InternVL 2.0模型当前已验证的量化方法
-
-| 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况| 量化命令 |
-|------------|-------------|---------|----------------|---------|
-| InternVL2-8B | [InternVL2-8B](https://huggingface.co/OpenGVLab/InternVL2-8B/tree/main) | W8A8静态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#internvl2-8b-w8a8静态量化) |
-| InternVL2-40B | [InternVL2-40B](https://huggingface.co/OpenGVLab/InternVL2-40B/tree/main) | W8A8静态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#internvl2-40b-w8a8静态量化) |
-
-**说明：**
-- 点击量化命令列中的链接可跳转到对应的具体量化命令。
-
 ## 环境配置
 
 - 基础环境配置请参考[安装指南](../../../docs/安装指南.md)
@@ -27,6 +17,17 @@
   ```
   pip install timm fastchat
   ```
+
+## InternVL 2.0模型当前已验证的量化方法
+
+| 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况| 量化命令 |
+|------------|-------------|---------|----------------|---------|
+| InternVL2-8B | [InternVL2-8B](https://huggingface.co/OpenGVLab/InternVL2-8B/tree/main) | W8A8静态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#internvl2-8b-w8a8静态量化) |
+| InternVL2-40B | [InternVL2-40B](https://huggingface.co/OpenGVLab/InternVL2-40B/tree/main) | W8A8静态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#internvl2-40b-w8a8静态量化) |
+
+**说明：**
+- 点击量化命令列中的链接可跳转到对应的具体量化命令。
+
 
 ## 生成量化权重
 

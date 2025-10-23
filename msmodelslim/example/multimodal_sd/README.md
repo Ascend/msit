@@ -12,21 +12,6 @@
 
 [Wan2.1](https://github.com/Wan-Video/Wan2.1) 是阿里巴巴发布的一套全面且开放的视频基础模型，它突破了视频生成的界限。支持文本到视频(T2V)、图像到视频(I2V)、文本到图像(T2I)等多种生成任务。
 
-## 支持的模型版本与量化策略
-
-| 模型系列 | 模型版本 | HuggingFace链接 | W8A8 | W8A16 | W4A16 | W4A4 | 稀疏量化 | KV Cache | Attention | 时间步量化 | FA3量化 | 量化命令 |
-|---------|---------|---------------------------------------------------------------|-----|-------|-------|------|---------|----------|-----------|----------|----------|----------|
-| **SD3** | SD3-Medium | [SD3-Medium](https://huggingface.co/stabilityai/stable-diffusion-3-medium) | ✅ | | | | | | | | | [W8A8静态量化](#sd3-medium-w8a8静态量化) |
-| **Open-Sora-Plan** | Open-Sora-Plan v1.2 | [Open-Sora-Plan v1.2](https://huggingface.co/LanguageBind/Open-Sora-Plan-v1.2.0) | ✅ | | | | | | | | | [W8A8静态量化](#open-sora-plan-v12-w8a8静态量化) |
-| **FLUX** | FLUX.1-dev | [FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev/tree/main) | ✅ | | | | | | ✅ | ✅ | ✅ | [W8A8静态量化](#flux1-dev-w8a8静态量化) / [W8A8分时间步量化](#flux1-dev-w8a8分时间步量化) / [FA3+W8A8动态量化](#flux1-dev-fa3w8a8动态量化) / [异常值抑制+W8A8动态量化](#flux1-dev-异常值抑制w8a8动态量化) |
-| **HunyuanVideo** | HunyuanVideo | [HunyuanVideo](https://huggingface.co/tencent/HunyuanVideo) | ✅ | | | | | | ✅ | ✅ | ✅ | [W8A8静态量化](#hunyuanvideo-w8a8静态量化) / [W8A8分时间步量化](#hunyuanvideo-w8a8分时间步量化) / [FA3+W8A8动态量化](#hunyuanvideo-fa3w8a8动态量化) / [异常值抑制+W8A8动态量化](#hunyuanvideo-异常值抑制w8a8动态量化) |
-| **Wan2.1** | Wan2.1-T2V-14B | [Wan2.1-T2V-14B](https://huggingface.co/Wan-AI/Wan2.1-T2V-14B) | ✅ | | | | | | | | | [W8A8动态量化](#wan21-w8a8动态量化) |
-
-**说明：**
-- ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
-- 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
-- 点击量化命令列中的链接可跳转到对应的具体量化命令
-
 ## 环境配置
 - 配套CANN版本请选择8.2.RC1及之后的版本
 - 具体环境配置请参考[使用说明](../../docs/安装指南.md)
@@ -43,6 +28,24 @@
   - 参考 [HunyuanVideo readme](https://modelers.cn/models/MindIE/hunyuan_video) 安装浮点模型的环境依赖，并确保浮点推理能正常运行
 - Wan2.1相关环境配置参考[MindIE/Wan2.1](https://modelers.cn/models/MindIE/Wan2.1)
   - 参考 [Wan2.1 readme](https://modelers.cn/models/MindIE/Wan2.1/blob/main/README.md) 安装浮点模型的环境依赖，并确保浮点推理能正常运行
+
+
+
+## 支持的模型版本与量化策略
+
+| 模型系列 | 模型版本 | HuggingFace链接 | W8A8 | W8A16 | W4A16 | W4A4 | 稀疏量化 | KV Cache | Attention | 时间步量化 | FA3量化 | 量化命令 |
+|---------|---------|---------------------------------------------------------------|-----|-------|-------|------|---------|----------|-----------|----------|----------|----------|
+| **SD3** | SD3-Medium | [SD3-Medium](https://huggingface.co/stabilityai/stable-diffusion-3-medium) | ✅ | | | | | | | | | [W8A8静态量化](#sd3-medium-w8a8静态量化) |
+| **Open-Sora-Plan** | Open-Sora-Plan v1.2 | [Open-Sora-Plan v1.2](https://huggingface.co/LanguageBind/Open-Sora-Plan-v1.2.0) | ✅ | | | | | | | | | [W8A8静态量化](#open-sora-plan-v12-w8a8静态量化) |
+| **FLUX** | FLUX.1-dev | [FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev/tree/main) | ✅ | | | | | | ✅ | ✅ | ✅ | [W8A8静态量化](#flux1-dev-w8a8静态量化) / [W8A8分时间步量化](#flux1-dev-w8a8分时间步量化) / [FA3+W8A8动态量化](#flux1-dev-fa3w8a8动态量化) / [异常值抑制+W8A8动态量化](#flux1-dev-异常值抑制w8a8动态量化) |
+| **HunyuanVideo** | HunyuanVideo | [HunyuanVideo](https://huggingface.co/tencent/HunyuanVideo) | ✅ | | | | | | ✅ | ✅ | ✅ | [W8A8静态量化](#hunyuanvideo-w8a8静态量化) / [W8A8分时间步量化](#hunyuanvideo-w8a8分时间步量化) / [FA3+W8A8动态量化](#hunyuanvideo-fa3w8a8动态量化) / [异常值抑制+W8A8动态量化](#hunyuanvideo-异常值抑制w8a8动态量化) |
+| **Wan2.1** | Wan2.1-T2V-14B | [Wan2.1-T2V-14B](https://huggingface.co/Wan-AI/Wan2.1-T2V-14B) | ✅ | | | | | | | | | [W8A8动态量化](#wan21-w8a8动态量化) |
+
+**说明：**
+- ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
+- 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- 点击量化命令列中的链接可跳转到对应的具体量化命令
+
 
 ## 使用案例
 使用量化前，需要加载模型和校准数据，其中加载模型依赖于diffusers库（如SD3-Medium）或多模态生成模型[魔乐社区](https://modelers.cn/models/)推理工程仓（如Open-Sora-Plan v1.2、Flux.1-dev、HunyuanVideo、Wan2.1），请先确保依据推理工程仓可以正常进行浮点推理。
