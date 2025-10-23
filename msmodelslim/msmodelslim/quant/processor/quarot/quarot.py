@@ -13,7 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Tuple, Dict
 
 import torch
 import torch.nn as nn
@@ -25,8 +25,10 @@ from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.quant.processor.base import AutoProcessorConfig, AutoSessionProcessor
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import get_logger
-from .quarot_interface import QuaRotAdapter
-from .quarot_utils import QuaRotUtils
+from msmodelslim.utils.exception import UnsupportedError
+from .quarot_interface import QuaRotInterface, RotSide, get_rotate_command, RotatePair
+from .quarot_utils import fuse_ln_linear, rotate_linear, is_power_of_two, bake_mean_into_linear
+from .quarot_online import QuaRotOnlineProcessor
 
 
 class QuaRotProcessorConfig(AutoProcessorConfig):
@@ -40,7 +42,7 @@ class QuaRotProcessorConfig(AutoProcessorConfig):
     @classmethod
     def validate_max_tp_size(cls, v):
         """校验 max_tp_size：必须大于等于1且为2的幂"""
-        if v < 1 or not QuaRotUtils.is_power_of_two(v):
+        if v < 1 or not is_power_of_two(v):
             raise SchemaValidateError(f"max_tp_size must be a positive power of 2 or equal to 1, got {v}")
         return v
 
@@ -50,82 +52,27 @@ class QuaRotProcessorConfig(AutoProcessorConfig):
         """校验 block_size：取值范围为-1或大于0且为2的幂的整数"""
         if v == -1:
             return v
-        if v <= 0 or not QuaRotUtils.is_power_of_two(v):
+        if v <= 0 or not is_power_of_two(v):
             raise SchemaValidateError(f"block_size must be -1 or a positive power of 2, got {v}")
         return v
 
 
-def _get_available_device(index: int = 0) -> torch.device:
-    if hasattr(torch, 'npu') and torch.npu.is_available():
-        return torch.device("npu:{}".format(index))
-    elif hasattr(torch, 'cuda') and torch.cuda.is_available():
-        return torch.device("cuda:{}".format(index))
-    else:
-        return torch.device("cpu")
-
-
-def _get_full_module_name(target_module: nn.Module, request: BatchProcessRequest) -> str:
-    """
-    通过遍历request.module获取完整的模块名称。
-
-    Args:
-        target_module: 目标模块
-        request: 处理请求，包含模块前缀信息
-
-    Returns:
-        完整的模块名称
-
-    Raises:
-        UnsupportedError: 如果找不到完整的模块名称
-    """
-    for name, module in request.module.named_modules():
-        if module is target_module:
-            # 拼接完整路径：request.name + 相对路径
-            full_name = f"{request.name}.{name}" if name else request.name
-            return full_name
-
-    # 如果找不到，抛出UnsupportedError
-    raise UnsupportedError(f"Cannot find full module name for {target_module}")
-
-
-def _convert_hookir_to_wrapper(module: nn.Module) -> None:
-    """
-    将模块中的HookIR转换为Wrapper
-
-    Args:
-        module: 要处理的模块
-    """
-    # 遍历模块中的所有子模块
-    for name, sub_module in module.named_modules():
-        if hasattr(sub_module, '_forward_pre_hooks'):
-            # 遍历模块的所有前向钩子
-            for hook in sub_module._forward_pre_hooks.values():
-                # 检查是否是HookIR类型
-                if isinstance(hook, qir.HookIR):
-                    # 将hook_ir转换为wrapper
-                    wrapper = hook.wrapper_module(sub_module)
-                    # 将wrapper替换模块
-                    module.set_submodule(name, wrapper)
-                    get_logger().info(f"Converted {type(hook)} to wrapper for module: {name}")
-
-
 @QABCRegistry.register(dispatch_key=QuaRotProcessorConfig, abc_class=AutoSessionProcessor)
 class QuaRotProcessor(AutoSessionProcessor):
-
-    def __init__(self, model: nn.Module, config: QuaRotProcessorConfig, adapter: QuaRotAdapter, **kwargs) -> None:
+    def __init__(self, model: nn.Module, config: QuaRotProcessorConfig, adapter: QuaRotInterface, **kwargs) -> None:
         super().__init__(model)
         self.config = config
         self.model = model
         self.adapter = adapter
-        self.rot: Optional[torch.Tensor] = None
-        self.rot_att_v: Optional[torch.Tensor] = None
-        self.rot_online_down_proj: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
-        self.rot_online_o_proj: Optional[torch.Tensor] = None
-
-        self.num_attn_heads: int = self.adapter.get_num_attention_heads()
-        self.num_kv_heads: int = self.adapter.get_num_key_value_heads()
-
-        self.online_rotation_info: Optional[qir.QuarotOnlineRotationInfo] = None
+        self.fused_map = {}
+        self.bake_names = []
+        self.rotate_commands = []
+        if not isinstance(adapter, QuaRotInterface):
+            raise UnsupportedError(f'{adapter.__class__.__name__} does not support QuaRot',
+                                   action='Please provide a valid model adapter '
+                                          'which implements QuaRotInterface')
+        if self.config.online:
+            self.online_processor = QuaRotOnlineProcessor(model, config, adapter)
 
     def support_distributed(self) -> bool:
         return True
@@ -134,105 +81,110 @@ class QuaRotProcessor(AutoSessionProcessor):
         return True
 
     def pre_run(self) -> None:
-        # 计算旋转矩阵
-        model_dim = self.adapter.get_hidden_dim()
-        head_dim = self.adapter.get_head_dim()
-        device = _get_available_device()
-
-        get_logger().info(f"Creating rotation matrices on device: {device}")
-
-        self.rot = QuaRotUtils.create_rot(model_dim, block_size=self.config.block_size, device=device)
-        self.rot_att_v = QuaRotUtils.create_rot(head_dim, block_size=self.config.block_size, device=device)
-
-        get_logger().info(f"Rotation matrices created on device: {device}")
-
+        pre_run_fused_ln, self.fused_map = self.adapter.get_ln_fuse_map()
+        pre_run_bake_names, self.bake_names = self.adapter.get_bake_names()
+        pre_run_pairs, self.rotate_pairs = self.adapter.get_rotate_map(block_size=self.config.block_size)
+        pre_run_commands = get_rotate_command(pre_run_pairs)
+        self._fuse_norm(pre_run_fused_ln)
+        self._bake_mean(pre_run_bake_names)
+        self._rotate(pre_run_commands)
+        self.rotate_commands = get_rotate_command(self.rotate_pairs)
         if self.config.online:
-            get_logger().info(f"Creating online rotation matrices on device: {device}")
-            rot1, rot2, self.rot_online_o_proj = self._add_online_rotations(self.model)
-            identity = torch.eye(int(self.adapter.get_head_dim())).to(self.rot_online_o_proj)
-            self.rot_online_down_proj = (rot1, rot2)
-            self.online_rotation_info = qir.QuarotOnlineRotationInfo(self.rot_online_o_proj, identity, rot1, rot2,
-                                                                     self.config.max_tp_size)
-            get_logger().info(f"Online rotation matrices created on device: {device}")
-
-        # 层融合
-        get_logger().info(f"Fusing layer norm and linear on device: {device}")
-        QuaRotUtils.fuse_ln_linear(
-            self.model.get_submodule(self.adapter.get_pre_head_layernorm()),
-            [self.model.get_submodule(self.adapter.get_lm_head())])
-        get_logger().info(f"Layer norm and linear fused on device: {device}")
-        # 旋转
-        get_logger().info(f"Rotating embedding on device: {device}")
-        QuaRotUtils.rotate_embedding(self.model.get_submodule(self.adapter.get_embedding()), self.rot, device)
-        get_logger().info(f"Embedding rotated on device: {device}")
-
-        if hasattr(self.model.config, 'tie_word_embeddings') and not self.model.config.tie_word_embeddings:
-            get_logger().info(f"Rotating head on device: {device}")
-            QuaRotUtils.rotate_head(self.model.get_submodule(self.adapter.get_lm_head()), self.rot, device)
-            get_logger().info(f"Head rotated on device: {device}")
+            self.online_processor.pre_run()
 
     def preprocess(self, request: BatchProcessRequest) -> None:
-
-        # 获取norm_linear、linear_linear、ov_pair
-        norm_linear_pairs = self.adapter.get_layer_wise_norm_liner_pair(request.module)
-        ov_pairs = self.adapter.get_layer_wise_ov_pair(request.module)
-        up_down_pairs = self.adapter.get_layer_wise_up_down_pair(request.module)
-
-        # 层融合
-        for norm_layer, linear_layers in norm_linear_pairs.items():
-            QuaRotUtils.fuse_ln_linear(norm_layer, linear_layers)
-
-        # 插入旋转矩阵
-        layer_idx = int(request.name.split('.')[-1])
-
-        QuaRotUtils.rotate_attention_mlp_input(norm_linear_pairs, self.rot)
-        QuaRotUtils.rotate_attention_ov_output(ov_pairs, self.rot, self.rot_att_v, self.num_kv_heads)
-        QuaRotUtils.rotate_mlp_output(up_down_pairs, self.rot)
-
-        online_oproj_rotation = True if self.rot_online_o_proj is not None else False
-        QuaRotUtils.rotate_o_proj_input(ov_pairs, self.rot_att_v, self.rot_online_o_proj, online=online_oproj_rotation,
-                                        num_attn_heads=self.num_attn_heads)
-
-        if self.rot_online_down_proj and layer_idx in self.config.down_proj_online_layers:
-            QuaRotUtils.rotate_down_proj(up_down_pairs, *self.rot_online_down_proj)
-
+        prefix = request.name
+        prefix = f"{prefix}." if prefix != "" else ""
+        fused_map = self._filter_fused_map(prefix)
+        bake_names = self._filter_bake_names(prefix)
+        rotate_commands = self._filter_commands(prefix)
+        self._fuse_norm(fused_map)
+        self._bake_mean(bake_names)
+        self._rotate(rotate_commands)
         if self.config.online:
-            if layer_idx in self.config.down_proj_online_layers:
-                for _, down_proj in up_down_pairs.items():
-                    # 获取完整的模块名称
-                    full_module_name = _get_full_module_name(down_proj, request)
-                    # 使用完整的layer_name注册Kronecker HookIR实例作为hook（用于down_proj）
-                    hook_ir = qir.QuarotKroneckerRotationHookIR(
-                        full_module_name,
-                        self.online_rotation_info
-                    )
-                    hook_handle = down_proj.register_forward_pre_hook(hook_ir)
-                    hook_ir.set_hook_handle(hook_handle)
-
-            if online_oproj_rotation:
-                for o_proj, _ in ov_pairs.items():
-                    # 获取完整的模块名称
-                    full_module_name = _get_full_module_name(o_proj, request)
-                    # 使用完整的layer_name注册普通HookIR实例作为hook（用于o_proj）
-                    hook_ir = qir.QuarotHeadsRotationHookIR(
-                        full_module_name,
-                        self.online_rotation_info
-                    )
-                    hook_handle = o_proj.register_forward_pre_hook(hook_ir)
-                    hook_ir.set_hook_handle(hook_handle)
-
+            self.online_processor.preprocess(request)
+    
     def post_run(self) -> None:
-        """遍历模型中的HookIR，如果是自己添加的HookIR则进行转换"""
-        _convert_hookir_to_wrapper(self.model)
+        self._fuse_norm(self.fused_map)
+        self.fused_map = {}
+        self._bake_mean(self.bake_names)
+        self.bake_names = []
+        self._rotate(self.rotate_commands)
+        self.rotate_commands = []
+        if self.config.online:
+            self.online_processor.post_run()
 
-    def _add_online_rotations(self, model: nn.Module) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        if not hasattr(model.config, 'intermediate_size'):
-            raise ValueError("Model config must contain 'intermediate_size' for online rotation")
-        size_1, size_2 = QuaRotUtils.get_decompose_dim(model.config.intermediate_size)
-        rot1 = QuaRotUtils.create_rot(size_1, self.config.max_tp_size, device=model.device)
-        rot2 = QuaRotUtils.create_rot(size_2, -1, device=model.device)
+    def _filter_fused_map(self, prefix: str) -> Dict[str, str]:
+        res = {}
+        for key, value in self.fused_map.items():
+            select = False
+            if isinstance(value, list):
+                for v in value:
+                    if v.startswith(prefix):
+                        select = True
+            else:
+                if value.startswith(prefix):
+                    select = True
+            if select:
+                res[key] = value
+        self.fused_map = {k: v for k, v in self.fused_map.items() if k not in res}
+        return res
 
-        num_heads = self.num_attn_heads
-        rot_online_o_proj = QuaRotUtils.create_rot(num_heads, self.config.max_tp_size, device=model.device)
+    def _filter_bake_names(self, prefix: str):
+        res = [name for name in self.bake_names if name.startswith(prefix)]
+        for name in res:
+            self.bake_names.remove(name)
+        return res
 
-        return rot1, rot2, rot_online_o_proj
+    def _filter_commands(self, prefix: str):
+        res = [command for command in self.rotate_commands if command.target.startswith(prefix)]
+        for command in res:
+            self.rotate_commands.remove(command)
+        return res
+
+    def _fuse_norm(self, fused_map: Dict[str, str]):
+        for key, value in fused_map.items():
+            get_logger().debug(f"start to fuse layer norm and linear: {key} and {value}")
+            layernorms = []
+            if isinstance(key, list) or isinstance(key, tuple):
+                for k in key:
+                    layernorms.append(self.model.get_submodule(k))
+            else:
+                layernorms.append(self.model.get_submodule(key))
+            linears = []
+
+            if isinstance(value, list) or isinstance(value, tuple):
+                for v in value:
+                    linears.append(self.model.get_submodule(v))
+            else:
+                linears.append(self.model.get_submodule(value))
+            try:
+                fuse_ln_linear(layernorms, linears)
+            except UnsupportedError as e:
+                raise UnsupportedError("fuse layer norm and linear error!",
+                                    action=f"Please check the {key} and {value} size!") from e
+            get_logger().debug(f"successfully fuse layer norm and linear: {key} and {value}")
+
+    def _bake_mean(self, bake_names: List[str]):
+        for name in bake_names:
+            get_logger().debug(f"start to bake mean into linear: {name}")
+            mod = self.model.get_submodule(name)
+            if isinstance(mod, torch.nn.Linear):
+                bake_mean_into_linear(mod)
+                get_logger().debug(f"successfully bake mean into linear: {name}")
+            else:
+                raise UnsupportedError("bake mean into linear error!",
+                                    action=f"Please check the {name} type and model adapter implementation!")
+
+    def _rotate(self, rotate_commands: List[str]):
+        for command in rotate_commands:
+            get_logger().debug(f"start to {command.side.value} rotate linear: {command.target}")
+            mod = self.model.get_submodule(command.target)
+            try:
+                rotate_linear(mod, command.rot, command.side == RotSide.RIGHT)
+            except UnsupportedError as e:
+                raise UnsupportedError(f"{command.side.value} rotate linear error!",
+                                    action=f"Please check whether the {command.target} size is equal \
+                                    to the rotate matrix size: {command.rot.shape[0]}!") from e
+            get_logger().debug(f"{command.side.value} rotate linear success: {command.target}")
+

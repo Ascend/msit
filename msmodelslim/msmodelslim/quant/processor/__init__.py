@@ -28,7 +28,9 @@ __all__ = [
     "DynamicCacheProcessorConfig",
     "DynamicCacheQuantProcessor",
     "FloatSparseProcessorConfig",
-    "FloatSparseProcessor"
+    "FloatSparseProcessor",
+    "QuaRotProcessorConfig",
+    "QuaRotProcessor"
 ]
 
 from .anti_outlier.iter_smooth import IterSmoothProcessorConfig, IterSmoothProcessor
@@ -39,3 +41,4 @@ from .quant.attention import DynamicCacheProcessorConfig, DynamicCacheQuantProce
 from .quant.autoround import AutoProcessorConfig, AutoroundQuantProcessor
 from .quant.linear import LinearProcessorConfig, LinearQuantProcessor
 from .sparse.float_sparse import FloatSparseProcessorConfig, FloatSparseProcessor
+from .quarot import QuaRotProcessor, QuaRotProcessorConfig
