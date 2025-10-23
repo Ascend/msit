@@ -99,6 +99,7 @@ class AutoSaverProcessor(AutoSessionProcessor):
             nn.Linear: self.on_float_linear,
             nn.Module: self.on_float_module,
             qir.FakeQuantDynamicCache: self.on_dynamic_cache,
+            qir.FakeQuantActivationPerHead: self.on_activation_per_head,
             qir.W16A16sLinear: self.on_w16a16s,
             qir.QuarotOnlineHeadRotationWrapper: self.on_rotation_wrapper,
             qir.QuarotOnlineKroneckerRotationWrapper: self.on_kronecker_rotation_wrapper,
@@ -190,6 +191,11 @@ class AutoSaverProcessor(AutoSessionProcessor):
 
     def on_dynamic_cache(self, prefix: str, module: qir.FakeQuantDynamicCache):
         raise NotImplementedError(f"You should implement the on_dynamic_cache method for {self.__class__.__name__}")
+    
+    def on_activation_per_head(self, prefix: str, module: qir.FakeQuantActivationPerHead):
+        raise NotImplementedError(
+            f"You should implement the on_activation_per_head method for {self.__class__.__name__}"
+            )
 
     def on_rotation_wrapper(self, prefix: str, module: qir.QuarotOnlineHeadRotationWrapper):
         """

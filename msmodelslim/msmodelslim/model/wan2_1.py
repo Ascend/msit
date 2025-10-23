@@ -16,7 +16,8 @@ from tqdm import tqdm
 from msmodelslim.app.base.const import DeviceType
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.model.base import BaseModelAdapter
-from msmodelslim.model.common.layer_wise_forward import _TransformersForwardBreak, generated_decoder_layer_visit_func
+from msmodelslim.model.common.layer_wise_forward import TransformersForwardBreak, \
+    generated_decoder_layer_visit_func_with_keyword
 from msmodelslim.model.factory import ModelFactory
 from msmodelslim.utils.cache import to_device
 from msmodelslim.utils.exception import InvalidModelError, SchemaValidateError, UnsupportedError
@@ -97,7 +98,7 @@ class Wan2Point1Adapter(BaseModelAdapter,
         def break_hook(module: nn.Module, hook_args: Tuple[Any, ...], hook_kwargs: Dict[str, Any]):
             nonlocal first_block_input
             first_block_input = (hook_args, hook_kwargs,)
-            raise _TransformersForwardBreak()
+            raise TransformersForwardBreak()
 
         hooks = [transformer_blocks[0][1].register_forward_pre_hook(break_hook, with_kwargs=True)]
 
@@ -109,7 +110,7 @@ class Wan2Point1Adapter(BaseModelAdapter,
                 model(**inputs)
             else:
                 model(inputs)
-        except _TransformersForwardBreak:
+        except TransformersForwardBreak:
             pass
         except Exception as e:
             raise e
@@ -136,7 +137,7 @@ class Wan2Point1Adapter(BaseModelAdapter,
     def generate_model_visit(self, model: torch.nn.Module,
                              transformer_blocks: Optional[List[Tuple[str, torch.nn.Module]]] = None,
                              ) -> Generator[ProcessRequest, Any, None]:
-        return generated_decoder_layer_visit_func(model, transformer_blocks, keyword="attentionblock")
+        return generated_decoder_layer_visit_func_with_keyword(model, keyword="attentionblock")
 
     def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
         pass

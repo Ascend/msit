@@ -39,8 +39,10 @@ __all__ = [
     'ModelSlimPipelineInterfaceV0',  # For ModelSlim V0 quant service, describing the pipeline of model inference.
     'MultimodalSDPipelineInterface',  # For MultimodalSD quant service, describing the pipeline of model inference.
     'ModelSlimPipelineInterfaceV1',  # For ModelSlim V1 quant service, describing the pipeline of model inference.
-    'ModelHookInterface', # For ModelSlim V1 quant service, describing model specific process.
 
+    # FA3 activation quantization interface
+    'FA3QuantAdapterInterface', # For FA3 activation quantization, inject placeholders.
+    'FA3QuantPlaceHolder', # For FA3 activation quantization, placeholders.
     # QuaRot interface
     'QuaRotInterface', # For QuaRot.
     'QuaRotOnelineInterface', # For QuaRotOnline.
@@ -56,6 +58,5 @@ from msmodelslim.core.base.model import BaseModelInterface
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface as ModelSlimPipelineInterfaceV1
 from msmodelslim.quant.processor.anti_outlier.smooth_interface import IterSmoothInterface, FlexSmoothQuantInterface
 from msmodelslim.quant.processor.kv_smooth import KVSmoothFusedInterface
-from msmodelslim.core.runner.model_hook_interface import ModelHookInterface
-
+from msmodelslim.quant.processor.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
 from msmodelslim.quant.processor.quarot.quarot_interface import QuaRotInterface, QuaRotOnelineInterface

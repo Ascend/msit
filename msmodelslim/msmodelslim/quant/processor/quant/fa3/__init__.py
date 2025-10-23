@@ -13,10 +13,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from msmodelslim.core.runner.generated_runner import GeneratedRunner
-from msmodelslim.utils.logging import logger_setter
+__all__ = [
+    "FA3QuantAdapterInterface",
+    "FA3QuantPlaceHolder",
+    "FA3QuantProcessorConfig",
+    "FA3QuantProcessor"
+]
 
-
-@logger_setter()
-class PPRunner(GeneratedRunner):
-    pass
+from .interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
+from .processor import FA3QuantProcessorConfig, FA3QuantProcessor
