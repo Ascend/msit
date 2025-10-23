@@ -1,7 +1,7 @@
 # 导入相关依赖
 import os
 import torch
-import torch_npu   # 若需要cpu上进行量化，可忽略此步骤
+import torch_npu   # 若需要在cpu上进行量化，可忽略此步骤
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 LOAD_PATH = f"{os.environ['PROJECT_PATH']}/resource/llm_ptq/llama2_7b/"
