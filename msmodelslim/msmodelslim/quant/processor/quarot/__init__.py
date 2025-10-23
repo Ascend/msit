@@ -17,9 +17,12 @@ __all__ = [
     'QuaRotProcessor',
     'QuaRotProcessorConfig',
     'QuaRotUtils',
-    'QuaRotAdapter'
+    'QuaRotInterface',
+    'QuaRotOnelineInterface',
+    'RotatePair',
+    'create_rot',
+    'QuaRotMode',
 ]
-
+from .quarot_utils import create_rot, QuaRotMode
 from .quarot import QuaRotProcessor, QuaRotProcessorConfig
-from .quarot_interface import QuaRotAdapter
-from .quarot_utils import QuaRotUtils
+from .quarot_interface import QuaRotInterface, QuaRotOnelineInterface, RotatePair
