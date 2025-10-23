@@ -20,10 +20,8 @@ from torch import nn
 from msmodelslim.app import DeviceType
 from msmodelslim.core.base.protocol import DataUnit
 from msmodelslim.core.runner.generated_runner import GeneratedRunner, get_input_datas
-from msmodelslim.core.runner.model_hook_interface import ModelHookInterface
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
 from msmodelslim.quant.processor import LoadProcessorConfig, AutoProcessorConfig
-from msmodelslim.quant.processor.common.module_func import ModuleFuncProcessorConfig
 from msmodelslim.utils.logging import logger_setter, get_logger
 
 
@@ -44,14 +42,6 @@ class LayerWiseRunner(GeneratedRunner):
 
     def preprocess_processor(self, processor_list: List[AutoProcessorConfig], model: nn.Module,
                              device: DeviceType = DeviceType.NPU):
-        if isinstance(self.adapter, ModelHookInterface):
-            processor_list.insert(
-                0,
-                ModuleFuncProcessorConfig(
-                    name="load_state_dict_hook",
-                    func=self.adapter.load_state_dict_hook,
-                ))
-
         # 逐层上传推理设备
         processor_list.insert(0,
                               LoadProcessorConfig(

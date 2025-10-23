@@ -27,6 +27,7 @@ from msmodelslim.utils.exception import SchemaValidateError
 @QFuncRegistry.register(dispatch_key=(QDType.INT8, QScope.PER_CHANNEL, True), api_name="calculate_qparam")
 @QFuncRegistry.register(dispatch_key=(QDType.INT8, QScope.PER_TENSOR, False), api_name="calculate_qparam")
 @QFuncRegistry.register(dispatch_key=(QDType.INT8, QScope.PER_TENSOR, True), api_name="calculate_qparam")
+@QFuncRegistry.register(dispatch_key=(QDType.INT8, QScope.PER_HEAD, True), api_name="calculate_qparam")
 @QFuncRegistry.register(dispatch_key=(QDType.INT4, QScope.PER_CHANNEL, True), api_name="calculate_qparam")
 @QFuncRegistry.register(dispatch_key=(QDType.INT4, QScope.PER_CHANNEL, False), api_name="calculate_qparam")
 @QFuncRegistry.register(dispatch_key=(QDType.INT4, QScope.PER_TOKEN, False), api_name="calculate_qparam")

@@ -97,15 +97,14 @@ class DefaultModelAdapter(TransformersModel,
                                action='Please ensure default model adapter match your model'):
             return self._load_model(device)
 
-    def generate_model_visit(self, model: nn.Module, transformer_blocks: Optional[List[Tuple[str, nn.Module]]] = None,
-                             ) -> Generator[ProcessRequest, Any, None]:
+    def generate_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
         get_logger().warning(f"You are using default generate_model_visit, "
                              f"which may be not functional. "
                              f"Please implement generate_model_visit for your model.")
         with exception_handler('You are using default generate_model_visit but failed',
                                ms_err_cls=InvalidModelError,
                                action='Please ensure default model adapter match your model'):
-            yield from generated_decoder_layer_visit_func(model, transformer_blocks)
+            yield from generated_decoder_layer_visit_func(model)
 
     def generate_model_forward(self, model: nn.Module, inputs: Any,
                                ) -> Generator[ProcessRequest, Any, None]:

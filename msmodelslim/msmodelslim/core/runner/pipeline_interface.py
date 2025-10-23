@@ -59,8 +59,7 @@ class PipelineInterface(BaseModelInterface):
             action="Please implement init_model for PipelineInterface.")
 
     @abstractmethod
-    def generate_model_visit(self, model: nn.Module, transformer_blocks: Optional[List[Tuple[str, nn.Module]]] = None,
-                             ) -> Generator[ProcessRequest, Any, None]:
+    def generate_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
         """
         Determine the model visit, which is used to modify the model in fine-scheduling runner.
         The model visit pipeline is a generator of ProcessRequest,

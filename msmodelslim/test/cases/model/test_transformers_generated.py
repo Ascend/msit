@@ -22,7 +22,7 @@ import torch.nn as nn
 
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.model.common.layer_wise_forward import (
-    _TransformersForwardBreak,
+    TransformersForwardBreak,
     generated_decoder_layer_visit_func,
     transformers_generated_forward_func
 )
@@ -60,7 +60,7 @@ class TestTransformersGenerated(unittest.TestCase):
     def test_transformers_forward_break(self):
         """测试_TransformersForwardBreak异常类"""
         # 创建异常实例
-        exception = _TransformersForwardBreak()
+        exception = TransformersForwardBreak()
 
         # 验证异常类型
         self.assertIsInstance(exception, Exception)

@@ -114,7 +114,6 @@ class GeneratedRunner(BaseRunner):
         self.process_config_list: List[AutoProcessorConfig] = []
         self.adapter = adapter
 
-    @abstractmethod
     def preprocess_processor(self, processor_list: List[AutoProcessorConfig], model: nn.Module,
                              device: DeviceType = DeviceType.NPU):
         pass

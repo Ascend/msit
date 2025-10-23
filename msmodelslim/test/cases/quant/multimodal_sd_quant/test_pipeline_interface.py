@@ -34,7 +34,7 @@ class FullImplementedBase(MultimodalPipelineInterface):
     def init_model(self, device=None):
         return None  # 实际项目中是nn.Module，测试用None即可
 
-    def generate_model_visit(self, model, transformer_blocks=None):
+    def generate_model_visit(self, model):
         # 生成器必须返回至少一个值，用空对象模拟
         yield object()
 

@@ -1,5 +1,5 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
-from typing import Any, List, Optional, Tuple, Generator
+from typing import Any, List, Generator
 
 from torch import nn
 
@@ -45,9 +45,8 @@ class QwqModelAdapter(TransformersModel,
     def init_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
         return self._load_model(device)
 
-    def generate_model_visit(self, model: nn.Module, transformer_blocks: Optional[List[Tuple[str, nn.Module]]] = None,
-                             ) -> Generator[ProcessRequest, Any, None]:
-        yield from generated_decoder_layer_visit_func(model, transformer_blocks)
+    def generate_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
+        yield from generated_decoder_layer_visit_func(model)
 
     def generate_model_forward(self, model: nn.Module, inputs: Any,
                                ) -> Generator[ProcessRequest, Any, None]:

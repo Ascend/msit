@@ -17,6 +17,7 @@ __all__ = [
     "WrapperIR",
     "HookIR",
     "AutoFakeQuantLinear",
+    "AutoFakeQuantActivation",
     "AutoFakeQuantDynamicCache",
     "W8A8StaticFakeQuantLinear",
     "W8A8DynamicPerChannelFakeQuantLinear",
@@ -32,6 +33,7 @@ __all__ = [
     "QuarotHeadsRotationHookIR",
     "QuarotKroneckerRotationHookIR",
     "W16A16sLinear",
+    "FakeQuantActivationPerHead",
 
     "int8_per_tensor_sym",
     "int8_per_channel_sym",
@@ -55,7 +57,8 @@ __all__ = [
 ]
 
 from .attention import FakeQuantDynamicCache
-from .auto import AutoFakeQuantLinear, AutoFakeQuantDynamicCache
+from .activation import FakeQuantActivationPerHead
+from .auto import AutoFakeQuantLinear, AutoFakeQuantActivation, AutoFakeQuantDynamicCache
 from .const import int8_per_tensor_sym, int8_per_channel_sym, int8_per_token_sym, int8_per_group_sym, \
     int8_per_tensor_asym, int8_per_token_asym, int8_per_channel_asym, int4_per_channel_sym, \
     int8_per_tensor_asym, int8_per_token_asym, int8_per_channel_asym, int4_per_tensor_sym, int4_per_channel_sym, \

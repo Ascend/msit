@@ -5,8 +5,9 @@ from functools import lru_cache
 from typing import Dict
 
 import torch
-from safetensors.torch import load_file
+from safetensors import safe_open
 from torch import nn
+from tqdm import tqdm
 
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.security import get_valid_read_path, MAX_READ_FILE_SIZE_32G, json_safe_load
@@ -50,15 +51,8 @@ def weight_dequant(weight: torch.Tensor, scale: torch.Tensor, block_size: int = 
     return weight
 
 
-@lru_cache(maxsize=3)
-def get_tensor_file(file_dir, file_name):
-    file_path = os.path.join(file_dir, file_name)
-    file_path = get_valid_read_path(file_path, 'safetensors', size_max=MAX_READ_FILE_SIZE_32G)
-    return load_file(file_path, device='cpu')
-
-
 @lru_cache(maxsize=1)
-def get_weight_map(model_path: str):
+def get_inv_weight_map(model_path: str):
     model_index_path = os.path.join(model_path, "model.safetensors.index.json")
     model_index = json_safe_load(model_index_path)
     weight_map = model_index['weight_map']
@@ -66,43 +60,34 @@ def get_weight_map(model_path: str):
     return weight_map
 
 
-def get_tensor(tensor_name, fp8_path, weight_map):
+def get_inv_tensor(tensor_name, fp8_path, weight_map):
     file_name = weight_map[tensor_name]
-    loaded_file = get_tensor_file(fp8_path, file_name)
-    return loaded_file[tensor_name + WEIGHT_SCALE_INV]
+    file_path = os.path.join(fp8_path, file_name)
+    file_path = get_valid_read_path(file_path, 'safetensors', size_max=MAX_READ_FILE_SIZE_32G)
+    with safe_open(file_path, framework='pt', device='cpu') as f:
+        return f.get_tensor(tensor_name + WEIGHT_SCALE_INV)
 
 
-def get_module_by_name(model, submodule_key=None):
-    if submodule_key is None:
-        return submodule_key
-    tokens = submodule_key.split('.')
-    cur_mod = model
-    for s in tokens:
-        cur_mod = getattr(cur_mod, s, None)
-    return cur_mod
-
-
-def auto_convert_model_fp8_to_bf16(name: str, module: nn.Module, model_path: str):
-    weight_map = get_weight_map(model_path)
+def auto_convert_model_fp8_to_bf16(model: nn.Module, model_path: str):
+    weight_map = get_inv_weight_map(model_path)
 
     if not weight_map:
         return
 
     try:
-        convert_model_fp8_to_bf16(name, module, model_path, weight_map=weight_map)
+        convert_model_fp8_to_bf16(model, model_path, weight_map=weight_map)
     except KeyError:
         get_logger().warning(f'Safetensors files not match index.json, please check whether model is of bf16.')
         get_logger().warning(f'Skip fp8 to bf16.')
 
 
 @torch.no_grad()
-def convert_model_fp8_to_bf16(name: str,
-                              module: nn.Module,
+def convert_model_fp8_to_bf16(model: nn.Module,
                               model_path: str,
                               weight_map: Dict[str, str]):
-    for name, module in module.named_modules(prefix=name):
+    for name, module in tqdm(model.named_modules(), desc='fp8 to bf16', total=len(weight_map)):
         if name not in weight_map:
             continue
 
-        scale = get_tensor(name, model_path, weight_map)
+        scale = get_inv_tensor(name, model_path, weight_map)
         module.weight[:] = weight_dequant(module.weight, scale.to(module.weight.device))

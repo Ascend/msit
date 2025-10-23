@@ -31,6 +31,7 @@ from msmodelslim.quant.processor.base import AutoSessionProcessor
 from msmodelslim.utils.dist import DistHelper
 from msmodelslim.utils.exception import ToDoError
 from msmodelslim.utils.security import safe_copy_file
+from msmodelslim.utils.logging import get_logger, logger_setter
 from .saver import AutoSaverProcessor, AutoSaverBaseConfig
 from .utils.json import JsonWriter
 from .utils.pack import w4a8_pack_int4, process_scale
@@ -148,6 +149,7 @@ def save_this_rank_only():
 
 
 @QABCRegistry.register(dispatch_key=AscendV1Config, abc_class=AutoSessionProcessor)
+@logger_setter(prefix='msmodelslim.app.quant_service.modelslim_v1')
 class AscendV1Saver(AutoSaverProcessor):
     """
     ascendV1 量化模型保存器。该保存器将量化模型保存为AscendV1格式。
@@ -155,7 +157,7 @@ class AscendV1Saver(AutoSaverProcessor):
     关于该格式的更多信息，请参考 AscendV1Config 中的说明。
     """
     # W4A8_DYNAMIC is hidden.
-    QUANT_TYPE_PRIORITY = ['FLOAT', 'W16A16S', 'W8A8_DYNAMIC', 'W8A8', 'W8A8_MIX', 'W4A4_DYNAMIC']
+    QUANT_TYPE_PRIORITY = ['FLOAT', 'W16A16S', 'W8A8', 'W8A8_DYNAMIC', 'W8A8_MIX', 'W4A4_DYNAMIC']
 
     def __init__(self, model: nn.Module, config: AscendV1Config, adapter: object, **kwargs: Dict[str, Any]):
         super().__init__(model, config, adapter, **kwargs)
@@ -395,6 +397,17 @@ class AscendV1Saver(AutoSaverProcessor):
 
         for name, param in module.named_parameters(recurse=False, prefix=prefix):
             self.write_tensor(name, "W16A16S", param)
+
+    @save_this_rank_only()
+    def on_activation_per_head(self, prefix: str, module: qir.FakeQuantActivationPerHead):
+        scale = module.input_scale.to(torch.float32).unsqueeze(-1)
+        # 对于1维张量（fa_k.scale, fa_v.scale），转化为2维（与fa_q.scale对齐维数）
+        if scale.dim() == 1:
+            scale = scale.unsqueeze(-1)
+        offset = torch.zeros_like(scale, dtype=torch.int8)
+        self.write_tensor(prefix + ".scale", "FAQuant", scale)
+        self.write_tensor(prefix + ".offset", "FAQuant", offset)
+        self.json_append['fa_quant_type'] = "FAKQuant"
 
     @save_this_rank_only()
     def on_rotation_wrapper(self, prefix: str, module: qir.QuarotOnlineHeadRotationWrapper):
