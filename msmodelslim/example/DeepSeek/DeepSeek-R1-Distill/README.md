@@ -1,5 +1,8 @@
 # DeepSeek R1 Distill 量化案例
 
+## 环境配置
+
+- 使用 MindIE1.0版本 [官方镜像](https://gitcode.com/Ascend/ascend-docker-image/tree/dev/mindie#%E5%90%AF%E5%8A%A8%E5%AE%B9%E5%99%A8)，如1.0.0-800I-A2-py311-openeuler24.03-lts
 
 ## 支持的模型版本与量化策略
 
@@ -17,11 +20,6 @@
 - 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
 - 点击量化命令列中的链接可跳转到对应的具体量化命令
 - **注意：** Atlas 300I DUO目前仅支持单片量化，请先确保待量化模型的大小可适配单片容量，以保证量化过程正常进行。
-
-## 环境配置
-
-
-- 使用 MindIE1.0版本 [官方镜像](https://gitcode.com/Ascend/ascend-docker-image/tree/dev/mindie#%E5%90%AF%E5%8A%A8%E5%AE%B9%E5%99%A8)，如1.0.0-800I-A2-py311-openeuler24.03-lts
 
 ## 量化
 - 如果需要使用NPU多卡量化，请先配置环境变量，支持多卡量化：

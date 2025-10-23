@@ -8,16 +8,6 @@
     - 能够操作手机和机器人的视觉智能体：借助复杂推理和决策的能力，Qwen2-VL 可集成到手机、机器人等设备，根据视觉环境和文字指令进行自动操作。
     - 多语言支持：为了服务全球用户，除英语和中文外，Qwen2-VL 现在还支持理解图像中的多语言文本，包括大多数欧洲语言、日语、韩语、阿拉伯语、越南语等。
 
-### Qwen2-VL模型当前已验证的量化方法
-
-| 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况| 量化命令 |
-|------------|-------------|---------|----------------|---------|
-| Qwen2-VL-7B-Instruct | [Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct/tree/main) | W8A8静态量化 | MindIE 2.1.RC1及之后版本支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#1-qwen2-vl系列) |
-| Qwen2-VL-72B-Instruct | [Qwen2-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-72B-Instruct/tree/main) | W8A8静态量化 | MindIE 2.1.RC1及之后版本支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#1-qwen2-vl系列) |
-
-**说明：**
-- 点击量化命令列中的链接可跳转到对应的具体量化命令。
-
 ## 环境配置
 
 - 基础环境配置请参考[安装指南](../../../docs/安装指南.md)
@@ -27,6 +17,17 @@
   ```
 - 另需安装其他依赖包：
     - pip install qwen_vl_utils
+
+## Qwen2-VL模型当前已验证的量化方法
+
+| 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况| 量化命令 |
+|------------|-------------|---------|----------------|---------|
+| Qwen2-VL-7B-Instruct | [Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct/tree/main) | W8A8静态量化 | MindIE 2.1.RC1及之后版本支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#1-qwen2-vl系列) |
+| Qwen2-VL-72B-Instruct | [Qwen2-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-72B-Instruct/tree/main) | W8A8静态量化 | MindIE 2.1.RC1及之后版本支持<br>vLLM Ascend当前不支持 | [W8A8静态量化](#1-qwen2-vl系列) |
+
+**说明：**
+- 点击量化命令列中的链接可跳转到对应的具体量化命令。
+
 
 ## 生成量化权重
 
