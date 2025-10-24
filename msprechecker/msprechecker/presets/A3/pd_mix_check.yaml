@@ -148,7 +148,7 @@ env:
     expected:
       type: enum
       value: ["'1'", "'true'"]
-    reason: "建议将MindIE日志打屏，便于通过查看k8s日志查看程序运行状态"
+    reason: "建议将MindIE日志打屏，便于查看程序运行状态"
     severity: low
   MINDIE_LOG_LEVEL:
     expected:
