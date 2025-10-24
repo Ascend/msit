@@ -5,7 +5,7 @@
 
 ## 环境配置
 
-- 环境配置请参考[使用说明](../../docs/安装指南.md)
+- 环境配置请参考[安装说明](../../docs/安装指南.md)
 - Qwen3 系列transformers版本需要配置安装4.51.0版本
     - pip install transformers==4.51.0
 
@@ -266,7 +266,7 @@
 
 ##### <span id="qwen3-32b-w4a4-flatquant-dynamic量化">Qwen3-32b W4A4 Flatquant Dynamic量化</span> 
   ```shell
-  python3 w4a4.py --model_path {浮点权重路径} --save_directory {w4a4量化权重路径} --calib_file ../calib_data/qwen3_cot_w4a4.jsonl --trust_remote_code True --batch_size 1
+  python3 w4a4.py --model_path {浮点权重路径} --save_directory {w4a4量化权重路径} --calib_file ./calib_data/qwen3_cot_w4a4.json --trust_remote_code True --batch_size 1
   ```
 ##### <span id="qwen3-14b-w8a8量化">Qwen3-14B W8A8量化</span>
 
