@@ -31,7 +31,7 @@ def modify_config_json(src_path: str, dst_path: str, quant_config, mindie_format
         else os.path.join(config_dir, "quant_model_description.json")
     )
     dest_quant_description_filepath = get_valid_write_path(dest_quant_description_filepath, is_dir=False)
-    quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=False)
+    quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=True)
     quantization_config = {} if mindie_format else quant_description_data
 
     quantization_config.update({

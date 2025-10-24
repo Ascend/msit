@@ -66,8 +66,8 @@ def add_safetensors(org_paths, target_dir, safetensors_prefix, max_file_size_gb=
     """
     quant_type = "FLOAT"
     # 验证输入输出路径
-    org_paths = get_valid_read_path(org_paths, is_dir=True, check_user_stat=False)
-    target_dir = get_valid_read_path(target_dir, is_dir=True, check_user_stat=False)
+    org_paths = get_valid_read_path(org_paths, is_dir=True, check_user_stat=True)
+    target_dir = get_valid_read_path(target_dir, is_dir=True, check_user_stat=True)
     index_path = find_file_with_pattern(target_dir, "quant_model_weight_*.index.json")
     desc_path = find_file_with_pattern(target_dir, "quant_model_description*.json")
 

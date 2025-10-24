@@ -29,7 +29,7 @@ class SafeGenerator:
 
     @staticmethod
     def get_config_from_pretrained(model_path, **kwargs):
-        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=False)
+        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=True)
         try:
             config = AutoConfig.from_pretrained(model_path, local_files_only=True, **kwargs)
         except EnvironmentError as env_err:
@@ -48,7 +48,7 @@ class SafeGenerator:
 
     @staticmethod
     def get_model_from_pretrained(model_path, **kwargs):
-        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=False)
+        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=True)
         try:
             model = AutoModelForCausalLM.from_pretrained(model_path, local_files_only=True, **kwargs)
         except EnvironmentError as env_err:
@@ -67,7 +67,7 @@ class SafeGenerator:
 
     @staticmethod
     def get_tokenizer_from_pretrained(model_path, **kwargs):
-        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=False)
+        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=True)
         try:
             tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True, **kwargs)
         except EnvironmentError as env_err:
@@ -86,7 +86,7 @@ class SafeGenerator:
 
     @staticmethod
     def copy_tokenizer_files(model_dir, dest_dir):
-        model_dir = get_valid_read_path(model_dir, is_dir=True, check_user_stat=False)
+        model_dir = get_valid_read_path(model_dir, is_dir=True, check_user_stat=True)
         if os.path.exists(dest_dir):
             dest_dir = get_valid_write_path(dest_dir, is_dir=True)
         else:
@@ -112,9 +112,9 @@ class SafeGenerator:
 
     @staticmethod
     def modify_config(model_dir, dest_dir, torch_dtype, quantize_type, args=None):
-        model_dir = get_valid_read_path(model_dir, is_dir=True, check_user_stat=False)
+        model_dir = get_valid_read_path(model_dir, is_dir=True, check_user_stat=True)
         src_config_filepath = os.path.join(model_dir, 'config.json')
-        data = json_safe_load(src_config_filepath, check_user_stat=False)
+        data = json_safe_load(src_config_filepath, check_user_stat=True)
         dest_dir = get_valid_write_path(dest_dir, is_dir=True)
 
         if args.mindie_format:
@@ -124,7 +124,7 @@ class SafeGenerator:
             dest_quant_description_filepath = os.path.join(dest_dir, \
                 f"quant_model_description.json")
         dest_quant_description_filepath = get_valid_write_path(dest_quant_description_filepath, is_dir=False)
-        quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=False)
+        quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=True)
         
         data['torch_dtype'] = str(torch_dtype).split(".")[1]
         if args.mindie_format:

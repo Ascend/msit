@@ -137,10 +137,10 @@ def main():
     calib_path = args.calib_dataset
     batch_size = args.batch_size
 
-    model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=False)
+    model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=True)
     save_path = get_write_directory(save_path, write_mode=0o750)
-    anti_path = get_valid_read_path(anti_path, is_dir=False, check_user_stat=False)
-    calib_path = get_valid_read_path(calib_path, is_dir=False, check_user_stat=False)
+    anti_path = get_valid_read_path(anti_path, is_dir=False, check_user_stat=True)
+    calib_path = get_valid_read_path(calib_path, is_dir=False, check_user_stat=True)
     check_number(batch_size, int, 1, 16, "batch_size")
 
     config = AutoConfig.from_pretrained(pretrained_model_name_or_path=model_path, trust_remote_code=True)
