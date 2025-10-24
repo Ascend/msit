@@ -36,4 +36,4 @@ pip uninstall msmodelslim -y
 
 # 重新安装包（不使用缓存）
 echo "installing msmodelslim package without cache"
-pip install . --no-cache-dir
+umask 027 && pip install . --no-cache-dir

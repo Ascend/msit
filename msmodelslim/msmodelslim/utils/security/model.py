@@ -19,7 +19,7 @@ class SafeGenerator:
 
     @staticmethod
     def get_config_from_pretrained(model_path, **kwargs):
-        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=False)
+        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=True)
         with exception_handler(f'Get config from pretrained failed in {model_path}.',
                                err_cls=Exception,
                                ms_err_cls=InvalidModelError,
@@ -32,7 +32,7 @@ class SafeGenerator:
 
     @staticmethod
     def get_model_from_pretrained(model_path, **kwargs):
-        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=False)
+        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=True)
         with exception_handler(f'Get model from pretrained failed in {model_path}.',
                                err_cls=Exception,
                                ms_err_cls=InvalidModelError,
@@ -45,7 +45,7 @@ class SafeGenerator:
 
     @staticmethod
     def get_tokenizer_from_pretrained(model_path, **kwargs):
-        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=False)
+        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=True)
         with exception_handler(f'Get tokenizer from pretrained failed in {model_path}.',
                                err_cls=Exception,
                                ms_err_cls=InvalidModelError,

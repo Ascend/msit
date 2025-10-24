@@ -31,7 +31,7 @@ def load_hadamard_matrix_from_txt(matrix_name, csv_dir=None):
     
     csv_path = os.path.join(csv_dir, f"{matrix_name}.txt")
     
-    csv_data = txt_safe_load(csv_path, check_user_stat=False)
+    csv_data = txt_safe_load(csv_path, check_user_stat=True)
     
     # 转换为浮点数矩阵
     matrix_data = []

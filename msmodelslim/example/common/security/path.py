@@ -204,7 +204,7 @@ def file_safe_write(obj, path, extensions=None, check_user_stat=True):
 def safe_delete_path_if_exists(path, logger_level="info"):
     if os.path.exists(path):
         is_dir = os.path.isdir(path)
-        path = get_valid_write_path(path, check_user_stat=False, is_dir=is_dir, warn_exists=False)  # Check if writable
+        path = get_valid_write_path(path, check_user_stat=True, is_dir=is_dir, warn_exists=False)  # Check if writable
         logger_func = LOGGER_FUNC[logger_level]
         if os.path.isfile(path):
             logger_func(f"File '{path}' exists and will be deleted.")

@@ -136,7 +136,7 @@ def update_quant_model_description_content(save_path, json_filename):
     """
     dest_quant_description_filepath = os.path.join(save_path, json_filename)
     dest_quant_description_filepath = get_valid_write_path(dest_quant_description_filepath, is_dir=False)
-    quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=False)
+    quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=True)
     quant_description_data["model_quant_type"] = "W8A8_DYNAMIC"
     if ("version" in quant_description_data.keys()) and \
             ("fa_quant_type" in quant_description_data.keys()) and \

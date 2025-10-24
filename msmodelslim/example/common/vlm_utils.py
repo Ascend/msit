@@ -55,19 +55,19 @@ class VlmSafeGenerator(SafeGenerator):
     def modify_config(params: ModifyConfigParams):
         """修改配置文件"""
         # 验证路径
-        model_dir = get_valid_read_path(params.model_dir, is_dir=True, check_user_stat=False)
+        model_dir = get_valid_read_path(params.model_dir, is_dir=True, check_user_stat=True)
         dest_dir = get_valid_write_path(params.dest_dir, is_dir=True)
         
         # 加载源配置
         src_config_filepath = os.path.join(model_dir, 'config.json')
-        data = json_safe_load(src_config_filepath, check_user_stat=False)
+        data = json_safe_load(src_config_filepath, check_user_stat=True)
         
         # 生成量化描述文件路径
         dest_quant_description_filepath = VlmSafeGenerator._get_quantization_filename(
             dest_dir, params.quantize_type, getattr(params.args, 'mindie_format', False)
         )
         dest_quant_description_filepath = get_valid_write_path(dest_quant_description_filepath, is_dir=False)
-        quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=False)
+        quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=True)
 
         # 更新配置
         data['torch_dtype'] = str(params.torch_dtype).split('.')[1]
@@ -92,7 +92,7 @@ class VlmSafeGenerator(SafeGenerator):
     @staticmethod
     def copy_tokenizer_files(params: CopyTokenizerParams):
         """复制tokenizer文件"""
-        model_dir = get_valid_read_path(params.model_dir, is_dir=True, check_user_stat=False)
+        model_dir = get_valid_read_path(params.model_dir, is_dir=True, check_user_stat=True)
         
         # 确保目标目录存在
         if not os.path.exists(params.dest_dir):

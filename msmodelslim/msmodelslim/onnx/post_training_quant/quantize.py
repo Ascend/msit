@@ -22,7 +22,7 @@ def run_quantize(input_model_path, output_model_path, quant_config):
     input_model_path = get_valid_read_path(input_model_path, extensions=ONNX_MODEL_SUFFIX)
     check_model(input_model_path)
     output_model_path = get_valid_write_path(output_model_path, extensions=ONNX_MODEL_SUFFIX,
-                                             check_user_stat=False)
+                                             check_user_stat=True)
 
     model_name, _ = path.splitext(path.split(input_model_path)[1])
 
@@ -56,7 +56,7 @@ def run_quantize(input_model_path, output_model_path, quant_config):
 def convert_version(input_model_path, output_model_path, version=11):
     input_model_path = get_valid_read_path(input_model_path, extensions=ONNX_MODEL_SUFFIX)
     output_model_path = get_valid_write_path(output_model_path, extensions=ONNX_MODEL_SUFFIX,
-                                             check_user_stat=False)
+                                             check_user_stat=True)
     if version not in ONNX_VERSION_LIST:
         raise ValueError("version must be one of %s, please check it.", ONNX_VERSION_LIST)
     model = onnx.load(input_model_path)

@@ -16,10 +16,12 @@ from transformers.modeling_outputs import BaseModelOutputWithPast
 
 from add_safetensors import find_file_with_pattern, get_weight_map
 from example.common.security.path import json_safe_load, json_safe_dump
+from example.common.security.path import get_valid_read_path
 
 
 READ_ONLY_PERMISSION = 0o400
 READ_WRITE_PERMISSION = 0o600
+MAX_READ_FILE_SIZE_16G = 17179869184  # 16G, 16 * 1024 * 1024 * 1024
 
 
 def remove_zero_and_shift(matrix):
@@ -363,6 +365,12 @@ def warp_mtp_model(config, base_model, model_path):
     """
     mtp_layer = MTPLayer(config)
     mtp_safetensor = os.path.join(model_path, "model-00163-of-000163.safetensors")
+    mtp_safetensor = get_valid_read_path(
+        mtp_safetensor, 
+        size_max=MAX_READ_FILE_SIZE_16G, 
+        is_dir=False, 
+        check_user_stat=True
+    )
     mtp_weight = load_file(mtp_safetensor)
     new_state_dict = {}
     for key, value in mtp_weight.items():

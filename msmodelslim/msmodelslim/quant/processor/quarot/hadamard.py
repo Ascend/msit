@@ -78,7 +78,7 @@ def load_hadamard_matrix_from_txt(txt_file_name: str, txt_dir: Optional[str] = N
 
     txt_path: str = os.path.join(txt_dir, txt_file_name)
 
-    content: str = txt_safe_load(txt_path, check_user_stat=False)
+    content: str = txt_safe_load(txt_path, check_user_stat=True)
 
     # 解析文件内容为矩阵数据
     lines = content.strip().split('\n')

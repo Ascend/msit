@@ -283,7 +283,7 @@ if __name__ == '__main__':
     checker = SafeGenerator()
     rank: int = int(os.getenv("RANK", "0"))
 
-    model_path = get_valid_read_path(args.model_path, is_dir=True, check_user_stat=False)
+    model_path = get_valid_read_path(args.model_path, is_dir=True, check_user_stat=True)
     save_directory = get_write_directory(args.save_directory, write_mode=0o750)
 
     num_layers = checker.get_config_from_pretrained(
