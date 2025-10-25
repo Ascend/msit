@@ -56,7 +56,9 @@ class TestOpCheckerStartTest(unittest.TestCase):
         checker.init_output_file_path()
         mock_makedirs.assert_called_once()
 
-    def test_update_dump_data_path(self):
+    @patch("components.utils.file_open_check.FileStat.is_basically_legal", return_value=True)
+    @patch("os.path.isfile", return_value=True)
+    def test_update_dump_data_path(self, mock_path_isfile, mock_is_basically_legal):
         mock_args = MagicMock()
         checker = self.OpChecker(mock_args)
         with tempfile.TemporaryDirectory() as tmpdir:

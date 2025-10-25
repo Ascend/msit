@@ -115,23 +115,32 @@ class TestCheckSocString(unittest.TestCase):
             check_soc_string("soc@123")
 
 class TestCheckOutputPathLegality(unittest.TestCase):
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
     @patch("model_evaluation.__main__.FileStat")
-    def test_valid(self, mock_filestat):
+    def test_valid(self, mock_filestat, mock_path_exists, mock_path_writability, mock_path_owner_consistent):
         mock_stat = MagicMock()
         mock_stat.is_basically_legal.return_value = True
         mock_filestat.return_value = mock_stat
         self.assertEqual(check_output_path_legality("outdir"), "outdir")
 
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
     @patch("model_evaluation.__main__.FileStat")
-    def test_invalid_permission(self, mock_filestat):
+    def test_invalid_permission(self, mock_filestat, mock_path_exists, mock_path_writability, mock_path_owner_consistent):
         mock_stat = MagicMock()
         mock_stat.is_basically_legal.return_value = False
         mock_filestat.return_value = mock_stat
         with self.assertRaises(argparse.ArgumentTypeError):
             check_output_path_legality("outdir")
 
+    @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
+    @patch("os.access", return_value=True)
+    @patch("os.path.exists", return_value=True)
     @patch("model_evaluation.__main__.FileStat", side_effect=Exception("fail"))
-    def test_filestat_exception(self, mock_filestat):
+    def test_filestat_exception(self, mock_filestat, mock_path_exists, mock_path_writability, mock_path_owner_consistent):
         with self.assertRaises(argparse.ArgumentTypeError):
             check_output_path_legality("outdir")
 

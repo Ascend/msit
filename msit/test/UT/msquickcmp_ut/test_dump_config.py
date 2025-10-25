@@ -11,12 +11,13 @@ class TestDumpConfigInitSuccess(unittest.TestCase):
     @patch("components.debug.compare.msquickcmp.dump.mietorch.dump_config.ms_open", new_callable=mock_open)
     @patch("components.debug.compare.msquickcmp.dump.mietorch.dump_config.os.path.abspath")
     @patch("components.debug.compare.msquickcmp.dump.mietorch.dump_config.os.path.dirname")
+    @patch("os.path.isdir", return_value=True)
     @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
     @patch("components.utils.file_utils.check_file_size", return_value=None)
     @patch("components.utils.file_utils.check_path_readability", return_value=None)
     @patch("components.utils.file_utils.check_path_exists", return_value=None)
     def test_dump_config_success(
-        self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent,
+        self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent, mock_path_isdir,
             mock_dirname, mock_abspath, mock_ms_open, mock_json_dump,
     ):
         from components.debug.compare.msquickcmp.dump.mietorch.dump_config import DumpConfig
@@ -42,12 +43,13 @@ class TestDumpConfigFileNotFound(unittest.TestCase):
     @patch("components.debug.compare.msquickcmp.dump.mietorch.dump_config.os.path.abspath")
     @patch("components.debug.compare.msquickcmp.dump.mietorch.dump_config.os.path.dirname")
     @patch("components.debug.compare.msquickcmp.dump.mietorch.dump_config.utils.logger")
+    @patch("os.path.isdir", return_value=True)
     @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
     @patch("components.utils.file_utils.check_file_size", return_value=None)
     @patch("components.utils.file_utils.check_path_readability", return_value=None)
     @patch("components.utils.file_utils.check_path_exists", return_value=None)
     def test_file_not_found_error(
-        self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent,
+        self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent, mock_path_isdir,
             mock_logger, mock_dirname, mock_abspath, mock_ms_open,
     ):
         from components.debug.compare.msquickcmp.dump.mietorch.dump_config import DumpConfig
@@ -65,12 +67,13 @@ class TestDumpConfigJsonDecodeError(unittest.TestCase):
     @patch("components.debug.compare.msquickcmp.dump.mietorch.dump_config.ms_open")
     @patch("components.debug.compare.msquickcmp.dump.mietorch.dump_config.utils.logger")
     @patch("components.debug.compare.msquickcmp.dump.mietorch.dump_config.json.dump", side_effect=json.JSONDecodeError("Expecting value", "", 0))
+    @patch("os.path.isdir", return_value=True)
     @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
     @patch("components.utils.file_utils.check_file_size", return_value=None)
     @patch("components.utils.file_utils.check_path_readability", return_value=None)
     @patch("components.utils.file_utils.check_path_exists", return_value=None)
     def test_json_decode_error(
-        self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent,
+        self, mock_path_exists, mock_path_readability, mock_file_size, mock_path_owner_consistent, mock_path_isdir,
             mock_json_dump, mock_logger, mock_ms_open, mock_dirname, mock_abspath,
     ):
         from components.debug.compare.msquickcmp.dump.mietorch.dump_config import DumpConfig

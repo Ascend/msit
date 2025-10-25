@@ -499,20 +499,22 @@ class TestCheckInputPathLegality(BastCheckTestCase):
 
 
 class TestCheckCannPathLegality(BastCheckTestCase):
+    @patch("os.path.isdir", return_value=True)
     @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
     @patch("os.access", return_value=True)
     @patch("os.path.exists", return_value=True)
     @patch('components.debug.compare.msquickcmp.common.args_check.is_legal_args_path_string', return_value=True)
-    def test_valid_path(self, mock_is_legal, mock_path_exists, mock_path_readability, mock_path_owner_consistent):
+    def test_valid_path(self, mock_is_legal, mock_path_exists, mock_path_readability, mock_path_owner_consistent, mock_path_isdir):
         """测试有效路径"""
         result = check_cann_path_legality("valid/path")
         self.assertEqual(result, "valid/path")
 
+    @patch("os.path.isdir", return_value=True)
     @patch("components.utils.file_utils.check_path_owner_consistent", return_value=None)
     @patch("os.access", return_value=True)
     @patch("os.path.exists", return_value=True)
     @patch('components.debug.compare.msquickcmp.common.args_check.is_legal_args_path_string', return_value=False)
-    def test_invalid_path(self, mock_is_legal, mock_path_exists, mock_path_readability, mock_path_owner_consistent):
+    def test_invalid_path(self, mock_is_legal, mock_path_exists, mock_path_readability, mock_path_owner_consistent, mock_path_isdir):
         """测试无效路径"""
         with self.assertRaises(argparse.ArgumentTypeError):
             check_cann_path_legality("invalid/path")
