@@ -69,7 +69,7 @@ class TestAieCommand(unittest.TestCase):
         mock_convert.return_value = mock_converter
         self.cmd.handle(args)
         mock_logger.info.assert_any_call("AIE start converting now")
-        mock_read.assert_called_once_with("m", size_max=MAX_READ_FILE_SIZE_32G)
+        mock_read.assert_called_once_with("m", extensions='.onnx', size_max=MAX_READ_FILE_SIZE_32G)
         mock_write.assert_called_once_with("o")
         mock_parse.assert_called_once_with("m_path", "o_path", "soc")
         mock_convert.assert_called_once_with("cfg")

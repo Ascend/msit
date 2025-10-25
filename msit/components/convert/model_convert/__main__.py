@@ -90,7 +90,7 @@ class AieCommand(BaseCommand):
 
     def handle(self, args, **kwargs):
         logger.info("AIE start converting now")
-        model_path = get_valid_read_path(args.model, size_max=MAX_READ_FILE_SIZE_32G)
+        model_path = get_valid_read_path(args.model, extensions=".onnx", size_max=MAX_READ_FILE_SIZE_32G)
         output_path = get_valid_write_path(args.output)
         try:
             config = parse_input_param(

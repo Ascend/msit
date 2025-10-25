@@ -788,9 +788,22 @@ def split_zip_file_path(zip_file_path):
     return os.path.dirname(zip_file_path), os.path.basename(zip_file_path)
 
 
+def check_path_type_is_file(path):
+    if not os.path.isfile(path):
+        logger.error(f'The path {path} is not file.')
+        raise FileCheckException(FileCheckException.ILLEGAL_PATH_ERROR)
+
+
+def check_path_type_is_dir(path):
+    if not os.path.isdir(path):
+        logger.error(f'The path {path} is not dir.')
+        raise FileCheckException(FileCheckException.ILLEGAL_PATH_ERROR)
+
+
 def check_input_file_path(path, file_max_size=FileCheckConst.MAX_COMMON_FILE_SIZE, check_executable=False):
     path = os.path.realpath(path)
     check_path_exists(path)
+    check_path_type_is_file(path)
     check_link(path)
     check_path_length(path)
     check_path_pattern_valid(path)
@@ -804,6 +817,7 @@ def check_input_file_path(path, file_max_size=FileCheckConst.MAX_COMMON_FILE_SIZ
 def check_input_dir_path(path):
     path = os.path.realpath(path)
     check_path_exists(path)
+    check_path_type_is_dir(path)
     check_link(path)
     check_path_length(path)
     check_path_pattern_valid(path)
@@ -814,13 +828,17 @@ def check_input_dir_path(path):
 def check_output_file_path(path):
     path = os.path.realpath(path)
     check_link(path)
+    check_path_length(path)
     check_path_pattern_valid(path)
-    check_path_owner_consistent(path)
+    if os.path.exists(path):
+        check_path_owner_consistent(path)
 
 
 def check_output_dir_path(path):
     path = os.path.realpath(path)
     check_link(path)
+    check_path_length(path)
     check_path_pattern_valid(path)
-    check_path_writability(path)
-    check_path_owner_consistent(path)
+    if os.path.exists(path):
+        check_path_writability(path)
+        check_path_owner_consistent(path)

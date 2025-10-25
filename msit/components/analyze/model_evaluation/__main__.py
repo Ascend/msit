@@ -24,6 +24,7 @@ from model_evaluation.bean import ConvertConfig
 from model_evaluation.core import Analyze
 from components.utils.file_open_check import FileStat
 from components.utils.log import logger
+from components.utils.file_utils import check_output_dir_path
 
 
 MAX_SIZE_LIMITE_NORMAL_MODEL = 32 * 1024 * 1024 * 1024  # 10G 普通模型文件
@@ -77,6 +78,7 @@ def check_output_path_legality(value):
     if not value:
         return value
     path_value = value
+    check_output_dir_path(path_value)
     try:
         file_stat = FileStat(path_value)
     except Exception as err:

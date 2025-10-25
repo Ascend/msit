@@ -19,6 +19,7 @@ import re
 
 from components.utils.file_open_check import FileStat, is_legal_args_path_string
 from components.utils.file_utils import check_input_file_path, check_input_dir_path, check_output_dir_path
+from components.utils.security_check import is_endswith_extensions
 
 STR_WHITE_LIST_REGEX = re.compile(r"[^_A-Za-z0-9\"'><=\[\])(,}{: /.~-]")
 MAX_SIZE_LIMITE_NORMAL_MODEL = 32 * 1024 * 1024 * 1024  # 32GB
@@ -114,6 +115,19 @@ def check_input_path_legality(value):
     return value
 
 
+def check_debug_compare_input_data_path(path):
+    if not isinstance(path, str):
+        raise argparse.ArgumentTypeError(f"input data path:{path} is illegal. Please check.")
+    if path == '':
+        return path
+    input_item_paths = path.split(',')
+    for input_item_path in input_item_paths:
+        input_item_path = check_input_path_legality(input_item_path)
+        if not is_endswith_extensions(input_item_path, ['.npy', '.bin']):
+            raise argparse.ArgumentTypeError(f"input data path:{path} is illegal. Please check.")
+    return path
+
+
 def check_cann_path_legality(value):
     path_value = value
     check_input_dir_path(path_value)
@@ -143,8 +157,12 @@ def check_path_exit(value):
     return value
 
 
-def check_alone_compare_file_path(path):
+def check_input_json_path(path):
+    if not isinstance(path, str):
+        raise argparse.ArgumentTypeError(f"ops json path:{path} is illegal. Please check.")
     check_input_file_path(path)
+    if not is_endswith_extensions(path, ".json"):
+        raise argparse.ArgumentTypeError(f"ops json path:{path} is illegal. Please check.")
     return path
 
 
