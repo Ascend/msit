@@ -32,6 +32,7 @@ from msmodelslim.utils.dist import DistHelper
 from msmodelslim.utils.exception import ToDoError
 from msmodelslim.utils.security import safe_copy_file
 from msmodelslim.utils.logging import get_logger, logger_setter
+from .interface import AscendV1SaveInterface
 from .saver import AutoSaverProcessor, AutoSaverBaseConfig
 from .utils.json import JsonWriter
 from .utils.pack import w4a8_pack_int4, process_scale
@@ -199,6 +200,9 @@ class AscendV1Saver(AutoSaverProcessor):
             raise ToDoError(f'Model Adapter does NOT has attr model_path',
                             action=f'Please implement BaseModelInterface for saving')
         copy_files(self.adapter.model_path, self.config.save_directory)
+
+        if isinstance(self.adapter, AscendV1SaveInterface):
+            self.adapter.ascendv1_save_postprocess(self.model, self.config.save_directory)
 
     def preprocess(self, request: BatchProcessRequest) -> None:
         if dist.is_initialized():

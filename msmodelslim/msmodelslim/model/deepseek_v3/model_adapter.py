@@ -14,6 +14,7 @@ from msmodelslim.model.common.layer_wise_forward import generated_decoder_layer_
     TransformersForwardBreak
 from msmodelslim.model.factory import ModelFactory
 from msmodelslim.model.transformers import TransformersModel
+from msmodelslim.quant import ir as qir
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter
 from msmodelslim.utils.security.model import SafeGenerator
@@ -21,7 +22,8 @@ from msmodelslim.utils.security import json_safe_load, json_safe_dump
 from .convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16
 from .mtp_quant_module import warp_mtp_model, remove_zero_and_shift
 from ..interface_hub import ModelInfoInterface, ModelSlimPipelineInterfaceV1, IterSmoothInterface, \
-    FlexSmoothQuantInterface, FA3QuantAdapterInterface, FA3QuantPlaceHolder, QuaRotInterface
+    FlexSmoothQuantInterface, FA3QuantAdapterInterface, FA3QuantPlaceHolder, QuaRotInterface, AscendV1SaveInterface
+from .quarot import get_ln_fuse_map, get_rotate_map
 
 
 @ModelFactory.register("DeepSeek-V3")
@@ -37,6 +39,7 @@ class DeepSeekV3ModelAdapter(TransformersModel,
                              FlexSmoothQuantInterface,  # support flex smooth quant
                              FA3QuantAdapterInterface,  # support FA3 activation quant placeholders
                              QuaRotInterface,
+                             AscendV1SaveInterface,
                              ):
     def get_model_type(self) -> str:
         return self.model_type
@@ -365,3 +368,43 @@ class DeepSeekV3ModelAdapter(TransformersModel,
     def get_rotate_map(self, block_size):
         pre_run, rot_pairs, _ = get_rotate_map(self.config, block_size)
         return [pre_run], [pair for pair in rot_pairs.values()]
+
+    def ascendv1_save_postprocess(self, model: nn.Module, save_directory: str) -> None:
+        """
+        根据 MideIE 要求在deepseek w4a8和w4a8c8场景下，config.json 中添加以下字段
+        - mtp_quantize: w8a8_dynamic
+        - quantize: w8a8_dynamic
+        - moe_quantize: w4a8_dynamic
+        - mla_quantize: w8a8(w4a8c8场景下使用w8a8) or w8a8_dynamic(w4a8场景下使用w8a8_dynamic)
+
+        Args:
+            model: 模型
+            save_directory: 导出件的保存目录
+        """
+        use_w4a8 = False
+        use_c8 = False
+        
+        for _, module in model.named_modules():
+            if isinstance(module, qir.W4A8DynamicFakeQuantLinear):
+                use_w4a8 = True
+            if isinstance(module, qir.FakeQuantActivationPerHead):
+                use_c8 = True
+            if use_w4a8 and use_c8:
+                break
+
+        if use_w4a8:
+            config_file = os.path.join(save_directory, "config.json")
+            config_data = json_safe_load(config_file, check_user_stat=False)
+
+            config_data["mtp_quantize"] = "w8a8_dynamic"
+            config_data["quantize"] = "w8a8_dynamic"
+            config_data["moe_quantize"] = "w4a8_dynamic"
+            if use_c8:
+                config_data["mla_quantize"] = "w8a8"
+            else:
+                config_data["mla_quantize"] = "w8a8_dynamic"
+                
+            json_safe_dump(config_data, config_file, indent=2, check_user_stat=False)
+
+        return
+        
