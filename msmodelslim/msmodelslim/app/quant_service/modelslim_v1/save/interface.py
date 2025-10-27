@@ -13,14 +13,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-__all__ = [
-    "AscendV1Saver",
-    "AscendV1Config",
-    "MindIEFormatSaver",
-    "MindIEFormatConfig",
-    "AscendV1SaveInterface",
-]
+from abc import ABC, abstractmethod
 
-from .ascendv1 import AscendV1Saver, AscendV1Config
-from .mindie_format import MindIEFormatSaver, MindIEFormatConfig
-from .interface import AscendV1SaveInterface
+import torch.nn as nn
+
+
+class AscendV1SaveInterface(ABC):
+    @abstractmethod
+    def ascendv1_save_postprocess(self, model: nn.Module, save_directory: str) -> None:
+        """
+        导出件后处理
+        @param model: 量化模型
+        @param save_directory: 包含导出件（如config.json，quant_model_description.json等）的量化模型存储路径
+        """
+        ...
