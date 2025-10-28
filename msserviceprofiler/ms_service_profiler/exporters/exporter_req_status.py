@@ -116,6 +116,8 @@ class ExporterReqStatus(ExporterBase):
     def _process_status_columns(cls, df, metrics):
         if ColumnConst.STATUS_COLUMN in df.columns:
             df = cls._map_and_encode_status(df, metrics)
+        elif "FINISHED+" in df.columns:
+            df = cls._prepare_queue_columns(df)
         else:
             df = cls._prepare_metrics_df(df, metrics)
         return df
@@ -160,6 +162,30 @@ class ExporterReqStatus(ExporterBase):
         for column_name in show_columns:
             if column_name not in df.columns:
                 df = df.assign(**{column_name: [None] * len(df)})
+        return df
+    
+    @classmethod
+    def _prepare_queue_columns(cls, df):
+        need_cols = [ColumnConst.NAME_COLUMN, ColumnConst.QUEUESIZE_COLUMN, "start_datetime", \
+            "scope#QueueName"]
+        if not check_columns_valid(df, need_cols, cls.name):
+            return pd.DataFrame()
+        
+        queue_df = df[df['name'] == "Queue"]
+        df = queue_df.pivot_table(
+            index='start_datetime',
+            columns='scope#QueueName',
+            values='QueueSize=',
+            aggfunc='first'
+        ).reset_index()
+
+        require_cols = ['start_datetime', 'RUNNING', 'PENDING', 'WAITING']
+        for col in require_cols:
+            if col not in df.columns:
+                df[col] = 0
+
+        df = df[require_cols].rename(columns={"start_datetime": "timestamp"})
+        df = df.ffill().fillna(0)
         return df
 
     CREATE_REQUEST_STATE_VIEW_SQL = f"""
