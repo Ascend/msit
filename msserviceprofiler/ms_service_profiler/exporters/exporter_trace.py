@@ -314,7 +314,7 @@ def create_trace_events(all_data_df, pid_label_map=None, pid_ppid_map=None):
         kv_trace_events = add_kvcache_events(all_data_df[all_data_df['domain'] == 'KVCache'], pid_label_map)
         trace_events.extend(kv_trace_events)
 
-        queue_trace_events = add_queue_events(all_data_df[all_data_df['domain'] == 'Queue'])
+        queue_trace_events = add_queue_events(all_data_df[all_data_df['name'] == 'Queue'])
         trace_events.extend(queue_trace_events)
 
         pull_kvcache_events = add_pull_kvcache_events(all_data_df[all_data_df['domain'] == 'PullKVCache'])
