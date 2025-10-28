@@ -53,7 +53,7 @@ static bool OthersWritable(const std::string& path)
     struct stat path_stat;
     if (stat(path.c_str(), &path_stat) != 0) {
         std::cerr << "file not exists";
-        return MAX_PERMISSION;
+        return false;
     }
     mode_t permissions = path_stat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
     return ((permissions & WRITE_FILE_NOT_PERMITTED) > 0);
