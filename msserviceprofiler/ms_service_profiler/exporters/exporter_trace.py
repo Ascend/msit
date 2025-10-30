@@ -79,7 +79,6 @@ class ExporterTrace(TaskExporterBase):
             kernel_df = mspti.get('kernel_df', pd.DataFrame())
 
         if not api_df.empty or not kernel_df.empty:
-
             tarce_events_list = []
 
             api_events = export_event_from_df(api_df, "Api", "Api")
@@ -120,9 +119,8 @@ def prepare_domain_for_process(all_data_df):
     if (all_data_df['name'] == 'outputSync').any():
         all_data_df = all_data_df[~all_data_df['name'].isin(['httpReq', 'httpRes', "getOutputAsync"])]
 
-    
     # 对于非Request, RequestState, KVCache泳道区分tid显示
-    mask = ~all_data_df['domain'].isin(['Request', 'RequestState', 'KVCache'])
+    mask = ~all_data_df['domain'].isin(['Request', 'RequestState', 'Schedule.KVCache'])
     all_data_df.loc[mask, 'domain'] = (
         all_data_df.loc[mask, 'domain'].astype(str) 
         + '(' 
@@ -287,7 +285,7 @@ def add_flow_event(flow_event_df):
 
 
 def create_trace_events(all_data_df, pid_label_map=None, pid_ppid_map=None):
-    metric_event = ['npu', 'KVCache', 'PullKVCache', 'Queue']
+    metric_event = ['npu', 'Schedule.KVCache', 'PullKVCache', 'Queue']
 
     # name 非空
     name_notna_condition = all_data_df['name'].notna()
@@ -311,7 +309,7 @@ def create_trace_events(all_data_df, pid_label_map=None, pid_ppid_map=None):
         npu_trace_events = add_npu_events(all_data_df[all_data_df['name'] == 'npu'])
         trace_events.extend(npu_trace_events)
 
-        kv_trace_events = add_kvcache_events(all_data_df[all_data_df['domain'] == 'KVCache'], pid_label_map)
+        kv_trace_events = add_kvcache_events(all_data_df[all_data_df['domain'] == 'Schedule.KVCache'], pid_label_map)
         trace_events.extend(kv_trace_events)
 
         queue_trace_events = add_queue_events(all_data_df[all_data_df['name'] == 'Queue'])
@@ -333,7 +331,6 @@ def create_trace_events(all_data_df, pid_label_map=None, pid_ppid_map=None):
         if isinstance(tid, str) and "Coordinator" in tid:
             coordinator_pid = event["pid"]
             break  # 找到第一个就退出
-
 
     if pid_label_map is not None or pid_ppid_map is not None:
         trace_events.extend(sort_trace_events_by_pid(pid_label_map, pid_ppid_map, coordinator_pid))
@@ -382,9 +379,9 @@ def sort_trace_events_by_pid(pid_label_map, pid_ppid_map, coordinator_pid=None):
             args=dict(sort_index=index))
         )
         labels = []
-        if pid_label_map is not None and "host_name" in pid_label_map.get(pid, []): 
-            labels.append(pid_label_map.get(pid).get("host_name"))
-        if pid_label_map is not None and "dp" in pid_label_map.get(pid, []): 
+        if pid_label_map is not None and "hostname" in pid_label_map.get(pid, []):
+            labels.append(pid_label_map.get(pid).get("hostname"))
+        if pid_label_map is not None and "dp" in pid_label_map.get(pid, []):
             labels.append(f"dp{pid_label_map.get(pid).get('dp')}")
         elif pid_label_map is not None and "dp_rank" in pid_label_map.get(pid, []): 
             labels.append(f"dp{pid_label_map.get(pid).get('dp_rank')}")
@@ -401,7 +398,7 @@ def sort_trace_events_by_pid(pid_label_map, pid_ppid_map, coordinator_pid=None):
 
 
 def sort_trace_events_by_tid(trace_events):
-    tid_sorting_order = ['KVCache', 'Communication', 'BatchSchedule', 'ModelExecute', 'Request', 'Api', 'Kernel']
+    tid_sorting_order = ['Schedule.KVCache', 'Communication', 'Schedule', 'Execute', 'Engine', 'Api', 'Kernel']
     main_pid = 0
     for event_info in trace_events:
         if event_info.get("tid") in tid_sorting_order:
@@ -608,31 +605,22 @@ def add_kvcache_events(kv_data_df, pid_label_map=None):
         return []
     kv_trace_df = kv_data_df.copy()
 
-    # 优先使用 pid_label_map 中的 dp_rank
+    # 使用 pid_label_map 中的 dp_rank
     if pid_label_map is not None and "pid" in kv_trace_df.columns:
         def get_name(row):
             pid = row['pid']
-            # 优先使用 pid_label_map 中的 dp_rank
+            # 使用 pid_label_map 中的 dp_rank
             if pid in pid_label_map and 'dp_rank' in pid_label_map[pid]:
                 dp_rank = pid_label_map[pid]['dp_rank']
                 return f"{row['domain']}-dp{dp_rank}"
-            # 回退到 scope#dp
-            elif "scope#dp" in kv_trace_df.columns:
-                scope_dp = row["scope#dp"]
-                if pd.notna(scope_dp):
-                    return f"{row['domain']}-dp{int(scope_dp)}"
-            # 都没有就只返回 domain
+            # 如果没有 dp_rank，就只返回 domain
             return row['domain']
 
         kv_trace_df['name'] = kv_trace_df.apply(get_name, axis=1)
-    elif "scope#dp" in kv_trace_df:
-        # 没有 pid_label_map 时使用 scope#dp
-        kv_trace_df['name'] = kv_trace_df['domain'] + '-dp' + kv_trace_df["scope#dp"].astype(int,
-                                                                                             errors='ignore').astype(
-            str)
     else:
-        # 都没有就只返回 domain
+        # 没有 pid_label_map 时就只返回 domain
         kv_trace_df['name'] = kv_trace_df['domain']
+
     kv_trace_df['ph'] = 'C'
     kv_trace_df['ts'] = kv_data_df['start_time']
     kv_trace_df['tid'] = kv_data_df['domain']
