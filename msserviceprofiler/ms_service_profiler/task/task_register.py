@@ -27,17 +27,17 @@ class TaskDag:
         self.dag_task_flow = dag_task_flow
         self.head_tasks_name = head_tasks_name
         self.ordered_tasks_name = ordered_tasks_name
-    
-    @classmethod
-    def get_depends_data_names(cls, task_name):
+
+    @staticmethod
+    def get_depends_data_names(task_name):
         return get_register_by_name(task_name).data_depends
     
-    @classmethod
-    def get_outputs_data_names(cls, task_name):
+    @staticmethod
+    def get_outputs_data_names(task_name):
         return get_register_by_name(task_name).data_outputs
     
-    @classmethod
-    def get_task_reg_info(cls, task_name):
+    @staticmethod
+    def get_task_reg_info(task_name):
         return get_register_by_name(task_name)
     
     def get_next_task_names(self, task_name):

@@ -95,4 +95,4 @@ class Profiler:
 
     def add_meta_info(self, meta_key, meta_data):
         if self._enable:
-            service_profiler.add_meta_info(meta_key, json.dumps(meta_data))
+            service_profiler.add_meta_info(meta_key, str(meta_data))

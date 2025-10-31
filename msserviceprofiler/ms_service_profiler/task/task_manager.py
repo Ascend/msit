@@ -4,9 +4,6 @@ from enum import Enum, auto
 from collections import deque
 from multiprocessing import Queue, Process
 from multiprocessing import Pool
-from dataclasses import dataclass
-from typing import Any, Dict, Tuple, Optional
-
 from ms_service_profiler.task.task_register import filter_dag
 from ms_service_profiler.task.task_register import TaskDag
 from ms_service_profiler.task.task import Task
@@ -17,17 +14,6 @@ from ms_service_profiler.utils.error import OtherTaskError
 
 class DefaultValue(Enum):
     UNFILLED = auto()
-
-
-@dataclass
-class TaskRunArgs:
-    """封装任务运行所需的所有参数"""
-    input_data: Any
-    src_dag: Any
-    pool_index: int
-    args: Any
-    recv_queue: Queue
-    send_queue: Queue
 
 
 class SubprocessInfo:
@@ -44,16 +30,8 @@ class SubprocessInfo:
     
     def new_process(self, send_queue, args):
         recv_queue = Queue()
-        input_data, src_dag, pool_index, args_part = args
-        task_args = TaskRunArgs(
-            input_data=input_data,
-            src_dag=src_dag,
-            pool_index=pool_index,
-            args=args_part,
-            recv_queue=recv_queue,
-            send_queue=send_queue
-        )
-        process = Process(target=task_run, args=(task_args,))
+        args = args + (recv_queue, send_queue)
+        process = Process(target=task_run, args=args)
         self.queues.append(recv_queue)
         self.processes.append(process)
         process.start()
@@ -270,69 +248,72 @@ class TaskManager:
 
 
 # sub process
-def task_run(args: TaskRunArgs):
-    run_res_data = {'prof_path': args.input_data}
+def task_run(input_data, src_dag, pool_index, args, recv_queue, send_queue):
     task_index = None
+    run_res_data = dict(prof_path=input_data)
     
-    def recv() -> Tuple[str, Any]:
-        msg, gather_data = args.recv_queue.get()
+    def recv():
+        msg, gather_data = recv_queue.get()
         if msg == 'error':
             raise OtherTaskError(gather_data)
         return msg, gather_data
             
-    def recv_ignore_error() -> Tuple[str, Any]:
-        while True:
-            msg, gather_data = args.recv_queue.get()
+    def recv_ignore_error():
+        msg = "error"
+        while msg == 'error':
+            msg, gather_data = recv_queue.get()
             if msg != 'error':
                 return msg, gather_data
         
-    def finished_sync(task_name: str, next_task_name: str, after_error: bool = False):
-        args.send_queue.put((task_name, task_index, "finished", ((args.pool_index, next_task_name), after_error)))
+    def finished_sync(task_name, task_index, next_task_name, after_error=False):
+        send_queue.put((task_name, task_index, "finished", ((pool_index, next_task_name), after_error)))
         msg, _ = recv()
         if msg != 'finished':
-            raise ValueError(f"Expected 'finished' message, but received: {msg}")
+            raise ValueError("Expected 'finished' message, but received: {}".format(msg))
         
-    def error_sync(task_name: str, err_msg: Optional[str] = None) -> Tuple[str, Any]:
-        args.send_queue.put((task_name, task_index, "error", err_msg))
-        return recv_ignore_error()
+    def error_sync(task_name, task_index, err_msg=None):
+        # 发送 error 到主进程
+        send_queue.put((task_name, task_index, "error", err_msg))
+        # 等待主进程同步到所有的其他进程，所有进程一起继续执行
+        msg, gather_data = recv_ignore_error()
+        return msg, gather_data
         
-    def crash(task_name: str):
-        args.send_queue.put((task_name, task_index, "crash", None))
+    def crash(task_name, task_index):
+        send_queue.put((task_name, task_index, "crash", None))
     
-    for task_name, next_task_name in args.src_dag.get_ordered_task_names():
+    for task_name, next_task_name in src_dag.get_ordered_task_names():
         try:
             _, task_index = recv()
         
-            task_info = args.src_dag.get_task_reg_info(task_name)
-            task_ins = (
-                task_info.task_cls 
-                if isinstance(task_info.task_cls, Task) 
-                else task_info.task_cls(args.args)
-            )
+            task_info = TaskDag.get_task_reg_info(task_name)
+            if isinstance(task_info.task_cls, Task):
+                task_ins = task_info.task_cls
+            else:
+                task_ins = task_info.task_cls(args)
             
-            task_ins.init(task_name, task_index, recv, args.send_queue)
+            task_ins.init(task_name, task_index, recv, send_queue)
             
-            for depends_name in args.src_dag.get_depends_data_names(task_name):
+            for depends_name in TaskDag.get_depends_data_names(task_name):
                 if depends_name in run_res_data:
-                    task_ins.set_depends_result(depends_name, run_res_data.get(depends_name))
-            
+                    task_ins.set_depends_result(depends_name, run_res_data.get(depends_name, None))
             task_res = task_ins.run()
             
-            for output_name in args.src_dag.get_outputs_data_names(task_name):
-                run_res_data[output_name] = task_res
+            for output_name in TaskDag.get_outputs_data_names(task_name):
+                run_res_data.setdefault(output_name, task_res)
             
-            finished_sync(task_name, next_task_name)
-        except OtherTaskError:
-            error_sync(task_name)
-            finished_sync(task_name, next_task_name, after_error=True)
-            if args.args.log_level == 'verbose':
+            # 等所有进程全部结束
+            finished_sync(task_name, task_index, next_task_name)
+        except OtherTaskError as e:
+            error_sync(task_name, task_index, None)
+            finished_sync(task_name, task_index, next_task_name, after_error=True)
+            if args.log_level == 'verbose':
                 break
         except Exception as e:
-            error_sync(task_name, str(e))
-            finished_sync(task_name, next_task_name, after_error=True)
+            error_sync(task_name, task_index, str(e))
+            finished_sync(task_name, task_index, next_task_name, after_error=True)
             logger.exception(f'{task_name}-{task_index} error. {str(e)}')
-            if args.args.log_level == 'verbose':
-                crash(task_name)
+            if args.log_level == 'verbose':
+                crash(task_name, task_index)
                 raise
 
 

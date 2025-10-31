@@ -72,6 +72,7 @@ class ProcessorReq(ProcessorBase):
         batch_data_df = data_df[data_df["name"].isin(["BatchSchedule", "modelExec", "batchFrameworkProcessing",
                                                       "Execute", "preprocess", "forward"])]
 
+
         # 先不考虑 batch_id 重复的情况
         batch_id_df = batch_data_df["res_list"].map(str)
 
@@ -82,7 +83,7 @@ class ProcessorReq(ProcessorBase):
         right_role_batch_type = role_batch_type.isna()  # 没有PD分离的数据
         right_iter_batch_type = iter_batch_type == role_batch_type  # 判断正确的数据
         right_decode_batch_type = batch_data_df[(role_batch_type == 2) & (iter_batch_type == 1)] \
-                                      .groupby(['name', batch_id_df]).cumcount(ascending=False) == 0  # D节点最后一个判断为P 的数据
+            .groupby(['name', batch_id_df]).cumcount(ascending=False) == 0  # D节点最后一个判断为P 的数据
 
         right_batch_type_mask = right_role_batch_type | right_iter_batch_type | right_decode_batch_type
         batch_data_df = batch_data_df[right_batch_type_mask]
@@ -129,8 +130,8 @@ class ProcessorReq(ProcessorBase):
         if (name_or_res_not_list or "token_id_list" not in data_df or "rid_list" not in data_df):
             return req_event_df, req_attr_df, req_queue_df
 
-        # 1. 取httpReq 和 httpRes
-        # 有问题，P 节点 和D 节点的 httpReq 和 http Res 需要区分开。需要修复 todo
+        # 1. 取httpReq 和 httpRes 
+        # 有问题，P 节点 和D 节点的 httpReq 和 http Res 需要区分开。需要修复 todo 
         http_event_df = data_df[data_df["name"].isin(["httpReq", "httpRes", "decode",
                                                       "detokenize", "DecodeEnd", "sendResponse"])]
         req_event_df["rid"] = http_event_df["rid"]
@@ -138,7 +139,7 @@ class ProcessorReq(ProcessorBase):
         req_event_df["start_time"] = http_event_df["start_time"]
         req_event_df["end_time"] = http_event_df["end_time"]
         req_event_df["end_flag"] = http_event_df.get("endFlag", None)
-
+        
         rid_recv_token_map = dict()
         rid_reply_token_map = dict()
 
@@ -148,7 +149,7 @@ class ProcessorReq(ProcessorBase):
         if "replyTokenSize=" in data_df:
             reply_token_df = data_df[data_df["replyTokenSize="].notna()]
             rid_reply_token_map = reply_token_df.set_index('rid')['replyTokenSize='].to_dict()
-
+        
         req_attr_df = pd.DataFrame({'recv_token': rid_recv_token_map, 'reply_token': rid_reply_token_map})
         req_attr_df['rid'] = req_attr_df.index
 
@@ -204,24 +205,38 @@ class ProcessorReq(ProcessorBase):
 
         # 取请求到达时间和第一个迭代时间
         calc_df = req_event_df[(req_event_df["event"] == "httpReq") | (req_event_df["iter"] == 0)]
-        # 如果有detokenize/decode ，取第一个 detokenize/decode
-        first_decode = req_event_df[req_event_df["event"].isin(["detokenize", "decode"])].groupby("rid").first()
-        first_decode["rid"] = first_decode.index
 
-        # 保证 calc_df 不为空时才进行合并
+        # 取第一个 detokenize/decode
+        first_decode = (
+            req_event_df[req_event_df["event"].isin(["detokenize", "decode"])]
+            .groupby("rid")
+            .first()
+            .reset_index()
+        )
+
+        # 合并非空 DataFrame
         non_empty_dfs = [df for df in [calc_df, first_decode] if not df.empty]
-        calc_df = pd.concat(non_empty_dfs) if non_empty_dfs else calc_df
+        calc_df = pd.concat(non_empty_dfs, ignore_index=True) if non_empty_dfs else calc_df
 
-        # 如果有 sendResponse，取最后一个
-        last_send_response = req_event_df[req_event_df["event"] == "sendResponse"].groupby("rid").last()
+        # 取最后一个 sendResponse
+        last_send_response = (
+            req_event_df[req_event_df["event"] == "sendResponse"]
+            .groupby("rid")
+            .last()
+            .reset_index()
+        )
         if not last_send_response.empty:
-            last_send_response["rid"] = last_send_response.index
-            calc_df = pd.concat([calc_df, last_send_response])
+            calc_df = pd.concat([calc_df, last_send_response], ignore_index=True)
 
+        # 如果 calc_df 为空，直接返回
+        if calc_df.empty:
+            return req_ttft_df
+
+        # 按 rid 聚合
         group_by_df = calc_df.groupby("rid").agg({
             "start_time": "min",
             "end_time": "max",
-            "event": ["first", 'count']
+            "event": ["first", "count"]
         }).reset_index()
 
         group_by_df.columns = ['rid', 'start_time', 'end_time', 'event_first', 'event_count']

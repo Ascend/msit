@@ -38,6 +38,18 @@ CURVE_VIEW_NAME_LIST = {
     'request_status': 'Request_Status_curve',
     'coordinator': 'Coordinator_curve',
 }
+
+CURVE_VIEW_NAME_LIST_COMPETITION = {
+    # 折线图原始表名: 视图名称
+    'batch': 'Batch_Size_by_Batch_ID_curve',
+    'kvcache': 'Kvcache_Usage_Percent_curve',
+    'prefill_gen_speed': 'Prefill_Generate_Speed_Latency_curve',
+    'req_latency': 'Request_Latency_curve',
+    'decode_gen_speed': 'Decode_Generate_Speed_Latency_curve',
+    'first_token_latency': 'First_Token_Latency_curve',
+    'request_status': 'Request_Status_curve'
+}
+
 TABLE_DATA_VIEW_NAME_LIST = {
     # 需要以纯表显示的db中的表名: data_table中的视图名称
     # data_table中(name, view_name)都为视图名称
@@ -61,6 +73,9 @@ class ColumnConst:
     NAME_COLUMN = 'name'
     STATUS_COLUMN = 'status'
     QUEUESIZE_COLUMN = 'QueueSize='
+    FINISHED_COLUMN = "FINISHED+" # vllm数据特有
+    START_DATETIME_COLUMN = "start_datetime"
+    SCOPE_QUEUE_NAME_COLUMN = "scope#QueueName"
 
 
 def write_result_to_db(df_param_list, create_view_sql=None, table_name="", rename_cols=None):
@@ -193,16 +208,21 @@ def handle_sqlite_table_list(table_list, cursor):
 
 
 def create_sqlite_tables(table_list):
-    with db_write_lock:
-        with ms_open(visual_db_fp, "a"):
-            try:
-                conn = sqlite3.connect(visual_db_fp)
-                cursor = conn.cursor()
-                handle_sqlite_table_list(table_list, cursor)
-                conn.commit()
+    with db_write_lock, ms_open(visual_db_fp, "a"):
+        conn = None
+        cursor = None
+        try:
+            conn = sqlite3.connect(visual_db_fp)
+            cursor = conn.cursor()
+            handle_sqlite_table_list(table_list, cursor)
+            conn.commit()
+        except Exception as ex:
+            raise DatabaseError("Cannot update sqlite database when create trace table.") from ex
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
                 conn.close()
-            except Exception as ex:
-                raise DatabaseError("Cannot update sqlite database when create trace table.") from ex
 
 
 def get_db_connection():
@@ -219,11 +239,11 @@ def add_record_to_data_table(table_name, conn):
 
 
 def add_table_into_visual_db(df, table_name, allow_empty=False):
-    is_invalid = df is None or not isinstance(df, pd.DataFrame) or df.empty or len(df.columns) == 0
-    if is_invalid:
-        logger.debug("Nothing to write to table %r. DataFrame is: %s", table_name, df)
+    is_vaild_df = df is None or not isinstance(df, pd.DataFrame)
+    if is_vaild_df or df.empty or len(df.columns) == 0:
+        logger.debug("nothing to write to table %r. due to dataframe is:%s", table_name, df)
         if not allow_empty:
-            logger.warning("Nothing to write to table %r.", table_name)
+            logger.warning("nothing to write to table %r.", table_name)
         return False
 
     for col in df:
@@ -249,9 +269,8 @@ def add_table_into_visual_db(df, table_name, allow_empty=False):
 
 
 def save_dataframe_to_csv(filtered_df, output, file_name, check_columns=None, allow_empty=False):
-    should_skip_write = filtered_df is None or not isinstance(filtered_df,
-                                                              pd.DataFrame) or filtered_df.empty or output is None
-    if should_skip_write:
+    is_vaild_df = filtered_df is None or not isinstance(filtered_df, pd.DataFrame)
+    if is_vaild_df or filtered_df.empty or output is None:
         logger.debug("nothing to write to %r due to empty data : %s", file_name, filtered_df)
         if not allow_empty:
             logger.warning("nothing to write to %r .", file_name)
@@ -435,7 +454,7 @@ def check_domain_valid(df, domain_list, exporter_name):
     # 检查domain_list中的每个domain是否都存在
     missing_domains = [domain for domain in domain_list if domain not in current_domains]
 
-    if missing_domains:
+    if len(missing_domains) == len(domain_list):
         logger.warning(f"Exporter {exporter_name} will skip, the prof data of domain {missing_domains} is missing")
 
     return True

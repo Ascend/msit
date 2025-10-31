@@ -28,17 +28,17 @@ class Task():
     @classmethod
     def outputs(cls):
         return [cls.name]
-
+    
     @classmethod
     def register(cls, name=None):
         return register(name)
-
+    
     def init(self, task_name, task_index, recv_msg, send_queue):
         self.task_name = task_name
         self.task_index = task_index
         self.recv_msg = recv_msg
         self.send_queue = send_queue
-
+        
     def gather(self, data, dst=0):
         # 只有dst 会等待
         self.send_queue.put((self.task_name, self.task_index, "gather", (dst, data)))
@@ -47,32 +47,32 @@ class Task():
             return gather_data
         else:
             return None
-
+    
     def all_gather(self, data):
         # 所有都会等待
         self.send_queue.put((self.task_name, self.task_index, "all_gather", data))
         _, gather_data = self.recv_msg()
         return gather_data
-
+    
     def all_gather_async(self, data):
         # 不会等待
         self.send_queue.put((self.task_name, self.task_index, "all_gather", data))
-
+    
     def broadcast(self, src=0, data=None):
         # 所有都会等待, 发送会虽然有自己的数据，但是还是等待
         if self.task_index == src:
             self.send_queue.put((self.task_name, self.task_index, "broadcast", data))
         _, broadcast_data = self.recv_msg()
         return broadcast_data
-
+    
     def send(self, data=None, dst=0):
         # 发送数据，异步，不等待
         self.send_queue.put((self.task_name, self.task_index, "send_to", (dst, data)))
-
+        
     def send_finish(self):
         # 所有进程都会等待全部FINISHED
         return self.all_gather(DefaultValue.SEND_FINISHED)
-
+    
     def recv_until_finish(self):
         # 一直收数据，直到收到FINISHED 消息
         self.all_gather_async(DefaultValue.SEND_FINISHED)
@@ -81,7 +81,7 @@ class Task():
             msg, recv_data = self.recv_msg()
             _, data = recv_data
             yield data
-
+    
     @abstractmethod
     def run(self):
         pass

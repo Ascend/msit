@@ -2,13 +2,15 @@
 
 import json
 import re
-from pathlib import Path
 
+
+from pathlib import Path
 import pandas as pd
 
 
 from ms_service_profiler.data_source.base_data_source import BaseDataSource, Task
 from ms_service_profiler.utils.error import LoadDataError
+from ms_service_profiler.utils.log import logger
 
 
 @Task.register("data_source:db")
@@ -134,7 +136,15 @@ class DBDataSource(BaseDataSource):
         df['end_datetime'] = pd.to_datetime(df['end_time'], unit='us', utc=True).dt.tz_convert(
             'Asia/Shanghai').dt.strftime("%Y-%m-%d %H:%M:%S:%f")
 
-        # 定义一个函数来处理消息字段
+        # 定义一个安全的JSON解析函数
+        def safe_json_loads(message_str):
+            try:
+                return json.loads(message_str)
+            except json.JSONDecodeError as e:
+                # 如果JSON解析失败，返回空字典或原始字符串，取决于需求
+                logger.warning(f"Warning: Failed to parse JSON: {message_str}. Error: {e}")
+                return {}
+        # 处理消息字段
         df['message'] = (
             df['message']
             .str.replace(r'\^', '"', regex=True)
@@ -142,7 +152,7 @@ class DBDataSource(BaseDataSource):
                 lambda s: s.str.match(r'^{.*}$'),
                 other=lambda s: "{" + s.str.replace(r",$", "", regex=True) + "}"
             )
-            .apply(json.loads)
+            .apply(safe_json_loads)
         )
 
         # 将消息字段展开为独立的列
@@ -152,7 +162,16 @@ class DBDataSource(BaseDataSource):
         all_data_df = df.join(msg_df)
 
         # 在最前面添加hostname列，并将其重命名为hostuid
-        all_data_df.insert(0, 'hostuid', df['hostname'])
+        all_data_df.insert(0, 'hostuid', df.get('hostname', 'None'))
+
+        # 六壬仿真场景，使用logical信息替换原本的时间，pid信息
+        is_simulation_profiling = isinstance(meta, dict) and meta.get("service_type") == "liuren_simulation"
+        simulation_required_cols = ["logical_start_time=", "logical_end_time=", "logical_pid="]
+        if is_simulation_profiling and set(simulation_required_cols).issubset(all_data_df.columns):
+            all_data_df["start_time"] = all_data_df["logical_start_time="]
+            all_data_df["end_time"] = all_data_df["logical_end_time="]
+            all_data_df["pid"] = all_data_df["logical_pid="]
+            all_data_df["during_time"] = all_data_df["end_time"] - all_data_df["start_time"]
 
         # 返回包含处理后数据的字典
         return dict(
@@ -168,3 +187,4 @@ class DBDataSource(BaseDataSource):
     def load(self, prof_path):
         db_files = prof_path
         return self.process(db_files)
+
