@@ -6,6 +6,7 @@ from ms_service_profiler.exporters.base import ExporterBase
 from ms_service_profiler.utils.log import logger
 from ms_service_profiler.exporters.utils import write_result_to_db, CURVE_VIEW_NAME_LIST, check_domain_valid
 from ms_service_profiler.utils.timer import timer
+from ms_service_profiler.parse_helper.utils import convert_timestamp
 
 
 def is_contained_vaild_iter_info(rid_list, token_id_list):
@@ -213,7 +214,7 @@ class ExporterLatency(ExporterBase):
                 p50, p90, p99 = np.round(np.percentile(current_data, [50, 90, 99]), 2)
                 avg = round(np.average(current_data), 2)
 
-                percentile_views.append({'timestamp': end_time,
+                percentile_views.append({'timestamp': convert_timestamp(end_time),
                                          'avg': avg, 'p99': p99, 'p90': p90, 'p50': p50})
 
         return percentile_views
@@ -320,10 +321,10 @@ CREATE_PREFILL_GEN_SPEED_VIEW_SQL = f"""
     )
     SELECT
         datetime as time,
-        cast(avg as REAL) as "avg",
-        cast(p99 as REAL) as "p99",
-        cast(p90 as REAL) as "p90",
-        cast(p50 as REAL) as "p50"
+        cast(avg as REAL) as "avg(ms)",
+        cast(p99 as REAL) as "p99(ms)",
+        cast(p90 as REAL) as "p90(ms)",
+        cast(p50 as REAL) as "p50(ms)"
     FROM
         converted
     ORDER BY
@@ -345,10 +346,10 @@ CREATE_REQUEST_LATENCY_SQL = f"""
     )
     SELECT
         datetime as time,
-        cast(avg as REAL) as "avg",
-        cast(p99 as REAL) as "p99",
-        cast(p90 as REAL) as "p90",
-        cast(p50 as REAL) as "p50"
+        round(cast(avg as REAL)/1000, 4) as "avg(ms)",
+        round(cast(p99 as REAL)/1000, 4) as "p99(ms)",
+        round(cast(p90 as REAL)/1000, 4) as "p90(ms)",
+        round(cast(p50 as REAL)/1000, 4) as "p50(ms)"
     FROM
         converted
     ORDER BY
@@ -366,10 +367,10 @@ CREATE_DECODE_GEN_SPEED_SQL = f"""
     )
     SELECT
         datetime as time,
-        cast(avg as REAL) as "avg",
-        cast(p99 as REAL) as "p99",
-        cast(p90 as REAL) as "p90",
-        cast(p50 as REAL) as "p50"
+        round(cast(avg as REAL)/1000, 4) as "avg(ms)",
+        round(cast(p99 as REAL)/1000, 4) as "p99(ms)",
+        round(cast(p90 as REAL)/1000, 4) as "p90(ms)",
+        round(cast(p50 as REAL)/1000, 4) as "p50(ms)"
     FROM
         converted
     ORDER BY
@@ -387,10 +388,10 @@ CREATE_FIRST_TOKEN_LATENCY_SQL = f"""
     )
     SELECT
         datetime as time,
-        cast(avg as REAL) as "avg",
-        cast(p99 as REAL) as "p99",
-        cast(p90 as REAL) as "p90",
-        cast(p50 as REAL) as "p50"
+        cast(avg as REAL) as "avg(ms)",
+        cast(p99 as REAL) as "p99(ms)",
+        cast(p90 as REAL) as "p90(ms)",
+        cast(p50 as REAL) as "p50(ms)"
     FROM
         converted
     ORDER BY
