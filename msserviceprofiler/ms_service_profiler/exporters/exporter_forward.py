@@ -8,6 +8,7 @@ from ms_service_profiler.constant import US_PER_MS
 from ms_service_profiler.utils.log import logger
 from ms_service_profiler.utils.timer import timer
 
+
 REQUIED_NAME = set(["forward"])
 REMAME_COLUMNS = {
     "start_time": "start_time(ms)",
@@ -25,13 +26,13 @@ class ExporterForwardData(ExporterBase):
     @classmethod
     def initialize(cls, args):
         cls.args = args
-
+    
     @classmethod
     @timer(logger.debug)
     def export(cls, data) -> None:
         if "csv" not in cls.args.format and "db" not in cls.args.format:
             return
-
+        
         df = data.get("tx_data_df")
         if df is None:
             logger.warning("There is no service prof data, froward data will not be generated. please check")
@@ -50,13 +51,13 @@ class ExporterForwardData(ExporterBase):
             return
 
         forward_df = get_filter_forward_df(REQUIED_NAME, df)
-
+        
         # 获取batch_type 和 batch_size
         forward_df = get_batch_info(forward_df, batch_name)
-
+        
         # 计算 relative_time, bubble_time
         forward_df = get_relative_and_bubble(forward_df)
-
+        
         forward_df = forward_df.drop(columns=DELETE_COLUMNS)
         forward_df["forward_iter"] = forward_df.groupby("prof_id").cumcount() + 1
         forward_df = forward_df.sort_values(by=["start_time"]).reset_index(drop=True)
@@ -137,7 +138,7 @@ def get_batch_info(forward_df, batch_name):
 
         for idx in batch_name_indices:
             temp_result.loc[(temp_result.index > idx), "batch_type"] = group.loc[idx, "batch_type"]
-
+        
         # 将处理后的组添加到最终结果中
         result.append(temp_result)
 

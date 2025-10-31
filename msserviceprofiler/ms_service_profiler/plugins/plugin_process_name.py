@@ -32,7 +32,7 @@ class PluginProcessName(PluginBase):
             pid_candidates[0].add(row.pid)
             pid_candidates[1].add((row.pid, row.hostname))
             pid_label_map[row.pid] = dict(hostname=row.hostname)
-
+        
         if len(pid_candidates[0]) == len(tx_data_pid_df):
             tx_data_df['pid'] = tx_data_df['pid']
         elif len(pid_candidates[1]) == len(tx_data_pid_df):

@@ -12,7 +12,3 @@ def check_input_path_valid(path):
     if not file_stat.is_dir:
         raise argparse.ArgumentTypeError(f"Path is not a valid directory: {path}")
     return path
-
-
-VERSION = 'HEAD e242061ba69a82ba8edac21728c700faa4493033 2025-09-24 17:43:16 +0800'
-

@@ -1,6 +1,6 @@
 # Copyright Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
-from collections import defaultdict
 from enum import IntEnum, auto
+from collections import defaultdict
 import numpy as np
 import pandas as pd
 
@@ -25,9 +25,9 @@ class ProcessorEplbObserve(ProcessorBase):
         expert_map = {}
         for instance_name, pod_name_list in instance_pod_map.items():
             pod_name = pod_name_list[0]
-            instance_expert_num = \
-                len(pod_name_list) * \
-                len(expert_hot_by_instance[instance_name]) * \
+
+            # 每个instance的专家数 = instance中的rank数 * 每个rank的专家数
+            instance_expert_num = len(expert_hot_by_instance[instance_name]) * \
                 len(expert_hot_by_instance[instance_name][0][0][0][0])
 
             layer_num = len(list(expert_routing[pod_name].values())[0][0])
@@ -71,7 +71,6 @@ class ProcessorEplbObserve(ProcessorBase):
                 if not isinstance(item, int):
                     raise ValueError("Illegal markId type, please check profiling input.")
             mark_id_list.append(len(df_by_pid) - 1)
-            mark_id_list.append(0)
             mark_id_list = list(set(mark_id_list))
             mark_id_list.sort()
             split_expert_hot = []
@@ -99,7 +98,7 @@ class ProcessorEplbObserve(ProcessorBase):
             logger.warning("Input data is None, skip eplb_observe analysis.")
             return None
 
-        data = [item for item in data if not item.empty]
+        data = [item for item in data if isinstance(item, pd.DataFrame) and not item.empty]
 
         tx_data_df = pd.concat(data)
 
@@ -211,7 +210,8 @@ def transfer_expert_hot(expert_hot, instance_pod_map):
         for pod_name in pod_name_list:
             instance_expert_hot_dict.update(expert_hot[pod_name])
 
-        instance_expert_hot_list = [instance_expert_hot_dict.get(ra, None) for ra in sorted(instance_expert_hot_dict)]
+        instance_expert_hot_list = [instance_expert_hot_dict.get(rank, None) \
+            for rank in sorted(instance_expert_hot_dict)]
         res[instance_name] = instance_expert_hot_list
     return res
 

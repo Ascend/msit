@@ -10,14 +10,14 @@ from ms_service_profiler.utils.timer import timer
 
 class ReqStatus(Enum):
     WAITING = 0       # Waiting to Prefill
-    PENDING = 1       # Waiting to Decode  KV Cache not swapped  Associated with Instance
-    RUNNING = 2       # Executing Prefill or Decode  Associated with Instance
-    RUNNING2 = 3      # Executing Prefill or Decode  Associated with Instance  using in async schedule
-    SWAPPED = 4       # Waiting to Decode  KV Cache swapped
+    PENDING = 1       # Waiting to Decode  KV Cache not swapped  Associated with Instance
+    RUNNING = 2       # Executing Prefill or Decode  Associated with Instance
+    RUNNING2 = 3      # Executing Prefill or Decode  Associated with Instance  using in async schedule
+    SWAPPED = 4       # Waiting to Decode  KV Cache swapped
     RECOMPUTE = 5     # KV cache is released and will later be WAITING
     SUSPENDED = 6     # Waiting for the next INFER control calling to make it resume
     END = 7           # Execute end
-    STOP = 8          # User Control State  Stop Sequence iteration
+    STOP = 8          # User Control State  Stop Sequence iteration
     PREFILL_HOLD = 9  # Waiting for the decode to pull cache
     END_PRE = 10      # Execute end using in async schedule
     STOP_PRE = 11     # Waiting for RUNNING2 request back in async schedule
@@ -30,6 +30,7 @@ class ReqStatus(Enum):
 class PluginReqStatus(PluginBase):
     name = "plugin_req_status"
     depends = ["plugin_common"]
+    _warned_no_request_status = False
 
     @classmethod
     @timer(logger.debug)
@@ -57,10 +58,11 @@ class PluginReqStatus(PluginBase):
             # 筛选出tx_data_df中真实存在的列
             valid_cols = [col for col in vllm_req_status if col in tx_data_df.columns]
 
-            if not valid_cols:
+            if not valid_cols and not cls._warned_no_request_status:
                 logger.warning(
                     "No 'request status' is found in prof data, if this is unexpected, please check"
                 )
+                cls._warned_no_request_status = True
                 return data
 
             tx_data_df = rename_req_status(tx_data_df, valid_cols)

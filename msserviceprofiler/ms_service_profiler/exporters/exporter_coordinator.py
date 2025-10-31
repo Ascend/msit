@@ -408,7 +408,7 @@ class ExporterCoordinator(ExporterBase):
     @classmethod
     def export_coordinator_data(cls, final_stats):
         """
-        将 coordinator 数据导出到 DB 或 CSV（根据 self.args.format）
+        将 coordinator 数据导出到 DB 或 CSV（根据 self 属性 args 中的 format）
         """
         if 'db' in cls.args.format:
             df_param_list = [
