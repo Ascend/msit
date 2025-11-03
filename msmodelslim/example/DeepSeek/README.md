@@ -103,6 +103,7 @@
 | from_bf16     | 指定原模型为BF16权重                   | 不开启                                                    | 可选参数；<br>开启即指定，不可与from_fp8共存。                                                         |
 | mindie_format | 非多模态模型量化后的权重配置文件是否兼容MindIE现有版本 | False                                                  | 开启`mindie_format`时保存的量化权重格式能够兼容MindIE 2.1.RC1及之前的版本。                                  |
 | quant_mtp     | 指定量化模式                         | none                                                   | 可选参数；<br>none: 不保存mtp权重；<br>float: 保存mtp浮点权重；<br>mix: 保存mtp混合量化权重。                    |
+| trust_remote_code | 是否信任自定义代码                      | False                                                  | 可选参数；<br>指定`trust_remote_code=True`让修改后的自定义代码文件能够正确地被加载(请确保所加载的自定义代码文件来源可靠，避免潜在的安全风险)。                                             |
 
 #### quant_deepseek_w8a8.py 额外量化参数
 
@@ -187,14 +188,14 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
 
 - 生成DeepSeek-V3模型 W8A8 混合量化权重
   ```shell
-  python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_path} --batch_size 4
+  python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_path} --batch_size 4 --trust_remote_code True
   ```
 
 ##### <span id="deepseek-v3-w8a8-fa3-混合量化">DeepSeek-V3 W8A8 + FA3 混合量化</span>
 
 - 生成DeepSeek-V3模型 W8A8 + FA3 混合量化权重
   ```shell
-  python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_path} --batch_size 4 --fa_quant
+  python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_path} --batch_size 4 --fa_quant --trust_remote_code True
   ```
 
 #### DeepSeek-V3.1系列
@@ -211,7 +212,8 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
   --calib_dataset ../common/deepseek_calib_prompt_50_v3_1.json \
   --anti_method m4 \
   --quant_mtp mix \
-  --rot
+  --rot \
+  --trust_remote_code True
   ```
 
 ##### <span id="deepseek-v31-w8a8c8-混合量化--mtp-量化">DeepSeek-V3.1 W8A8C8 混合量化 + MTP 量化</span>
@@ -227,14 +229,15 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
   --anti_method m4 \
   --quant_mtp mix \
   --rot \
-  --fa_quant
+  --fa_quant \
+  --trust_remote_code True
   ```
 
 ##### <span id="deepseek-v31-w4a8-混合量化">DeepSeek-V3.1 W4A8 混合量化</span>
 
 - 生成DeepSeek-V3.1 模型 W4A8 混合量化权重
   ```shell
-  python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} --anti_dataset ../common/deepseek_anti_prompt_50_v3_1.json --calib_dataset ../common/deepseek_calib_prompt_50_v3_1.json --quant_mtp mix  --batch_size 16
+  python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} --anti_dataset ../common/deepseek_anti_prompt_50_v3_1.json --calib_dataset ../common/deepseek_calib_prompt_50_v3_1.json --quant_mtp mix  --batch_size 16 --trust_remote_code True
   ```
 
 ##### <span id="deepseek-v31-w4a8c8">DeepSeek-V3.1 W4A8C8 per-channel 量化</span>
@@ -264,14 +267,14 @@ DeepSeek-R1模型较大，且存在需要手动适配的点，为了避免浪费
 
 - 生成DeepSeek-R1模型 W8A8 混合量化权重
   ```shell
-  python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_path} --batch_size 4
+  python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_path} --batch_size 4 --trust_remote_code True
   ```
 
 ##### <span id="deepseek-r1-w8a8-fa3-混合量化">DeepSeek-R1 W8A8 + FA3 混合量化</span>
 
 - 生成DeepSeek-R1模型 W8A8 + FA3 混合量化权重
   ```shell
-  python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_path} --batch_size 4 --fa_quant
+  python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_path} --batch_size 4 --fa_quant --trust_remote_code True
   ```
 
 ##### <span id="deepseek-r1-w8a8-动态量化">DeepSeek-R1 W8A8 动态量化</span>
@@ -280,7 +283,7 @@ DeepSeek-R1模型较大，且存在需要手动适配的点，为了避免浪费
 
 ```shell
 # 使用 disable_anti 参数可以减少量化所需时间
-python3 quant_deepseek_W8A8.py --model_path ${model_path} --save_path ${save_path} --dynamic --disable_anti
+python3 quant_deepseek_W8A8.py --model_path ${model_path} --save_path ${save_path} --dynamic --disable_anti --trust_remote_code True
 ```
 
 ##### <span id="deepseek-r1-w4a8-混合量化">DeepSeek-R1 W4A8 混合量化(前三层 mlp：w8a8 dynamic 量化，MLA&共享专家:w8a8量化，路由专家:w4a8 dynamic量化)</span>
@@ -296,17 +299,17 @@ python3 quant_deepseek_W8A8.py --model_path ${model_path} --save_path ${save_pat
 - 生成DeepSeek-R1模型 W4A8 混合量化权重
   ```shell
   # 下面命令默认使用 10 条校准集
-  python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} 
+  python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} --trust_remote_code True
   
   # 如果想要获取更高的精度，可以使用 50 条校准集，如果显存够用可以尝试 16 batch_size 加载校准集
-  python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} --anti_dataset ../common/deepseek_anti_prompt_50.json --calib_dataset ../common/deepseek_calib_prompt_50.json  --batch_size 16
+  python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} --anti_dataset ../common/deepseek_anti_prompt_50.json --calib_dataset ../common/deepseek_calib_prompt_50.json  --batch_size 16 --trust_remote_code True
   ```
 
 ##### <span id="deepseek-r1-w8a8-混合量化--mtp-量化">DeepSeek-R1 W8A8 混合量化 + MTP 量化</span>
 
 - 生成DeepSeek-R1模型 W8A8 MTP 量化权重
   ```shell
-  python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_path} --batch_size 4 --quant_mtp mix
+  python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_path} --batch_size 4 --quant_mtp mix --trust_remote_code True
   ```
 
 #### DeepSeek-R1-0528系列
@@ -346,7 +349,8 @@ python3 quant_deepseek_W8A8.py --model_path ${model_path} --save_path ${save_pat
   --calib_dataset ../common/deepseek_calib_prompt_0528.json \
   --anti_method m4 \
   --quant_mtp mix \
-  --rot
+  --rot \
+  --trust_remote_code True
   ```
 ##### <span id="deepseek-r1-0528-w8a8c8-混合量化--mtp-量化">DeepSeek-R1 0528 W8A8C8 混合量化 + MTP 量化</span>
 
@@ -361,7 +365,8 @@ python3 quant_deepseek_W8A8.py --model_path ${model_path} --save_path ${save_pat
   --anti_method m4 \
   --quant_mtp mix \
   --rot \
-  --fa_quant
+  --fa_quant \
+  --trust_remote_code True
   ```
 
 ##### DeepSeek-V3/R1量化QA

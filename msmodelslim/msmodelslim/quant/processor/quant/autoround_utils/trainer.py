@@ -1,4 +1,4 @@
-#  Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
+#  Copyright (c) 2023 Intel Corporation
 
 import copy
 from collections import deque, UserDict
@@ -264,9 +264,9 @@ class BlockQuantTrainer:
 
                 if self.amp:
                     with autocast(device_type=device.split(":")[0], dtype=self.amp_dtype):
-                        loss = mse_loss(output_q, current_output)  # pylint: disable=not-callable
+                        loss = mse_loss(output_q, current_output)
                 else:
-                    loss = mse_loss(  # pylint: disable=not-callable
+                    loss = mse_loss(
                         output_q.to(torch.float32), current_output.to(torch.float32)
                     )
 

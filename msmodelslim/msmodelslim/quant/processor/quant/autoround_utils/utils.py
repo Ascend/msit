@@ -1,4 +1,4 @@
-#  Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
+#  Copyright (c) 2023 Intel Corporation
 
 import torch
 
@@ -151,7 +151,7 @@ def quant_tensor_asym(
         wmin_tmp = tensor_min
         wmax_tmp = tensor_max
 
-    wmin_abs = -(wmin_tmp * min_scale)  # pylint: disable=E1130
+    wmin_abs = -(wmin_tmp * min_scale)
     wmax_abs = wmax_tmp * max_scale
     max_v = (2 * (wmax_abs < wmin_abs).int() - 1) * torch.max(wmax_abs, wmin_abs)
     scale = (max_v / maxq).to(scale_dtype)
@@ -226,7 +226,7 @@ def quant_tensor_sym(
         wmin_tmp = tensor_min
         wmax_tmp = tensor_max
 
-    wmin_abs = -(wmin_tmp * min_scale)  # pylint: disable=E1130
+    wmin_abs = -(wmin_tmp * min_scale)
     wmax_abs = wmax_tmp * max_scale
     max_v = (2 * (wmax_abs < wmin_abs).int() - 1) * torch.max(wmax_abs, wmin_abs)
     scale = (max_v / maxq).to(scale_dtype)
