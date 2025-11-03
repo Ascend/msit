@@ -32,9 +32,9 @@ def parse_args():
     parser.add_argument('--model_path', type=str, help="The path of float model and tokenizer"),
     parser.add_argument('--save_path', type=str, help="The path to save quant model"),
     parser.add_argument('--layer_count', type=int, default=0, help="Layer count when loading model")
-    parser.add_argument('--anti_dataset', type=str, default="./anti_prompt.json",
+    parser.add_argument('--anti_dataset', type=str, default="../common/deepseek_anti_prompt.json",
                         help="The calib data for anti outlier")
-    parser.add_argument('--calib_dataset', type=str, default="./calib_prompt.json",
+    parser.add_argument('--calib_dataset', type=str, default="../common/deepseek_calib_prompt.json",
                         help="The calib data for calibration")
     parser.add_argument('--batch_size', type=int, default=1, help="Batch size for anti and calibration")
     parser.add_argument('--from_fp8', action='store_true', help="Origin model is of fp8")

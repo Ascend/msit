@@ -182,8 +182,8 @@
   ```shell
   python3 quant_qwen_pdmix.py --model_path {浮点权重路径} \
   --save_directory {W8A8-pdmix量化权重路径} \
-  --calib_file ./calib_data/calib_prompt_72b_pdmix.json  \
-  --anti_calib_file ./calib_data/anti_prompt_72b_pdmix.json \
+  --calib_file ../common/qwen_calib_prompt_72b_pdmix.json  \
+  --anti_calib_file ../common/qwen_anti_prompt_72b_pdmix.json \
   --device_type npu \
   --anti_method m6 \
   --act_method 2 \
@@ -208,7 +208,7 @@
             --model_path {浮点权重路径} \
             --save_directory {量化权重路径} \
             --device_type npu \
-            --calib_file ./calib_data/mix_dataset.json \
+            --calib_file ../common/qwen_mix_dataset.json \
             --w_bit 4 \
             --a_bit 16 \
             --is_lowbit True \
@@ -266,7 +266,7 @@
 
 ##### <span id="qwen3-32b-w4a4-flatquant-dynamic量化">Qwen3-32b W4A4 Flatquant Dynamic量化</span> 
   ```shell
-  python3 w4a4.py --model_path {浮点权重路径} --save_directory {w4a4量化权重路径} --calib_file ./calib_data/qwen3_cot_w4a4.json --trust_remote_code True --batch_size 1
+  python3 w4a4.py --model_path {浮点权重路径} --save_directory {w4a4量化权重路径} --calib_file ../common/qwen_qwen3_cot_w4a4.json --trust_remote_code True --batch_size 1
   ```
 ##### <span id="qwen3-14b-w8a8量化">Qwen3-14B W8A8量化</span>
 

@@ -157,8 +157,8 @@
   ```shell
   python3 quant_llama.py --model_path {浮点权重路径} \
   --save_directory {W8A8-pdmix量化权重路径} \
-  --calib_file ./calib_data/calib_prompt.jsonl  \
-  --anti_calib_file ./calib_data/anti_prompt.jsonl \
+  --calib_file ../common/llama_calib_prompt.jsonl  \
+  --anti_calib_file ../common/llama_anti_prompt.jsonl \
   --device_type npu \
   --anti_method m6 \
   --act_method 3 \
@@ -170,12 +170,12 @@
 
 ##### <span id="llama31-8b-instruct-w4a8_dynamic量化">LLaMA3.1-8B-Instruct W4A8_DYNAMIC量化</span>
   ```shell
-  python3 quant_llama.py --model_path {浮点权重路径} --save_directory {量化权重路径} --w_bit 4 --device_type npu --anti_method m3 --act_method 1 --model_type llama3.1_instruct --is_lowbit True --mm_tensor False --open_outlier False --group_size 32 --is_dynamic True --anti_calib_file ./calib_data/anti_prompt.json --trust_remote_code True
+  python3 quant_llama.py --model_path {浮点权重路径} --save_directory {量化权重路径} --w_bit 4 --device_type npu --anti_method m3 --act_method 1 --model_type llama3.1_instruct --is_lowbit True --mm_tensor False --open_outlier False --group_size 32 --is_dynamic True --anti_calib_file ../common/llama_anti_prompt.json --trust_remote_code True
   ```
 
 ##### <span id="llama31-70b-instruct-w4a8_dynamic量化">LLaMA3.1-70B-Instruct W4A8_DYNAMIC量化</span>
   ```shell
-  python3 quant_llama.py --model_path {浮点权重路径} --save_directory {量化权重路径} --w_bit 4 --device_type npu --anti_method m3 --act_method 1 --model_type llama3.1_instruct --is_lowbit True --mm_tensor False --open_outlier False --group_size 32 --is_dynamic True --anti_calib_file ./calib_data/anti_prompt.json --trust_remote_code True
+  python3 quant_llama.py --model_path {浮点权重路径} --save_directory {量化权重路径} --w_bit 4 --device_type npu --anti_method m3 --act_method 1 --model_type llama3.1_instruct --is_lowbit True --mm_tensor False --open_outlier False --group_size 32 --is_dynamic True --anti_calib_file ../common/llama_anti_prompt.json --trust_remote_code True
   ```
 
 
