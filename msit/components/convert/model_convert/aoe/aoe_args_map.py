@@ -45,14 +45,6 @@ aoe_args = [
         DESC: "Single op definition file."
     },
     {
-        NAME: '--ip',
-        DESC: "Ncs server ip.",
-    },
-    {
-        NAME: '--port',
-        DESC: "Ncs server port. The value range is [6000-10000].\n The default value is 8000.",
-    },
-    {
         NAME: '--input_format',
         DESC: 'Format of input data. E.g.: "NCHW"'
     },
