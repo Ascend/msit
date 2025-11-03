@@ -1,6 +1,17 @@
-# !/usr/bin/python3.7
 # -*- coding: utf-8 -*-
 # Copyright (c) Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import os
 import subprocess
@@ -156,6 +167,9 @@ def ais_bench_exists():
 
 
 def get_npu_total_memory(device_id: int = 0):
+    if not isinstance(device_id, int):
+        if not device_id.isdigit():
+            raise ValueError(f"device_id {device_id} is not a digit.")
     cmd = ["npu-smi", "info", "-t", "usages", "-i", str(device_id)]
     memory_key_word = _KEY_WORD + " Capacity(MB)"
     usage_rate_key_word = _KEY_WORD + " Usage Rate(%)"
