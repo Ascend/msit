@@ -28,9 +28,9 @@ def parse_args():
     parser.add_argument('--model_path', type=str, help="The path of float model and tokenizer"),
     parser.add_argument('--save_path', type=str, help="The path to save quant model"),
     parser.add_argument('--layer_count', type=int, default=0, help="Layer count when loading model")
-    parser.add_argument('--anti_dataset', type=str, default="./anti_prompt_50.json",
+    parser.add_argument('--anti_dataset', type=str, default="../common/qwen3-moe_anti_prompt_50.json",
                         help="The calib data for anti outlier")
-    parser.add_argument('--calib_dataset', type=str, default="./calib_prompt_50.json",
+    parser.add_argument('--calib_dataset', type=str, default="../common/qwen3-moe_calib_prompt_50.json",
                         help="The calib data for calibration")
     parser.add_argument('--batch_size', type=int, default=4, help="Batch size for anti and calibration")
     parser.add_argument('--mindie_format', action="store_true", help="Enable only mindie config save")

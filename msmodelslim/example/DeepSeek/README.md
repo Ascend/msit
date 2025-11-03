@@ -94,10 +94,10 @@
 | 参数名           | 含义                             | 默认值                                                    | 使用方法                                                                                  |
 |---------------|--------------------------------|--------------------------------------------------------|---------------------------------------------------------------------------------------|
 | model_path    | 浮点权重路径                         | 无默认值                                                   | 必选参数；<br>输入DeepSeek权重目录路径。                                                            |
-| save_path     | 量化权重保存路径                         | 无默认值                                                   | 必选参数；<br>输出量化结果目录路径。                                                                  |
-| layer_count   | 加载模型时的层数                         | 0                                                   | 可选参数；<br>用于调试，实际量化的层数。                                                                |
-| anti_dataset  | 离群值校准数据集路径                         | ./anti_prompt.json                                                   | 可选参数；<br>离群值抑制校准集路径。                                                                  |
-| calib_dataset | 校准数据集文件路径                        | ./calib_prompt.json                                                   | 可选参数；<br>量化校准集路径。                                                                     |
+| save_path     | 量化权重保存路径                       | 无默认值                                                   | 必选参数；<br>输出量化结果目录路径。                                                                  |
+| layer_count   | 加载模型时的层数                       | 0                                                      | 可选参数；<br>用于调试，实际量化的层数。                                                                |
+| anti_dataset  | 离群值校准数据集路径                     | ../common/deepseek_anti_prompt.json                                     | 可选参数；<br>离群值抑制校准集路径。                                                                  |
+| calib_dataset | 校准数据集文件路径                      | ../common/deepseek_calib_prompt.json                                    | 可选参数；<br>量化校准集路径。                                                                     |
 | batch_size    | 输入batch size                   | 4(quant_deepseek_w8a8.py)<br>1(quant_deepseek_w4a8.py) | 可选参数；<br>生成量化校准数据时使用的batch size。batch size越大，校准速度越快，但也要求更多的显存和内存，如资源受限，请降低batch size。 |
 | from_fp8      | 指定原模型为FP8权重                    | 不开启                                                    | 可选参数；<br>开启即指定，不可与from_bf16共存。                                                        |
 | from_bf16     | 指定原模型为BF16权重                   | 不开启                                                    | 可选参数；<br>开启即指定，不可与from_fp8共存。                                                         |
@@ -207,8 +207,8 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
   --model_path ${model_path} \
   --save_path ${save_path} \
   --batch_size 8 \
-  --anti_dataset ./anti_prompt_50_v3_1.json \
-  --calib_dataset ./calib_prompt_50_v3_1.json \
+  --anti_dataset ../common/deepseek_anti_prompt_50_v3_1.json \
+  --calib_dataset ../common/deepseek_calib_prompt_50_v3_1.json \
   --anti_method m4 \
   --quant_mtp mix \
   --rot
@@ -222,8 +222,8 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
   --model_path ${model_path} \
   --save_path ${save_path} \
   --batch_size 8 \
-  --anti_dataset ./anti_prompt_50_v3_1.json \
-  --calib_dataset ./calib_prompt_50_v3_1.json \
+  --anti_dataset ../common/deepseek_anti_prompt_50_v3_1.json \
+  --calib_dataset ../common/deepseek_calib_prompt_50_v3_1.json \
   --anti_method m4 \
   --quant_mtp mix \
   --rot \
@@ -234,7 +234,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
 
 - 生成DeepSeek-V3.1 模型 W4A8 混合量化权重
   ```shell
-  python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} --anti_dataset ./anti_prompt_50_v3_1.json --calib_dataset ./calib_prompt_50_v3_1.json --quant_mtp mix  --batch_size 16
+  python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} --anti_dataset ../common/deepseek_anti_prompt_50_v3_1.json --calib_dataset ../common/deepseek_calib_prompt_50_v3_1.json --quant_mtp mix  --batch_size 16
   ```
 
 ##### <span id="deepseek-v31-w4a8c8">DeepSeek-V3.1 W4A8C8 per-channel 量化</span>
@@ -299,7 +299,7 @@ python3 quant_deepseek_W8A8.py --model_path ${model_path} --save_path ${save_pat
   python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} 
   
   # 如果想要获取更高的精度，可以使用 50 条校准集，如果显存够用可以尝试 16 batch_size 加载校准集
-  python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} --anti_dataset ./anti_prompt_50.json --calib_dataset ./calib_prompt_50.json  --batch_size 16
+  python3 quant_deepseek_w4a8.py --model_path ${model_path} --save_path ${save_path} --anti_dataset ../common/deepseek_anti_prompt_50.json --calib_dataset ../common/deepseek_calib_prompt_50.json  --batch_size 16
   ```
 
 ##### <span id="deepseek-r1-w8a8-混合量化--mtp-量化">DeepSeek-R1 W8A8 混合量化 + MTP 量化</span>
@@ -342,8 +342,8 @@ python3 quant_deepseek_W8A8.py --model_path ${model_path} --save_path ${save_pat
   --model_path ${model_path} \
   --save_path ${save_path} \
   --batch_size 8 \
-  --anti_dataset ./calib_prompt_0528.json \
-  --calib_dataset ./calib_prompt_0528.json \
+  --anti_dataset ../common/deepseek_calib_prompt_0528.json \
+  --calib_dataset ../common/deepseek_calib_prompt_0528.json \
   --anti_method m4 \
   --quant_mtp mix \
   --rot
@@ -356,8 +356,8 @@ python3 quant_deepseek_W8A8.py --model_path ${model_path} --save_path ${save_pat
   --model_path ${model_path} \
   --save_path ${save_path} \
   --batch_size 8 \
-  --anti_dataset ./calib_prompt_0528.json \
-  --calib_dataset ./calib_prompt_0528.json \
+  --anti_dataset ../common/deepseek_calib_prompt_0528.json \
+  --calib_dataset ../common/deepseek_calib_prompt_0528.json \
   --anti_method m4 \
   --quant_mtp mix \
   --rot \
