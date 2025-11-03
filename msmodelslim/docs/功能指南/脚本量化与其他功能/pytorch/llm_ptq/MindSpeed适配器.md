@@ -68,7 +68,7 @@ def quant(model):
     print('Save quant weight success!')
 ```
 
-3.将上述量化函数插入推理脚本，以mindspeed-llm的自带推理精度测试脚本[evaluation.py](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/evaluation.py)为例，将quant函数插入main函数
+3.将上述量化函数插入推理脚本，以mindspeed-llm的自带推理精度测试脚本[evaluation.py](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/evaluation.py)为例，将quant函数插入main函数。请注意`trust_remote_code`为`True`时可能执行浮点模型权重中代码文件，请确保浮点模型来源安全可靠。
 ```
  ...
 def main():

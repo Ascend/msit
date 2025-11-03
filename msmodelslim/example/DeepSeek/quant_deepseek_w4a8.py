@@ -21,6 +21,7 @@ from mtp_quant_module import warp_mtp_model, post_process_mtp_quant
 from example.common.security.path import get_valid_read_path, get_write_directory
 from example.common.security.path import json_safe_load, json_safe_dump
 from example.common.security.type import check_number
+from example.common.utils import cmd_bool
 from msmodelslim.tools.copy_config_files import copy_config_files, modify_config_json, modify_vllm_config_json
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
@@ -44,6 +45,7 @@ def parse_args():
     parser.add_argument('--quant_mtp', type=str, choices=['mix', 'float', 'none'], default='none', \
                         help="Quantization mode: 'mix(w8a8 mix quant)' , or \
                             'float(save float mtp weight)' (default: %(default)s)")
+    parser.add_argument('--trust_remote_code', type=cmd_bool, default=False)
     return parser.parse_args()
 
 
@@ -143,7 +145,10 @@ def main():
     calib_path = get_valid_read_path(calib_path, is_dir=False, check_user_stat=True)
     check_number(batch_size, int, 1, 16, "batch_size")
 
-    config = AutoConfig.from_pretrained(pretrained_model_name_or_path=model_path, trust_remote_code=True)
+    config = AutoConfig.from_pretrained(
+        pretrained_model_name_or_path=model_path, 
+        trust_remote_code=args.trust_remote_code
+        )
     num_layer = config.num_hidden_layers
     if args.layer_count < 0 or args.layer_count > num_layer:
         raise ValueError(
@@ -168,13 +173,13 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=model_path,
                                               config=config,
-                                              trust_remote_code=True,
+                                              trust_remote_code=args.trust_remote_code,
                                               use_fast=True,
                                               add_eos_token=True)
 
     model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=model_path,
                                                  config=config,
-                                                 trust_remote_code=True,
+                                                 trust_remote_code=args.trust_remote_code,
                                                  device_map={
                                                      "model.embed_tokens": 0,
                                                      "model.layers": "cpu",
