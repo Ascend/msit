@@ -6,16 +6,17 @@ from typing import List, Callable, Union
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.exception_decorator import exception_catcher
 from msmodelslim.utils.logging import logger_setter, get_logger
-from ..analysis_service import BaseAnalysisService
-from ..analysis_service.pipeline_interface import PipelineInterface
-from ..base import DeviceType, ExtendedEnum
-from ...core.base.model import BaseModelInterface
 from msmodelslim.utils.validation.conversion import (
     convert_to_readable_dir,
     convert_to_readable_file,
     convert_to_writable_dir,
     convert_to_bool
 )
+from msmodelslim.utils.validation.value import validate_str_length
+from ..analysis_service import BaseAnalysisService
+from ..analysis_service.pipeline_interface import PipelineInterface
+from ..base import DeviceType, ExtendedEnum
+from ...core.base.model import BaseModelInterface
 
 
 class AnalysisMetrics(ExtendedEnum):
@@ -58,9 +59,18 @@ class LayerAnalysisApplication:
             topk: Number of top layers to output for disable_names
             trust_remote_code: Whether to trust remote code
         """
+        # Validate string inputs with length checks
+        str_params = [
+            ("model_type", model_type),
+            ("model_path", model_path),
+            ("calib_dataset", calib_dataset)
+        ]
+        for param_name, value in str_params:
+            if not isinstance(value, str):
+                raise SchemaValidateError(f"{param_name} must be a string, but got {type(value)}")
+            validate_str_length(input_str=value, str_name=param_name)
+
         # Validate inputs
-        if not isinstance(model_type, str):
-            raise SchemaValidateError(f"model_type must be a string, but got {type(model_type)}")
         model_path = convert_to_readable_dir(model_path)
         if not isinstance(model_path, Path):
             raise SchemaValidateError(f"model_path must be a Path, but got {type(model_path)}")

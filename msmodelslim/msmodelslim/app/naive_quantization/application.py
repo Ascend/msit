@@ -8,17 +8,18 @@ from msmodelslim.utils.exception import SchemaValidateError, ToDoError, Unsuppor
 from msmodelslim.utils.exception_decorator import exception_catcher
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import yaml_safe_load
-from .model_info_interface import ModelInfoInterface
-from .practice_interface import PracticeManagerInterface
-from ..base import BaseQuantConfig, DeviceType
-from ..quant_service import BaseQuantService
-from ...core.base.model import BaseModelInterface
 from msmodelslim.utils.validation.conversion import (
     convert_to_readable_file,
     convert_to_writable_dir,
     convert_to_bool,
     convert_to_readable_dir
 )
+from msmodelslim.utils.validation.value import validate_str_length
+from .model_info_interface import ModelInfoInterface
+from .practice_interface import PracticeManagerInterface
+from ..base import BaseQuantConfig, DeviceType
+from ..quant_service import BaseQuantService
+from ...core.base.model import BaseModelInterface
 
 DEFAULT_PEDIGREE = 'default'
 DEFAULT_CONFIG_ID = 'default'
@@ -123,8 +124,17 @@ class NaiveQuantizationApplication:
             config_path: Optional[str], the path to config file, config_path and quant_type only one can be provided
             trust_remote_code: bool, whether to trust the remote code
         """
-        if not isinstance(model_type, str):
-            raise SchemaValidateError(f"model_type must be a string, but got {type(model_type)}")
+        # 字符串类型与长度校验
+        str_params = [
+            ("model_type", model_type),
+            ("model_path", model_path),
+            ("save_path", save_path)
+        ]
+        for param_name, value in str_params:
+            if not isinstance(value, str):
+                raise SchemaValidateError(f"{param_name} must be a string, but got {type(value)}")
+            validate_str_length(input_str=value, str_name=param_name)
+
         model_path = convert_to_readable_dir(model_path)
         if not isinstance(model_path, Path):
             raise SchemaValidateError(f"model_path must be a Path, but got {type(model_path)}")
@@ -134,6 +144,7 @@ class NaiveQuantizationApplication:
         if not isinstance(device, DeviceType):
             raise SchemaValidateError(f"device must be a DeviceType")
         if config_path is not None:
+            validate_str_length(input_str=config_path, str_name='config_path')
             config_path = convert_to_readable_file(config_path)
         if not ((quant_type is None) ^ (config_path is None)):
             raise SchemaValidateError(f"quant_type and config_path only one can be provided")
