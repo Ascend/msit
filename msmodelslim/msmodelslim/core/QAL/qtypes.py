@@ -97,6 +97,7 @@ class OVSubgraph(Subgraph):
     v_proj: nn.Linear
     num_attention_heads: int
     key_value_heads: int
+    extra_config: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -152,5 +153,6 @@ class FlexSmoothQuantConfig:
 
     version: int = 1
     alpha: Optional[float] = None
-    beta: Optional[float] = None   
+    beta: Optional[float] = None
+    extra_config: Optional[Dict[str, Any]] = None
 

@@ -130,7 +130,8 @@ class FlexSmoothQuantProcessor(BaseSmoothProcessor):
             # 创建平滑配置
             smooth_quant_cfg = FlexSmoothQuantConfig(
                 alpha=self.config.alpha,
-                beta=self.config.beta
+                beta=self.config.beta,
+                extra_config=subgraph_obj.extra_config if hasattr(subgraph_obj, 'extra_config') else None
             )
 
             # 应用平滑

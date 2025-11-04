@@ -158,7 +158,10 @@ class Qwen3ModelAdapter(TransformersModel,
                 ),
                 AdapterConfig(
                     subgraph_type="ov",
-                    mapping=ov_mapping_config
+                    mapping=ov_mapping_config,
+                    extra_config={
+                        'group_method': 'max'
+                    },
                 ),
                 AdapterConfig(
                     subgraph_type="up-down",

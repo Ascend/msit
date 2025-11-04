@@ -438,6 +438,7 @@ class BaseSmoothProcessor(AutoSessionProcessor):
         v_module = self.model.get_submodule(v_name)
         o_module = self.model.get_submodule(o_name)
         fusion = adapter_config.fusion
+        extra_config = adapter_config.extra_config if hasattr(adapter_config, 'extra_config') else None
 
         if not isinstance(v_module, nn.Linear):
             get_logger().warning(f"V module {v_name} is not Linear type, skipping QKV fusion")
@@ -466,7 +467,8 @@ class BaseSmoothProcessor(AutoSessionProcessor):
                 o_proj=o_module,
                 v_proj=virtual_v_module,
                 num_attention_heads=fusion.num_attention_heads,
-                key_value_heads=fusion.num_key_value_heads
+                key_value_heads=fusion.num_key_value_heads,
+                extra_config=extra_config
             ),
             [o_module]
         )
@@ -487,7 +489,7 @@ class BaseSmoothProcessor(AutoSessionProcessor):
         o_name = adapter_config.mapping.targets[0] if adapter_config.mapping.targets else ''
         v_module = self.model.get_submodule(v_name)
         o_module = self.model.get_submodule(o_name)
-
+        extra_config = adapter_config.extra_config if hasattr(adapter_config, 'extra_config') else None
         if not isinstance(v_module, nn.Linear):
             get_logger().warning(f"V module {v_name} is not Linear type, skipping standard OV smoothing")
             return
@@ -506,7 +508,8 @@ class BaseSmoothProcessor(AutoSessionProcessor):
                 o_proj=o_module,
                 v_proj=v_module,
                 num_attention_heads=num_attention_heads,
-                key_value_heads=num_key_value_heads
+                key_value_heads=num_key_value_heads,
+                extra_config=extra_config
             ),
             [o_module]
         )
