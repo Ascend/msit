@@ -18,6 +18,7 @@ quant_model(model: nn.Module, session_cfg: SessionConfig)
 
 ```python
 import torch
+from ascend_utils.common.security.pytorch import safe_torch_load
 from msmodelslim.quant.session.session import W8A8ProcessorConfig, W8A8QuantConfig, SaveProcessorConfig
 from msmodelslim.quant.session.session import SessionConfig, quant_model
 
@@ -37,7 +38,7 @@ session_config = SessionConfig(
             part_file_size=None
         )
     },
-    calib_data=torch.load("calib_data.pth"),
+    calib_data=safe_torch_load("calib_data.pth"),
     device="npu"
 )
 
