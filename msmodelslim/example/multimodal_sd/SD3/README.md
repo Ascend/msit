@@ -42,6 +42,7 @@ import os
 import torch
 from diffusers import StableDiffusion3Pipeline
 
+from ascend_utils.common.security.pytorch import safe_torch_load
 from msmodelslim.quant import quant_model, SessionConfig
 from msmodelslim.quant import W8A8ProcessorConfig, W8A8QuantConfig, SaveProcessorConfig
 from example.multimodal_sd.utils import get_disable_layer_names, get_rank, DumperManager, get_rank_suffix_file
@@ -85,7 +86,7 @@ if not os.path.exists(dump_data_path):  # 检查校准数据是否已存在，�
 
 ############################ 启动量化 ############################
 # 加载校准数据，校准数据需要提前dump生成
-calib_dataset = torch.load(dump_data_path, map_location=f'npu:{rank if is_distributed else 0}')
+calib_dataset = safe_torch_load(dump_data_path, map_location=f'npu:{rank if is_distributed else 0}')
 safetensors_name = get_rank_suffix_file(base_name='quant_model_weight_w8a8', ext='safetensors',
                                         is_distributed=is_distributed, rank=rank)
 json_name = get_rank_suffix_file(base_name='quant_model_description_w8a8', ext='json',
