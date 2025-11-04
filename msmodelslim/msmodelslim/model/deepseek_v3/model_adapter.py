@@ -1,4 +1,5 @@
-# Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
+#Copyright 2023 DeepSeek-AI and The HuggingFace Inc. team. All rights reserved.
+#Copyright 2023 DeepSeek-AI and The HuggingFace Inc. team
 import os.path
 from importlib import import_module
 from typing import Any, List, Optional, Tuple, Generator, Dict
@@ -225,6 +226,9 @@ class DeepSeekV3ModelAdapter(TransformersModel,
                 AdapterConfig(
                     subgraph_type="ov",
                     mapping=okv_b_mapping_config,
+                    extra_config={
+                        'group_method': 'max'
+                    },
                     fusion=FusionConfig(
                         fusion_type="kv",
                         num_attention_heads=self.config.num_attention_heads,

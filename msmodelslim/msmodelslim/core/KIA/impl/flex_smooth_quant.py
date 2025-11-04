@@ -13,8 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import torch
+
+from dataclasses import dataclass
 import numpy as np
+import torch
 
 from msmodelslim.core.QAL.qregistry import QFuncRegistry
 from msmodelslim.core.QAL.qtypes import (
@@ -111,8 +113,30 @@ def prepare_mqga_parameters(num_attention_heads, num_key_value_heads):
     return ratio, scales_pad_size
 
 
+@dataclass
+class MQGAScaleParams:
+    """MQGA (Multi-Query Grouped Attention) 尺度缩减参数封装
+    
+    封装 reduce_scales_for_mqga 函数所需的所有参数，提高代码可读性和可维护性。
+    
+    Attributes:
+        act_scales: 激活尺度张量，维度为 [total_dim]
+        weight_scales: 权重尺度张量，维度为 [total_dim]
+        best_alpha: smooth quant 的 alpha 参数，用于激活尺度的幂次
+        best_beta: smooth quant 的 beta 参数，用于权重尺度的幂次
+        num_key_value_groups: KV头组数（即 Q头数 / KV头数 的比例）
+        head_dim: 每个注意力头的维度大小
+    """
+    act_scales: torch.Tensor
+    weight_scales: torch.Tensor
+    best_alpha: float
+    best_beta: float
+    num_key_value_groups: int
+    head_dim: int
+
+
 @torch.no_grad()
-def reduce_scales_for_mqga(scales, shape_ratio, num_attention_heads):
+def reduce_scales_for_mqga_mean(scales, shape_ratio, num_attention_heads):
     # Assuming heads for K V activations are broadcasted with following pattern:
     # [h1, h2, h3, h4] -> [h1, ... , h1, h2,..., h2, h3, ..., h3, h4, ..., h4]
     num_q_heads = num_attention_heads
@@ -127,6 +151,20 @@ def reduce_scales_for_mqga(scales, shape_ratio, num_attention_heads):
         reduced_scales.append(subset_of_scales.mean(0))
         updated_scales.append(torch.cat([reduced_scales[-1]] * repeat_num))
     return torch.cat(updated_scales), torch.cat(reduced_scales)
+
+
+@torch.no_grad()
+def reduce_scales_for_mqga_max(params: MQGAScaleParams):
+    act_scales = params.act_scales.view(-1, params.num_key_value_groups, params.head_dim).max(dim=1)[0]
+    weight_scales = params.weight_scales.view(-1, params.num_key_value_groups, params.head_dim).max(dim=1)[0]
+    group_scales = (act_scales.pow(params.best_alpha) /
+                    weight_scales.pow(params.best_beta)).to(torch.float32).clamp(min=1e-5).to(dtype=weight_scales.dtype)
+    o_scales = torch.repeat_interleave(
+        group_scales.view(-1, params.head_dim), repeats=params.num_key_value_groups, dim=0
+    )
+    o_scales = o_scales.reshape(-1)
+    v_scales = group_scales.reshape(-1)
+    return o_scales, v_scales
 
 
 @torch.no_grad()
@@ -169,7 +207,7 @@ def flex_smooth_impl_OV(subgraph: Subgraph, config: FlexSmoothQuantConfig, conte
     tmp_device = next(subgraph.v_proj.parameters()).device
     dtype = subgraph.o_proj.weight.dtype
     
-    get_logger().debug(f"Using device: {tmp_device}, dtype: {dtype}")
+    get_logger().debug("Using device: %s, dtype: %s", tmp_device, dtype)
 
     
     # 步骤2: 处理激活张量
@@ -188,7 +226,7 @@ def flex_smooth_impl_OV(subgraph: Subgraph, config: FlexSmoothQuantConfig, conte
         
         # 连接所有有效的张量
         tensors = torch.cat(valid_tensors, dim=0)
-        get_logger().debug(f"Successfully processed {len(valid_tensors)} tensors, total shape: {tensors.shape}")
+        get_logger().debug("Successfully processed %d tensors, total shape: %s", len(valid_tensors), tensors.shape)
     else:
         get_logger().warning("Context tensors is None, skipping smoothing")
         return
@@ -207,7 +245,7 @@ def flex_smooth_impl_OV(subgraph: Subgraph, config: FlexSmoothQuantConfig, conte
     # 获取输出投影层的权重
     fc_weights = subgraph.o_proj.weight
     
-    get_logger().debug(f"Activation scale shape: {a_scale.shape}, Weight shape: {fc_weights.shape}")
+    get_logger().debug("Activation scale shape: %s, Weight shape: %s", a_scale.shape, fc_weights.shape)
 
 
     try:
@@ -219,18 +257,18 @@ def flex_smooth_impl_OV(subgraph: Subgraph, config: FlexSmoothQuantConfig, conte
             best_alpha, normal_mse_best = search_alpha_beta(
                 act, fc_weights, normal_mse_best=1.0, best_alpha=None
             )
-            get_logger().debug(f"Found optimal alpha: {best_alpha:.6f}, MSE: {normal_mse_best:.6f}")
+            get_logger().debug("Found optimal alpha: %.6f, MSE: %.6f", best_alpha, normal_mse_best)
             
             # 基于最优 alpha 搜索最优的 beta 值
             best_beta, normal_mse_best = search_alpha_beta(
                 act, fc_weights, normal_mse_best=normal_mse_best, best_alpha=best_alpha
             )
-            get_logger().debug(f"Found optimal beta: {best_beta:.6f}, final MSE: {normal_mse_best:.6f}")
+            get_logger().debug("Found optimal beta: %.6f, final MSE: %.6f", best_beta, normal_mse_best)
         else:
             # 使用配置中提供的参数
             best_alpha = config.alpha
             best_beta = config.beta
-            get_logger().debug(f"Using provided alpha: {best_alpha}, beta: {best_beta}")
+            get_logger().debug("Using provided alpha: %s, beta: %s", best_alpha, best_beta)
         
     except Exception as e:
         raise UnexpectedError(
@@ -247,26 +285,41 @@ def flex_smooth_impl_OV(subgraph: Subgraph, config: FlexSmoothQuantConfig, conte
     w_scale = weight_max.max(dim=0)[0]
     w_scale = w_scale.to(torch.float32).clamp(min=1e-5).to(dtype=dtype)
     
-    get_logger().debug(f"Weight scale shape: {w_scale.shape}, min: {w_scale.min():.6f}, max: {w_scale.max():.6f}")
+    get_logger().debug("Weight scale shape: %s, min: %.6f, max: %.6f", w_scale.shape, w_scale.min(), w_scale.max())
     
     try:
-        # 步骤6: 计算平滑尺度
-        # 基于激活尺度、权重尺度和最优参数计算平滑尺度
-        scales = compute_smooth_scale(a_scale, w_scale, best_alpha, best_beta)
-        get_logger().debug(f"Computed smooth scales shape: {scales.shape}")
-        
-        # 准备 MQGA（Multi-Query Grouped Attention）参数
+        # 步骤6: 准备 MQGA（Multi-Query Grouped Attention）参数
         shape_ratio, scales_pad_size = prepare_mqga_parameters(
             subgraph.num_attention_heads, subgraph.key_value_heads
         )
-        get_logger().debug(f"MQGA parameters - shape_ratio: {shape_ratio}, pad_size: {scales_pad_size}")
-        
-        # 为 O 和 V 投影层分别计算尺度
-        o_scales, v_scales = reduce_scales_for_mqga(
-            scales, shape_ratio, subgraph.num_attention_heads
+        head_dim = subgraph.o_proj.weight.shape[1] // subgraph.num_attention_heads
+        get_logger().debug(
+            "MQGA parameters - shape_ratio: %s, pad_size: %s, head_dim: %s",
+            shape_ratio, scales_pad_size, head_dim
         )
-        get_logger().debug(f"O scales shape: {o_scales.shape}, V scales shape: {v_scales.shape}")
-        
+        get_logger().debug("Input dimensions - a_scale: %s, w_scale: %s", a_scale.shape, w_scale.shape)
+        expected_total_dim = subgraph.num_attention_heads * head_dim
+        get_logger().debug(
+            "Expected total_dim = %d Q heads × %d head_dim = %d",
+            subgraph.num_attention_heads, head_dim, expected_total_dim
+        )
+
+        if config.extra_config is not None and config.extra_config.get('group_method') == 'max':
+            mqga_params = MQGAScaleParams(
+                act_scales=a_scale,
+                weight_scales=w_scale,
+                best_alpha=best_alpha,
+                best_beta=best_beta,
+                num_key_value_groups=shape_ratio,
+                head_dim=head_dim
+            )
+            o_scales, v_scales = reduce_scales_for_mqga_max(mqga_params)
+            get_logger().debug("O scales shape: %s, V scales shape: %s", o_scales.shape, v_scales.shape)
+
+        else:
+            scales = compute_smooth_scale(a_scale, w_scale, best_alpha, best_beta)
+            o_scales, v_scales = reduce_scales_for_mqga_mean(scales, shape_ratio, subgraph.num_attention_heads)
+            
     except Exception as e:
         raise UnexpectedError(
             f"Failed to compute smooth scales: {e}",
@@ -336,7 +389,7 @@ def flex_smooth_impl_UpDown(subgraph: Subgraph, config: FlexSmoothQuantConfig, c
     tmp_device = next(subgraph.up_proj.parameters()).device
     dtype = subgraph.down_proj.weight.dtype
     
-    get_logger().debug(f"Using device: {tmp_device}, dtype: {dtype}")
+    get_logger().debug("Using device: %s, dtype: %s", tmp_device, dtype)
 
     # 步骤2: 处理激活张量
     # 将激活张量列表转换为单个张量，统一数据类型和设备
@@ -354,7 +407,7 @@ def flex_smooth_impl_UpDown(subgraph: Subgraph, config: FlexSmoothQuantConfig, c
         
         # 连接所有有效的张量
         tensors = torch.cat(valid_tensors, dim=0)
-        get_logger().debug(f"Successfully processed {len(valid_tensors)} tensors, total shape: {tensors.shape}")
+        get_logger().debug("Successfully processed %d tensors, total shape: %s", len(valid_tensors), tensors.shape)
     else:
         get_logger().warning("Context tensors is None, skipping smoothing")
         return
@@ -372,7 +425,7 @@ def flex_smooth_impl_UpDown(subgraph: Subgraph, config: FlexSmoothQuantConfig, c
     # 获取下投影层的权重
     fc_weights = subgraph.down_proj.weight
     
-    get_logger().debug(f"Activation scale shape: {a_scale.shape}, Weight shape: {fc_weights.shape}")
+    get_logger().debug("Activation scale shape: %s, Weight shape: %s", a_scale.shape, fc_weights.shape)
 
     try:
         # 步骤4: 确定最优的 alpha 和 beta 参数
@@ -383,18 +436,18 @@ def flex_smooth_impl_UpDown(subgraph: Subgraph, config: FlexSmoothQuantConfig, c
             best_alpha, normal_mse_best = search_alpha_beta(
                 act, fc_weights, normal_mse_best=1.0, best_alpha=None
             )
-            get_logger().debug(f"Found optimal alpha: {best_alpha:.6f}, MSE: {normal_mse_best:.6f}")
+            get_logger().debug("Found optimal alpha: %.6f, MSE: %.6f", best_alpha, normal_mse_best)
             
             # 基于最优 alpha 搜索最优的 beta 值
             best_beta, normal_mse_best = search_alpha_beta(
                 act, fc_weights, normal_mse_best=normal_mse_best, best_alpha=best_alpha
             )
-            get_logger().debug(f"Found optimal beta: {best_beta:.6f}, final MSE: {normal_mse_best:.6f}")
+            get_logger().debug("Found optimal beta: %.6f, final MSE: %.6f", best_beta, normal_mse_best)
         else:
             # 使用配置中提供的参数
             best_alpha = config.alpha
             best_beta = config.beta
-            get_logger().debug(f"Using provided alpha: {best_alpha}, beta: {best_beta}")
+            get_logger().debug("Using provided alpha: %s, beta: %s", best_alpha, best_beta)
         
     except Exception as e:
         raise UnexpectedError(
@@ -411,14 +464,14 @@ def flex_smooth_impl_UpDown(subgraph: Subgraph, config: FlexSmoothQuantConfig, c
     w_scale = weight_max.max(dim=0)[0]
     w_scale = w_scale.to(torch.float32).clamp(min=1e-5).to(dtype=dtype)
     
-    get_logger().debug(f"Weight scale shape: {w_scale.shape}, min: {w_scale.min():.6f}, max: {w_scale.max():.6f}")
+    get_logger().debug("Weight scale shape: %s, min: %.6f, max: %.6f", w_scale.shape, w_scale.min(), w_scale.max())
 
     
     try:
         # 步骤6: 计算平滑尺度
         # 基于激活尺度、权重尺度和最优参数计算平滑尺度
         scales = compute_smooth_scale(a_scale, w_scale, best_alpha, best_beta)
-        get_logger().debug(f"Computed smooth scales shape: {scales.shape}")
+        get_logger().debug("Computed smooth scales shape: %s", scales.shape)
         
     except Exception as e:
         raise UnexpectedError(
@@ -486,7 +539,7 @@ def flex_smooth_impl_LinearLinear(subgraph: Subgraph, config: FlexSmoothQuantCon
     tmp_device = next(subgraph.linear1.parameters()).device
     dtype = subgraph.linear2.weight.dtype
     
-    get_logger().debug(f"Using device: {tmp_device}, dtype: {dtype}")
+    get_logger().debug("Using device: %s, dtype: %s", tmp_device, dtype)
 
     # 步骤2: 处理激活张量
     # 将激活张量列表转换为单个张量，统一数据类型和设备
@@ -504,7 +557,7 @@ def flex_smooth_impl_LinearLinear(subgraph: Subgraph, config: FlexSmoothQuantCon
         
         # 连接所有有效的张量
         tensors = torch.cat(valid_tensors, dim=0)
-        get_logger().debug(f"Successfully processed {len(valid_tensors)} tensors, total shape: {tensors.shape}")
+        get_logger().debug("Successfully processed %d tensors, total shape: %s", len(valid_tensors), tensors.shape)
     else:
         get_logger().warning("Context tensors is None, skipping smoothing")
         return
@@ -523,7 +576,7 @@ def flex_smooth_impl_LinearLinear(subgraph: Subgraph, config: FlexSmoothQuantCon
     # 获取第二个线性层的权重
     fc_weights = subgraph.linear2.weight
     
-    get_logger().debug(f"Activation scale shape: {a_scale.shape}, Weight shape: {fc_weights.shape}")
+    get_logger().debug("Activation scale shape: %s, Weight shape: %s", a_scale.shape, fc_weights.shape)
 
     
     try:
@@ -535,18 +588,18 @@ def flex_smooth_impl_LinearLinear(subgraph: Subgraph, config: FlexSmoothQuantCon
             best_alpha, normal_mse_best = search_alpha_beta(
                 act, fc_weights, normal_mse_best=1.0, best_alpha=None
             )
-            get_logger().debug(f"Found optimal alpha: {best_alpha:.6f}, MSE: {normal_mse_best:.6f}")
+            get_logger().debug("Found optimal alpha: %.6f, MSE: %.6f", best_alpha, normal_mse_best)
             
             # 基于最优 alpha 搜索最优的 beta 值
             best_beta, normal_mse_best = search_alpha_beta(
                 act, fc_weights, normal_mse_best=normal_mse_best, best_alpha=best_alpha
             )
-            get_logger().debug(f"Found optimal beta: {best_beta:.6f}, final MSE: {normal_mse_best:.6f}")
+            get_logger().debug("Found optimal beta: %.6f, final MSE: %.6f", best_beta, normal_mse_best)
         else:
             # 使用配置中提供的参数
             best_alpha = config.alpha
             best_beta = config.beta
-            get_logger().debug(f"Using provided alpha: {best_alpha}, beta: {best_beta}")
+            get_logger().debug("Using provided alpha: %s, beta: %s", best_alpha, best_beta)
         
     except Exception as e:
         raise UnexpectedError(
@@ -564,7 +617,7 @@ def flex_smooth_impl_LinearLinear(subgraph: Subgraph, config: FlexSmoothQuantCon
         w_scale = weight_max.max(dim=0)[0]
         w_scale = w_scale.to(torch.float32).clamp(min=1e-5).to(dtype=dtype)
         
-        get_logger().debug(f"Weight scale shape: {w_scale.shape}, min: {w_scale.min():.6f}, max: {w_scale.max():.6f}")
+        get_logger().debug("Weight scale shape: %s, min: %.6f, max: %.6f", w_scale.shape, w_scale.min(), w_scale.max())
         
     except Exception as e:
         raise UnexpectedError(
@@ -576,7 +629,7 @@ def flex_smooth_impl_LinearLinear(subgraph: Subgraph, config: FlexSmoothQuantCon
         # 步骤6: 计算平滑尺度
         # 基于激活尺度、权重尺度和最优参数计算平滑尺度
         scales = compute_smooth_scale(a_scale, w_scale, best_alpha, best_beta)
-        get_logger().debug(f"Computed smooth scales shape: {scales.shape}")
+        get_logger().debug("Computed smooth scales shape: %s", scales.shape)
         
     except Exception as e:
         raise UnexpectedError(
@@ -645,7 +698,7 @@ def flex_smooth_impl_NormLinear(subgraph: Subgraph, config: FlexSmoothQuantConfi
     tmp_device = next(subgraph.norm.parameters()).device
     dtype = subgraph.linears[0].weight.dtype
     
-    get_logger().debug(f"Using device: {tmp_device}, dtype: {dtype}")
+    get_logger().debug("Using device: %s, dtype: %s", tmp_device, dtype)
 
     # 步骤2: 处理激活张量
     # 将激活张量列表转换为单个张量，统一数据类型和设备
@@ -663,7 +716,7 @@ def flex_smooth_impl_NormLinear(subgraph: Subgraph, config: FlexSmoothQuantConfi
         
         # 连接所有有效的张量
         tensors = torch.cat(valid_tensors, dim=0)
-        get_logger().debug(f"Successfully processed {len(valid_tensors)} tensors, total shape: {tensors.shape}")
+        get_logger().debug("Successfully processed %d tensors, total shape: %s", len(valid_tensors), tensors.shape)
     else:
         get_logger().warning("Context tensors is None, skipping smoothing")
         return
@@ -683,7 +736,7 @@ def flex_smooth_impl_NormLinear(subgraph: Subgraph, config: FlexSmoothQuantConfi
         # 获取线性层的权重
         fc_weights = torch.cat([fc.weight for fc in subgraph.linears], dim=0)
         
-        get_logger().debug(f"Activation scale shape: {a_scale.shape}, Weight shape: {fc_weights.shape}")
+        get_logger().debug("Activation scale shape: %s, Weight shape: %s", a_scale.shape, fc_weights.shape)
         
     except Exception as e:
         raise MisbehaviorError(
@@ -700,18 +753,18 @@ def flex_smooth_impl_NormLinear(subgraph: Subgraph, config: FlexSmoothQuantConfi
             best_alpha, normal_mse_best = search_alpha_beta(
                 act, fc_weights, normal_mse_best=1.0, best_alpha=None
             )
-            get_logger().debug(f"Found optimal alpha: {best_alpha:.6f}, MSE: {normal_mse_best:.6f}")
+            get_logger().debug("Found optimal alpha: %.6f, MSE: %.6f", best_alpha, normal_mse_best)
             
             # 基于最优 alpha 搜索最优的 beta 值
             best_beta, normal_mse_best = search_alpha_beta(
                 act, fc_weights, normal_mse_best=normal_mse_best, best_alpha=best_alpha
             )
-            get_logger().debug(f"Found optimal beta: {best_beta:.6f}, final MSE: {normal_mse_best:.6f}")
+            get_logger().debug("Found optimal beta: %.6f, final MSE: %.6f", best_beta, normal_mse_best)
         else:
             # 使用配置中提供的参数
             best_alpha = config.alpha
             best_beta = config.beta
-            get_logger().debug(f"Using provided alpha: {best_alpha}, beta: {best_beta}")
+            get_logger().debug("Using provided alpha: %s, beta: %s", best_alpha, best_beta)
         
     except Exception as e:
         raise UnexpectedError(
@@ -726,13 +779,13 @@ def flex_smooth_impl_NormLinear(subgraph: Subgraph, config: FlexSmoothQuantConfi
     w_scale = torch.cat(weight_stat, dim=0)
     w_scale = w_scale.max(dim=0)[0].to(torch.float32).clamp(min=1e-5).to(dtype=dtype)
     
-    get_logger().debug(f"Weight scale shape: {w_scale.shape}, min: {w_scale.min():.6f}, max: {w_scale.max():.6f}")
+    get_logger().debug("Weight scale shape: %s, min: %.6f, max: %.6f", w_scale.shape, w_scale.min(), w_scale.max())
     
     try:
         # 步骤6: 计算平滑尺度
         # 基于激活尺度、权重尺度和最优参数计算平滑尺度
         scales = compute_smooth_scale(a_scale, w_scale, best_alpha, best_beta)
-        get_logger().debug(f"Computed smooth scales shape: {scales.shape}")
+        get_logger().debug("Computed smooth scales shape: %s", scales.shape)
         
         # 为 Norm-Linear 子图准备参数
         # Norm-Linear 通常不需要特殊的注意力头参数
