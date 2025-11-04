@@ -225,7 +225,7 @@ class CompareCommand(BaseCommand):
             '--ops-json',
             required=False,
             dest="ops_json",
-            type=check_input_json_path,
+            type=check_alone_compare_dir_path,
             help='The npu and cpu ops matching rule json')
         self.parser = parser
 
