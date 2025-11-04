@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2023-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,13 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-import argparse
 
-from components.utils.parser import BaseCommand, AitInstallCommand, AitBuildExtraCommand, \
-                                    AitCheckCommand, DownloadCommand
+import argparse
+import os
+
 from components.utils.constants import AIT_FAQ_HOME, MIND_STUDIO_LOGO
-from components.utils.log import logger
+from components.utils.file_utils import root_privilege_warning
+from components.utils.parser import (
+    BaseCommand,
+    AitInstallCommand,
+    AitBuildExtraCommand,
+    AitCheckCommand,
+    DownloadCommand
+)
 
 
 class UmaskWrapper:
@@ -40,21 +46,27 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=f"msit(MindStudio Inference Tools), {MIND_STUDIO_LOGO}.\n"
-        "Providing one-site debugging and optimization toolkit for inference on Ascend Devices.\n"
-        f"For any issue, refer FAQ first: {AIT_FAQ_HOME}",
+                    "Providing one-site debugging and optimization toolkit for inference on Ascend Devices.\n"
+                    f"For any issue, refer FAQ first: {AIT_FAQ_HOME}",
     )
 
     cmd = BaseCommand(
-        "msit", None, ["msit_sub_task", AitInstallCommand(), AitBuildExtraCommand(), 
-                       AitCheckCommand(), DownloadCommand()]
+        "msit", None, [
+            "msit_sub_task",
+            AitInstallCommand(),
+            AitBuildExtraCommand(),
+            AitCheckCommand(),
+            DownloadCommand()
+        ]
     )
-    
+
     cmd.register_parser(parser)
 
     args = parser.parse_args()
 
     if hasattr(args, 'handle'):
         with UmaskWrapper():
+            root_privilege_warning()
             try:
                 args.handle(args)
             except Exception as err:
