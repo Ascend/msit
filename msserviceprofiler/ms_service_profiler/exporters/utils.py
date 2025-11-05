@@ -442,9 +442,9 @@ def delete_dir_safely(path):
         logger.error(f"Delete {path} failed, due to : {e}")
 
 
-def truncate_timestamp_np(s: pd.Series) -> pd.Series:
-    arr = s.to_numpy(dtype='str')
-    return pd.Series(np.core.defchararray.ljust(arr, len(arr[0]) - 3))
+def truncate_timestamp(s: pd.Series) -> pd.Series:
+    """ 安全截断时间戳，去掉微秒部分"""
+    return s.astype(str).str.rsplit(':', n=1).str[0]
 
 
 def check_domain_valid(df, domain_list, exporter_name):

@@ -8,9 +8,9 @@ import numpy as np
 from ms_service_profiler.exporters.base import ExporterBase
 from ms_service_profiler.utils.log import logger
 from ms_service_profiler.utils.timer import timer
-from ms_service_profiler.constant import US_PER_MS
+from ms_service_profiler.constant import US_PER_MS, PERCENTAGE_CONVERSION_FACTOR, PERCENTAGE_THRESHOLD
 from ms_service_profiler.exporters.utils import (
-    write_result_to_csv, truncate_timestamp_np,
+    write_result_to_csv, truncate_timestamp,
     check_domain_valid, write_result_to_db, CURVE_VIEW_NAME_LIST
 )
 
@@ -108,11 +108,25 @@ def build_result_df(kvcache_df, rid_to_action_usage_rates, num_threads=4):
 
 def kvcache_usage_rate_calculator(kvcache_df):
     """
-    根据不同的action计算kvcache_usage_rate列的值，并添加到传入的DataFrame中
+    vllm中能获取到使用率UsagePercent，若无此字段，则使用MindIE之前的逻辑进行计算
+    (总量 - allocate) / 总量
     """
-    max_free_value = get_max_free_value(kvcache_df)
-    rid_to_action_usage_rates = build_rid_to_action_usage_rates(kvcache_df, max_free_value)
-    result_df = build_result_df(kvcache_df, rid_to_action_usage_rates)
+    result_df = kvcache_df[['rid', 'name', 'start_datetime']].copy()
+
+    # 添加KVCache_usage_rate列
+    if 'UsagePercent=' in kvcache_df.columns:
+        # 若存在则直接用
+        usage_percent_values = kvcache_df['UsagePercent='].ffill().fillna(0)
+        # 如果值大于1，说明是百分比格式，需要转换
+        if usage_percent_values.max() > PERCENTAGE_THRESHOLD:
+            result_df['kvcache_usage_rate'] = usage_percent_values / PERCENTAGE_CONVERSION_FACTOR
+        else:
+            result_df['kvcache_usage_rate'] = usage_percent_values
+    elif 'deviceBlock=' in kvcache_df.columns:
+        result_df['kvcache_usage_rate'] = kvcache_df['deviceBlock=']
+    else:
+        result_df['kvcache_usage_rate'] = None
+
     return result_df
 
 
@@ -166,25 +180,30 @@ class ExporterKVCacheData(ExporterBase):
         output = cls.args.output_path
 
         if 'db' in cls.args.format or 'csv' in cls.args.format:
-            if check_domain_valid(df, ['KVCache'], 'kvcache') is False:
-                return
+            kvcache_domains = ['KVCache', 'Schedule.KVCache']
+            kvcache_mask = df['domain'].isin(kvcache_domains)
 
-            if not df['domain'].str.casefold().str.contains(r'kvcache', regex=True).any():
+            if not kvcache_mask.any():
                 logger.warning("No 'KVCache' related fields found in porf data. If this is unexpected, please check")
                 return
 
             try:
                 # KVCache事件
-                kvcache_df = df[df['domain'] == 'KVCache']
+                kvcache_df = df[kvcache_mask]
+
+                # 过滤掉CacheHitRate事件，放到request.csv中
+                kvcache_df = kvcache_df[kvcache_df['name'] != 'CacheHitRate']
                 kvcache_df = kvcache_df[['domain', 'rid', 'start_time', 'name', \
-                                         'deviceBlock=', 'start_datetime']]
+                                         'TotalBlocks=', 'start_datetime', 'UsedBlocks=', \
+                                         'FreeBlocks=', 'UsagePercent=', 'AllocatedBlocks='
+                                         ]]
                 kvcache_df['start_time'] = kvcache_df['start_time'] // US_PER_MS
             except KeyError as e:
                 logger.warning(f"Field '{e.args[0]}' attribute not found in porf data named KVCache")
 
         if 'db' in cls.args.format:
             kvcache_usuage_df = kvcache_usage_rate_calculator(kvcache_df)
-            kvcache_usuage_df['start_datetime'] = truncate_timestamp_np(kvcache_usuage_df['start_datetime'])
+            kvcache_usuage_df['start_datetime'] = truncate_timestamp(kvcache_usuage_df['start_datetime'])
             write_result_to_db(
                 df_param_list=[[kvcache_usuage_df, 'kvcache']],
                 table_name='kvcache',
