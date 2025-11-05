@@ -33,7 +33,8 @@ def get_req_base_info(df):
             'end_time': '',
             'recvTokenSize=': '',
             'replyTokenSize=': '',
-            'execution_time': ''
+            'execution_time': '',
+            'cache_hit_rate': ''
         }
 
         # 获取httpReq
@@ -64,6 +65,12 @@ def get_req_base_info(df):
         output_sync_count = http_res_df[http_res_df['name'] == 'outputSync'].shape[0]
         if output_sync_count > 0:
             new_req['replyTokenSize='] = output_sync_count
+
+        # 计算缓存命中率
+        cache_hit_df = pre_req_data[pre_req_data['name'] == 'CacheHitRate']
+        if not cache_hit_df.empty:
+            hit_cache_value = cache_hit_df.iloc[0].get("hitCache")
+            new_req['cache_hit_rate'] = hit_cache_value if hit_cache_value is not None else 0
 
         # 计算 execution_time
         if new_req['start_time'] != '' and new_req['end_time'] != '':
@@ -149,7 +156,7 @@ class ExporterReqData(ExporterBase):
 
         required_colunms = [
             'rid', 'start_time', 'recvTokenSize=', 'replyTokenSize=',
-            'execution_time', 'que_wait_time', 'ttft'
+            'execution_time', 'que_wait_time', 'ttft', 'cache_hit_rate'
         ]
         filtered_df = req_base_info.reindex(columns=required_colunms)
 
@@ -161,6 +168,9 @@ class ExporterReqData(ExporterBase):
             logger.warning(f"The data is not complete for request.csv, " \
                 "prof data recv request or reply request was not captured. please check.")
             return
+
+        # 数据完整性检查之后，重命名之前添加排序逻辑
+        filtered_df = filtered_df.sort_values(by='start_time').reset_index(drop=True)
 
         filtered_df = filtered_df.rename(columns={
                 'rid': 'http_rid',
@@ -183,5 +193,6 @@ class ExporterReqData(ExporterBase):
 
 REQUEST_DATA_RENAME_COLS = {
     'start_time': 'start_time(ms)', 'execution_time': 'execution_time(ms)',
-    'queue_wait_time': 'queue_wait_time(ms)', 'first_token_latency': 'first_token_latency(ms)'
+    'queue_wait_time': 'queue_wait_time(ms)', 'first_token_latency': 'first_token_latency(ms)',
+    'cache_hit_rate': 'cache_hit_rate'
 }

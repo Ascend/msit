@@ -638,7 +638,11 @@ def add_npu_events(npu_data_df):
 
 
 def add_kvcache_events(kv_data_df, pid_label_map=None):
-    if 'deviceBlock=' not in kv_data_df.columns:
+    # 检查是否包含所需的列
+    has_device_block = 'deviceBlock=' in kv_data_df.columns
+    has_free_blocks = 'FreeBlocks=' in kv_data_df.columns
+
+    if not has_device_block and not has_free_blocks:
         return []
 
     # 预声明变量避免分支中重复检查
@@ -648,6 +652,20 @@ def add_kvcache_events(kv_data_df, pid_label_map=None):
     # 向量化处理name列
     name = _build_name_column(kv_data_df, pid_label_map, has_pid_map, has_scope_dp)
 
+    # 根据条件设置args值，优先使用FreeBlocks=，否则使用deviceBlock=
+    args_values = []
+    if has_free_blocks:
+        # 如果有FreeBlocks=，优先使用它
+        if has_device_block:
+            # 两个都有，优先使用FreeBlocks=
+            args_values = [{'Device Block': x} for x in kv_data_df['FreeBlocks=']]
+        else:
+            # 只有FreeBlocks=
+            args_values = [{'Device Block': x} for x in kv_data_df['FreeBlocks=']]
+    else:
+        # 只有deviceBlock=
+        args_values = [{'Device Block': x} for x in kv_data_df['deviceBlock=']]
+
     # 构建结果DataFrame
     result_df = pd.DataFrame({
         'name': name,
@@ -655,7 +673,7 @@ def add_kvcache_events(kv_data_df, pid_label_map=None):
         'ts': kv_data_df['start_time'],
         'pid': kv_data_df['pid'] if 'pid' in kv_data_df else None,
         'tid': kv_data_df['domain'],
-        'args': [{'Device Block': x} for x in kv_data_df['deviceBlock=']]
+        'args': args_values
     })
 
     # 使用itertuples加速字典转换
@@ -663,8 +681,8 @@ def add_kvcache_events(kv_data_df, pid_label_map=None):
             for r in result_df.itertuples(index=False)]
 
 
-def add_queue_events(queue_data_df):	
-    if 'QueueSize=' not in queue_data_df:	
+def add_queue_events(queue_data_df):
+    if 'QueueSize=' not in queue_data_df or 'scope#QueueName' not in queue_data_df:
         return []	
     queue_data_df.loc[queue_data_df['scope#QueueName'] == 'WAITING', ['name', 'domain']] = 'WaitingQueue'	
     queue_data_df.loc[queue_data_df['scope#QueueName'] == 'RUNNING', ['name', 'domain']] = 'RunningQueue'	
