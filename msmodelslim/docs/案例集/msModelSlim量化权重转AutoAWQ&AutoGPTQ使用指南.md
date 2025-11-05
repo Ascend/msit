@@ -87,7 +87,7 @@ python ms_to_vllm.py --model ./quant_model_weight_w4a16.safetensors  --json ./qu
 
 ## 2.2量化
 AutoAWQ量化, 需要注意的是，Version使用GEMM，如果没有传入数据集可能会报错，需要传入数据集val.jsonl文件, 参考网址：https://github.com/casper-hansen/AutoAWQ/issues/506
-，数据集获取地址：https://huggingface.co/datasets/mit-han-lab/pile-val-backup/blob/main/val.jsonl.zst。请注意`trust_remote_code`为`True`时可能执行浮点模型权重中代码文件，请确保浮点模型来源安全可靠。     
+，数据集获取地址：https://huggingface.co/datasets/mit-han-lab/pile-val-backup/blob/main/val.jsonl.zst 。请注意`trust_remote_code`为`True`时可能执行浮点模型权重中代码文件，请确保浮点模型来源安全可靠。     
 AutoAWQ量化脚本示例如下：
 
 ```python
