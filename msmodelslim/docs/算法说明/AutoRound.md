@@ -131,7 +131,7 @@ spec:
 
 ## 层过滤机制
 
-层过滤机制用于指定哪些层需要量化，支持include和exclude模式匹配。详细的过滤规则、匹配模式、示例说明和常见层名模式请参考 [LinearQuantProcess层过滤机制详解](../../features/linear_quant.md#层过滤机制详解)。
+层过滤机制用于指定哪些层需要量化，支持include和exclude模式匹配。详细的过滤规则、匹配模式、示例说明和常见层名模式请参考 [LinearQuantProcess层过滤机制详解](../功能指南/一键量化/features/linear_quant.md#层过滤机制详解)。
 
 ## 原理与实现
 
@@ -250,7 +250,7 @@ class AutoroundQuantProcessor(AutoSessionProcessor):
 - **使用限制**：
   - 适用于llm中的线性层量化。
   - 需要足够的校准数据或训练迭代次数来优化参数。
-  - **低比特量化极度依赖于良好的离群值抑制算法，建议用户配合[QuaRot](./QuaRot.md)或[Iterative Smooth](./Iterative_Smooth算法说明.md)等离群值抑制方法一起使用，不建议用户（尤其是缺乏量化调优经验的基础用户）单独使用AutoRound，否则可能导致模型精度严重下降、对话输出异常或其他不可预期的行为，相关风险由用户自行承担。**
+  - **低比特量化极度依赖于良好的离群值抑制算法，建议用户配合[QuaRot](QuaRot.md)或[Iterative Smooth](Iterative_Smooth)等离群值抑制方法一起使用，不建议用户（尤其是缺乏量化调优经验的基础用户）单独使用AutoRound，否则可能导致模型精度严重下降、对话输出异常或其他不可预期的行为，相关风险由用户自行承担。**
 
 ## 常见问题排查
 
@@ -275,4 +275,4 @@ class AutoroundQuantProcessor(AutoSessionProcessor):
 
 ### 4. 层匹配告警
 
-层匹配告警的处理机制与LinearQuantProcess相同。当`include/exclude`模式未匹配到任何层时，工具会进行告警。详细的常见匹配失败原因和排查步骤请参考 [LinearQuantProcess层匹配告警](../../features/linear_quant.md#层匹配告警)。
+层匹配告警的处理机制与LinearQuantProcess相同。当`include/exclude`模式未匹配到任何层时，工具会进行告警。详细的常见匹配失败原因和排查步骤请参考 [LinearQuantProcess层匹配告警](../功能指南/一键量化/features/linear_quant.md#层匹配告警)。

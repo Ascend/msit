@@ -278,7 +278,7 @@
 
 ##### <span id="qwen3-14b-w8a8-vllm-ascend量化">Qwen3-14B W8A8 vllm-ascend量化</span>
 
-对于需要使用vllm-ascend推理引擎部署的模型，请使用以下非PDMIX量化配置：
+对于需要使用vllm-ascend推理引擎部署的模型，请使用以下非PDMIX量化配置，该配置将PDMIX量化改为纯静态量化，未验证精度效果，请谨慎使用：
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3-14B --config_path ./best_practice/qwen3-14b-w8a8-no-pdmix.yaml --trust_remote_code True
