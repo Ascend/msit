@@ -1,6 +1,7 @@
 # Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
 import ast
 from collections import defaultdict
+from collections import namedtuple
 
 import numpy as np
 import pandas as pd
@@ -18,20 +19,75 @@ from ms_service_profiler.utils.error import key_except
 def filter_batch_df(batch_name, batch_df):
     batch_df['batch_size'] = batch_df['batch_size'].astype(float)
     batch_df = batch_df[batch_df['name'].isin(['modelExec', batch_name])]
-    ori_columns = ['name', 'res_list', 'start_time', 'end_time', 'batch_size', \
-        'batch_type', 'during_time', 'prof_id']
+    ori_columns = ['name', 'res_list', 'start_time', 'end_time', 'during_time', 'batch_type', 'prof_id', 'batch_size']
     existing_columns = [col for col in ori_columns if col in batch_df.columns]
     batch_df = batch_df[existing_columns]
     batch_df['during_time'] = batch_df['during_time'] / US_PER_MS
     batch_df['start_time'] = batch_df['start_time'] // US_PER_MS
     batch_df['end_time'] = batch_df['end_time'] // US_PER_MS
+    batch_df = add_columns_for_batch_size_and_tokens(batch_df)
     return batch_df
 
 
-def get_rename_cols(ori_cols):
+def add_columns_for_batch_size_and_tokens(batch_df):
+    """
+    计算P_batch_size和D_batch_size
+    计算本批次调度的total_scheduled_tokens，P_scheduled_tokens和D_scheduled_tokens
+    """
+
+    BatchResult = namedtuple('BatchResult', [
+        'Prefill_batch_size',
+        'Decode_batch_size',
+        'Prefill_scheduled_tokens',
+        'Decode_scheduled_tokens',
+        'total_scheduled_tokens'
+    ])
+
+    def process_res_list(res_list):
+
+        if not res_list or not isinstance(res_list, list):
+            return BatchResult(0, 0, 0, 0, 0)
+
+        p_count_batch_size = 0
+        d_count_batch_size = 0
+        p_scheduled_tokens = 0
+        d_scheduled_tokens = 0
+
+        try:
+            for res_data in res_list:
+                if not isinstance(res_data, dict):
+                    continue
+                if res_data.get("type", -1) == 0:
+                    p_count_batch_size += 1
+                    p_scheduled_tokens += res_data.get("num_scheduled_tokens", 0)
+                elif res_data.get("type", -1) == 1:
+                    d_count_batch_size += 1
+                    d_scheduled_tokens += res_data.get("num_scheduled_tokens", 0)
+
+            return BatchResult(
+                p_count_batch_size, d_count_batch_size,
+                p_scheduled_tokens, d_scheduled_tokens,
+                p_scheduled_tokens + d_scheduled_tokens
+            )
+
+        except Exception as e:
+            logger.warning(f"Invalid batch format: {e}")
+            return BatchResult(0, 0, 0, 0, 0)
+
+    results = batch_df['res_list'].apply(process_res_list)
+    batch_df[['Prefill_batch_size', 'Decode_batch_size',
+              'Prefill_scheduled_tokens', 'Decode_scheduled_tokens',
+              'total_scheduled_tokens']] = pd.DataFrame(results.tolist(), index=batch_df.index)
+
+    return batch_df
+
+
+def get_rename_cols():
     rename_cols = {
-        'start_time': 'start_time(ms)', 'end_time': 'end_time(ms)',
-        'during_time': 'during_time(ms)'
+        'start_time': 'start_time(ms)',
+        'end_time': 'end_time(ms)',
+        'during_time': 'during_time(ms)',
+        'batch_size': 'total_batch_size',
     }
     return rename_cols
 
@@ -51,7 +107,7 @@ class ExporterBatchData(ExporterBase):
             pd.Series(schedule_data["req_id"]).fillna("").values
         ))
         return schedule_data.iloc[sort_indices].reset_index(drop=True)
-    
+
     @staticmethod
     def safe_literal_eval(x):
         """安全的字面量求值"""
@@ -352,7 +408,7 @@ class ExporterBatchData(ExporterBase):
                 return
             # 筛选显示
             batch_df = filter_batch_df(batch_name, batch_df)
-            rename_cols = get_rename_cols(batch_df.columns)
+            rename_cols = get_rename_cols()
 
             # 构建batch_req_df和batch_exec_df
             batch_event_df = data.get('batch_event_df')
@@ -367,7 +423,7 @@ class ExporterBatchData(ExporterBase):
                 ]
                 write_result_to_db(
                     df_param_list=df_param_list,
-                    create_view_sql=[CREATE_BATCH_VIEW_SQL],
+                    create_view_sql=[CREATE_BATCH_SIZE_VIEW_SQL, CREATE_BATCH_TOKEN_VIEW_SQL],
                     table_name='batch',
                     rename_cols=rename_cols
                 )
@@ -376,14 +432,14 @@ class ExporterBatchData(ExporterBase):
                 write_result_to_csv(batch_df, output, 'batch', rename_cols)
 
 
-
-CREATE_BATCH_VIEW_SQL = f"""
+CREATE_BATCH_SIZE_VIEW_SQL = f"""
     CREATE VIEW {CURVE_VIEW_NAME_LIST['batch']} AS
     WITH numbered_data AS (
         SELECT 
             ROW_NUMBER() OVER (ORDER BY "start_time") - 1 AS batch_id,
             batch_size,
-            batch_type
+            Prefill_batch_size,
+            Decode_batch_size
         FROM 
             batch
         WHERE 
@@ -391,14 +447,33 @@ CREATE_BATCH_VIEW_SQL = f"""
     )
     SELECT
         batch_id,
-        CASE
-            WHEN batch_type = 'Prefill' THEN batch_size
-            ELSE NULL
-        END AS Prefill_batch_size,
-        CASE
-            WHEN batch_type = 'Decode' THEN batch_size
-            ELSE NULL
-        END AS Decode_batch_size
+        batch_size as total_batch_size,
+        Prefill_batch_size,
+        Decode_batch_size
+    FROM
+        numbered_data
+    ORDER BY
+        batch_id;
+"""
+
+CREATE_BATCH_TOKEN_VIEW_SQL = f"""
+    CREATE VIEW {CURVE_VIEW_NAME_LIST['batch_token']} AS
+    WITH numbered_data AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY "start_time") - 1 AS batch_id,
+            total_scheduled_tokens,
+            Prefill_scheduled_tokens,
+            Decode_scheduled_tokens
+        FROM 
+            batch
+        WHERE 
+            name in ('BatchSchedule', 'batchFrameworkProcessing')
+    )
+    SELECT
+        batch_id,
+        total_scheduled_tokens,
+        Prefill_scheduled_tokens,
+        Decode_scheduled_tokens
     FROM
         numbered_data
     ORDER BY
