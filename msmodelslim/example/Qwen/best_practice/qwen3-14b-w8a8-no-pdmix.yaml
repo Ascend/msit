@@ -17,7 +17,6 @@ spec:
     a_bit: 8
     mm_tensor: False
     pdmix: False
-    is_dynamic: True
   calib_params:
     disable_level: L10
   calib_dataset: mix_calib.jsonl

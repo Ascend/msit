@@ -67,39 +67,39 @@ msModelSlim认为量化本质上是对模型局部结构的修改和替换，基
       <td rowspan="7">大模型量化算法</td>
       <td>异常值抑制算法<br>
       Flex Smooth Quant</td>
-      <td><a href="./功能指南/一键量化/v1架构/算法/Flex_Smooth_Quant算法说明.md">Flex Smooth Quant 算法说明</a></td>
+      <td><a href="./算法说明/Flex_Smooth_Quant.md">Flex Smooth Quant 算法说明</a></td>
       <td>
       -
       </td>
     </tr>
     <tr>
       <td>异常值抑制算法<br>Iterative Smooth</td>
-      <td><a href="./功能指南/一键量化/v1架构/算法/Iterative_Smooth算法说明.md">Iterative Smooth 算法说明</a></td>
+      <td><a href="./算法说明/Iterative_Smooth.md">Iterative Smooth 算法说明</a></td>
       <td>-</td>
     </tr>
     <tr>
       <td>权重量化算法<br>SSZ</td>
-      <td><a href="./功能指南/一键量化/v1架构/算法/ssz.md">SSZ 算法说明</a></td>
+      <td><a href="./算法说明/ssz.md">SSZ 算法说明</a></td>
       <td>-</td>
     </tr>
     <tr>
       <td>异常值抑制算法<br>KV Smooth</td>
-      <td><a href="./功能指南/一键量化/v1架构/算法/kv_smooth.md">KV Smooth 算法说明</a></td>
+      <td><a href="./算法说明/kv_smooth.md">KV Smooth 算法说明</a></td>
       <td>-</td>
     </tr>
     <tr>
       <td>KVCache 量化算法</td>
-      <td><a href="./功能指南/一键量化/v1架构/算法/KVCache_quant.md">KVCache 量化算法说明</a></td>
+      <td><a href="./算法说明/KVCache_quant.md">KVCache 量化算法说明</a></td>
       <td>-</td>
     </tr>
     <tr>
       <td>直方图激活量化算法</td>
-      <td><a href="./功能指南/一键量化/v1架构/算法/histogram_activation_quantization.md">直方图激活量化算法说明</a></td>
+      <td><a href="./算法说明/histogram_activation_quantization.md">直方图激活量化算法说明</a></td>
       <td>-</td>
     </tr>
     <tr>
       <td>大模型浮点稀疏</td>
-      <td><a href="./功能指南/一键量化/v1架构/算法/float_sparse.md">大模型浮点稀疏</a>
+      <td><a href="./算法说明/float_sparse.md">大模型浮点稀疏</a>
       <td>-</td>
     </tr>
   </tbody>

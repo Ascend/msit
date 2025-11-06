@@ -17,7 +17,6 @@ spec:
     a_bit: 8
     mm_tensor: False
     pdmix: False
-    is_dynamic: True
     disable_names:
       - 'lm_head'
       - 'model.layers.1.mlp.down_proj'
