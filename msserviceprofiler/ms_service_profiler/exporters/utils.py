@@ -30,6 +30,7 @@ UPDATA_DATA_TABLE_SQL = """
 CURVE_VIEW_NAME_LIST = {
     # 折线图原始表名: 视图名称
     'batch': 'Batch_Size_by_Batch_ID_curve',
+    'batch_token': 'Batch_Token_by_Batch_ID_curve',
     'kvcache': 'Kvcache_Usage_Percent_curve',
     'prefill_gen_speed': 'Prefill_Generate_Speed_Latency_curve',
     'req_latency': 'Request_Latency_curve',
@@ -42,6 +43,7 @@ CURVE_VIEW_NAME_LIST = {
 CURVE_VIEW_NAME_LIST_COMPETITION = {
     # 折线图原始表名: 视图名称
     'batch': 'Batch_Size_by_Batch_ID_curve',
+    'batch_token': 'Batch_Token_by_Batch_ID_curve',
     'kvcache': 'Kvcache_Usage_Percent_curve',
     'prefill_gen_speed': 'Prefill_Generate_Speed_Latency_curve',
     'req_latency': 'Request_Latency_curve',
