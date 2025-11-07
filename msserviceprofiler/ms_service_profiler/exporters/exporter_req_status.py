@@ -110,6 +110,7 @@ class ExporterReqStatus(ExporterBase):
         if metrics is None:
             logger.warning("The req status prof data is empty, no request status data will generated. please check")
             return False
+
         return True
 
     @classmethod
@@ -141,7 +142,7 @@ class ExporterReqStatus(ExporterBase):
     def _process_status_columns(cls, df, metrics):
         if ColumnConst.STATUS_COLUMN in df.columns:
             df = cls._map_and_encode_status(df, metrics)
-        elif ColumnConst.FINISHED_COLUMN in df.columns:
+        elif check_columns_valid(df, [ColumnConst.SCOPE_QUEUE_NAME_COLUMN, ColumnConst.QUEUESIZE_COLUMN], cls.name):
             # vllm 数据解析特有处理逻辑，当前只有vllm数据会走到
             df = cls._process_queue_columns(df)
         else:
