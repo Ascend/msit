@@ -133,7 +133,7 @@ class ProcessorReq(ProcessorBase):
         # 1. 取httpReq 和 httpRes 
         # 有问题，P 节点 和D 节点的 httpReq 和 http Res 需要区分开。需要修复 todo 
         http_event_df = data_df[data_df["name"].isin(["httpReq", "httpRes", "decode",
-                                                      "detokenize", "DecodeEnd", "sendResponse"])]
+                                                      "detokenize", "DecodeEnd", "sendResponse", "FINISHED"])]
         req_event_df["rid"] = http_event_df["rid"]
         req_event_df["event"] = http_event_df["name"]
         req_event_df["start_time"] = http_event_df["start_time"]
