@@ -227,7 +227,7 @@ class ExporterLatency(ExporterBase):
     @staticmethod
     @timer(log_func=logger.debug)
     def gen_exporter_req_latency_views(req_event_df):
-        calc_df = req_event_df[req_event_df["event"].isin(["httpReq", "httpRes", "DecodeEnd"])]
+        calc_df = req_event_df[req_event_df["event"].isin(["httpReq", "httpRes", "DecodeEnd", "FINISHED"])]
 
         # 取最开始的时间和最后时间差
         group_by_df = calc_df.groupby("rid").agg({"start_time": "min", "end_time": "max", "event": ["first", 'count']})
