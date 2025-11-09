@@ -54,8 +54,8 @@ msModelSlim认为量化本质上是对模型局部结构的修改和替换，基
   </thead>
   <tbody>
     <tr>
-      <td rowspan="9"><strong>PyTorch</strong></td>
-      <td rowspan="8">一键量化</td>
+      <td rowspan="10"><strong>PyTorch</strong></td>
+      <td rowspan="9">一键量化</td>
       <td>命令行一键量化</td>
       <td>大模型训练后量化</td>
       <td><a href="./功能指南/一键量化/使用说明.md">一键量化使用说明</a></td>
@@ -64,7 +64,7 @@ msModelSlim认为量化本质上是对模型局部结构的修改和替换，基
       </td>
     </tr>
     <tr>
-      <td rowspan="7">大模型量化算法</td>
+      <td rowspan="8">大模型量化算法</td>
       <td>异常值抑制算法<br>
       Flex Smooth Quant</td>
       <td><a href="./算法说明/Flex_Smooth_Quant.md">Flex Smooth Quant 算法说明</a></td>
@@ -95,6 +95,11 @@ msModelSlim认为量化本质上是对模型局部结构的修改和替换，基
     <tr>
       <td>直方图激活量化算法</td>
       <td><a href="./算法说明/histogram_activation_quantization.md">直方图激活量化算法说明</a></td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>激活值阶段间混合量化算法<br>PDMIX</td>
+      <td><a href="./算法说明/pdmix.md">PDMIX 算法说明</a></td>
       <td>-</td>
     </tr>
     <tr>
