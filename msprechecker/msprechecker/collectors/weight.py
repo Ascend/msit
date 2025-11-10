@@ -18,7 +18,8 @@ import os
 import hashlib
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-from msguard.security import walk_s, open_s
+from msguard import Rule, where, Path
+from msguard.security import walk_s
 
 from .base import BaseCollector
 
@@ -33,7 +34,7 @@ class WeightCollector(BaseCollector):
     @staticmethod
     def _calculate_hash256(filepath, chunk_size):
         sha256_hash = hashlib.sha256()
-        with open_s(filepath, 'rb') as f:
+        with open(filepath, 'rb') as f:
             while True:
                 data = f.read(chunk_size)
                 if not data:
@@ -64,9 +65,19 @@ class WeightCollector(BaseCollector):
         return True
 
     def _get_tensor_files(self, tensor_suffix):
+        max_weight_size = 10 * 1024 ** 3
+        weight_rule = where(
+            os.getuid() == 0,
+            Path.is_file(),
+            Path.is_file() & ~Path.has_soft_link() &
+            Path.is_readable() & ~Path.is_writable_to_group_or_others() &
+            Path.is_consistent_to_current_user() & Path.is_size_reasonable(size_limit=max_weight_size),
+            description="current user is root"
+        )
+
         tensor_files = [
-            path 
-            for path in walk_s(self.weight_dir)
+            path
+            for path in walk_s(self.weight_dir, file_rule=weight_rule)
             if os.path.isfile(path) and path.endswith(tensor_suffix)
         ]
         if not tensor_files:
