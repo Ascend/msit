@@ -101,6 +101,12 @@ class ExpertLoadBalanceCommmand(BaseCommand):
             help="device type. a2 代表适用于Atlas 800I A2推理服务器, a3 代表适用于Atlas 800I A3推理服务器。")
 
     def handle(self, args, **kwargs) -> None:
+        if os.name != "nt" and os.getuid() == 0:
+            logger.warning("Security Warning: Do not run this tool as root. "
+                           "Running with privileges may compromise system security. "
+                           "Use a regular account."
+                           )
+            
         logger.info("===================load balancing algorithm start====================")
         cann_path = os.environ.get("ASCEND_TOOLKIT_HOME", "/usr/local/Ascend/ascend-toolkit/latest")
         cann_path = os.path.normpath(cann_path)
