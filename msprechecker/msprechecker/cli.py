@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import argparse
 from textwrap import dedent
 
@@ -22,9 +23,16 @@ from .commands import (
     setup_compare_parser,
     Coordinator
 )
+from .utils import global_logger
 
 
 def main():
+    if os.geteuid() == 0:
+        global_logger.warning(
+            'WARNING: Running as root is not suggested.\n\n'
+            'This may lead to unexpected privilege escalation and system modifications.'
+        )
+
     main_parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=dedent('''\
