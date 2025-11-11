@@ -35,11 +35,14 @@ class TestCompareCommand(unittest.TestCase):
         mock_logger.error.assert_called_with("The following args are required: -gm/--golden-model or -gp/--golden-path")
         self.cmd.parser.print_help.assert_called_once()
 
+    @patch("msquickcmp.__main__.check_ops_json_path", side_effect=lambda x: x)
+    @patch("msquickcmp.__main__.check_om_path_legality", side_effect=lambda x: x)
     @patch("msquickcmp.__main__.os.path.exists", return_value=True)
-    @patch("msquickcmp.__main__.check_input_path_legality", side_effect=lambda x: x)
+    @patch("msquickcmp.__main__.check_input_data_path_legality", side_effect=lambda x: x)
     @patch("msquickcmp.__main__.os.path.join", side_effect=lambda *a: "/".join(a))
     @patch("msquickcmp.mie_torch.mietorch_comp.MIETorchCompare")
-    def test_handle_ops_json_mindie(self, mock_mietorch, mock_join, mock_check, mock_exists):
+    def test_handle_ops_json_mindie(self, mock_mietorch, mock_join, mock_check, mock_exists, mock_mietorch_path,
+                                    mock_ops_json_path):
         args = argparse.Namespace(
             golden_model="gm", golden_path="gp", ops_json="/tmp/ops", my_path="mp", out_path="out"
         )
