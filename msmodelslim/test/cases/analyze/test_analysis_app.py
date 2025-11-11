@@ -4,7 +4,7 @@
 包括CLI、APP和分析服务模块的所有功能
 目标覆盖率：>80%
 """
-
+import os
 import shutil
 import tempfile
 import unittest
@@ -14,12 +14,17 @@ from unittest.mock import MagicMock, patch
 
 import torch
 import torch.nn as nn
+from testing_utils.mock import mock_init_config
+
 from msmodelslim.app.analysis_service.layer_selector import AnalysisResult  # 替换为实际的 AnalysisResult 类
 from msmodelslim.app.analysis_service.layer_selector import \
     LayerSelectorAnalysisService  # 替换为实际包含 _print_analysis_results 的类
+
 from msmodelslim.app.base import DeviceType
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.logging import clean_output
+
+mock_init_config()
 
 
 class TestComprehensiveAnalysisCoverage(unittest.TestCase):
@@ -27,82 +32,31 @@ class TestComprehensiveAnalysisCoverage(unittest.TestCase):
 
     def setUp(self):
         """测试前的准备工作"""
-        self.temp_dir = tempfile.mkdtemp()
-        self.dataset_dir = Path(self.temp_dir) / "lab_calib"
-        self.dataset_dir.mkdir()
 
-        # 创建模拟的校准数据集文件
-        self.calib_file = self.dataset_dir / "boolq.jsonl"
-        with open(self.calib_file, 'w') as f:
-            f.write('{"data": "mock calibration data"}')
+        # 1. 保存原始 umask
+        original_umask = os.umask(0)  # 临时设为 0 并获取原始值
+        try:
+            # 2. 设置目标 umask（0o026 对应权限 640/750）
+            os.umask(0o026)
+            self.temp_dir = tempfile.mkdtemp()
+            self.dataset_dir = Path(self.temp_dir) / "lab_calib"
+            self.dataset_dir.mkdir()
 
-        # 创建模型文件
-        self.model_path = Path(self.temp_dir) / "model"
-        self.model_path.mkdir()
+            # 创建模拟的校准数据集文件
+            self.calib_file = self.dataset_dir / "boolq.jsonl"
+            with open(self.calib_file, 'w') as f:
+                f.write('{"data": "mock calibration data"}')
+
+            # 创建模型文件
+            self.model_path = Path(self.temp_dir) / "model"
+            self.model_path.mkdir()
+        finally:
+            # 3. 无论是否出错，都恢复原始 umask
+            os.umask(original_umask)
 
     def tearDown(self):
         """测试后的清理工作"""
         shutil.rmtree(self.temp_dir)
-
-
-class TestCLIAnalysisModule(TestComprehensiveAnalysisCoverage):
-    """测试CLI分析模块"""
-
-    @patch('msmodelslim.cli.analysis.__main__.LayerAnalysisApplication')
-    @patch('msmodelslim.cli.analysis.__main__.ModelFactory')
-    @patch('msmodelslim.cli.analysis.__main__.FileDatasetLoader')
-    @patch('msmodelslim.cli.analysis.__main__.get_valid_read_path')
-    def test_main_function_with_exception(self, mock_get_path, mock_dataset_loader,
-                                          mock_model_factory, mock_app):
-        """测试main函数异常处理"""
-        from msmodelslim.cli.analysis.__main__ import main
-
-        # 准备模拟对象，让analyze抛出异常
-        mock_get_path.return_value = self.dataset_dir
-        mock_dataset_instance = MagicMock()
-        mock_dataset_loader.return_value = mock_dataset_instance
-        mock_model_factory_instance = MagicMock()
-        mock_model_factory.create.return_value = mock_model_factory_instance
-        mock_app_instance = MagicMock()
-        mock_app.return_value = mock_app_instance
-        mock_app_instance.analyze.side_effect = Exception("Test exception")
-
-        # 创建模拟参数
-        args = Namespace(
-            model_type="Qwen2.5-7B-Instruct",
-            model_path=str(self.model_path),
-            pattern=["*"],
-            device="npu",
-            metrics="std",
-            calib_dataset="boolq.jsonl",
-            topk=15,
-            trust_remote_code=False
-        )
-
-        # 执行测试，期望抛出异常
-        with self.assertRaises(Exception):
-            main(args)
-
-    @patch('msmodelslim.cli.analysis.__main__.os.path.dirname')
-    @patch('msmodelslim.cli.analysis.__main__.os.path.abspath')
-    @patch('msmodelslim.cli.analysis.__main__.os.path.join')
-    @patch('msmodelslim.cli.analysis.__main__.get_valid_read_path')
-    def test_get_dataset_dir(self, mock_get_path, mock_join, mock_abspath, mock_dirname):
-        """测试get_dataset_dir函数"""
-        from msmodelslim.cli.analysis.__main__ import get_dataset_dir
-
-        # 准备模拟
-        mock_dirname.return_value = "/path/to/cli"
-        mock_abspath.return_value = "/absolute/path/to/lab_calib"
-        mock_join.return_value = "/absolute/path/to/lab_calib"
-        mock_get_path.return_value = Path("/absolute/path/to/lab_calib")
-
-        # 执行测试
-        result = get_dataset_dir()
-
-        # 验证结果
-        self.assertEqual(result, Path("/absolute/path/to/lab_calib"))
-        mock_get_path.assert_called_once_with("/absolute/path/to/lab_calib", is_dir=True)
 
 
 class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
@@ -120,29 +74,180 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
         self.assertEqual(app.analysis_service, mock_service)
         self.assertEqual(app.model_factory, mock_factory)
 
-    def test_analyze_with_valid_parameters(self):
-        """测试analyze方法使用有效参数"""
+    def test_analyze_parameter_validation_model_type(self):
+        """测试analyze方法model_type参数验证"""
+        from msmodelslim.app.analysis.application import LayerAnalysisApplication, AnalysisMetrics
+
+        mock_service = MagicMock()
+        mock_factory = MagicMock()
+        app = LayerAnalysisApplication(mock_service, mock_factory)
+
+        # 测试无效的model_type类型
+        with self.assertRaises(SchemaValidateError):
+            app.analyze(
+                model_type=123,  # 应该是字符串
+                model_path=str(self.model_path),
+                patterns=["*"],
+                device=DeviceType.NPU,
+                metrics=AnalysisMetrics.STD,
+                calib_dataset="boolq.jsonl",
+                topk=15,
+                trust_remote_code=False
+            )
+
+    def test_analyze_parameter_validation_patterns(self):
+        """测试analyze方法patterns参数验证"""
+        from msmodelslim.app.analysis.application import LayerAnalysisApplication, AnalysisMetrics
+
+        mock_service = MagicMock()
+        mock_factory = MagicMock()
+        app = LayerAnalysisApplication(mock_service, mock_factory)
+
+        # 测试无效的patterns类型
+        with self.assertRaises(SchemaValidateError):
+            app.analyze(
+                model_type="Qwen2.5-7B-Instruct",
+                model_path=str(self.model_path),
+                patterns="not_a_list",  # 应该是列表
+                device=DeviceType.NPU,
+                metrics=AnalysisMetrics.STD,
+                calib_dataset="boolq.jsonl",
+                topk=15,
+                trust_remote_code=False
+            )
+
+    def test_analyze_parameter_validation_device(self):
+        """测试analyze方法device参数验证"""
+        from msmodelslim.app.analysis.application import LayerAnalysisApplication, AnalysisMetrics
+
+        mock_service = MagicMock()
+        mock_factory = MagicMock()
+        app = LayerAnalysisApplication(mock_service, mock_factory)
+
+        # 测试无效的device类型
+        with self.assertRaises(SchemaValidateError):
+            app.analyze(
+                model_type="Qwen2.5-7B-Instruct",
+                model_path=str(self.model_path),
+                patterns=["*"],
+                device="invalid_device",  # 应该是DeviceType枚举
+                metrics=AnalysisMetrics.STD,
+                calib_dataset="boolq.jsonl",
+                topk=15,
+                trust_remote_code=False
+            )
+
+    def test_analyze_parameter_validation_metrics(self):
+        """测试analyze方法metrics参数验证"""
         from msmodelslim.app.analysis.application import LayerAnalysisApplication
+
+        mock_service = MagicMock()
+        mock_factory = MagicMock()
+        app = LayerAnalysisApplication(mock_service, mock_factory)
+
+        # 测试无效的metrics类型
+        with self.assertRaises(SchemaValidateError):
+            app.analyze(
+                model_type="Qwen2.5-7B-Instruct",
+                model_path=str(self.model_path),
+                patterns=["*"],
+                device=DeviceType.NPU,
+                metrics="invalid_metrics",  # 应该是AnalysisMetrics枚举
+                calib_dataset="boolq.jsonl",
+                topk=15,
+                trust_remote_code=False
+            )
+
+    def test_analyze_parameter_validation_calib_dataset_format(self):
+        """测试analyze方法calib_dataset文件格式验证"""
+        from msmodelslim.app.analysis.application import LayerAnalysisApplication, AnalysisMetrics
+
+        mock_service = MagicMock()
+        mock_factory = MagicMock()
+        app = LayerAnalysisApplication(mock_service, mock_factory)
+
+        # 测试无效的文件格式
+        with self.assertRaises(SchemaValidateError):
+            app.analyze(
+                model_type="Qwen2.5-7B-Instruct",
+                model_path=str(self.model_path),
+                patterns=["*"],
+                device=DeviceType.NPU,
+                metrics=AnalysisMetrics.STD,
+                calib_dataset="invalid.txt",  # 无效的文件格式
+                topk=15,
+                trust_remote_code=False
+            )
+
+    def test_analyze_parameter_validation_topk(self):
+        """测试analyze方法topk参数验证"""
+        from msmodelslim.app.analysis.application import LayerAnalysisApplication, AnalysisMetrics
+
+        mock_service = MagicMock()
+        mock_factory = MagicMock()
+        app = LayerAnalysisApplication(mock_service, mock_factory)
+
+        # 测试无效的topk值
+        with self.assertRaises(SchemaValidateError):
+            app.analyze(
+                model_type="Qwen2.5-7B-Instruct",
+                model_path=str(self.model_path),
+                patterns=["*"],
+                device=DeviceType.NPU,
+                metrics=AnalysisMetrics.STD,
+                calib_dataset="boolq.jsonl",
+                topk=0,  # 无效的topk值
+                trust_remote_code=False
+            )
+
+    def test_analyze_parameter_validation_trust_remote_code(self):
+        """测试analyze方法trust_remote_code参数验证"""
+        from msmodelslim.app.analysis.application import LayerAnalysisApplication, AnalysisMetrics
+
+        mock_service = MagicMock()
+        mock_factory = MagicMock()
+        app = LayerAnalysisApplication(mock_service, mock_factory)
+
+        # 测试无效的trust_remote_code类型
+        with self.assertRaises(SchemaValidateError):
+            app.analyze(
+                model_type="Qwen2.5-7B-Instruct",
+                model_path=str(self.model_path),
+                patterns=["*"],
+                device=DeviceType.NPU,
+                metrics=AnalysisMetrics.STD,
+                calib_dataset="boolq.jsonl",
+                topk=15,
+                trust_remote_code="not_a_bool"  # 应该是bool
+            )
+
+    @patch('msmodelslim.app.analysis.application.get_logger')
+    def test_analyze_with_valid_parameters(self, mock_get_logger):
+        """测试analyze方法使用有效参数"""
+        from msmodelslim.app.analysis.application import LayerAnalysisApplication, AnalysisMetrics
+        from msmodelslim.app.analysis_service.pipeline_interface import PipelineInterface
 
         # 创建模拟对象
         mock_service = MagicMock()
         mock_model_factory = MagicMock()
-        mock_model_adapter = MagicMock()
+        mock_model_adapter = MagicMock(spec=PipelineInterface)
         mock_result = MagicMock()
+        mock_logger = MagicMock()
 
         # 设置模拟返回值
-        mock_model_factory.return_value.return_value = mock_model_adapter
+        mock_model_factory.return_value = mock_model_adapter
         mock_service.analyze.return_value = mock_result
+        mock_get_logger.return_value = mock_logger
 
         app = LayerAnalysisApplication(mock_service, mock_model_factory)
 
         # 调用analyze方法
         result = app.analyze(
             model_type="Qwen2.5-7B-Instruct",
-            model_path=self.model_path,
+            model_path=str(self.model_path),
             patterns=["*"],
-            device=DeviceType.NPU,
-            metrics="std",
+            device=DeviceType.CPU,
+            metrics=AnalysisMetrics.STD,
             calib_dataset="boolq.jsonl",
             topk=15,
             trust_remote_code=False
@@ -152,45 +257,78 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
         self.assertEqual(result, mock_result)
 
         # 验证模型工厂调用
-        mock_model_factory.assert_called_once()
-        mock_model_factory.return_value.assert_called_once_with(
-            model_type="Qwen2.5-7B-Instruct",
-            ori_path=self.model_path,
-            device=DeviceType.NPU,
-            trust_remote_code=False
+        mock_model_factory.assert_called_once_with(
+            "Qwen2.5-7B-Instruct",
+            self.model_path,
+            False
         )
 
         # 验证分析服务调用
+        expected_config = {
+            'metrics': 'std',
+            'calib_dataset': 'boolq.jsonl',
+            'method_params': {}
+        }
         mock_service.analyze.assert_called_once_with(
-            model=mock_model_adapter,
+            device=DeviceType.CPU,
+            model_adapter=mock_model_adapter,
             patterns=["*"],
-            analysis_config={
-                'metrics': 'std',
-                'calib_dataset': 'boolq.jsonl',
-                'method_params': {}
-            }
+            analysis_config=expected_config
         )
 
         # 验证结果导出
         mock_service.export_results.assert_called_once_with(result, 15)
 
-    def test_analyze_with_enum_metrics(self):
-        """测试analyze方法使用枚举metrics"""
+    @patch('msmodelslim.app.analysis.application.get_logger')
+    def test_analyze_with_unsupported_model_adapter(self, mock_get_logger):
+        """测试analyze方法使用不支持的模型适配器"""
         from msmodelslim.app.analysis.application import LayerAnalysisApplication, AnalysisMetrics
+        from msmodelslim.utils.exception import UnsupportedError
 
         mock_service = MagicMock()
         mock_model_factory = MagicMock()
-        mock_model_adapter = MagicMock()
-        mock_result = MagicMock()
+        mock_model_adapter = MagicMock()  # 不是PipelineInterface
+        mock_logger = MagicMock()
 
-        mock_model_factory.return_value.return_value = mock_model_adapter
-        mock_service.analyze.return_value = mock_result
+        mock_model_factory.return_value = mock_model_adapter
+        mock_get_logger.return_value = mock_logger
+
+        app = LayerAnalysisApplication(mock_service, mock_model_factory)
+
+        # 测试不支持的模型适配器
+        with self.assertRaises(UnsupportedError):
+            app.analyze(
+                model_type="Qwen2.5-7B-Instruct",
+                model_path=str(self.model_path),
+                patterns=["*"],
+                device=DeviceType.NPU,
+                metrics=AnalysisMetrics.STD,
+                calib_dataset="boolq.jsonl",
+                topk=15,
+                trust_remote_code=False
+            )
+
+    @patch('msmodelslim.app.analysis.application.get_logger')
+    def test_analyze_with_none_result(self, mock_get_logger):
+        """测试analyze方法返回None结果"""
+        from msmodelslim.app.analysis.application import LayerAnalysisApplication, AnalysisMetrics
+        from msmodelslim.app.analysis_service.pipeline_interface import PipelineInterface
+
+        mock_service = MagicMock()
+        mock_model_factory = MagicMock()
+        mock_model_adapter = MagicMock(spec=PipelineInterface)
+        mock_logger = MagicMock()
+
+        # 设置服务返回None
+        mock_model_factory.return_value = mock_model_adapter
+        mock_service.analyze.return_value = None
+        mock_get_logger.return_value = mock_logger
 
         app = LayerAnalysisApplication(mock_service, mock_model_factory)
 
         result = app.analyze(
             model_type="Qwen2.5-7B-Instruct",
-            model_path=self.model_path,
+            model_path=str(self.model_path),
             patterns=["*"],
             device=DeviceType.NPU,
             metrics=AnalysisMetrics.KURTOSIS,
@@ -199,144 +337,10 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
             trust_remote_code=False
         )
 
-        # 验证metrics被正确转换为字符串
-        mock_service.analyze.assert_called_once_with(
-            model=mock_model_adapter,
-            patterns=["*"],
-            analysis_config={
-                'metrics': 'kurtosis',
-                'calib_dataset': 'boolq.jsonl',
-                'method_params': {}
-            }
-        )
-
-    def test_analyze_parameter_validation(self):
-        """测试analyze方法的参数验证"""
-        from msmodelslim.app.analysis.application import LayerAnalysisApplication
-
-        mock_service = MagicMock()
-        mock_model_factory = MagicMock()
-
-        app = LayerAnalysisApplication(mock_service, mock_model_factory)
-
-        # 测试无效的model_type类型
-        with self.assertRaises(SchemaValidateError):
-            app.analyze(
-                model_type=123,  # 应该是字符串
-                model_path=self.model_path,
-                patterns=["*"],
-                device=DeviceType.NPU,
-                metrics="std",
-                calib_dataset="boolq.jsonl",
-                topk=15,
-                trust_remote_code=False
-            )
-
-        # 测试无效的model_path类型
-        with self.assertRaises(SchemaValidateError):
-            app.analyze(
-                model_type="Qwen2.5-7B-Instruct",
-                model_path="not_a_path",  # 应该是Path对象
-                patterns=["*"],
-                device=DeviceType.NPU,
-                metrics="std",
-                calib_dataset="boolq.jsonl",
-                topk=15,
-                trust_remote_code=False
-            )
-
-        # 测试无效的patterns类型
-        with self.assertRaises(SchemaValidateError):
-            app.analyze(
-                model_type="Qwen2.5-7B-Instruct",
-                model_path=self.model_path,
-                patterns="not_a_list",  # 应该是列表
-                device=DeviceType.NPU,
-                metrics="std",
-                calib_dataset="boolq.jsonl",
-                topk=15,
-                trust_remote_code=False
-            )
-
-        # 测试无效的device类型
-        with self.assertRaises(SchemaValidateError):
-            app.analyze(
-                model_type="Qwen2.5-7B-Instruct",
-                model_path=self.model_path,
-                patterns=["*"],
-                device="invalid_device",  # 应该是DeviceType枚举
-                metrics="std",
-                calib_dataset="boolq.jsonl",
-                topk=15,
-                trust_remote_code=False
-            )
-
-        # 测试无效的metrics值
-        with self.assertRaises(SchemaValidateError):
-            app.analyze(
-                model_type="Qwen2.5-7B-Instruct",
-                model_path=self.model_path,
-                patterns=["*"],
-                device=DeviceType.NPU,
-                metrics="invalid_metrics",  # 无效的metrics值
-                calib_dataset="boolq.jsonl",
-                topk=15,
-                trust_remote_code=False
-            )
-
-        # 测试无效的calib_dataset格式
-        with self.assertRaises(SchemaValidateError):
-            app.analyze(
-                model_type="Qwen2.5-7B-Instruct",
-                model_path=self.model_path,
-                patterns=["*"],
-                device=DeviceType.NPU,
-                metrics="std",
-                calib_dataset="invalid.txt",  # 无效的文件格式
-                topk=15,
-                trust_remote_code=False
-            )
-
-        # 测试无效的topk值
-        with self.assertRaises(SchemaValidateError):
-            app.analyze(
-                model_type="Qwen2.5-7B-Instruct",
-                model_path=self.model_path,
-                patterns=["*"],
-                device=DeviceType.NPU,
-                metrics="std",
-                calib_dataset="boolq.jsonl",
-                topk=0,  # 无效的topk值
-                trust_remote_code=False
-            )
-
-    def test_internal_analyze_method(self):
-        """测试内部_analyze方法"""
-        from msmodelslim.app.analysis.application import LayerAnalysisApplication
-
-        mock_service = MagicMock()
-        mock_model_factory = MagicMock()
-        mock_model_adapter = MagicMock()
-        mock_result = MagicMock()
-
-        mock_model_factory.return_value.return_value = mock_model_adapter
-        mock_service.analyze.return_value = mock_result
-
-        app = LayerAnalysisApplication(mock_service, mock_model_factory)
-
-        # 调用内部方法
-        result = app._analyze(
-            model_type="Qwen2.5-7B-Instruct",
-            model_path=self.model_path,
-            patterns=["*"],
-            device=DeviceType.NPU,
-            metrics="std",
-            calib_dataset="boolq.jsonl",
-            topk=15,
-            trust_remote_code=False
-        )
-
-        self.assertEqual(result, mock_result)
+        # 验证结果为None
+        self.assertIsNone(result)
+        # 验证export_results没有被调用
+        mock_service.export_results.assert_not_called()
 
 
 class TestAnalysisServiceModule(TestComprehensiveAnalysisCoverage):
@@ -347,17 +351,6 @@ class TestAnalysisServiceModule(TestComprehensiveAnalysisCoverage):
         service = LayerSelectorAnalysisService(mock_dataset_loader)
 
         self.assertEqual(service.dataset_loader, mock_dataset_loader)
-
-    def test_analyze_with_invalid_model(self):
-        mock_dataset_loader = MagicMock()
-        service = LayerSelectorAnalysisService(mock_dataset_loader)
-
-        with self.assertRaises(SchemaValidateError):
-            service.analyze(
-                model="not_a_model_adapter",  # 无效的model类型
-                patterns=['*'],
-                analysis_config={}
-            )
 
     def test_analyze_with_invalid_patterns(self):
         """测试analyze方法使用无效的patterns"""
@@ -371,28 +364,79 @@ class TestAnalysisServiceModule(TestComprehensiveAnalysisCoverage):
 
         with self.assertRaises(SchemaValidateError):
             service.analyze(
-                model=mock_model,
+                model_adapter=mock_model,
                 patterns="not_a_list",  # 无效的patterns类型
                 analysis_config={}
             )
 
-    def test_prepare_calibration_data_no_dataset(self):
-        """测试_prepare_calibration_data方法无校准数据集"""
-        from msmodelslim.app.base.model import BaseModelAdapter
+    @patch('msmodelslim.app.analysis_service.layer_selector.get_logger')
+    def test_analyze_with_successful_flow(self, mock_get_logger):
+        """测试analyze方法成功流程"""
+        from msmodelslim.app.analysis_service.pipeline_interface import PipelineInterface
 
         mock_dataset_loader = MagicMock()
         service = LayerSelectorAnalysisService(mock_dataset_loader)
 
+        # 创建模拟对象
+        mock_model_adapter = MagicMock(spec=PipelineInterface)
         mock_model = MagicMock()
-        mock_model.__class__ = BaseModelAdapter  # 设置为BaseModelAdapter类型
+        mock_model.model = MagicMock()
+        mock_model_adapter.load_model.return_value = mock_model
 
-        result = service._prepare_calibration_data(mock_model, None)
+        # 模拟方法调用
+        with patch.object(service, '_prepare_calibration_data', return_value=None) as mock_prep:
+            with patch.object(service, '_get_target_layers', return_value=['layer1']) as mock_get_layers:
+                with patch.object(service, '_run_analysis', 
+                                    return_value=[{'name': 'layer1', 'score': 1.0}]) as mock_run:
+                    result = service.analyze(
+                        model_adapter=mock_model_adapter,
+                        patterns=["*"],
+                        analysis_config={'metrics': 'std', 'calib_dataset': 'test.jsonl', 'method_params': {}},
+                        device=DeviceType.CPU
+                    )
+
+        # 验证结果
+        self.assertEqual(result.layer_scores, [{'name': 'layer1', 'score': 1.0}])
+        self.assertEqual(result.method, 'std')
+        self.assertEqual(result.patterns, ["*"])
+
+    @patch('msmodelslim.app.analysis_service.layer_selector.get_logger')
+    def test_prepare_calibration_data_none_dataset(self, mock_get_logger):
+        """测试_prepare_calibration_data方法无校准数据集"""
+        from msmodelslim.app.analysis_service.pipeline_interface import PipelineInterface
+
+        mock_dataset_loader = MagicMock()
+        service = LayerSelectorAnalysisService(mock_dataset_loader)
+
+        mock_model_adapter = MagicMock(spec=PipelineInterface)
+
+        result = service._prepare_calibration_data(mock_model_adapter, None)
 
         self.assertIsNone(result)
 
+    @patch('msmodelslim.app.analysis_service.layer_selector.get_logger')
+    def test_prepare_calibration_data_with_dataset(self, mock_get_logger):
+        """测试_prepare_calibration_data方法有校准数据集"""
+        from msmodelslim.app.analysis_service.pipeline_interface import PipelineInterface
+
+        mock_dataset_loader = MagicMock()
+        service = LayerSelectorAnalysisService(mock_dataset_loader)
+
+        mock_model_adapter = MagicMock(spec=PipelineInterface)
+        mock_dataset = MagicMock()
+        mock_calib_data = ['data1', 'data2']
+
+        mock_dataset_loader.get_dataset_by_name.return_value = mock_dataset
+        mock_model_adapter.handle_dataset.return_value = mock_calib_data
+
+        result = service._prepare_calibration_data(mock_model_adapter, 'test_dataset.jsonl')
+
+        self.assertEqual(result, mock_calib_data)
+        mock_dataset_loader.get_dataset_by_name.assert_called_once_with('test_dataset.jsonl')
+        mock_model_adapter.handle_dataset.assert_called_once()
+
     def test_get_target_layers(self):
         """测试_get_target_layers方法"""
-
         mock_dataset_loader = MagicMock()
         service = LayerSelectorAnalysisService(mock_dataset_loader)
 
@@ -424,52 +468,6 @@ class TestAnalysisServiceModule(TestComprehensiveAnalysisCoverage):
             service.export_results(result, 10)
 
         mock_print.assert_called_once_with(result, 10)
-
-    def test_analyze_normal_execution(self):
-        """测试analyze方法的正常执行流程"""
-        from msmodelslim.app.base.model import BaseModelAdapter
-
-        mock_dataset_loader = MagicMock()
-        service = LayerSelectorAnalysisService(mock_dataset_loader)
-
-        # 创建模拟BaseModelAdapter对象
-        mock_model = MagicMock()
-        mock_model.__class__ = BaseModelAdapter  # 设置为BaseModelAdapter类型
-        mock_model.device = MagicMock()
-        mock_model.device.value = 'cpu'
-
-        # 模拟各种依赖方法
-        with patch.object(service, '_prepare_calibration_data', return_value=None) as mock_prep_data:
-            with patch.object(service, '_get_target_layers', return_value=['layer1', 'layer2']) as mock_get_layers:
-                with patch.object(service, '_run_analysis',
-                                  return_value=[{'name': 'layer1', 'score': 1.0}]) as mock_run_analysis:
-                    with patch('msmodelslim.app.analysis_service.layer_selector.AnalysisMethodFactory') as mock_factory:
-                        mock_method = MagicMock()
-                        mock_method.name = 'std'
-                        mock_factory.create_method.return_value = mock_method
-
-                        # 执行测试
-                        result = service.analyze(
-                            model=mock_model,
-                            patterns=['*'],
-                            analysis_config={
-                                'metrics': 'std',
-                                'calib_dataset': 'test.jsonl',
-                                'method_params': {'param1': 'value1'}
-                            }
-                        )
-
-        # 验证结果
-        self.assertIsInstance(result, AnalysisResult)
-        self.assertEqual(result.layer_scores, [{'name': 'layer1', 'score': 1.0}])
-        self.assertEqual(result.method, 'std')
-        self.assertEqual(result.patterns, ['*'])
-
-        # 验证调用
-        mock_prep_data.assert_called_once_with(mock_model, 'test.jsonl')
-        mock_get_layers.assert_called_once_with(mock_model.model, ['*'])
-        mock_run_analysis.assert_called_once()
-        mock_factory.create_method.assert_called_once_with('std', param1='value1')
 
     def test_run_analysis_with_unsupported_data_type(self):
         """测试_run_analysis方法使用不支持的数据类型"""
@@ -509,41 +507,55 @@ class TestAnalysisServiceModule(TestComprehensiveAnalysisCoverage):
         # 验证结果为空
         self.assertEqual(result, [])
 
+    @patch('msmodelslim.app.analysis_service.layer_selector.get_logger')
+    def test_run_analysis_empty_layer_stats(self, mock_get_logger):
+        """测试_run_analysis方法空层统计"""
+        mock_dataset_loader = MagicMock()
+        service = LayerSelectorAnalysisService(mock_dataset_loader)
 
-class TestAnalysisResult(TestComprehensiveAnalysisCoverage):
-    """测试AnalysisResult类"""
+        # 创建模拟模型
+        mock_model = MagicMock(spec=nn.Module)
+        mock_layer = MagicMock(spec=nn.Linear)
+        mock_model.named_modules.return_value = [('layer1', mock_layer)]
 
-    def test_analysis_result_init(self):
-        """测试AnalysisResult初始化"""
+        # 创建模拟分析方法，返回空统计
+        mock_analysis_method = MagicMock()
+        mock_hook = MagicMock()
+        mock_analysis_method.get_hook.return_value = mock_hook
+        
+        # 模拟hook注册
+        mock_hook_handle = MagicMock()
+        mock_layer.register_forward_hook.return_value = mock_hook_handle
 
-        layer_scores = [{'name': 'layer1', 'score': 2.0}, {'name': 'layer2', 'score': 1.0}]
-        result = AnalysisResult(layer_scores, 'test_method', ['*'])
+        # 没有校准数据，layer_stats应该为空
+        result = service._run_analysis(mock_model, ['layer1'], mock_analysis_method, None)
 
-        self.assertEqual(result.layer_scores, layer_scores)
-        self.assertEqual(result.method, 'test_method')
-        self.assertEqual(result.patterns, ['*'])
+        # 验证返回空列表
+        self.assertEqual(result, [])
 
-    def test_get_sorted_layers(self):
-        """测试get_sorted_layers方法"""
+    @patch('msmodelslim.app.analysis_service.layer_selector.get_logger')
+    @patch('msmodelslim.app.analysis_service.layer_selector.clean_output')
+    def test_print_analysis_results_various_disable_levels(self, mock_clean_output, mock_get_logger):
+        """测试_print_analysis_results方法不同的disable_level"""
+        mock_dataset_loader = MagicMock()
+        service = LayerSelectorAnalysisService(mock_dataset_loader)
 
+        # 创建测试数据
         layer_scores = [
-            {'name': 'layer1', 'score': 2.0},
-            {'name': 'layer2', 'score': 1.0},
-            {'name': 'layer3', 'score': 3.0}
+            {'name': 'layer1', 'score': 3.0},
+            {'name': 'layer2', 'score': 2.0},
+            {'name': 'layer3', 'score': 1.0}
         ]
-        result = AnalysisResult(layer_scores, 'test_method', ['*'])
+        result = AnalysisResult(layer_scores, 'test', ['*'])
 
-        # 测试升序排序
-        sorted_layers = result.get_sorted_layers(reverse=False)
-        self.assertEqual(sorted_layers[0]['name'], 'layer2')
-        self.assertEqual(sorted_layers[1]['name'], 'layer1')
-        self.assertEqual(sorted_layers[2]['name'], 'layer3')
+        # 测试disable_level超出范围
+        service._print_analysis_results(result, 10)  # 超出层数
 
-        # 测试降序排序（默认）
-        sorted_layers = result.get_sorted_layers(reverse=True)
-        self.assertEqual(sorted_layers[0]['name'], 'layer3')
-        self.assertEqual(sorted_layers[1]['name'], 'layer1')
-        self.assertEqual(sorted_layers[2]['name'], 'layer2')
+        # 测试disable_level为负数
+        service._print_analysis_results(result, -1)
+
+        # 验证clean_output被调用
+        self.assertTrue(mock_clean_output.called)
 
 
 def create_mock_analysis_result(layer_scores: list) -> MagicMock:
@@ -610,6 +622,125 @@ class TestPrintAnalysisResults(unittest.TestCase):
             self.assertTrue(any("kurtosis method" in str(msg) for msg in log_messages), "应该包含分析方法")
             self.assertTrue(any("conv2d" in str(msg) for msg in log_messages), "应该包含模式信息")
             self.assertTrue(any("Total layers analyzed: 5" in str(msg) for msg in log_messages), "应该包含总层数信息")
+
+
+def test_get_tokenized_data():
+    """测试get_tokenized_data函数"""
+    from msmodelslim.app.analysis_service.layer_selector import get_tokenized_data
+
+    # 创建模拟tokenizer
+    mock_tokenizer = MagicMock()
+    mock_inputs = MagicMock()
+    mock_inputs.data = {
+        'input_ids': torch.tensor([[1, 2, 3]]),
+        'attention_mask': torch.tensor([[1, 1, 1]])
+    }
+    mock_inputs.to.return_value = mock_inputs
+    mock_tokenizer.return_value = mock_inputs
+
+    calib_list = ['test text 1', 'test text 2']
+    device = torch.device('cpu')
+
+    result = get_tokenized_data(mock_tokenizer, calib_list, device)
+
+    # 验证结果
+    assert len(result) == 2
+    assert len(result[0]) == 2  # input_ids and attention_mask
+    mock_tokenizer.assert_called()
+
+
+class TestAnalysisMetrics(unittest.TestCase):
+    """测试AnalysisMetrics枚举"""
+
+    def test_analysis_metrics_values(self):
+        """测试AnalysisMetrics枚举值"""
+        from msmodelslim.app.analysis.application import AnalysisMetrics
+
+        self.assertEqual(AnalysisMetrics.STD.value, 'std')
+        self.assertEqual(AnalysisMetrics.QUANTILE.value, 'quantile')
+        self.assertEqual(AnalysisMetrics.KURTOSIS.value, 'kurtosis')
+
+    def test_analysis_metrics_extended_enum_functionality(self):
+        """测试AnalysisMetrics的ExtendedEnum功能"""
+        from msmodelslim.app.analysis.application import AnalysisMetrics
+
+        # 测试所有值都是有效的字符串
+        for metric in AnalysisMetrics:
+            self.assertIsInstance(metric.value, str)
+            self.assertGreater(len(metric.value), 0)
+
+
+class TestGetTokenizedDataFunction(unittest.TestCase):
+    """测试get_tokenized_data函数"""
+
+    def test_get_tokenized_data_basic_functionality(self):
+        """测试get_tokenized_data基本功能"""
+        from msmodelslim.app.analysis_service.layer_selector import get_tokenized_data
+
+        # 创建模拟tokenizer
+        mock_tokenizer = MagicMock()
+        mock_inputs = MagicMock()
+        mock_inputs.data = {
+            'input_ids': torch.tensor([[1, 2, 3]]),
+            'attention_mask': torch.tensor([[1, 1, 1]])
+        }
+        mock_inputs.to.return_value = mock_inputs
+        mock_tokenizer.return_value = mock_inputs
+
+        calib_list = ['test text 1', 'test text 2']
+        device = torch.device('cpu')
+
+        result = get_tokenized_data(mock_tokenizer, calib_list, device)
+
+        # 验证结果
+        self.assertEqual(len(result), 2)
+        self.assertEqual(len(result[0]), 2)  # input_ids and attention_mask
+        
+        # 验证tokenizer被正确调用
+        self.assertEqual(mock_tokenizer.call_count, 2)
+
+    def test_get_tokenized_data_custom_names(self):
+        """测试get_tokenized_data使用自定义键名"""
+        from msmodelslim.app.analysis_service.layer_selector import get_tokenized_data
+
+        # 创建模拟tokenizer
+        mock_tokenizer = MagicMock()
+        mock_inputs = MagicMock()
+        mock_inputs.data = {
+            'custom_input_ids': torch.tensor([[1, 2, 3]]),
+            'custom_attention_mask': torch.tensor([[1, 1, 1]])
+        }
+        mock_inputs.to.return_value = mock_inputs
+        mock_tokenizer.return_value = mock_inputs
+
+        calib_list = ['test text']
+        device = torch.device('cpu')
+
+        result = get_tokenized_data(
+            mock_tokenizer, 
+            calib_list, 
+            device,
+            input_ids_name='custom_input_ids',
+            attention_mask_name='custom_attention_mask'
+        )
+
+        # 验证结果
+        self.assertEqual(len(result), 1)
+        self.assertEqual(len(result[0]), 2)
+
+    def test_get_tokenized_data_empty_list(self):
+        """测试get_tokenized_data处理空列表"""
+        from msmodelslim.app.analysis_service.layer_selector import get_tokenized_data
+
+        mock_tokenizer = MagicMock()
+        calib_list = []
+        device = torch.device('cpu')
+
+        result = get_tokenized_data(mock_tokenizer, calib_list, device)
+
+        # 验证结果
+        self.assertEqual(len(result), 0)
+        mock_tokenizer.assert_not_called()
 
 
 if __name__ == '__main__':

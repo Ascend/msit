@@ -27,7 +27,9 @@ from msmodelslim.core.KIA.impl.flex_smooth_quant import (
     compute_smooth_scale,
     apply_smooth_scale_shift,
     prepare_mqga_parameters,
-    reduce_scales_for_mqga,
+    reduce_scales_for_mqga_mean,
+    reduce_scales_for_mqga_max,
+    MQGAScaleParams,
     flex_smooth_impl_OV,
     flex_smooth_impl_UpDown,
     flex_smooth_impl_LinearLinear,
@@ -207,16 +209,89 @@ class TestQuantizationFunctions:
         assert pad_size == 0
 
     @staticmethod
-    def test_reduce_scales_for_mqga():
-        """测试MQGA尺度缩减"""
-        scales = torch.randn(16)  # 假设16个尺度
-        shape_ratio = 4
+    def test_reduce_scales_for_mqga_max():
+        """测试MQGA尺度缩减（使用max聚合）
+        
+        测试场景：
+        - 8个Q头，2个KV头（shape_ratio=4）
+        - 每个头的维度为128
+        - 总维度：8 * 128 = 1024
+        """
+        # 设置参数
         num_attention_heads = 8
+        num_kv_heads = 2
+        head_dim = 128
+        num_key_value_groups = num_attention_heads // num_kv_heads  # 4
+        total_dim = num_attention_heads * head_dim  # 1024
         
-        updated_scales, reduced_scales = reduce_scales_for_mqga(scales, shape_ratio, num_attention_heads)
+        # 创建测试数据
+        act_scales = torch.randn(total_dim).abs() + 0.1  # 确保为正值
+        weight_scales = torch.randn(total_dim).abs() + 0.1  # 确保为正值
+        best_alpha = 0.5
+        best_beta = 0.5
         
-        assert updated_scales.shape == scales.shape
-        assert reduced_scales.numel() == scales.numel() // shape_ratio
+        # 封装参数为 MQGAScaleParams 对象
+        params = MQGAScaleParams(
+            act_scales=act_scales,
+            weight_scales=weight_scales,
+            best_alpha=best_alpha,
+            best_beta=best_beta,
+            num_key_value_groups=num_key_value_groups,
+            head_dim=head_dim
+        )
+        
+        # 调用函数（使用max聚合）
+        o_scales, v_scales = reduce_scales_for_mqga_max(params)
+        
+        # 验证输出维度
+        assert o_scales.shape == (total_dim,), f"o_scales维度应为{total_dim}，实际为{o_scales.shape}"
+        assert v_scales.shape == (num_kv_heads * head_dim,), \
+            f"v_scales维度应为{num_kv_heads * head_dim}，实际为{v_scales.shape}"
+        
+        # 验证o_scales是v_scales的重复扩展
+        assert o_scales.numel() == num_key_value_groups * v_scales.numel(), \
+            "o_scales应该是v_scales重复num_key_value_groups次"
+        
+        # 验证数值范围合理（应该都是正值且被clamp到最小1e-5）
+        assert torch.all(o_scales > 0), "o_scales应该都是正值"
+        assert torch.all(v_scales > 0), "v_scales应该都是正值"
+        assert torch.all(o_scales >= 1e-5), "o_scales应该被clamp到最小1e-5"
+        assert torch.all(v_scales >= 1e-5), "v_scales应该被clamp到最小1e-5"
+
+    @staticmethod
+    def test_reduce_scales_for_mqga_mean():
+        """测试MQGA尺度缩减（使用mean聚合）
+        
+        测试场景：
+        - 8个Q头，2个KV头（shape_ratio=4）
+        - 每个头的维度为128
+        - 总维度：8 * 128 = 1024
+        """
+        # 设置参数
+        num_attention_heads = 8
+        num_kv_heads = 2
+        head_dim = 128
+        shape_ratio = num_attention_heads // num_kv_heads  # 4
+        total_dim = num_attention_heads * head_dim  # 1024
+        
+        # 创建测试数据（已经计算好的scales）
+        scales = torch.randn(total_dim).abs() + 0.1  # 确保为正值
+        
+        # 调用函数（使用mean聚合）
+        o_scales, v_scales = reduce_scales_for_mqga_mean(scales, shape_ratio, num_attention_heads)
+        
+        # 验证输出维度
+        assert o_scales.shape == scales.shape, f"o_scales维度应为{scales.shape}，实际为{o_scales.shape}"
+        assert v_scales.numel() == scales.numel() // shape_ratio, \
+            f"v_scales元素数应为{scales.numel() // shape_ratio}，实际为{v_scales.numel()}"
+        
+        # 验证o_scales是v_scales的重复扩展
+        assert o_scales.numel() == shape_ratio * v_scales.numel(), \
+            "o_scales应该是v_scales重复shape_ratio次"
+        
+        # 验证数值范围合理（应该都是正值）
+        assert torch.all(o_scales > 0), "o_scales应该都是正值"
+        assert torch.all(v_scales > 0), "v_scales应该都是正值"
 
 
 class TestFlexSmoothImplOV:
@@ -599,29 +674,77 @@ class TestErrorHandling:
                 flex_smooth_impl_OV(subgraph, config, context)
 
     @staticmethod
-    def test_unexpected_error_in_scale_computation():
-        """测试尺度计算中的意外错误"""
+    def test_unexpected_error_in_scale_computation_mean():
+        """测试尺度计算中的意外错误（mean聚合）
+        
+        测试当 reduce_scales_for_mqga_mean 函数执行失败时，
+        flex_smooth_impl_OV 是否正确抛出 UnexpectedError
+        """
         subgraph = Mock(spec=OVSubgraph)
         subgraph.v_proj = Mock()
         subgraph.o_proj = Mock()
         subgraph.num_attention_heads = 8
         subgraph.key_value_heads = 2
-        subgraph.o_proj.weight = torch.randn(8, 16)
-        subgraph.v_proj.parameters.return_value = iter([torch.randn(16, 8)])
+        
+        # 设置正确的权重维度：[output_dim, input_dim]
+        # input_dim = num_attention_heads * head_dim = 8 * 128 = 1024
+        head_dim = 128
+        total_dim = subgraph.num_attention_heads * head_dim
+        subgraph.o_proj.weight = torch.randn(512, total_dim)
+        subgraph.v_proj.parameters.return_value = iter([torch.randn(total_dim, 512)])
         
         context = Mock(spec=SmoothContext)
-        context.tensors = [torch.randn(2, 8, 16)]
-        context.a_smooth_scale = torch.randn(16)
+        context.tensors = [torch.randn(2, 8, total_dim)]
+        context.a_smooth_scale = torch.randn(total_dim)
         
         config = Mock(spec=FlexSmoothQuantConfig)
         config.alpha = 0.5
         config.beta = 0.5
+        config.extra_config = None  # 默认情况，会使用 mean 聚合
         
-        # 模拟compute_smooth_scale函数抛出异常
-        with patch('msmodelslim.core.KIA.impl.flex_smooth_quant.compute_smooth_scale') as mock_compute:
-            mock_compute.side_effect = Exception("Scale computation error")
+        # 模拟 reduce_scales_for_mqga_mean 函数抛出异常
+        # 这是 flex_smooth_impl_OV 中默认调用的函数
+        with patch('msmodelslim.core.KIA.impl.flex_smooth_quant.reduce_scales_for_mqga_mean') as mock_reduce:
+            mock_reduce.side_effect = RuntimeError("MQGA scale reduction failed")
             
-            with pytest.raises(UnexpectedError):
+            with pytest.raises(UnexpectedError, match="Failed to compute smooth scales"):
+                flex_smooth_impl_OV(subgraph, config, context)
+
+    @staticmethod
+    def test_unexpected_error_in_scale_computation_max():
+        """测试尺度计算中的意外错误（max聚合）
+        
+        测试当 reduce_scales_for_mqga_max 函数执行失败时，
+        flex_smooth_impl_OV 是否正确抛出 UnexpectedError
+        """
+        subgraph = Mock(spec=OVSubgraph)
+        subgraph.v_proj = Mock()
+        subgraph.o_proj = Mock()
+        subgraph.num_attention_heads = 8
+        subgraph.key_value_heads = 2
+        
+        # 设置正确的权重维度：[output_dim, input_dim]
+        # input_dim = num_attention_heads * head_dim = 8 * 128 = 1024
+        head_dim = 128
+        total_dim = subgraph.num_attention_heads * head_dim
+        subgraph.o_proj.weight = torch.randn(512, total_dim)
+        subgraph.v_proj.parameters.return_value = iter([torch.randn(total_dim, 512)])
+        
+        context = Mock(spec=SmoothContext)
+        context.tensors = [torch.randn(2, 8, total_dim)]
+        context.a_smooth_scale = torch.randn(total_dim)
+        
+        config = Mock(spec=FlexSmoothQuantConfig)
+        config.alpha = 0.5
+        config.beta = 0.5
+        config.extra_config = {'group_method': 'max'}  # 使用 max 聚合
+        
+        # 模拟 reduce_scales_for_mqga_max 函数抛出异常
+        # 当 extra_config['group_method'] == 'max' 时调用此函数
+        with patch('msmodelslim.core.KIA.impl.flex_smooth_quant.reduce_scales_for_mqga_max') as mock_reduce:
+            mock_reduce.side_effect = RuntimeError("MQGA scale reduction failed")
+            
+            with pytest.raises(UnexpectedError, match="Failed to compute smooth scales"):
                 flex_smooth_impl_OV(subgraph, config, context)
 
     @staticmethod
