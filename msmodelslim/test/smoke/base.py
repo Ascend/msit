@@ -145,3 +145,82 @@ def invoke_test(config_name: str, model_save_path: str, device: str = 'cpu', off
         sys.argv = original_argv
 
     return captured_model_adapter
+
+
+def invoke_analysis_test(metrics: str = "kurtosis", patterns: list = None, topk: int = 15):
+    """
+    使用真正的CLI parser来模拟分析模块命令行参数并返回分析结果
+    
+    Args:
+        metrics: 分析算法
+        patterns: 层模式列表
+        topk: 输出topk敏感层
+        
+    Returns:
+        分析结果
+    """
+    import sys
+    from unittest.mock import MagicMock
+    from msmodelslim.cli.__main__ import main as cli_main
+
+    # 保存原始的sys.argv
+    original_argv = sys.argv.copy()
+
+    # 用于存储分析结果的变量
+    captured_result = None
+
+    try:
+        # 构建命令行参数
+        sys.argv = [
+            'msmodelslim',
+            'analyze',
+            '--model_type', 'fake_llama',
+            '--model_path', './',
+            '--device', 'cpu',
+            '--metrics', metrics,
+            '--calib_dataset', 'boolq.jsonl',
+            '--topk', str(topk),
+            '--trust_remote_code', 'False'
+        ]
+
+        # 添加patterns参数
+        if patterns:
+            sys.argv.extend(['--pattern'])
+            sys.argv.extend(patterns)
+
+        # Mock整个分析流程
+        with patch('msmodelslim.cli.analysis.__main__.LayerAnalysisApplication') as analysis_app:
+            mock_app_instance = MagicMock()
+            mock_app_instance.analyze.return_value = "mock_analysis_result"
+            analysis_app.return_value = mock_app_instance
+
+            # Mock数据集加载器
+            with patch('msmodelslim.cli.analysis.__main__.FileDatasetLoader'):
+                # Mock分析服务
+                with patch('msmodelslim.cli.analysis.__main__.LayerSelectorAnalysisService'):
+                    # 使用patch来捕获分析结果
+                    from msmodelslim.cli.analysis.__main__ import main as analysis_main
+                    original_analysis_main = analysis_main
+
+                    def capture_result(args):
+                        nonlocal captured_result
+                        try:
+                            captured_result = original_analysis_main(args)
+                            return captured_result
+                        except Exception as e:
+                            captured_result = e
+                            return None
+
+                    # 临时替换方法
+                    import msmodelslim.cli.analysis.__main__ as analysis_module
+                    analysis_module.main = capture_result
+
+                    try:
+                        cli_main()
+                    finally:
+                        analysis_module.main = original_analysis_main
+
+    finally:
+        sys.argv = original_argv
+
+    return captured_result

@@ -1,0 +1,26 @@
+apiversion: modelslim_v1
+
+spec:
+  process:
+    - type: "linear_quant"
+      qconfig:
+        act:
+          scope: "per_block"
+          dtype: "mxfp4"
+          symmetric: True
+          method: "minmax"
+          ext:
+            axes: -1
+        weight:
+          scope: "per_block"
+          dtype: "mxfp4"
+          symmetric: True
+          method: "minmax"
+          ext:
+            axes: -1
+      include:
+        - "*"
+
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
