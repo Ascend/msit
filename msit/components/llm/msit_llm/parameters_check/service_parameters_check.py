@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
+# Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import argparse
 import ast
+import json
 import re
-import csv
+
 import pandas as pd
 from tabulate import tabulate
 
-from msit_llm.common.log import logger
+from components.utils.constants import TEXT_FILE_MAX_SIZE, JSON_FILE_MAX_SIZE, LOG_FILE_MAX_SIZE, FileCheckConst
 from components.utils.file_open_check import ms_open, sanitize_csv_value
-from components.utils.constants import TEXT_FILE_MAX_SIZE, JSON_FILE_MAX_SIZE, LOG_FILE_MAX_SIZE
+from components.utils.file_utils import check_path_type, check_and_get_real_path
+from msit_llm.common.log import logger
 
 service_parameters = ['temperature', 'top_k', 'top_p', 'do_sample', 'seed', 'repetition_penalty', 'watermark',
                       'frequency_penalty', 'presence_penalty', 'length_penalty', 'ignore_eos']
@@ -62,7 +61,7 @@ def parse_parameter_line(line, params, current_request, file_line_number):
     else:
         pass
 
-    
+
 def extract_log_parameters(log_file_path):
     """
     Extract sampling parameters from the log file and return a dictionary.
@@ -77,9 +76,9 @@ def extract_log_parameters(log_file_path):
 
     # 定义正则表达式
     start_pattern = re.compile(
-        r'\[endpoint\] Sampling parameters for request id: (\S+)'  
-        r'|'  
-        r'Sampling parameters for trace ids \[([^]]*)\]:'  
+        r'\[endpoint\] Sampling parameters for request id: (\S+)'
+        r'|'
+        r'Sampling parameters for trace ids \[([^]]*)\]:'
     )
 
     current_request = None
@@ -228,7 +227,7 @@ def extract_txt_parameters(log_file_path):
         elif 'do_sample:False' in param_str:
             request_params['do_sample'] = False
         else:
-            logger.warning(f'Please check that the content of the do_sample is correct.')
+            logger.warning('Please check that the content of the do_sample is correct.')
 
         param_dict[request_id_counter] = request_params  # 使用 request_id_counter 作为 param_dict 的键
         request_id_counter += 1  # 增加 request_id_counter
@@ -298,6 +297,11 @@ def compare_and_generate(input1_params, input2_params):
 
 
 def service_params_check(input1, input2):
+    check_path_type(input1, FileCheckConst.FILE)
+    check_path_type(input2, FileCheckConst.FILE)
+    input1 = check_and_get_real_path(input1, FileCheckConst.READ_ABLE)
+    input2 = check_and_get_real_path(input2, FileCheckConst.READ_ABLE)
+
     if input1.endswith('.json') and input2.endswith('.json'):
         """加载两个 JSON 文件并进行比对"""
         with ms_open(input1, "r", encoding="utf-8", max_size=JSON_FILE_MAX_SIZE) as f_gpu, \
@@ -329,7 +333,7 @@ def csv_input_safecheck(csv_input):
 def generate_report(differences, output_file="comparison_report.csv"):
     """生成比对报告并保存为CSV文件"""
     if not differences:
-        logger.info(f"No differences found")
+        logger.info("No differences found")
     else:
         csv_input_safecheck(differences)
         df = pd.DataFrame(differences)

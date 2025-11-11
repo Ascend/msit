@@ -1,11 +1,16 @@
 import argparse
+import os
 import sys
 import unittest
 from unittest.mock import patch, MagicMock
 
+from components.utils.file_utils import FileCheckException
+
 
 # Patch import for all command dependencies
 MODULE_PATH = "msit_llm.__main__"
+FILE_PATH = os.path.realpath(__file__)
+PARENT_DIR = os.path.dirname(FILE_PATH)
 
 
 class TestDumpCommand(unittest.TestCase):
@@ -56,7 +61,7 @@ class TestDumpCommand(unittest.TestCase):
     def test_handle_torchair_ge_graph(self, mock_acc_compare, mock_get_graph, mock_register, mock_set_log):
         from msit_llm.__main__ import CompareCommand
         args = argparse.Namespace(
-            golden_path="golden", my_path="my", cmp_level=None, output=".", mapping_file="",
+            golden_path=FILE_PATH, my_path=FILE_PATH, cmp_level=None, output=".", mapping_file="",
             custom_algorithms=None, log_level="info", weight=False, stats=False, rank_id=None
         )
         CompareCommand("compare", "help").handle(args)
@@ -72,7 +77,7 @@ class TestDumpCommand(unittest.TestCase):
         mock_mgr.return_value = mock_mgr_instance
         mock_mgr_instance.is_parsed_cmp_path.return_value = True
         args = argparse.Namespace(
-            golden_path="golden", my_path="my", cmp_level=None, output=".", mapping_file="",
+            golden_path=PARENT_DIR, my_path=PARENT_DIR, cmp_level=None, output=".", mapping_file="",
             custom_algorithms=None, log_level="info", weight=False, stats=False
         )
         CompareCommand("compare", "help").handle(args)
@@ -85,7 +90,7 @@ class TestDumpCommand(unittest.TestCase):
     def test_handle_weight(self, mock_cmp_weight, mock_get_graph, mock_register, mock_set_log):
         from msit_llm.__main__ import CompareCommand
         args = argparse.Namespace(
-            golden_path="golden", my_path="my", cmp_level=None, output=".", mapping_file="",
+            golden_path=PARENT_DIR, my_path=PARENT_DIR, cmp_level=None, output=".", mapping_file="",
             custom_algorithms=None, log_level="info", weight=True, stats=False
         )
         CompareCommand("compare", "help").handle(args)
@@ -108,8 +113,11 @@ class TestBCAnalyze(unittest.TestCase):
     def test_handle(self, mock_analyze, mock_set_log):
         from msit_llm.__main__ import BCAnalyze
         args = argparse.Namespace(golden="golden.csv", test="test.csv", log_level="info")
-        BCAnalyze("analyze", "help").handle(args)
-        mock_analyze.assert_called_once_with(golden="golden.csv", test="test.csv")
+        with self.assertRaises(FileCheckException) as context:
+            BCAnalyze("analyze", "help").handle(args)
+        self.assertEqual(str(context.exception),
+                         FileCheckException.err_strs.get(FileCheckException.ILLEGAL_PATH_ERROR))
+        mock_analyze.assert_not_called()
 
 
 class TestBadCaseAnalyze(unittest.TestCase):
@@ -118,8 +126,11 @@ class TestBadCaseAnalyze(unittest.TestCase):
     def test_handle(self, mock_analyze, mock_set_log):
         from msit_llm.__main__ import BadCaseAnalyze
         args = argparse.Namespace(golden_path="golden.csv", my_path="my.csv", log_level="info")
-        BadCaseAnalyze("bcanalyze", "help").handle(args)
-        mock_analyze.assert_called_once_with(golden_csv_path="golden.csv", test_csv_path="my.csv")
+        with self.assertRaises(FileCheckException) as context:
+            BadCaseAnalyze("bcanalyze", "help").handle(args)
+        self.assertEqual(str(context.exception),
+                         FileCheckException.err_strs.get(FileCheckException.ILLEGAL_PATH_ERROR))
+        mock_analyze.assert_not_called()
 
 
 class TestLogitsDump(unittest.TestCase):
@@ -128,8 +139,11 @@ class TestLogitsDump(unittest.TestCase):
     def test_handle(self, mock_dumper, mock_set_log):
         from msit_llm.__main__ import LogitsDump
         args = argparse.Namespace(exec="run", bad_case_result_csv="bad.csv", token_range=1, log_level="info")
-        LogitsDump("logitsdump", "help").handle(args)
-        mock_dumper.return_value.dump_logits.assert_called_once()
+        with self.assertRaises(FileCheckException) as context:
+            LogitsDump("logitsdump", "help").handle(args)
+        self.assertEqual(str(context.exception),
+                         FileCheckException.err_strs.get(FileCheckException.ILLEGAL_PATH_ERROR))
+        mock_dumper.return_value.dump_logits.assert_not_called()
 
 
 class TestLogitsCompare(unittest.TestCase):
@@ -138,7 +152,7 @@ class TestLogitsCompare(unittest.TestCase):
     def test_handle(self, mock_cmp, mock_set_log):
         from msit_llm.__main__ import LogitsCompare
         args = argparse.Namespace(
-            golden_path="golden", my_path="my", cosine_similarity=0.999, kl_divergence=0.0001,
+            golden_path=PARENT_DIR, my_path=PARENT_DIR, cosine_similarity=0.999, kl_divergence=0.0001,
             l1_norm=0.01, dtype="fp16", output_dir="output", log_level="info"
         )
         LogitsCompare("logitscmp", "help").handle(args)
@@ -269,11 +283,11 @@ class TestTransformCommand(unittest.TestCase):
             mock_ms_open.return_value.__enter__.return_value = mock_file
 
             args = argparse.Namespace(
-                source="src", to_python=True, to_quant=True, quant_disable_names="dummy.txt", log_level="info"
+                source=PARENT_DIR, to_python=True, to_quant=True, quant_disable_names=FILE_PATH, log_level="info"
             )
             from msit_llm.__main__ import Transform
             Transform("transform", "help").handle(args)
-            mock_transform.assert_called_once_with(source_path="src",
+            mock_transform.assert_called_once_with(source_path=PARENT_DIR,
                                                    to_quant=True, quant_disable_names=["name1", "name2"])
 
     @patch(f"{MODULE_PATH}.set_log_level")
@@ -295,11 +309,11 @@ class TestTransformCommand(unittest.TestCase):
         with patch("os.path.isfile", return_value=False), \
              patch("msit_llm.transform.torch_to_atb_python.transform") as mock_transform:
             args = argparse.Namespace(
-                source="src", to_python=True, to_quant=True, quant_disable_names="name1,name2", log_level="info"
+                source=PARENT_DIR, to_python=True, to_quant=True, quant_disable_names="name1,name2", log_level="info"
             )
             from msit_llm.__main__ import Transform
             Transform("transform", "help").handle(args)
-            mock_transform.assert_called_once_with(source_path="src",
+            mock_transform.assert_called_once_with(source_path=PARENT_DIR,
                                                    to_quant=True, quant_disable_names=["name1", "name2"])
 
     @patch(f"{MODULE_PATH}.set_log_level")
@@ -318,11 +332,11 @@ class TestTransformCommand(unittest.TestCase):
         mock_get_scenario.return_value = MagicMock()
         mock_scenarios.float_atb_to_quant_atb = mock_get_scenario.return_value
         args = argparse.Namespace(
-            source="src", enable_sparse=True, to_python=False, log_level="info"
+            source=PARENT_DIR, enable_sparse=True, to_python=False, log_level="info"
         )
         from msit_llm.__main__ import Transform
         Transform("transform", "help").handle(args)
-        mock_transform_quant.assert_called_once_with(source_path="src", enable_sparse=True)
+        mock_transform_quant.assert_called_once_with(source_path=PARENT_DIR, enable_sparse=True)
 
     @patch(f"{MODULE_PATH}.set_log_level")
     @patch(f"{MODULE_PATH}.logger")
@@ -340,11 +354,11 @@ class TestTransformCommand(unittest.TestCase):
         mock_get_scenario.return_value = MagicMock()
         mock_scenarios.torch_to_float_atb = mock_get_scenario.return_value
         args = argparse.Namespace(
-            source="src", analyze=True, atb_model_path="atb", to_python=False, log_level="info"
+            source=PARENT_DIR, analyze=True, atb_model_path=PARENT_DIR, to_python=False, log_level="info"
         )
         from msit_llm.__main__ import Transform
         Transform("transform", "help").handle(args)
-        mock_transform_report.assert_called_once_with(source_path="src")
+        mock_transform_report.assert_called_once_with(source_path=PARENT_DIR)
 
     @patch(f"{MODULE_PATH}.set_log_level")
     @patch(f"{MODULE_PATH}.logger")
@@ -362,11 +376,11 @@ class TestTransformCommand(unittest.TestCase):
         mock_get_scenario.return_value = MagicMock()
         mock_scenarios.torch_to_float_atb = mock_get_scenario.return_value
         args = argparse.Namespace(
-            source="src", analyze=False, atb_model_path="atb", to_python=False, log_level="info"
+            source=PARENT_DIR, analyze=False, atb_model_path=PARENT_DIR, to_python=False, log_level="info"
         )
         from msit_llm.__main__ import Transform
         Transform("transform", "help").handle(args)
-        mock_transform_float.assert_called_once_with(source_path="src", atb_model_path="atb")
+        mock_transform_float.assert_called_once_with(source_path=PARENT_DIR, atb_model_path=PARENT_DIR)
 
     @patch(f"{MODULE_PATH}.set_log_level")
     @patch(f"{MODULE_PATH}.logger")
@@ -380,7 +394,7 @@ class TestTransformCommand(unittest.TestCase):
         mock_scenarios.torch_to_float_atb = MagicMock()
 
         args = argparse.Namespace(
-            source="src", to_python=False, log_level="info"
+            source=PARENT_DIR, to_python=False, log_level="info"
         )
         from msit_llm.__main__ import Transform
         with self.assertRaises(ValueError):

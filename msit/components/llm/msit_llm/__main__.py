@@ -16,16 +16,20 @@
 import os
 import subprocess
 
-from components.utils.constants import TENSOR_MAX_SIZE
+from components.utils.constants import TENSOR_MAX_SIZE, FileCheckConst
 from components.utils.file_open_check import ms_open
+from components.utils.file_utils import (
+    check_and_get_real_path,
+    check_path_type,
+    check_if_valid_dir_pattern_path
+)
 from components.utils.parser import BaseCommand
 from components.utils.security_check import is_enough_disk_space_left
 from components.utils.util import filter_cmd
 from msit_llm.common.log import logger, set_log_level, LOG_LEVELS
 from msit_llm.common.utils import (
     str2bool, check_positive_integer, check_device_integer, safe_string,
-    check_ids_string, check_number_list, check_output_path_legality,
-    check_input_path_legality, check_process_integer, check_dump_time_integer,
+    check_ids_string, check_number_list, check_process_integer, check_dump_time_integer,
     check_data_can_convert_to_int, check_specified_rank_id, check_l1_norm,
     load_file_to_read_common_check, check_cosine_similarity, check_kl_divergence,
     check_token_range, NAMEDTUPLE_PRECISION_METRIC, NAMEDTUPLE_PRECISION_MODE,
@@ -123,7 +127,6 @@ class DumpCommand(BaseCommand):
             '-o',
             dest="output",
             required=False,
-            type=check_output_path_legality,
             default='./',
             help='Data output directory.E.g:--output /xx/xxxx/xx')
 
@@ -180,10 +183,14 @@ class DumpCommand(BaseCommand):
         if args.exec:
             set_log_level(args.log_level)
             logger.warning("Please ensure that your execution command is secure.")
-            init_dump_task(args)
-            # 有的大模型推理任务启动后，输入对话时有提示符，使用subprocess拉起子进程无法显示提示符
+
+            check_if_valid_dir_pattern_path(args.output)
+            args.output = check_and_get_real_path(args.output, FileCheckConst.WRITE_ABLE, must_exist=False)
             if not is_enough_disk_space_left(args.output):
                 raise OSError("Please make sure that the remaining disk space in the dump path is greater than 2 GB")
+
+            init_dump_task(args)
+            # 有的大模型推理任务启动后，输入对话时有提示符，使用subprocess拉起子进程无法显示提示符
             cmds = args.exec.split()
             cmds = filter_cmd(cmds)
             subprocess.run(cmds, shell=False)
@@ -198,7 +205,6 @@ class CompareCommand(BaseCommand):
             '-gp',
             dest="golden_path",
             required=True,
-            type=check_input_path_legality,
             help='Golden data path. It supports directory or file.')
 
         parser.add_argument(
@@ -206,7 +212,6 @@ class CompareCommand(BaseCommand):
             '-mp',
             dest="my_path",
             required=True,
-            type=check_input_path_legality,
             help='Compared data path. It supports directory or file.')
 
         parser.add_argument(
@@ -223,7 +228,6 @@ class CompareCommand(BaseCommand):
             '-o',
             dest="output",
             required=False,
-            type=check_output_path_legality,
             default='./',
             help='Data output directory.E.g:--output /xx/xxxx/xx')
 
@@ -232,7 +236,6 @@ class CompareCommand(BaseCommand):
             '-mf',
             dest="mapping_file",
             required=False,
-            type=check_output_path_legality,
             default='',
             help='Operation mapping file directory.E.g:--op-mapping-file /xx/xxxx/xx')
 
@@ -269,10 +272,18 @@ class CompareCommand(BaseCommand):
             help='rank id. It supports integer or None.')
 
     def handle(self, args, **kwargs):
+        set_log_level(args.log_level)
+
+        args.golden_path = check_and_get_real_path(args.golden_path, FileCheckConst.READ_ABLE)
+        args.my_path = check_and_get_real_path(args.my_path, FileCheckConst.READ_ABLE)
+        check_if_valid_dir_pattern_path(args.output)
+        args.output = check_and_get_real_path(args.output, FileCheckConst.WRITE_ABLE, must_exist=False)
+
+        if args.mapping_file:
+            check_path_type(args.output, FileCheckConst.DIR)
+            args.mapping_file = check_and_get_real_path(args.mapping_file, FileCheckConst.READ_ABLE)
 
         from msit_llm.compare.torchair_acc_cmp import get_torchair_ge_graph_path
-
-        set_log_level(args.log_level)
 
         # Adding custom comparing algorithms
         if args.custom_algorithms:
@@ -284,8 +295,9 @@ class CompareCommand(BaseCommand):
         # accuracy comparing for different scenarios
         torchair_ge_graph_path = get_torchair_ge_graph_path(args.my_path)
         if args.weight:
+            check_path_type(args.golden_path, FileCheckConst.DIR)
+            check_path_type(args.my_path, FileCheckConst.DIR)
             from msit_llm.compare.cmp_weight import compare_weight
-
             compare_weight(args.golden_path, args.my_path, args.output)
 
         elif torchair_ge_graph_path is not None:
@@ -293,7 +305,10 @@ class CompareCommand(BaseCommand):
             rank_info_existed = False
             if os.path.isdir(args.my_path):
                 for entry in os.listdir(args.my_path):
-                    if get_rank_id_from_torchair_data(entry) != -1:
+                    if (
+                        os.path.isdir(os.path.join(args.my_path, entry)) and
+                        get_rank_id_from_torchair_data(entry) != -1
+                    ):
                         rank_info_existed = True
                         break
             if not rank_info_existed and args.rank_id is not None:
@@ -317,14 +332,12 @@ class OpcheckCommand(BaseCommand):
             '--input',
             '-i',
             required=True,
-            type=check_input_path_legality,
             help='input directory.E.g:--input OUTPUT_DIR/msit_dump_TIMESTAMP/tensors/device_id_PID/TID/')
 
         parser.add_argument(
             '--output',
             '-o',
             required=False,
-            type=check_output_path_legality,
             default='./',
             help='Data output directory.E.g:--output /xx/xxx/xx')
 
@@ -411,6 +424,11 @@ class OpcheckCommand(BaseCommand):
     def handle(self, args, **kwargs):
         set_log_level(args.log_level)
 
+        check_path_type(args.input, FileCheckConst.DIR)
+        args.input = check_and_get_real_path(args.input, FileCheckConst.READ_ABLE)
+        check_if_valid_dir_pattern_path(args.output)
+        args.output = check_and_get_real_path(args.output, FileCheckConst.WRITE_ABLE, must_exist=False)
+
         # Adding custom comparing algorithms
         if args.custom_algorithms:
             from components.utils.cmp_algorithm import register_custom_compare_algorithm
@@ -457,7 +475,6 @@ class ErrCheck(BaseCommand):
             '-o',
             dest="output",
             required=False,
-            type=check_output_path_legality,
             default='',
             help="Directory that stores the error information. If not provided, current directory will be used."
         )
@@ -475,6 +492,13 @@ class ErrCheck(BaseCommand):
 
     def handle(self, args, **kwargs) -> None:
         set_log_level(args.log_level)
+        logger.warning("Please ensure that your execution command is secure.")
+
+        if not args.output:
+            args.output = os.getcwd()
+        check_if_valid_dir_pattern_path(args.output)
+        args.output = check_and_get_real_path(args.output, FileCheckConst.WRITE_ABLE, must_exist=False)
+
         process_error_check(args)
 
 
@@ -491,7 +515,6 @@ class Transform(BaseCommand):
         parser.add_argument(
             "-s",
             "--source",
-            type=check_input_path_legality,
             required=True,
             help="source path, could be:" + scenarios_info_str,
         )
@@ -500,7 +523,6 @@ class Transform(BaseCommand):
             "-atb",
             "--atb_model_path",
             default="",
-            type=check_input_path_legality,
             help="[torch to float atb model] ATB model directory containing .cpp and .h files."
         )
 
@@ -538,9 +560,13 @@ class Transform(BaseCommand):
         parser.add_argument("-l", "--log-level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level")
 
     def handle(self, args, **kwargs) -> None:
+        set_log_level(args.log_level)
+
+        args.source = check_and_get_real_path(args.source, FileCheckConst.READ_ABLE,
+                                              is_strict=True)
+
         from msit_llm.transform.utils import get_transform_scenario, SCENARIOS
 
-        set_log_level(args.log_level)
         scenario = get_transform_scenario(args.source, to_python=args.to_python)
         logger.info(f"Current scenario: {scenario}")
         if scenario == SCENARIOS.torch_to_float_python_atb:
@@ -548,6 +574,8 @@ class Transform(BaseCommand):
 
             quant_disable_names = ["lm_head"]
             if args.quant_disable_names is not None and os.path.isfile(args.quant_disable_names):
+                args.quant_disable_names = check_and_get_real_path(args.quant_disable_names, FileCheckConst.READ_ABLE,
+                                                                   is_strict=True)
                 args.quant_disable_names = load_file_to_read_common_check(args.quant_disable_names)
                 with ms_open(args.quant_disable_names, max_size=TENSOR_MAX_SIZE) as ff:
                     quant_disable_names = [ii.strip() for ii in ff.readlines()]
@@ -556,6 +584,12 @@ class Transform(BaseCommand):
 
             transform(source_path=args.source, to_quant=args.to_quant, quant_disable_names=quant_disable_names)
         elif scenario == SCENARIOS.float_atb_to_quant_atb:
+            if os.path.isdir(args.source):
+                for file in os.listdir(args.source):
+                    if file.endswith(".cpp") or file.endswith(".h"):
+                        check_and_get_real_path(file, FileCheckConst.READ_ABLE,
+                                                is_strict=True)
+
             from msit_llm.transform.float_atb_to_quant_atb import transform_quant
 
             transform_quant.transform_quant(source_path=args.source, enable_sparse=args.enable_sparse)
@@ -565,6 +599,13 @@ class Transform(BaseCommand):
             if args.analyze:
                 transform_float.transform_report(source_path=args.source)
             else:
+                args.atb_model_path = check_and_get_real_path(args.atb_model_path, FileCheckConst.READ_ABLE,
+                                                              is_strict=True)
+                if os.path.isdir(args.atb_model_path):
+                    for file in os.listdir(args.atb_model_path):
+                        if file.endswith(".cpp") or file.endswith(".h"):
+                            check_and_get_real_path(file, FileCheckConst.READ_ABLE,
+                                                    is_strict=True)
                 transform_float.transform_float(source_path=args.source, atb_model_path=args.atb_model_path)
 
         else:
@@ -580,7 +621,6 @@ class BCAnalyze(BaseCommand):
             '-g',
             dest="golden",
             required=True,
-            type=load_file_to_read_common_check,  # 文件判断在里面
             help="Golden result to compare with. It must be a valid csv path")
 
         parser.add_argument(
@@ -588,7 +628,6 @@ class BCAnalyze(BaseCommand):
             '-t',
             dest="test",
             required=True,
-            type=load_file_to_read_common_check,  # 文件判断在里面
             help="Test result to compare with the golden. It must be a valid csv path")
 
         parser.add_argument("-l", "--log-level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level")
@@ -596,6 +635,10 @@ class BCAnalyze(BaseCommand):
     def handle(self, args, **kwargs) -> None:
         set_log_level(args.log_level)
 
+        args.golden = check_and_get_real_path(args.golden, FileCheckConst.READ_ABLE,
+                                              file_type=FileCheckConst.CSV_SUFFIX)
+        args.test = check_and_get_real_path(args.test, FileCheckConst.READ_ABLE,
+                                            file_type=FileCheckConst.CSV_SUFFIX)
         Analyzer.analyze(golden=args.golden, test=args.test)  # 后缀名判断在这里
 
 
@@ -606,7 +649,6 @@ class BadCaseAnalyze(BaseCommand):
             '-gp',
             dest="golden_path",
             required=True,
-            type=load_file_to_read_common_check,
             help="Golden result to compare with. It must be a valid csv path")
 
         parser.add_argument(
@@ -614,13 +656,17 @@ class BadCaseAnalyze(BaseCommand):
             '-mp',
             dest="my_path",
             required=True,
-            type=load_file_to_read_common_check,
             help="My result to compare with the golden. It must be a valid csv path")
 
         parser.add_argument("-l", "--log-level", default="info", choices=LOG_LEVELS_LOWER, help="specify log level")
 
     def handle(self, args, **kwargs) -> None:
         set_log_level(args.log_level)
+
+        args.golden_path = check_and_get_real_path(args.golden_path, FileCheckConst.READ_ABLE,
+                                                   file_type=FileCheckConst.CSV_SUFFIX)
+        args.my_path = check_and_get_real_path(args.my_path, FileCheckConst.READ_ABLE,
+                                               file_type=FileCheckConst.CSV_SUFFIX)
         BadCaseAnalyzer.analyze(golden_csv_path=args.golden_path, test_csv_path=args.my_path)
 
 
@@ -639,7 +685,6 @@ class LogitsDump(BaseCommand):
             '-bcr',
             dest="bad_case_result_csv",
             required=True,
-            type=load_file_to_read_common_check,
             help="Bad case result csv file from BadCaseAnalyze tool, It must be a valid csv path")
 
         parser.add_argument(
@@ -653,10 +698,14 @@ class LogitsDump(BaseCommand):
         parser.add_argument("--log-level", "-l", default="info", choices=LOG_LEVELS_LOWER, help="specify log level")
 
     def handle(self, args, **kwargs) -> None:
+        set_log_level(args.log_level)
+        logger.warning("Please ensure that your execution command is secure.")
+
+        args.bad_case_result_csv = check_and_get_real_path(args.bad_case_result_csv, FileCheckConst.READ_ABLE,
+                                                           FileCheckConst.CSV_SUFFIX)
 
         from msit_llm.logits_dump.logits_dump import LogitsDumper
 
-        set_log_level(args.log_level)
         logits_dumper = LogitsDumper(args)
         logits_dumper.dump_logits()
 
@@ -668,7 +717,6 @@ class LogitsCompare(BaseCommand):
             '-gp',
             dest="golden_path",
             required=True,
-            type=check_input_path_legality,
             help="Golden result to compare with. It must be a valid folder path")
 
         parser.add_argument(
@@ -676,7 +724,6 @@ class LogitsCompare(BaseCommand):
             '-mp',
             dest="my_path",
             required=True,
-            type=check_input_path_legality,
             help="My result to compare with the golden. It must be a valid folder path")
 
         parser.add_argument(
@@ -720,17 +767,23 @@ class LogitsCompare(BaseCommand):
             '--output-dir',
             '-o',
             dest="output_dir",
-            type=check_output_path_legality,
             default='./output',
             help="Data output directory. E.g: '--output /xx/xxxx/xx', default=./output")
 
         parser.add_argument("--log-level", "-l", default="info", choices=LOG_LEVELS_LOWER, help="specify log level")
 
     def handle(self, args, **kwargs) -> None:
+        set_log_level(args.log_level)
+
+        check_path_type(args.golden_path, FileCheckConst.DIR)
+        check_path_type(args.my_path, FileCheckConst.DIR)
+        check_if_valid_dir_pattern_path(args.output_dir)
+        args.golden_path = check_and_get_real_path(args.golden_path, FileCheckConst.READ_ABLE)
+        args.my_path = check_and_get_real_path(args.my_path, FileCheckConst.READ_ABLE)
+        args.output_dir = check_and_get_real_path(args.output_dir, FileCheckConst.WRITE_ABLE, must_exist=False)
 
         from msit_llm.logits_compare.logits_cmp import LogitsComparison
 
-        set_log_level(args.log_level)
         logits_cmp = LogitsComparison(args)
         logits_cmp.process_comparsion()
 

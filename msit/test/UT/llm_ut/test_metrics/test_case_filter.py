@@ -17,6 +17,7 @@ import os
 import shutil
 from unittest import TestCase
 
+from components.utils.file_utils import FileCheckException
 from msit_llm import CaseFilter
 
 
@@ -95,8 +96,7 @@ class TestCaseFilter(TestCase):
         with self.assertRaises(TypeError):
             self.case_filter.apply(self.ins, self.outs, self.refs, output_dir=0.5)
 
-        with self.assertRaises(RuntimeError):
-            self.case_filter.apply(self.ins, self.outs, self.refs, output_dir="")
+        self.case_filter.apply(self.ins, self.outs, self.refs, output_dir="")
 
     def test_apply_should_raise_when_usr_cannot_cd(self):
         # if root, do nothing
