@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2024-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 import unittest
 from unittest import mock
@@ -18,10 +19,10 @@ import torch
 import torch.nn.functional as F
 import pytest
 
-
 from components.utils.cmp_algorithm import cosine_similarity, max_relative_error, mean_relative_error, \
     max_absolute_error, kl_divergence, mean_absolute_error, relative_euclidean_distance, \
     CMP_ALG_MAP, register_custom_compare_algorithm
+from components.utils.file_utils import FileCheckException
 
 
 class TestMetrics(unittest.TestCase):
@@ -38,7 +39,7 @@ class TestMetrics(unittest.TestCase):
     def test_cosine_similarity(self):
         similarity, _ = cosine_similarity(self.golden_data, self.my_data)
         expected_similarity = torch.cosine_similarity(
-            self.golden_data.double(), 
+            self.golden_data.double(),
             self.my_data.double(),
             dim=0
         ).item()
@@ -52,8 +53,8 @@ class TestMetrics(unittest.TestCase):
         self.assertAlmostEqual(error, expected_error, places=6)
 
         error, _ = max_relative_error(self.golden_data_with_zero, self.my_data_with_zero)
-        excepted = torch.max(torch.abs(self.my_data_with_zero[self.golden_data_with_zero != 0] / 
-            self.golden_data_with_zero[self.golden_data_with_zero != 0] - 1)).item()
+        excepted = torch.max(torch.abs(self.my_data_with_zero[self.golden_data_with_zero != 0] /
+                                       self.golden_data_with_zero[self.golden_data_with_zero != 0] - 1)).item()
         self.assertAlmostEqual(error, excepted, places=6)
 
     def test_mean_relative_error(self):
@@ -94,11 +95,13 @@ def test_cosine_similarity_given_both_zero_when_called_then_one():
     result, _ = CMP_ALG_MAP["cosine_similarity"](golden_data, my_data)
     assert result == 1.0
 
+
 def test_cosine_similarity_given_nonzero_when_called_then_within_range():
     golden_data = torch.tensor([1.0, 2.0, 3.0])
     my_data = torch.tensor([1.0, 2.0, 3.0])
     result, _ = CMP_ALG_MAP["cosine_similarity"](golden_data, my_data)
     assert 0 <= result <= 1
+
 
 # Test cases for max_relative_error
 def test_max_relative_error_given_valid_tensors_when_called_then_calculate_correctly():
@@ -107,11 +110,13 @@ def test_max_relative_error_given_valid_tensors_when_called_then_calculate_corre
     result, _ = CMP_ALG_MAP["max_relative_error"](golden_data, my_data)
     assert result == pytest.approx(1.0)
 
+
 def test_max_relative_error_given_zeros_when_called_then_zero():
     golden_data = torch.zeros([1])
     my_data = torch.zeros([1])
     result, _ = CMP_ALG_MAP["max_relative_error"](golden_data, my_data)
     assert result == 0
+
 
 # Test cases for mean_relative_error
 def test_mean_relative_error_given_valid_tensors_when_called_then_calculate_correctly():
@@ -120,11 +125,13 @@ def test_mean_relative_error_given_valid_tensors_when_called_then_calculate_corr
     result, _ = CMP_ALG_MAP["mean_relative_error"](golden_data, my_data)
     assert result == pytest.approx(1.0)
 
+
 def test_mean_relative_error_given_zeros_when_called_then_zero():
     golden_data = torch.zeros([1])
     my_data = torch.zeros([1])
     result, _ = CMP_ALG_MAP["mean_relative_error"](golden_data, my_data)
     assert result == 0
+
 
 # Test cases for max_absolute_error
 def test_max_absolute_error_given_valid_tensors_when_called_then_calculate_correctly():
@@ -133,17 +140,20 @@ def test_max_absolute_error_given_valid_tensors_when_called_then_calculate_corre
     result, _ = CMP_ALG_MAP["max_absolute_error"](golden_data, my_data)
     assert result == pytest.approx(3.0)
 
+
 def test_max_absolute_error_given_zeros_when_called_then_zero():
     golden_data = torch.zeros([1])
     my_data = torch.zeros([1])
     result, _ = CMP_ALG_MAP["max_absolute_error"](golden_data, my_data)
     assert result == 0
 
+
 def test_mean_absolute_error_given_zeros_when_called_then_zero():
     golden_data = torch.zeros([1])
     my_data = torch.zeros([1])
     result, _ = CMP_ALG_MAP["mean_absolute_error"](golden_data, my_data)
     assert result == 0
+
 
 # Test cases for kl_divergence
 def test_kl_divergence_given_valid_tensors_when_called_then_calculate_positive():
@@ -152,11 +162,13 @@ def test_kl_divergence_given_valid_tensors_when_called_then_calculate_positive()
     result, _ = CMP_ALG_MAP["kl_divergence"](golden_data, my_data)
     assert result >= 0
 
+
 def test_kl_divergence_given_identical_tensors_when_called_then_zero():
     golden_data = torch.tensor([1.0, 2.0, 3.0])
     my_data = torch.tensor([1.0, 2.0, 3.0])
     result, _ = CMP_ALG_MAP["kl_divergence"](golden_data, my_data)
     assert result == pytest.approx(0.0)
+
 
 # Test cases for relative_euclidean_distance
 def test_relative_euclidean_distance_given_valid_tensors_when_called_then_calculate_correctly():
@@ -165,44 +177,54 @@ def test_relative_euclidean_distance_given_valid_tensors_when_called_then_calcul
     result, _ = CMP_ALG_MAP["relative_euclidean_distance"](golden_data, my_data)
     assert result > 0
 
+
 def test_relative_euclidean_distance_given_zeros_when_called_then_zero():
     golden_data = torch.zeros([1])
     my_data = torch.zeros([1])
     result, _ = CMP_ALG_MAP["relative_euclidean_distance"](golden_data, my_data)
     assert result == 0
 
+
 # Test cases for register_custom_compare_algorithm
 def test_register_custom_compare_algorithm_given_invalid_format_when_called_then_raise_value_error():
-    with pytest.raises(ValueError):
+    with pytest.raises(FileCheckException):
         register_custom_compare_algorithm("invalid:format")
 
+
 def test_register_custom_compare_algorithm_given_nonexistent_file_when_called_then_raise_value_error():
-    with pytest.raises(ValueError):
+    with pytest.raises(FileCheckException):
         register_custom_compare_algorithm("/path/to/nonexistent.py:function_name")
 
+
 def test_register_custom_compare_algorithm_given_not_py_file_when_called_then_raise_value_error():
-    with pytest.raises(ValueError):
+    with pytest.raises(FileCheckException):
         register_custom_compare_algorithm("/path/to/file.txt:function_name")
 
+
 def test_register_custom_compare_algorithm_given_illegal_permission_when_called_then_raise_value_error():
-    with pytest.raises(ValueError):
+    with pytest.raises(FileCheckException):
         register_custom_compare_algorithm("/path/to/unreadable.py:function_name")
 
+
 def test_register_custom_compare_algorithm_given_import_error_when_called_then_raise_value_error():
-    with pytest.raises(ValueError):
+    with pytest.raises(FileCheckException):
         register_custom_compare_algorithm("/path/to/bad_module.py:function_name")
 
+
 def test_register_custom_compare_algorithm_given_function_not_found_when_called_then_raise_value_error():
-    with pytest.raises(ValueError):
+    with pytest.raises(FileCheckException):
         register_custom_compare_algorithm("/path/to/module.py:nonexistent_function")
 
+
 def test_register_custom_compare_algorithm_given_incorrect_signature_when_called_then_raise_value_error():
-    with pytest.raises(ValueError):
+    with pytest.raises(FileCheckException):
         register_custom_compare_algorithm("/path/to/module.py:function_with_incorrect_signature")
 
+
 def test_register_custom_compare_algorithm_given_return_type_mismatch_when_called_then_raise_value_error():
-    with pytest.raises(ValueError):
+    with pytest.raises(FileCheckException):
         register_custom_compare_algorithm("/path/to/module.py:function_with_return_type_mismatch")
+
 
 # Test case to cover the logger.info call
 @mock.patch('components.utils.cmp_algorithm.logger')

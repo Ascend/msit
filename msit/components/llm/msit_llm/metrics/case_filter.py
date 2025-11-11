@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
+from components.utils.constants import FileCheckConst
+from components.utils.file_utils import check_if_valid_dir_pattern_path, check_and_get_real_path
 from msit_llm.common.log import logger
 from msit_llm.common.validate import validate_parameters_by_type, validate_parameters_by_func
 from components.utils.security_check import ms_makedirs
@@ -34,10 +36,10 @@ def check_dir(output_dir):
 
     if len(output_dir) > 4095 or any(len(item) > 255 for item in output_dir.split(r"/")):
         raise OSError("Output directory should not be too long.")
-    
+
     if os.path.islink(output_dir):
         warnings.warn("Your attempt to use soft links as directories has triggered a security alert "
-                    "and is being monitored closely for potential security threats.", PermissionWarning)
+                      "and is being monitored closely for potential security threats.", PermissionWarning)
 
     # will not modify the original output_dir itself
     output_dir = os.path.abspath(output_dir)
@@ -48,7 +50,7 @@ def check_dir(output_dir):
 
         if not os.access(output_dir, os.X_OK):
             raise PermissionError(f"{output_dir} is not executable for current user: Permission denied.")
-        
+
         if not os.access(output_dir, os.W_OK):
             raise PermissionError(f"{output_dir} is not writable for current user: Permission denied.")
 
@@ -58,14 +60,14 @@ def check_dir(output_dir):
 
 
 class CaseFilter(object):
-    
+
     def __init__(self):
         self._metrics = []
         self._columns = ["model input", "model output", "gold standard"]
 
     def add_metrics(self, **metrics):
         from msit_llm.metrics.metrics import get_metric
-        
+
         for metric_name, thr in metrics.items():
             self._metrics.append(get_metric(metric_name, thr))
             self._columns.append(metric_name)
@@ -80,7 +82,7 @@ class CaseFilter(object):
     )
     @validate_parameters_by_func(
         {
-            "ins": [len, lambda ins: all(isinstance(item, str) for item in ins)], # should not empty, should be str
+            "ins": [len, lambda ins: all(isinstance(item, str) for item in ins)],  # should not empty, should be str
             "outs": [len, lambda ins: all(isinstance(item, str) for item in ins)],
             "refs": [len, lambda ins: all(isinstance(item, str) for item in ins)],
         },
@@ -92,9 +94,14 @@ class CaseFilter(object):
 
         if not self._metrics:
             raise RuntimeError("Metrics must be added first before calling apply.")
-        
+
+        if output_dir is not None and not isinstance(output_dir, str):
+            raise TypeError(f"output_dir should be a string, but got a {type(output_dir)}")
+
         if output_dir is None:
             output_dir = os.getcwd()
+        check_if_valid_dir_pattern_path(output_dir)
+        output_dir = check_and_get_real_path(output_dir, FileCheckConst.WRITE_ABLE, must_exist=False)
 
         data = dict()
         num_metrics = len(self._metrics)
@@ -104,7 +111,7 @@ class CaseFilter(object):
             for row_idx, score in metric_object.compare_two_lists_of_words(outs, refs):
                 if row_idx not in data:
                     data[row_idx] = [ins[row_idx], outs[row_idx], refs[row_idx]] + [None] * num_metrics
-                    
+
                 data[row_idx][col_idx + 3] = score
 
         self._save(data, output_dir)
@@ -114,7 +121,7 @@ class CaseFilter(object):
         {
             "data": [dict],
             "output_dir": [str],
-        }, 
+        },
         in_class=True
     )
     @validate_parameters_by_func(
@@ -131,7 +138,7 @@ class CaseFilter(object):
             return
 
         output_dir = os.path.abspath(output_dir)
-        
+
         df = pd.DataFrame.from_dict(data, orient="index", columns=self._columns)
         df = df.round(5)
         df.fillna("PASSED", inplace=True)

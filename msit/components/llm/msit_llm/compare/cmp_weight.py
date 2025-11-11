@@ -18,6 +18,8 @@ import torch
 from tqdm import tqdm
 
 from safetensors.torch import load_file
+from components.utils.constants import FileCheckConst
+from components.utils.file_utils import check_and_get_real_path
 from components.utils.util import safe_torch_load
 from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
@@ -36,9 +38,11 @@ def find_safetensors_files(golden_path):
     safetensors_file_list, bin_file_list = [], []
     for file in os.listdir(model_dir_path):
         safetensors_file_path = os.path.join(model_dir_path, file)
-        if file.endswith(".safetensors"):
+        if not os.path.isfile(safetensors_file_path):
+            continue
+        if file.endswith(".safetensors") and check_and_get_real_path(safetensors_file_path, FileCheckConst.READ_ABLE):
             safetensors_file_list.append(safetensors_file_path)
-        if file.endswith(".bin"):
+        if file.endswith(".bin") and check_and_get_real_path(safetensors_file_path, FileCheckConst.READ_ABLE):
             bin_file_list.append(safetensors_file_path)
     return safetensors_file_list if safetensors_file_list else bin_file_list
 

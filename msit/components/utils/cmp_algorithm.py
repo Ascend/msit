@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2023-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import torch
+
 import numpy as np
+import torch
 from torch.nn import functional as F
+
+from components.utils.constants import FileCheckConst
+from components.utils.file_utils import check_and_get_real_path
 from components.utils.log import logger
 
 FLOAT_EPSILON = torch.finfo(torch.float).eps
@@ -181,22 +185,13 @@ def register_custom_compare_algorithm(custom_compare_algorithm):
     import sys
     import importlib
     import inspect
-    from components.utils.file_open_check import FileStat
 
     custom_compare_algorithm_split = custom_compare_algorithm.split(':')
     if len(custom_compare_algorithm_split) != 2:
         raise ValueError("custom_compare_algorithm should be in format '{python_file_path}:{function_name}'")
     file_path, func_name = custom_compare_algorithm_split
-    file_path = os.path.expanduser(file_path)
-
-    if not os.path.exists(file_path):
-        raise ValueError(f"custom_compare_algorithm specified {file_path} not exists")
-    if not file_path.endswith(".py"):
-        raise ValueError("custom_compare_algorithm specified {file_path} is not a py file")
-    
-    file_stat = FileStat(file_path)
-    if not file_stat.is_basically_legal('read', strict_permission=False):
-        raise ValueError(f"custom_compare_algorithm specified {file_path} permission stat is illegal")
+    file_path = check_and_get_real_path(file_path, FileCheckConst.READ_ABLE,
+                                        file_type=FileCheckConst.PY_SUFFIX, is_strict=True)
 
     file_dir, file_name = os.path.dirname(file_path), os.path.basename(file_path)
     if len(file_dir) > 0 and file_dir not in sys.path:

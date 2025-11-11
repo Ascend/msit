@@ -8,7 +8,7 @@ msit llm dump --exec "bash run.sh patches/models/modeling_xxx.py"
 
 | 参数名                      | 描述                                       | 必选   |
 | ------------------------ | ---------------------------------------- | ---- |
-| --exec | 指定拉起执行大模型推理脚本的命令，使用示例： --exec "bash run.sh patches/models/modeling_xxx.py"。**注：命令中不支持重定向字符，如果需要重定向输出，建议将执行命令写入shell脚本，然后启动shell脚本。** | 是 |
+| --exec | 指定拉起执行大模型推理脚本的命令，使用示例： --exec "bash run.sh patches/models/modeling_xxx.py"。**注：用户需自行保证执行命令的安全性，并承担因输入不当而导致的任何安全风险或损失；命令中不支持重定向字符，如果需要重定向输出，建议将执行命令写入 shell 脚本，然后启动 shell 脚本** | 是 |
 | -sd，--only-save-desc          | 只保存tensor描述信息开关，默认为否。使用方式：-sd       | 否    |
 | -ids，--save-operation-ids | 选择dump指定索引的tensor，默认为空，全量dump。使用方式：-ids 24_1,2_3_5     | 否    |
 | -er，--execute-range          | 指定dump的token轮次范围，区间左右全闭，可以支持多个区间序列，默认为第0次，使用方式：-er 1,3 或 -er 3,5,7,7（代表区间[3,5],[7,7],也就是第3，4，5，7次token。）| 否    |

@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import pytest
 from unittest.mock import patch, MagicMock
@@ -12,12 +13,11 @@ def test_try_import_torchair_given_missing_torch_when_called_then_error():
             try_import_torchair()
 
 
-@patch('os.path.exists', return_value=True)
 @patch('time.strftime', return_value='20250414_120000')
 @patch('components.utils.security_check.ms_makedirs')
 @patch('msit_llm.common.utils.check_output_path_legality')
 def test_get_ge_dump_config_given_valid_params_when_called_then_success(
-    mock_check, mock_mkdir, mock_time, mock_exists
+    mock_check, mock_mkdir, mock_time
 ):
     mock_torchair = MagicMock()
     mock_torchair.configs.compiler_config = MagicMock()
@@ -28,15 +28,16 @@ def test_get_ge_dump_config_given_valid_params_when_called_then_success(
              'torch_npu': mock_torch_npu,
          }):
         dump_path = os.path.dirname(os.path.realpath(__file__))
+
         config = get_ge_dump_config(
             dump_path=dump_path,
-            fusion_switch_file="fusion_switch.cfg",
+            fusion_switch_file=os.path.realpath(__file__),
             dump_token=[1, 2],
             dump_layer=["conv"]
         )
-
+        shutil.rmtree(os.path.join(dump_path, 'msit_ge_dump'))
         assert config.dump_config.enable_dump
-        assert config.fusion_config.fusion_switch_file == "fusion_switch.cfg"
+        assert config.fusion_config.fusion_switch_file == os.path.realpath(__file__)
         assert config.dump_config.dump_step == "1|2"
         assert config.dump_config.dump_layer == "conv"
 
