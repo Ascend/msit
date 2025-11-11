@@ -21,11 +21,11 @@ from components.utils.security_check import is_enough_disk_space_left
 from components.debug.compare.msquickcmp.adapter_cli.args_adapter import CmpArgsAdapter
 from components.debug.compare.msquickcmp.cmp_process import cmp_process
 from components.debug.compare.msquickcmp.common.args_check import (
-    check_model_path_legality, check_om_path_legality, check_weight_path_legality, check_input_path_legality,
+    check_model_path_legality, check_om_path_legality, check_weight_path_legality, check_input_data_path_legality,
     check_cann_path_legality, check_output_path_legality, check_dict_kind_string, check_device_range_valid,
     check_number_list, check_dym_range_string, check_fusion_cfg_path_legality, check_quant_json_path_legality,
     safe_string, str2bool, check_alone_compare_dir_path, check_input_json_path,
-    check_debug_compare_input_data_path
+    check_debug_compare_input_data_path, check_ops_json_path
 )
 from msquickcmp.common.utils import logger
 from components.utils.util import filter_cmd
@@ -225,7 +225,7 @@ class CompareCommand(BaseCommand):
             '--ops-json',
             required=False,
             dest="ops_json",
-            type=check_alone_compare_dir_path,
+            type=check_ops_json_path,
             help='The npu and cpu ops matching rule json')
         self.parser = parser
 
@@ -239,9 +239,9 @@ class CompareCommand(BaseCommand):
             mindie_torch_op_mapping = os.path.join(args.ops_json, "mindie_torch_op_mapping.json")
             if os.path.exists(mindie_rt_op_mapping) and os.path.exists(mindie_torch_op_mapping):
                 from msquickcmp.mie_torch.mietorch_comp import MIETorchCompare
-                args.golden_path = check_input_path_legality(args.golden_path)
-                args.my_path = check_input_path_legality(args.my_path)
-                args.ops_json = check_input_path_legality(args.ops_json)
+                args.golden_path = check_om_path_legality(args.golden_path)
+                args.my_path = check_om_path_legality(args.my_path)
+                args.ops_json = check_ops_json_path(args.ops_json)
                 comparer = MIETorchCompare(args.golden_path, args.my_path, args.ops_json, args.out_path)
                 comparer.compare()
                 return
@@ -280,7 +280,7 @@ class DumpCommand(BaseCommand):
             '--input',
             default='',
             dest="input_data_path",
-            type=check_input_path_legality,
+            type=check_input_data_path_legality,
             help='The input data path of the model. Separate multiple inputs with commas(,).'
                  ' E.g: input_0.bin,input_1.bin')
         parser.add_argument(

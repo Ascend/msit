@@ -13,7 +13,85 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from components.utils.parser import BaseCommand
+from components.utils.file_open_check import FileStat
+from components.utils.file_utils import check_input_file_path, check_input_dir_path, check_output_dir_path, \
+    check_path_no_group_others_write, check_others_writable
+from components.utils.security_check import is_endswith_extensions
+
+
+MAX_SIZE_LIMITE_NORMAL_MODEL = 32 * 1024 * 1024 * 1024  # 32GB
+
+
+def check_model_path_legality(value):
+    path_value = value
+    if os.path.isdir(path_value):
+        check_input_dir_path(path_value)
+        check_path_no_group_others_write(path_value)
+        return path_value
+    else:
+        check_input_file_path(path_value, file_max_size=MAX_SIZE_LIMITE_NORMAL_MODEL)
+        try:
+            file_stat = FileStat(path_value)
+        except Exception as err:
+            raise ValueError(f"model path:{path_value} is illegal. Please check.") from err
+        if not file_stat.is_basically_legal('read'):
+            raise ValueError(f"model path:{path_value} is illegal. Please check.")
+        if not file_stat.is_legal_file_type(["om"]):
+            raise ValueError(f"model path:{path_value} is illegal. Please check.")
+        check_path_no_group_others_write(path_value)
+        return path_value
+
+
+def check_input_path_legality(value):
+    if not value:
+        return value
+    inputs_list = value.split(',')
+    for input_path in inputs_list:
+        check_input_file_path(input_path)
+        try:
+            file_stat = FileStat(input_path)
+        except Exception as err:
+            raise ValueError(f"input path:{input_path} is illegal. Please check.") from err
+        if not file_stat.is_basically_legal('read'):
+            raise ValueError(f"input path:{input_path} is illegal. Please check.")
+        check_others_writable(input_path)
+    return value
+
+
+def check_output_path_legality(value):
+    if not value:
+        return value
+    path_value = value
+    check_output_dir_path(path_value)
+    try:
+        file_stat = FileStat(path_value)
+    except Exception as err:
+        raise ValueError(f"output path:{path_value} is illegal. Please check.") from err
+    if not file_stat.is_basically_legal("write", strict_permission=False):
+        raise ValueError(f"output path:{path_value} is illegal. Please check.")
+    return path_value
+
+
+def check_input_json_path(path):
+    if not isinstance(path, str):
+        raise ValueError(f"ops json path:{path} is illegal. Please check.")
+    check_input_file_path(path)
+    if not is_endswith_extensions(path, ".json"):
+        raise ValueError(f"ops json path:{path} is illegal. Please check.")
+    check_others_writable(path)
+    return path
+
+
+def check_aipp_config_path_legality(path):
+    if not isinstance(path, str):
+        raise ValueError(f"ops json path:{path} is illegal. Please check.")
+    check_input_file_path(path)
+    if not is_endswith_extensions(path, ".config"):
+        raise ValueError(f"ops json path:{path} is illegal. Please check.")
+    check_others_writable(path)
+    return path
 
 
 class BenchmarkCommand(BaseCommand):
@@ -28,15 +106,10 @@ class BenchmarkCommand(BaseCommand):
             check_nonnegative_integer,
             check_npu_id_range_vaild,
             check_device_range_valid,
-            check_om_path_legality,
-            check_input_path_legality,
-            check_output_path_legality,
-            check_acl_json_path_legality,
-            check_aipp_config_path_legality,
         )
 
         parser.add_argument(
-            "-om", "--om-model", type=check_om_path_legality, required=True, help="The path of the om model"
+            "-om", "--om-model", type=check_model_path_legality, required=True, help="The path of the om model"
         )
         parser.add_argument("-i", "--input", type=check_input_path_legality, default=None, help="Input file or dir")
         parser.add_argument(
@@ -142,7 +215,7 @@ class BenchmarkCommand(BaseCommand):
             "-acl",
             "--acl-json-path",
             dest="acl_json_path",
-            type=check_acl_json_path_legality,
+            type=check_input_json_path,
             default=None,
             help="Acl json path for profiling or dump",
         )

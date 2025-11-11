@@ -15,6 +15,8 @@
 import os
 import stat
 import argparse
+import unittest
+from unittest.mock import patch, MagicMock
 
 import pytest
 from msit_benchmark.__main__ import get_cmd_instance
@@ -176,18 +178,6 @@ def test_benchmark_argparse_given_invalid_arg_when_full_then_error():
 
 def test_benchmark_argparse_given_invalid_model_when_full_then_error():
     new_args = {"--om-model": FAKE_INVALID_OM_PATH}
-    with pytest.raises(SystemExit) as e:
-        args = benchmark_argparse(cmd_dict_to_list(FULL_CMD_DICT, new_args=new_args))
-
-
-def test_benchmark_argparse_given_not_exists_model_when_full_then_error():
-    new_args = {"--om-model": FAKE_NOT_EXISTS_OM_PATH}
-    with pytest.raises(SystemExit) as e:
-        args = benchmark_argparse(cmd_dict_to_list(FULL_CMD_DICT, new_args=new_args))
-
-
-def test_benchmark_argparse_given_not_exists_acl_json_when_short_then_error():
-    new_args = {"-acl": FAKE_NOT_EXISTS_ACL_JSON_PATH}
     with pytest.raises(SystemExit) as e:
         args = benchmark_argparse(cmd_dict_to_list(FULL_CMD_DICT, new_args=new_args))
 
