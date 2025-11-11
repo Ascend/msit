@@ -2,6 +2,7 @@
 __all__ = ['ModelFactory']
 
 from .deepseek_v3 import DeepSeekV3ModelAdapter
+from .deepseek_v3_2 import DeepSeekV32ModelAdapter
 from .default import DefaultModelAdapter
 from .factory import ModelFactory
 from .qwen2_5 import Qwen25ModelAdapter
