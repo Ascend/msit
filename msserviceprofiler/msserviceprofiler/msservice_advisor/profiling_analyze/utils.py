@@ -170,3 +170,7 @@ class UmaskWrapper:
 
     def __exit__(self, exc_type=None, exc_val=None, exc_tb=None):
         os.umask(self.ori_umask)
+
+
+def is_root():
+    return os.name != 'nt' and os.getuid() == 0

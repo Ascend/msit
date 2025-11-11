@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from msserviceprofiler.msservice_advisor.profiling_analyze.utils import TARGETS, LOG_LEVELS, SUGGESTION_TYPES
 from msserviceprofiler.msservice_advisor.profiling_analyze.utils import str_ignore_case, logger, set_log_level
 from msserviceprofiler.msservice_advisor.profiling_analyze.utils import get_latest_matching_file, read_csv_or_json
+from msserviceprofiler.msservice_advisor.profiling_analyze.utils import is_root
 
 from msserviceprofiler.msguard import validate_args, Rule
 
@@ -210,6 +211,12 @@ def arg_parse(subparsers):
 
 
 def main(args):
+    if is_root():
+        logger.warning(
+            "Security Warning: Do not run this tool as root. "
+            "Running with elevated privileges may compromise system security. "
+            "Use a regular user account."
+        )
     profiling_params = ProfilingParameters.extract_from_args(args)
     set_log_level(args.log_level)
     benchmark_instance = parse_benchmark_instance(args.instance_path)
