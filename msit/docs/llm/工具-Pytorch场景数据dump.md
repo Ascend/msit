@@ -88,8 +88,10 @@ from msit_llm import DumpConfig, register_hook
 # 在模型推理开始前实例化DumpConfig
 config = DumpConfig(dump_path='./torch_dump/', token_range=[0,1,2,3], seed=2345)
 
-# 从这里开始可以使用自己的模型配置代码
+# 需自行保证模型配置代码文件安全可靠。在确保其安全性的前提下，可以使用以下代码。否则，请将'trust_remote_code'置为False
 tokenizer = AutoTokenizer.from_pretrained("/home/data/Llama-2-7b-hf", trust_remote_code=True)
+
+# 需自行保证模型配置代码文件安全可靠。在确保其安全性的前提下，可以使用以下代码。否则，请将'trust_remote_code'置为False
 model = LlamaForCausalLM.from_pretrained("/home/data/Llama-2-7b-hf", trust_remote_code=True).to('npu')
 
 if __name__ == "__main__":
