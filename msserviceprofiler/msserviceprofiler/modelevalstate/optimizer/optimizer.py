@@ -30,6 +30,7 @@ from msserviceprofiler.modelevalstate.config.base_config import (
 )
 from msserviceprofiler.modelevalstate.optimizer.performance_tunner import PerformanceTuner
 from msserviceprofiler.modelevalstate.optimizer.utils import kill_process, get_required_field_from_json
+from msserviceprofiler.modelevalstate.optimizer.utils import is_root
 
 
 MAX_ITER_NUM = 200
@@ -438,7 +439,12 @@ def main(args: argparse.Namespace):
     from msserviceprofiler.modelevalstate.optimizer.scheduler import Scheduler, ScheduleWithMultiMachine
     from msserviceprofiler.modelevalstate.optimizer.simulator import Simulator, VllmSimulator, \
         DisaggregationSimulator
-    
+    if is_root():
+        logger.warning(
+            "Security Warning: Do not run this tool as root. "
+            "Running with elevated privileges may compromise system security. "
+            "Use a regular user account."
+        )  
     if settings.service == ServiceType.slave.value:
         slave_server()
         return
