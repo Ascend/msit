@@ -5,8 +5,10 @@ import numpy as np
 
 from ms_service_profiler.exporters.base import ExporterBase
 from ms_service_profiler.plugins.plugin_req_status import ReqStatus
-from ms_service_profiler.exporters.utils import write_result_to_db, CURVE_VIEW_NAME_LIST, check_domain_valid, \
+from ms_service_profiler.exporters.utils import (
+    write_result_to_db, check_domain_valid, TableConfig, CurveViewConfig,
     check_columns_valid, save_dataframe_to_csv, ColumnConst
+)
 from ms_service_profiler.utils.timer import timer
 from ms_service_profiler.utils.log import logger
 from ms_service_profiler.utils.error import key_except
@@ -72,13 +74,7 @@ class ExporterReqStatus(ExporterBase):
             # 处理 status 列的映射和编码
             df = cls._process_status_columns(df, metrics)
 
-            logger.info('Start write request data to db')
-            write_result_to_db(
-                df_param_list=[[df, 'request_status']],
-                table_name='request_status',
-                create_view_sql=[cls.CREATE_REQUEST_STATE_VIEW_SQL]
-            )
-            logger.info('Write request data to db success')
+            write_result_to_db(TableConfig(table_name="request_status"), df, CREATE_REQUEST_STATE_CURVE_VIEW_CONFIG)
 
     @classmethod
     def valid_for_csv_output(cls, data):
@@ -191,13 +187,23 @@ class ExporterReqStatus(ExporterBase):
                 df = df.assign(**{column_name: [None] * len(df)})
         return df
 
-    CREATE_REQUEST_STATE_VIEW_SQL = f"""
-        CREATE VIEW {CURVE_VIEW_NAME_LIST['request_status']} AS
-        SELECT
-            substr( timestamp, 1, 10 ) || ' ' || substr( timestamp, 12, 8 ) || '.' || substr( timestamp, 21, 6 ) AS time,
-            WAITING, PENDING, RUNNING
-        FROM
-            request_status
-        ORDER BY
-            time ASC
-    """
+
+REQUEST_STATE_VIEW_NAME = "Request_Status_curve"
+CREATE_REQUEST_STATE_VIEW_SQL = f"""
+    CREATE VIEW {REQUEST_STATE_VIEW_NAME} AS
+    SELECT
+        substr( timestamp, 1, 10 ) || ' ' || substr( timestamp, 12, 8 ) || '.' || substr( timestamp, 21, 6 ) AS time,
+        WAITING, PENDING, RUNNING
+    FROM
+        request_status
+    ORDER BY
+        time ASC
+"""
+CREATE_REQUEST_STATE_CURVE_VIEW_CONFIG = CurveViewConfig(
+    view_name=REQUEST_STATE_VIEW_NAME,
+    sql=CREATE_REQUEST_STATE_VIEW_SQL,
+    description={
+        "en": "Request Count by State Over Time", 
+        "zh": "服务中处于不同状态下的请求数目随时间变化的折线图"
+    }
+)

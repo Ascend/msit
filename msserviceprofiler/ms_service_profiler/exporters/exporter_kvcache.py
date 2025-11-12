@@ -10,8 +10,8 @@ from ms_service_profiler.utils.log import logger
 from ms_service_profiler.utils.timer import timer
 from ms_service_profiler.constant import US_PER_MS, PERCENTAGE_CONVERSION_FACTOR, PERCENTAGE_THRESHOLD
 from ms_service_profiler.exporters.utils import (
-    write_result_to_csv, truncate_timestamp,
-    check_domain_valid, write_result_to_db, CURVE_VIEW_NAME_LIST
+    write_result_to_csv, truncate_timestamp, CurveViewConfig,
+    write_result_to_db, TableConfig
 )
 
 
@@ -153,11 +153,7 @@ def export_pull_kvcache(df, output, args_format):
     pull_kvcache_df['end_datetime'] = pull_kvcache_df['end_datetime'].str[:-3]
 
     if 'db' in args_format:
-        write_result_to_db(
-            df_param_list=[[pull_kvcache_df, 'pd_split_kvcache']],
-            table_name='pd_split_kvcache',
-            rename_cols=PULL_KV_RENAME_COLS
-        )
+        write_result_to_db(CREATE_PULL_KVCACHE_TABLE_CONFIG, pull_kvcache_df)
 
     if 'csv' in args_format:
         write_result_to_csv(pull_kvcache_df, output, 'pd_split_kvcache', PULL_KV_RENAME_COLS)
@@ -204,12 +200,7 @@ class ExporterKVCacheData(ExporterBase):
         if 'db' in cls.args.format:
             kvcache_usuage_df = kvcache_usage_rate_calculator(kvcache_df)
             kvcache_usuage_df['start_datetime'] = truncate_timestamp(kvcache_usuage_df['start_datetime'])
-            write_result_to_db(
-                df_param_list=[[kvcache_usuage_df, 'kvcache']],
-                table_name='kvcache',
-                create_view_sql=[CREATE_KVCACHE_VIEW_SQL],
-                rename_cols=KVCACHE_RENAME_COLS
-            )
+            write_result_to_db(CREATE_KVCACHE_TABLE_CONFIG, kvcache_usuage_df, CREATE_KVCACHE_VIEW_CONFIG)
 
         if 'csv' in cls.args.format:
             kvcache_df = kvcache_df.drop(['start_datetime'], axis=1)
@@ -219,8 +210,41 @@ class ExporterKVCacheData(ExporterBase):
         export_pull_kvcache(df, cls.args.output_path, cls.args.format)
 
 
+KVCACHE_RENAME_COLS = {
+    'deviceBlock=': 'device_kvcache_left', 'start_time': 'timestamp(ms)',
+    'start_datetime': 'start_datetime(ms)'
+}
+
+PULL_KV_RENAME_COLS = {
+    'start_time': 'start_time(ms)', 'end_time': 'end_time(ms)', 'during_time': 'during_time(ms)',
+    'start_datetime': 'start_datetime(ms)', 'end_datetime': 'end_datetime(ms)'
+}
+
+CREATE_KVCACHE_TABLE_CONFIG = TableConfig(
+    table_name="kvcache",
+    create_view=True,
+    view_name="kvcache_usage",
+    view_rename_cols=KVCACHE_RENAME_COLS,
+    description={
+        "en": "NPU memory usage during servitized inference",
+        "zh": "推理过程的显存使用情况"
+    }
+)
+
+CREATE_PULL_KVCACHE_TABLE_CONFIG = TableConfig(
+    table_name="pd_split_kvcache",
+    create_view=True,
+    view_name="pd_split_pull_kvcache",
+    view_rename_cols=PULL_KV_RENAME_COLS,
+    description={
+        "en": "Metrics of KVCache Transfer Between PD Nodes During PD-Separated Inference",
+        "zh": "PD分离推理过程的KVCache在PD节点间的传输情况"
+    }
+)
+
+KVCACHE_CURVE_VIEW_NAME = "Kvcache_Usage_Percent_curve"
 CREATE_KVCACHE_VIEW_SQL = f"""
-    CREATE VIEW {CURVE_VIEW_NAME_LIST['kvcache']} AS
+    CREATE VIEW {KVCACHE_CURVE_VIEW_NAME} AS
     WITH converted AS (
         SELECT
             kvcache_usage_rate * 100 AS kvcache_usage_percent,
@@ -236,13 +260,11 @@ CREATE_KVCACHE_VIEW_SQL = f"""
     ORDER BY
         datetime ASC
 """
-
-KVCACHE_RENAME_COLS = {
-    'deviceBlock=': 'device_kvcache_left', 'start_time': 'timestamp(ms)',
-    'start_datetime': 'start_datetime(ms)'
-}
-
-PULL_KV_RENAME_COLS = {
-    'start_time': 'start_time(ms)', 'end_time': 'end_time(ms)', 'during_time': 'during_time(ms)',
-    'start_datetime': 'start_datetime(ms)', 'end_datetime': 'end_datetime(ms)'
-}
+CREATE_KVCACHE_VIEW_CONFIG = CurveViewConfig(
+    view_name=KVCACHE_CURVE_VIEW_NAME,
+    sql=CREATE_KVCACHE_VIEW_SQL,
+    description={
+        "en": "KVCache usage rate for all requests over time",
+        "zh": "所有请求Kvcache使用率随时间变换折线图"
+    }
+)

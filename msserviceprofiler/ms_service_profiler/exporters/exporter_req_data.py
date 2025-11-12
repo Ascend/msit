@@ -8,7 +8,7 @@ from ms_service_profiler.utils.log import logger
 from ms_service_profiler.utils.timer import timer
 from ms_service_profiler.utils.error import key_except
 from ms_service_profiler.exporters.utils import (
-    CURVE_VIEW_NAME_LIST, write_result_to_csv,
+    TableConfig, write_result_to_csv,
     write_result_to_db, check_domain_valid
 )
 
@@ -181,11 +181,7 @@ class ExporterReqData(ExporterBase):
             })
 
         if 'db' in cls.args.format:
-            write_result_to_db(
-                df_param_list=[[filtered_df, 'request']],
-                table_name='request',
-                rename_cols=REQUEST_DATA_RENAME_COLS
-            )
+            write_result_to_db(CREATE_REQUEST_TABLE_CONFIG, filtered_df)
 
         if 'csv' in cls.args.format:
             write_result_to_csv(filtered_df, output, "request", REQUEST_DATA_RENAME_COLS)
@@ -196,3 +192,14 @@ REQUEST_DATA_RENAME_COLS = {
     'queue_wait_time': 'queue_wait_time(ms)', 'first_token_latency': 'first_token_latency(ms)',
     'cache_hit_rate': 'cache_hit_rate'
 }
+
+CREATE_REQUEST_TABLE_CONFIG = TableConfig(
+    table_name="request",
+    create_view=True,
+    view_name="request_data",
+    view_rename_cols=REQUEST_DATA_RENAME_COLS,
+    description={
+        "en": "Servitized Inference Request-Level Metrics: Time to First Token (TTFT), Input/Output Length, etc",
+        "zh": "以服务化推理请求为粒度的详细数据指标，包括TTFT，请求的输入输出长度等信息"
+    }
+)
