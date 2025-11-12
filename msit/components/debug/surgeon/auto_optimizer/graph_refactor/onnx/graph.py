@@ -30,7 +30,7 @@ from auto_optimizer.graph_refactor.onnx.node import OnnxPlaceHolder, OnnxInitial
 from components.debug.common import logger
 from components.utils.check.rule import Rule
 from components.utils.constants import ONNX_MODEL_MAX_SIZE
-from components.utils.file_utils import check_input_file_path
+from components.utils.file_utils import check_file_or_directory_path
 from onnx import helper, GraphProto, ModelProto, OperatorSetIdProto, version_converter
 
 
@@ -150,7 +150,7 @@ class OnnxGraph(BaseGraph):
     @classmethod
     def parse(cls, path_or_bytes: Union[str, ModelProto, GraphProto], add_name_suffix: bool = False) -> 'OnnxGraph':
         if isinstance(path_or_bytes, str):
-            check_input_file_path(path_or_bytes, file_max_size=ONNX_MODEL_MAX_SIZE)
+            check_file_or_directory_path(path_or_bytes, is_strict=True)
             onnx_model = onnx.load(path_or_bytes)
         if isinstance(path_or_bytes, ModelProto):
             onnx_model = path_or_bytes

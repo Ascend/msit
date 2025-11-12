@@ -74,6 +74,7 @@ class FileCheckConst:
     ZIP_SUFFIX = ".zip"
     SHELL_SUFFIX = ".sh"
     LOG_SUFFIX = ".log"
+    ONNX_SUFFIX = ".onnx"
     PY_SUFFIX = ".py"
     MAX_PKL_SIZE = 1073741824  # 1 * 1024 * 1024 * 1024
     MAX_NUMPY_SIZE = 10737418240  # 10 * 1024 * 1024 * 1024
@@ -106,6 +107,7 @@ class FileCheckConst:
         IR_SUFFIX: MAX_IR_SIZE,
         ZIP_SUFFIX: MAX_ZIP_SIZE,
         LOG_SUFFIX: MAX_LOG_SIZE,
+        ONNX_SUFFIX: MAX_COMMON_FILE_SIZE,
         PY_SUFFIX: MAX_FILE_SIZE
     }
     CSV_BLACK_LIST = r'^[＋－＝％＠\+\-=%@]|;[＋－＝％＠\+\-=%@]'

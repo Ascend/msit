@@ -23,6 +23,7 @@ from auto_optimizer.inference_engine.inference.inference_base import InferenceBa
 from auto_optimizer.inference_engine.data_process_factory import InferenceFactory
 from components.debug.common import logger
 from components.utils.util import filter_cmd
+from components.utils.file_utils import check_file_or_directory_path
 
 try:
     from ais_bench.infer.interface import InferSession
@@ -58,6 +59,7 @@ class AclInference(InferenceBase, ABC):
 
     def __call__(self, loop, cfg, in_queue, out_queue):
         logger.debug("inference start")
+        check_file_or_directory_path(cfg['model'], is_strict=True)
 
         if self.tool == 'msame':
             msame_cmd = [
