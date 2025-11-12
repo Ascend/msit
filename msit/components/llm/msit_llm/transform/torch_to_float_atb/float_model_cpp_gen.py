@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2024-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
 
 import os
 import time
-from msit_llm.transform.torch_to_float_atb import utils
-from msit_llm.transform.utils import write_file
+
 from components.utils.install import get_public_url
+from msit_llm.transform.torch_to_float_atb import utils
+from msit_llm.transform.utils import write_file, check_if_safe_string
 
 
 def float_model_cpp_gen(parsed_model, save_name=None, save_dir=None):
@@ -29,6 +30,8 @@ def float_model_cpp_gen(parsed_model, save_name=None, save_dir=None):
         year=time.localtime().tm_year,
         licenses_url=get_public_url('msit_licenses_url')
     )
+
+    check_if_safe_string(model_name_lower)
     rr += templates.INCLUDE_HEADER_FORMATTER.format(
         model_name_lower=model_name_lower,
         other_operations="",

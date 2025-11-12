@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2024-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,12 @@
 
 import os
 import time
-from msit_llm.transform.torch_to_float_atb import utils
-from msit_llm.transform.utils import write_file
+
 from components.utils.install import get_public_url
-        
-        
+from msit_llm.transform.torch_to_float_atb import utils
+from msit_llm.transform.utils import write_file, check_if_safe_string
+
+
 def match(keyword_lists, acl_inputs_name):
     for keyword_list in keyword_lists:
         for name in acl_inputs_name:
@@ -39,12 +40,17 @@ def flash_causal_py_gen(parsed_model, save_name=None, save_dir=None):
         year=time.localtime().tm_year,
         licenses_url=get_public_url('msit_licenses_url')
     )
+
+    check_if_safe_string(model_name_lower)
+    check_if_safe_string(model_name_capital)
     rr += templates.IMPORT_FORMATER.format(
         model_name_lower=model_name_lower,
         model_name_capital=model_name_capital,
     )
 
     acl_inputs_name = parsed_model.get('acl_inputs_name', [])
+    for name in acl_inputs_name:
+        check_if_safe_string(name)
 
     acl_inputs_code_block = templates.ACL_INPUTS_CODE_BLOCK.format(
         acl_inputs_name=str(acl_inputs_name),
@@ -56,15 +62,19 @@ def flash_causal_py_gen(parsed_model, save_name=None, save_dir=None):
         atten_mask=match(["ATTENTION MASK".split()], acl_inputs_name),
         block_tables=match(["BLOCK".split()], acl_inputs_name),
         slots=match(["SLOTS".split()], acl_inputs_name),
-        input_lengths=match(["INPUT LENGTH".split(), "SEQ LEN".split()], acl_inputs_name), 
-        lm_head_indices=match(["LOGTIS INDICE".split(), "LOGITS INDICE".split()], acl_inputs_name), 
+        input_lengths=match(["INPUT LENGTH".split(), "SEQ LEN".split()], acl_inputs_name),
+        lm_head_indices=match(["LOGTIS INDICE".split(), "LOGITS INDICE".split()], acl_inputs_name),
         q_lens=match(["Q LEN".split()], acl_inputs_name),
     )
 
-
+    check_if_safe_string(weight_names.get('model_prefix'))
+    check_if_safe_string(weight_names.get('lmhead'))
+    check_if_safe_string(weight_names.get('model_name_in_atb_framework').replace('/', '_'))
+    check_if_safe_string(weight_names.get('qkv_sep'))
+    check_if_safe_string(weight_names.get('mlp_sep'))
     rr += templates.CLASS_FLASH_CAUSAL_LM_FORMATER.format(
-        model_name_capital=model_name_capital, 
-        model_prefix=weight_names.get('model_prefix'),   
+        model_name_capital=model_name_capital,
+        model_prefix=weight_names.get('model_prefix'),
         lmhead=weight_names.get('lmhead'),
         model_name_in_atb_framework=weight_names.get('model_name_in_atb_framework').replace('/', '_'),
         qkv_sep=weight_names.get('qkv_sep'),

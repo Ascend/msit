@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2024-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
 
 import os
 import time
-from msit_llm.transform.torch_to_float_atb import utils
-from msit_llm.transform.utils import write_file
+
 from components.utils.install import get_public_url
+from msit_llm.transform.torch_to_float_atb import utils
+from msit_llm.transform.utils import write_file, check_if_safe_string
 
 
 def modeling_py_gen(parsed_model, save_name=None, save_dir=None):
@@ -31,32 +32,47 @@ def modeling_py_gen(parsed_model, save_name=None, save_dir=None):
         year=time.localtime().tm_year,
         licenses_url=get_public_url('msit_licenses_url')
     )
+
+    check_if_safe_string(model_name_lower)
+    check_if_safe_string(model_name_capital)
     rr += templates.IMPORT_FORMATER.format(
         model_name_lower=model_name_lower,
         model_name_capital=model_name_capital,
     )
-    
+
     mlp_sep = weight_names.get('mlp_sep', [])
-    if len(mlp_sep) == 2:        
+    for m in mlp_sep:
+        check_if_safe_string(m)
+    check_if_safe_string(weight_names.get('gate_up_proj'))
+    check_if_safe_string(weight_names.get('post_attention_layernorm'))
+    check_if_safe_string(weight_names.get('mlp_bias'))
+    check_if_safe_string(weight_names.get('down_proj'))
+    if len(mlp_sep) == 2:
         mlp_code_block = templates.MLP_SEP_FORMATER.format(
             gate_up_proj=weight_names.get('gate_up_proj'),
             gate_proj=mlp_sep[0],
             up_proj=mlp_sep[1],
             post_attention_layernorm=weight_names.get('post_attention_layernorm'),
             mlp_bias=weight_names.get('mlp_bias'),
-            down_proj=weight_names.get('down_proj'), 
+            down_proj=weight_names.get('down_proj'),
         )
     else:
+        check_if_safe_string(weight_names.get('layer_prefix'))
         mlp_code_block = templates.MLP_PACK_FORMATER.format(
             gate_up_proj=weight_names.get('gate_up_proj'),
             layer_prefix=weight_names.get('layer_prefix'),
             post_attention_layernorm=weight_names.get('post_attention_layernorm'),
             mlp_bias=weight_names.get('mlp_bias'),
-            down_proj=weight_names.get('down_proj'), 
+            down_proj=weight_names.get('down_proj'),
         )
 
     qkv_sep = weight_names.get('qkv_sep', [])
-    if len(qkv_sep) == 3:        
+    for q in qkv_sep:
+        check_if_safe_string(q)
+    check_if_safe_string(weight_names.get('query_key_value'))
+    check_if_safe_string(weight_names.get('query_key_value_bias'))
+    check_if_safe_string(weight_names.get('input_layernorm'))
+    if len(qkv_sep) == 3:
         qkv_code_block = templates.QKV_SEP_FORMATER.format(
             q_proj=qkv_sep[0],
             k_proj=qkv_sep[1],
@@ -76,17 +92,27 @@ def modeling_py_gen(parsed_model, save_name=None, save_dir=None):
     if word_embeddings_layernorm is None:
         word_embeddings_layernorm_code_block = ''
     else:
+        check_if_safe_string(word_embeddings_layernorm)
         word_embeddings_layernorm_code_block = templates.WORD_EMBEDDINGS_LATERNORM_FORMATER.format(
-            model_name_capital=model_name_capital, 
+            model_name_capital=model_name_capital,
             word_embeddings_layernorm=word_embeddings_layernorm,
             RMSNormClass='RMSNormBias' if weight_names.get('layernorm_bias') else 'RMSNorm',        
             )
 
-
+    check_if_safe_string(weight_names.get('model_prefix'))
+    check_if_safe_string(weight_names.get('layers_prefix'))
+    check_if_safe_string(weight_names.get('o_proj'))
+    check_if_safe_string(weight_names.get('o_proj_bias'))
+    check_if_safe_string(weight_names.get('mlp'))
+    check_if_safe_string(weight_names.get('input_layernorm'))
+    check_if_safe_string(weight_names.get('post_attention_layernorm'))
+    check_if_safe_string(weight_names.get('layernorm'))
+    check_if_safe_string(weight_names.get('word_embeddings'))
+    check_if_safe_string(weight_names.get('self_attention'))
     rr += templates.CLASS_FLASH_MODEL_FORMATER.format(
-        model_name_capital=model_name_capital, 
+        model_name_capital=model_name_capital,
         model_prefix=weight_names.get('model_prefix'),
-        layers_prefix=weight_names.get('layers_prefix'),     
+        layers_prefix=weight_names.get('layers_prefix'),
         mlp_code_block=mlp_code_block,
         qkv_code_block=qkv_code_block,
         o_proj=weight_names.get('o_proj'),
