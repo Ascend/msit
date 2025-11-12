@@ -8,8 +8,8 @@ import pandas as pd
 from ms_service_profiler.exporters.base import ExporterBase
 from ms_service_profiler.utils.log import logger
 from ms_service_profiler.exporters.utils import (
-    write_result_to_csv, write_result_to_db,
-    check_domain_valid, CURVE_VIEW_NAME_LIST
+    write_result_to_csv, write_result_to_db, TableConfig,
+    check_domain_valid, CurveViewConfig
 )
 from ms_service_profiler.constant import US_PER_MS
 from ms_service_profiler.utils.timer import timer
@@ -80,16 +80,6 @@ def add_columns_for_batch_size_and_tokens(batch_df):
               'total_scheduled_tokens']] = pd.DataFrame(results.tolist(), index=batch_df.index)
 
     return batch_df
-
-
-def get_rename_cols():
-    rename_cols = {
-        'start_time': 'start_time(ms)',
-        'end_time': 'end_time(ms)',
-        'during_time': 'during_time(ms)',
-        'batch_size': 'total_batch_size',
-    }
-    return rename_cols
 
 
 class ExporterBatchData(ExporterBase):
@@ -408,7 +398,6 @@ class ExporterBatchData(ExporterBase):
                 return
             # 筛选显示
             batch_df = filter_batch_df(batch_name, batch_df)
-            rename_cols = get_rename_cols()
 
             # 构建batch_req_df和batch_exec_df
             batch_event_df = data.get('batch_event_df')
@@ -416,24 +405,37 @@ class ExporterBatchData(ExporterBase):
             batch_exec_df, batch_req_df = cls.parse_batch_exec_req(batch_event_df)
 
             if 'db' in cls.args.format:
-                df_param_list = [
-                    [batch_df, 'batch'],
-                    [batch_req_df, 'batch_req'],
-                    [batch_exec_df, 'batch_exec']
-                ]
-                write_result_to_db(
-                    df_param_list=df_param_list,
-                    create_view_sql=[CREATE_BATCH_SIZE_VIEW_SQL, CREATE_BATCH_TOKEN_VIEW_SQL],
-                    table_name='batch',
-                    rename_cols=rename_cols
-                )
+                write_result_to_db(CREATE_BATCH_TABLE_CONFIG, batch_df, CREATE_BATCH_VIEW_CONFIGS)
+                write_result_to_db(TableConfig(table_name="batch_exec"), batch_exec_df)
+                write_result_to_db(TableConfig(table_name="batch_req"), batch_req_df)
 
             if 'csv' in cls.args.format:
-                write_result_to_csv(batch_df, output, 'batch', rename_cols)
+                write_result_to_csv(batch_df, output, 'batch', BATCH_RENAME_COLS)
 
+
+BATCH_RENAME_COLS = {
+    'start_time': 'start_time(ms)',
+    'end_time': 'end_time(ms)',
+    'during_time': 'during_time(ms)',
+    'batch_size': 'total_batch_size',
+}
+
+CREATE_BATCH_TABLE_CONFIG = TableConfig(
+    table_name="batch",
+    create_view=True,
+    view_name="batch_info",
+    view_rename_cols=BATCH_RENAME_COLS,
+    description={
+        "en": "Servitized inference batch-level metrics: Batch Scheduling Latency and Batch Execution Latency",
+        "zh": "服务化推理batch为粒度的详细数据，包含组batch和执行batch两种耗时信息"
+    }
+)
+
+BATCH_SIZE_CURVE_VIEW_NAME = "Batch_Size_by_Batch_ID_curve"
+BATCH_TOKEN_CURVE_VIEW_NAME = "Batch_Token_by_Batch_ID_curve"
 
 CREATE_BATCH_SIZE_VIEW_SQL = f"""
-    CREATE VIEW {CURVE_VIEW_NAME_LIST['batch']} AS
+    CREATE VIEW {BATCH_SIZE_CURVE_VIEW_NAME} AS
     WITH numbered_data AS (
         SELECT 
             ROW_NUMBER() OVER (ORDER BY "start_time") - 1 AS batch_id,
@@ -457,7 +459,7 @@ CREATE_BATCH_SIZE_VIEW_SQL = f"""
 """
 
 CREATE_BATCH_TOKEN_VIEW_SQL = f"""
-    CREATE VIEW {CURVE_VIEW_NAME_LIST['batch_token']} AS
+    CREATE VIEW {BATCH_TOKEN_CURVE_VIEW_NAME} AS
     WITH numbered_data AS (
         SELECT 
             ROW_NUMBER() OVER (ORDER BY "start_time") - 1 AS batch_id,
@@ -479,3 +481,23 @@ CREATE_BATCH_TOKEN_VIEW_SQL = f"""
     ORDER BY
         batch_id;
 """
+
+CREATE_BATCH_VIEW_CONFIGS = [
+    CurveViewConfig(
+        view_name=BATCH_SIZE_CURVE_VIEW_NAME,
+        sql=CREATE_BATCH_SIZE_VIEW_SQL,
+        description={
+            "en": "The number of requests per batch in the BatchSchedule process, sequenced by time "
+                  "and segmented by prefill and decode phases",
+            "zh": "BatchSchedule过程中每个batch包含的请求数量折线图，根据时间排序，区分prefill和decode"
+        }
+    ),
+    CurveViewConfig(
+        view_name=BATCH_TOKEN_CURVE_VIEW_NAME,
+        sql=CREATE_BATCH_TOKEN_VIEW_SQL,
+        description={
+            "en": "Token counts in the BatchSchedule process: Total, Prefill, and Decode", 
+            "zh": "BatchSchedule过程中的总token数，prefill占用token数，decode占用token数"
+        }
+    )
+]

@@ -4,7 +4,10 @@ import numpy as np
 import pandas as pd
 from ms_service_profiler.exporters.base import ExporterBase
 from ms_service_profiler.utils.log import logger
-from ms_service_profiler.exporters.utils import write_result_to_db, CURVE_VIEW_NAME_LIST, check_domain_valid
+from ms_service_profiler.exporters.utils import (
+    write_result_to_db, check_domain_valid,
+    TableConfig, CurveViewConfig
+)
 from ms_service_profiler.utils.timer import timer
 from ms_service_profiler.parse_helper.utils import convert_timestamp
 
@@ -294,24 +297,23 @@ class ExporterLatency(ExporterBase):
         decode_gen_speed_views = ExporterLatency.gen_exporter_decode_gen_speed_views(
             data.get("req_event_df", pd.DataFrame()))
 
-        df_param_list = [
-            [pd.DataFrame(first_token_latency_views), 'first_token_latency'],
-            [pd.DataFrame(req_latency_views), 'req_latency'],
-            [pd.DataFrame(prefill_gen_speed_views), 'prefill_gen_speed'],
-            [pd.DataFrame(decode_gen_speed_views), 'decode_gen_speed']
-        ]
-        view_sql_list = [
-            CREATE_FIRST_TOKEN_LATENCY_SQL, CREATE_REQUEST_LATENCY_SQL,
-            CREATE_PREFILL_GEN_SPEED_VIEW_SQL, CREATE_DECODE_GEN_SPEED_SQL
-        ]
-        write_result_to_db(
-            df_param_list=df_param_list,
-            create_view_sql=view_sql_list
-        )
+        write_result_to_db(TableConfig(table_name="prefill_gen_speed"), pd.DataFrame(prefill_gen_speed_views),
+            CREATE_PREFILL_GEN_SPEED_CURVE_VIEW_CONFIG)
+        write_result_to_db(TableConfig(table_name="first_token_latency"), pd.DataFrame(first_token_latency_views),
+            CREATE_FIRST_TOKEN_LATENCY_CURVE_VIEW_CONFIG)
+        write_result_to_db(TableConfig(table_name="req_latency"), pd.DataFrame(req_latency_views),
+            CREATE_REQUEST_LATENCY_CURVE_CONFIG)
+        write_result_to_db(TableConfig(table_name="decode_gen_speed"), pd.DataFrame(decode_gen_speed_views),
+            CREATE_DECODE_GEN_SPEED_CURVE_VIEW_CONFIG)
 
+
+PREFILL_GEN_SPEED_CURVE_VIEW_NAME = "Prefill_Generate_Speed_Latency_curve"
+REQUEST_LATENCY_CURVE_VIEW_NAME = "Request_Latency_curve"
+DECODE_GEN_SPEED_CURVE_VIEW_NAME = "Decode_Generate_Speed_Latency_curve"
+FIRST_TOKEN_LATENCY_CURVE_VIEW_NAME = "First_Token_Latency_curve"
 
 CREATE_PREFILL_GEN_SPEED_VIEW_SQL = f"""
-    CREATE VIEW {CURVE_VIEW_NAME_LIST['prefill_gen_speed']} AS
+    CREATE VIEW {PREFILL_GEN_SPEED_CURVE_VIEW_NAME} AS
     WITH converted AS (
         SELECT
             substr(timestamp, 1, 10) || ' ' || substr(timestamp, 12, 8) || '.' || substr(timestamp, 21, 6) AS datetime,
@@ -331,9 +333,8 @@ CREATE_PREFILL_GEN_SPEED_VIEW_SQL = f"""
         datetime ASC
 """
 
-
 CREATE_REQUEST_LATENCY_SQL = f"""
-    CREATE VIEW {CURVE_VIEW_NAME_LIST['req_latency']} AS
+    CREATE VIEW {REQUEST_LATENCY_CURVE_VIEW_NAME} AS
     WITH converted AS (
         SELECT
             substr(timestamp, 1, 10) || ' ' || substr(timestamp, 12, 8) || '.' || substr(timestamp, 21, 6) AS datetime,
@@ -357,7 +358,7 @@ CREATE_REQUEST_LATENCY_SQL = f"""
 """
 
 CREATE_DECODE_GEN_SPEED_SQL = f"""
-    CREATE VIEW {CURVE_VIEW_NAME_LIST['decode_gen_speed']} AS
+    CREATE VIEW {DECODE_GEN_SPEED_CURVE_VIEW_NAME} AS
     WITH converted AS (
         SELECT
             substr(timestamp, 1, 10) || ' ' || substr(timestamp, 12, 8) || '.' || substr(timestamp, 21, 6) AS datetime,
@@ -378,7 +379,7 @@ CREATE_DECODE_GEN_SPEED_SQL = f"""
 """
 
 CREATE_FIRST_TOKEN_LATENCY_SQL = f"""
-    CREATE VIEW {CURVE_VIEW_NAME_LIST['first_token_latency']} AS
+    CREATE VIEW {FIRST_TOKEN_LATENCY_CURVE_VIEW_NAME} AS
     WITH converted AS (
         SELECT
         substr(timestamp, 1, 10) || ' ' || substr(timestamp, 12, 8) || '.' || substr(timestamp, 21, 6) AS datetime,
@@ -397,3 +398,36 @@ CREATE_FIRST_TOKEN_LATENCY_SQL = f"""
     ORDER BY
         datetime ASC
 """
+
+CREATE_PREFILL_GEN_SPEED_CURVE_VIEW_CONFIG = CurveViewConfig(
+    view_name=PREFILL_GEN_SPEED_CURVE_VIEW_NAME,
+    sql=CREATE_PREFILL_GEN_SPEED_VIEW_SQL,
+    description={
+        "en": "Prefill Phase Token Throughput (tokens/s) Over Time For All Requests",
+        "zh": "所有请求prefill阶段，不同时刻吞吐的token平均时延随时间变化折线图"
+    }
+)
+CREATE_REQUEST_LATENCY_CURVE_CONFIG = CurveViewConfig(
+    view_name=REQUEST_LATENCY_CURVE_VIEW_NAME,
+    sql=CREATE_REQUEST_LATENCY_SQL,
+    description={
+        "en": "End-to-End Latency Over Time For All Requests", 
+        "zh": "所有请求端到端时延随时间变化折线图"
+    }
+)
+CREATE_DECODE_GEN_SPEED_CURVE_VIEW_CONFIG = CurveViewConfig(
+    view_name=DECODE_GEN_SPEED_CURVE_VIEW_NAME,
+    sql=CREATE_DECODE_GEN_SPEED_SQL,
+    description={
+        "en": "Decode Phase Token Throughput (tokens/s) Over Time For All Requests", 
+        "zh": "所有请求decode阶段，不同时刻吞吐的token平均时延随时间变化折线图"
+    }
+)
+CREATE_FIRST_TOKEN_LATENCY_CURVE_VIEW_CONFIG = CurveViewConfig(
+    view_name=FIRST_TOKEN_LATENCY_CURVE_VIEW_NAME,
+    sql=CREATE_FIRST_TOKEN_LATENCY_SQL,
+    description={
+        "en": "Time to First Token (TTFT) Over Time For All Requests", 
+        "zh": "所有请求首token时延随时间变化折线图"
+    }
+)

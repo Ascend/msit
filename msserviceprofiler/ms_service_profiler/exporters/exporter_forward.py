@@ -2,7 +2,8 @@
 import pandas as pd
 from ms_service_profiler.exporters.base import ExporterBase
 from ms_service_profiler.exporters.utils import (
-    write_result_to_csv, write_result_to_db, check_domain_valid
+    write_result_to_csv, write_result_to_db,
+    check_domain_valid, TableConfig
 )
 from ms_service_profiler.constant import US_PER_MS
 from ms_service_profiler.utils.log import logger
@@ -10,7 +11,7 @@ from ms_service_profiler.utils.timer import timer
 
 
 REQUIED_NAME = set(["forward"])
-REMAME_COLUMNS = {
+FORWARD_REMAME_COLUMNS = {
     "start_time": "start_time(ms)",
     "end_time": "end_time(ms)",
     "during_time": "during_time(ms)",
@@ -69,18 +70,11 @@ class ExporterForwardData(ExporterBase):
         })
 
         if 'db' in cls.args.format:
-            write_result_to_db(
-                df_param_list=[[forward_df, "forward"]],
-                table_name="forward",
-                rename_cols=REMAME_COLUMNS
-            )
-            write_result_to_db(
-                df_param_list=[[data_link_df, "data_link"]],
-                table_name="data_link"
-            )
+            write_result_to_db(CREATE_FORWARD_TABLE_CONFIG, forward_df)
+            write_result_to_db(TableConfig(table_name="data_link"), data_link_df)
 
         if 'csv' in cls.args.format:
-            write_result_to_csv(forward_df, output, "forward", REMAME_COLUMNS)
+            write_result_to_csv(forward_df, output, "forward", FORWARD_REMAME_COLUMNS)
 
 
 # 按 hostname 分组，并计算每个分组的相对时间
@@ -157,3 +151,15 @@ def get_relative_and_bubble(forward_df):
     forward_df.loc[mask, "bubble_time"] = pd.NA
 
     return forward_df
+
+
+CREATE_FORWARD_TABLE_CONFIG = TableConfig(
+    table_name="forward",
+    create_view=True,
+    view_name="forward_info",
+    view_rename_cols=FORWARD_REMAME_COLUMNS,
+    description={
+        "en": "Detailed data for the forward execution during servitized inference",
+        "zh": "服务化推理模型前向执行过程的详细数据"
+    }
+)
