@@ -17,6 +17,7 @@ import subprocess
 from auto_optimizer.inference_engine.model_convert.compiler import Compiler
 from components.debug.common import logger
 from components.utils.util import filter_cmd
+from components.utils.file_utils import check_file_or_directory_path
 
 
 class OmCompiler(Compiler):
@@ -53,6 +54,7 @@ def onnx2om(path_onnx: str, converter: str, **kwargs):
     '''convert a onnx file to om using ATC.'''
     if not path_onnx.endswith('.onnx'):
         raise RuntimeError('Not a onnx file.')
+    check_file_or_directory_path(path_onnx, is_strict=True)
     convert_cfg = {'type': converter, 'framework': '5', 'model': path_onnx, 'output': path_onnx[:-5], **kwargs}
     compiler = OmCompiler(convert_cfg)
     compiler.build_model()
