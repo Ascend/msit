@@ -25,6 +25,8 @@ import os
 from msquickcmp.common.utils import AccuracyCompareException
 from msquickcmp.common import utils
 from components.utils.util import load_file_to_read_common_check
+from components.debug.compare.msquickcmp.common.args_check import check_output_path_legality, check_dict_kind_string, \
+    check_debug_compare_input_data_path, check_tf_pb_path_legality
 
 
 class TfDebugRunner(object):
@@ -107,6 +109,7 @@ def _make_dump_data_parser(parser):
         "--model-path",
         dest="model_path",
         default="",
+        type=check_tf_pb_path_legality,
         help="<Required> The original model (.pb) file path",
         required=True,
     )
@@ -115,16 +118,19 @@ def _make_dump_data_parser(parser):
         "--input-path",
         dest="input_path",
         default="",
+        type=check_debug_compare_input_data_path,
         help="<Required> The input data path of the model. Separate multiple inputs with commas(,)."
         " E.g: input_0.bin,input_1.bin",
         required=True,
     )
-    parser.add_argument("-o", "--out-path", dest="out_path", default="", help="<Required> The output path")
+    parser.add_argument("-o", "--out-path", dest="out_path", default="", type=check_output_path_legality,
+                        help="<Required> The output path")
     parser.add_argument(
         "-s",
         "--input-shape",
         dest="input_shape",
         default="",
+        type=check_dict_kind_string,
         help="<Required> Shape of input shape. Separate multiple nodes with semicolons(;)."
         " E.g: input_name1:1,224,224,3;input_name2:3,300",
     )
@@ -133,6 +139,7 @@ def _make_dump_data_parser(parser):
         dest="output_nodes",
         default="",
         required=True,
+        type=check_dict_kind_string,
         help="<Required> Output nodes designated by user. Separate multiple nodes with semicolons(;)."
         " E.g: node_name1:0;node_name2:1;node_name3:0",
     )
