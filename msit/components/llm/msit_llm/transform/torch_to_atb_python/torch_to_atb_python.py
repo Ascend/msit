@@ -21,6 +21,7 @@ from functools import reduce
 
 from transformers import AutoConfig
 
+from components.utils.file_utils import check_and_get_real_path, FileCheckConst
 from msit_llm.transform.utils import write_file
 from msit_llm.common.log import logger
 from msit_llm.transform.torch_to_atb_python.utils import to_transformers_traced_module, get_valid_name, \
@@ -935,6 +936,8 @@ def transform(source_path, input_names=BASIC_INPUT_NAMES, output_file=None, to_q
 
         contents_str = Path(__file__).with_name("run.py").read_text()
         run_pa_path = atb_speed_path + "/examples/models/{}/run_pa.sh".format(mindie_model_file)
+        run_pa_path = check_and_get_real_path(run_pa_path, FileCheckConst.READ_ABLE,
+                                              file_type=FileCheckConst.SHELL_SUFFIX, is_strict=True)
         contents_str = contents_str.replace('run_pa_path = "xxx"', f'run_pa_path = "{run_pa_path}"')
         contents_str = contents_str.replace("mindie_supported = False", "mindie_supported = True")
         contents_str = contents_str.replace('MODEL_PATH = "model_path_placeholder"', f'MODEL_PATH = "{source_path}"')

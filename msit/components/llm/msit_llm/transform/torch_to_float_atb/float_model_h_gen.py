@@ -14,9 +14,10 @@
 
 import os
 import time
-from msit_llm.transform.torch_to_float_atb import utils
-from msit_llm.transform.utils import write_file
+
 from components.utils.install import get_public_url
+from msit_llm.transform.torch_to_float_atb import utils
+from msit_llm.transform.utils import write_file, check_if_safe_string
 
 
 def float_model_h_gen(parsed_model, save_name=None, save_dir=None):
@@ -29,6 +30,8 @@ def float_model_h_gen(parsed_model, save_name=None, save_dir=None):
         year=time.localtime().tm_year,
         licenses_url=get_public_url('msit_licenses_url')
     )
+
+    check_if_safe_string(model_name_lower)
     rr += templates.INCLUDE_HEADER_FORMATTER.format(
         model_name_upper=model_name_lower.upper(),
     )

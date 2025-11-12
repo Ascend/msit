@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2024 Huawei Technologies Co., Ltd.
+# Copyright (c) 2024-2025 Huawei Technologies Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import os
-import stat
+import re
 import sys
 from collections import namedtuple
 from pathlib import Path
@@ -27,9 +27,8 @@ from components.utils.util import safe_torch_load
 from components.utils.file_open_check import ms_open
 from msit_llm.common.log import logger
 from msit_llm.common.utils import load_file_to_read_common_check
-from msit_llm.common.constant import MAX_WEIGHT_DATA_SIZE
 from components.utils.check.rule import Rule
-  
+
 
 _SCENARIOS = ["torch_to_float_atb", "float_atb_to_quant_atb", "torch_to_float_python_atb"]
 SCENARIOS = namedtuple("SCENARIOS", _SCENARIOS)(*_SCENARIOS)
@@ -54,7 +53,7 @@ def load_atb_speed():
         Rule.input_dir().check(atb_speed_home_path)
     except Exception as e:
         logger.error(f'Failed to abtain ATB_SPEED_HOME_PATH, err:{e}')
-    lib_path = os.path.join(atb_speed_home_path, "lib/libatb_speed_torch.so")   
+    lib_path = os.path.join(atb_speed_home_path, "lib/libatb_speed_torch.so")
     try:
         Rule.input_file().check(lib_path)
     except Exception as e:
@@ -82,8 +81,6 @@ def get_transform_scenario(source_path, to_python=False):
 
 
 def write_file(save_path, string):
-    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
-    modes = stat.S_IWUSR | stat.S_IRUSR
     with ms_open(save_path, 'w') as ff:
         ff.write(string)
 
@@ -102,13 +99,18 @@ def load_model_dict(model_path):
             state_dict = {}
             for fp in file_list:
                 fp = load_file_to_read_common_check(str(fp))
-                
+
                 if suffix == '.safetensors':
                     with safe_open(fp, framework='pt') as ff:
                         ss = {kk: ff.get_tensor(kk).half() for kk in ff.keys()}
                 else:
                     ss = safe_torch_load(fp)
-                    
+
                 state_dict.update(ss)
             return state_dict
     return {}
+
+
+def check_if_safe_string(str_value):
+    if not re.search(r'^[a-zA-Z0-9_./-]+$', str_value):
+        raise ValueError("String parameter contains invalid characters.")
