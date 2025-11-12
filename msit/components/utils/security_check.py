@@ -19,6 +19,7 @@ import argparse
 import re
 import shutil
 
+from components.utils.file_utils import FileChecker, FileCheckConst
 from components.utils.file_open_check import FileStat
 from components.utils.constants import PATH_WHITE_LIST_REGEX
 from components.utils.log import logger
@@ -268,11 +269,14 @@ def check_input_path_legality(value):
         return value
     input_path = value
     try:
-        file_stat = FileStat(input_path)
+        # 根据路径是文件还是目录，填充FileChecker初始化字段
+        if os.path.isdir(input_path):
+            file_stat = FileChecker(input_path, FileCheckConst.DIR, FileCheckConst.READ_ABLE)
+        else:
+            file_stat = FileChecker(input_path, FileCheckConst.FILE, FileCheckConst.READ_ABLE)
+        file_stat.common_check()
     except Exception as err:
         raise argparse.ArgumentTypeError("input path:%r is illegal, Please check." % input_path) from err
-    if not file_stat.is_basically_legal('read', strict_permission=True):
-        raise argparse.ArgumentTypeError("The current user cannot read the input path: %r." % input_path)
     return input_path
 
 
