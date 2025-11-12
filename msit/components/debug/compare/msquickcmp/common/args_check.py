@@ -52,6 +52,23 @@ def check_model_path_legality(value):
         return path_value
 
 
+def check_tf_pb_path_legality(value):
+    path_value = value
+    check_input_file_path(path_value, file_max_size=MAX_SIZE_LIMITE_NORMAL_MODEL)
+    try:
+        file_stat = FileStat(path_value)
+    except Exception as err:
+        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.") from err
+    if not file_stat.is_basically_legal('read'):
+        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.")
+    if not file_stat.is_legal_file_type(["pb"]):
+        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.")
+    if not file_stat.is_legal_file_size(MAX_SIZE_LIMITE_NORMAL_MODEL):
+        raise argparse.ArgumentTypeError(f"model path:{path_value} is illegal. Please check.")
+    check_path_no_group_others_write(path_value)
+    return path_value
+
+
 def is_saved_model_valid(directory):
     if not os.path.isdir(directory):
         return False
