@@ -8,7 +8,7 @@ from components.expert_load_balancing.elb.data_loader.base_loader import DataTyp
 from components.expert_load_balancing.elb.algorithm_runner.base_algorithm_runner import BaseAlgorithmRunner, \
     AlgorithmType, DEPLOYMENT_JSON_FILE
 from components.expert_load_balancing.elb.constant import A2, A3
-from components.utils.security_check import check_int, get_valid_read_path
+from components.utils.security_check import check_int, check_type, get_valid_read_path
 from components.utils.file_open_check import ms_open, MAX_SIZE_LIMITE_NORMAL_FILE
 from speculative_moe import ExpSolver, ExpILPSolver, second_optim, all_to_all_algorithm_multi_process
 
@@ -268,20 +268,43 @@ def parse_ep_file(ep_file_path, ep_file=None, n_share_expert_devices=0):
     if ep_file is None:
         with ms_open(ep_file_path, max_size=MAX_SIZE_LIMITE_NORMAL_FILE) as handle:
             ep_file = json.load(handle)
+    if ep_file is None:
+        raise FileNotFoundError("Input ep_deployment_file is empty.")
 
-    layer_count = ep_file["moe_layer_count"]
-    layer_list = ep_file["layer_list"]
+    layer_count = ep_file.get("moe_layer_count", None)
+    layer_list = ep_file.get("layer_list", None)
+    check_int(layer_count, min_value=1, max_value=1024, param_name="moe_layer_count")
+    check_type(layer_list, list, param_name="layer_list")
+    if len(layer_list) != layer_count:
+        raise ValueError("Format of ep_depolyment_file is illeagle. "
+                         f"Moe_layer_count: {layer_count} does not match length of layer_list: {len(layer_list)}.")
     for layer_list_idx in range(layer_count):
         layer_info = layer_list[layer_list_idx]
-        layer_id = layer_info["layer_id"]
-        device_count = layer_info["device_count"]
-        device_list = layer_info["device_list"]
+        check_type(layer_info, dict, param_name="item of layer_list")
+        layer_id = layer_info.get("layer_id", None)
+        check_int(layer_id, min_value=0, max_value=1024, param_name="layer_id")
+        device_count = layer_info.get("device_count", None)
+        check_int(device_count, min_value=0, max_value=65536, param_name="device_count")
+        device_list = layer_info.get("device_list", None)
+        check_type(device_list, list, param_name="device_list")
+        if len(device_list) != device_count:
+            raise ValueError(f"Format of ep_deployment_file is illeagle in layer_id: {layer_list_idx}. "
+                             f"Device_count: {device_count} does not match length of device_list: {len(device_list)}."
+                             )
         layer_expert_table = []
         for device_list_idx in range(device_count):
             device_info = device_list[device_list_idx]
-            device_expert = device_info["device_expert"]
+            device_expert = device_info.get("device_expert", None)
+            check_type(device_expert, 
+                       list, 
+                       additional_check_func=lambda xx: isinstance(xx, int) and xx >= 0 and xx <= 1024,
+                       additional_msg=f"Format of device_expert is illeagle in layer_id: "
+                                      f"{layer_list_idx}, device_id: {device_list_idx}."
+                       )
             layer_expert_table.append(device_expert)
-
+        if n_share_expert_devices >= len(layer_expert_table):
+            raise ValueError(f"n_shared_expert_devices: {n_share_expert_devices} should be smaller than length of "
+                             f"layer_expert_table: {len(layer_expert_table)} in layer_id: {layer_id}.")
         experts_table[layer_id] = layer_expert_table[n_share_expert_devices:]
    
     sorted_experts = sorted(experts_table.items(), key=lambda x: x[0])
