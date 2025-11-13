@@ -12,7 +12,7 @@ from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.quant.processor.quarot import (
                                                 QuaRotInterface, 
-                                                QuaRotOnelineInterface, 
+                                                QuaRotOnlineInterface,
                                                 )
 from .common.layer_wise_forward import generated_decoder_layer_visit_func, transformers_generated_forward_func
 from .factory import ModelFactory
@@ -35,7 +35,7 @@ class Qwen3ModelAdapter(TransformersModel,
                         IterSmoothInterface,
                         FlexSmoothQuantInterface,
                         QuaRotInterface,
-                        QuaRotOnelineInterface
+                        QuaRotOnlineInterface
                         ):
     def get_model_type(self) -> str:
         return self.model_type

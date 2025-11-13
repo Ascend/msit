@@ -114,7 +114,7 @@ class QuaRotInterface:
         return [], []
 
 
-class QuaRotOnelineInterface:
+class QuaRotOnlineInterface:
     @abstractmethod
     def get_head_dim(self):
         pass
