@@ -85,6 +85,9 @@ def check_om_path_legality(value):
     path_value = value
     if os.path.isdir(path_value):
         check_input_dir_path(path_value)
+        if not is_saved_model_valid(path_value):
+            raise argparse.ArgumentTypeError(f"model path:{path_value} is not qualified saved_model file. "
+                                             f"Please check.")
         check_path_no_group_others_write(path_value)
         return path_value
     else:
