@@ -25,7 +25,7 @@ from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.quant.processor.base import AutoProcessorConfig, AutoSessionProcessor
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import get_logger
-from .quarot_interface import QuaRotOnelineInterface
+from .quarot_interface import QuaRotOnlineInterface
 from .quarot_utils import get_decompose_dim, online_rotate_o_proj_input, online_rotate_down_proj, QuaRotMode, create_rot
 
 
@@ -84,11 +84,11 @@ def _convert_hookir_to_wrapper(module: nn.Module) -> None:
 
 
 class QuaRotOnlineProcessor:
-    def __init__(self, model: nn.Module, config, adapter: QuaRotOnelineInterface, **kwargs) -> None:
-        if not isinstance(adapter, QuaRotOnelineInterface):
+    def __init__(self, model: nn.Module, config, adapter: QuaRotOnlineInterface, **kwargs) -> None:
+        if not isinstance(adapter, QuaRotOnlineInterface):
             raise UnsupportedError(f'{adapter.__class__.__name__} does not support QuaRotOnlineInterface',
                                    action='Please provide a valid model adapter '
-                                          'which implements QuaRotOnelineInterface')
+                                          'which implements QuaRotOnlineInterface')
         self.config = config
         self.model = model
         self.adapter = adapter
