@@ -124,9 +124,12 @@ def hyvideo_mm_double_stream_block_double_forward_adapter(original_forward):
         # Apply RoPE if needed.
         if freqs_cis is not None:
             img_qq, img_kk = apply_rotary_emb(img_q, img_k, freqs_cis, head_first=False)
-            assert (
-                img_qq.shape == img_q.shape and img_kk.shape == img_k.shape
-            ), f"img_kk: {img_qq.shape}, img_q: {img_q.shape}, img_kk: {img_kk.shape}, img_k: {img_k.shape}"
+            if not (img_qq.shape == img_q.shape and img_kk.shape == img_k.shape):
+                raise ValueError(
+                    f"Rotary embedding output shape mismatch. "
+                    f"img_qq shape: {img_qq.shape}, img_q shape: {img_q.shape}, "
+                    f"img_kk shape: {img_kk.shape}, img_k shape: {img_k.shape}"
+                )
             img_q, img_k = img_qq, img_kk
 
         # Prepare txt for attention.
@@ -146,10 +149,14 @@ def hyvideo_mm_double_stream_block_double_forward_adapter(original_forward):
         q = torch.cat((img_q, txt_q), dim=1)
         k = torch.cat((img_k, txt_k), dim=1)
         v = torch.cat((img_v, txt_v), dim=1)
-        assert (
-            cu_seqlens_q.shape[0] == 2 * img.shape[0] + 1
-        ), f"cu_seqlens_q.shape:{cu_seqlens_q.shape}, img.shape[0]:{img.shape[0]}"
-        
+        expected_cu_seqlens_q_length = 2 * img.shape[0] + 1
+        if cu_seqlens_q.shape[0] != expected_cu_seqlens_q_length:
+            raise ValueError(
+                f"cu_seqlens_q shape mismatch: "
+                f"cu_seqlens_q.shape:{cu_seqlens_q.shape}, img.shape[0]:{img.shape[0]}"
+                f"expected first dimension length: {expected_cu_seqlens_q_length}"
+            )
+
         # --------------------fa3-----------------------------
         q = self.fa_quantizer.quant(q, qkv="q")
         k = self.fa_quantizer.quant(k, qkv="k")
@@ -218,18 +225,25 @@ def hyvideo_mm_single_stream_block_single_forward_adapter(original_forward):
             img_q, txt_q = q[:, :-txt_len, :, :], q[:, -txt_len:, :, :]
             img_k, txt_k = k[:, :-txt_len, :, :], k[:, -txt_len:, :, :]
             img_qq, img_kk = apply_rotary_emb(img_q, img_k, freqs_cis, head_first=False)
-            assert (
-                img_qq.shape == img_q.shape and img_kk.shape == img_k.shape
-            ), f"img_kk: {img_qq.shape}, img_q: {img_q.shape}, img_kk: {img_kk.shape}, img_k: {img_k.shape}"
+            if not (img_qq.shape == img_q.shape and img_kk.shape == img_k.shape):
+                raise ValueError(
+                    f"Rotary embedding output shape mismatch. "
+                    f"img_qq shape: {img_qq.shape}, img_q shape: {img_q.shape}, "
+                    f"img_kk shape: {img_kk.shape}, img_k shape: {img_k.shape}"
+                )
             img_q, img_k = img_qq, img_kk
             q = torch.cat((img_q, txt_q), dim=1)
             k = torch.cat((img_k, txt_k), dim=1)
 
         # Compute attention.
-        assert (
-            cu_seqlens_q.shape[0] == 2 * x.shape[0] + 1
-        ), f"cu_seqlens_q.shape:{cu_seqlens_q.shape}, x.shape[0]:{x.shape[0]}"
-        
+        expected_cu_seqlens_q_length = 2 * x.shape[0] + 1
+        if cu_seqlens_q.shape[0] != expected_cu_seqlens_q_length:
+            raise ValueError(
+                f"cu_seqlens_q shape mismatch. "
+                f"cu_seqlens_q.shape: {cu_seqlens_q.shape}, x.shape[0]: {x.shape[0]}, "
+                f"expected first dimension length: {expected_cu_seqlens_q_length}"
+            )
+
         # --------------------fa3-----------------------------
         q = self.fa_quantizer.quant(q, qkv="q")
         k = self.fa_quantizer.quant(k, qkv="k")
