@@ -16,17 +16,44 @@ from ms_service_profiler.utils.timer import timer
 from ms_service_profiler.utils.error import key_except
 
 
-def filter_batch_df(batch_name, batch_df):
-    batch_df['batch_size'] = batch_df['batch_size'].astype(float)
-    batch_df = batch_df[batch_df['name'].isin(['modelExec', batch_name])]
-    ori_columns = ['name', 'res_list', 'start_time', 'end_time', 'during_time', 'batch_type', 'prof_id', 'batch_size']
-    existing_columns = [col for col in ori_columns if col in batch_df.columns]
-    batch_df = batch_df[existing_columns]
-    batch_df['during_time'] = batch_df['during_time'] / US_PER_MS
-    batch_df['start_time'] = batch_df['start_time'] // US_PER_MS
-    batch_df['end_time'] = batch_df['end_time'] // US_PER_MS
-    batch_df = add_columns_for_batch_size_and_tokens(batch_df)
-    return batch_df
+def filter_batch_df(batch_name, batch_df, tx_data_df=None):
+    if batch_df is None or batch_df.empty:
+        return batch_df
+
+    if 'batch_size' in batch_df.columns:
+        batch_df = batch_df.copy()
+        batch_df['batch_size'] = batch_df['batch_size'].astype(float)
+
+    filtered_df = batch_df[batch_df['name'].isin(['modelExec', batch_name])].copy()
+
+    base_columns = [
+        'name', 'res_list', 'start_time', 'end_time', 'during_time',
+        'batch_type', 'prof_id', 'batch_size'
+    ]
+    batch_columns = [col for col in base_columns if col in filtered_df.columns]
+
+    join_columns = batch_columns + ['pid']
+    existing_columns = [col for col in join_columns if col in filtered_df.columns]
+    filtered_df = filtered_df[existing_columns]
+
+    if 'during_time' in filtered_df.columns:
+        filtered_df['during_time'] = filtered_df['during_time'] / US_PER_MS
+    if 'start_time' in filtered_df.columns:
+        filtered_df['start_time'] = filtered_df['start_time'] // US_PER_MS
+    if 'end_time' in filtered_df.columns:
+        filtered_df['end_time'] = filtered_df['end_time'] // US_PER_MS
+
+    filtered_df = add_columns_for_batch_size_and_tokens(filtered_df)
+    filtered_df = add_dp_rank_column(filtered_df, tx_data_df)
+
+    if 'pid' in filtered_df.columns:
+        filtered_df = filtered_df.drop(columns=['pid'])
+
+    desired_order = [col for col in base_columns if col in filtered_df.columns]
+    remaining_columns = [col for col in filtered_df.columns if col not in desired_order]
+    filtered_df = filtered_df[desired_order + remaining_columns]
+
+    return filtered_df
 
 
 def add_columns_for_batch_size_and_tokens(batch_df):
@@ -78,6 +105,49 @@ def add_columns_for_batch_size_and_tokens(batch_df):
     batch_df[['Prefill_batch_size', 'Decode_batch_size',
               'Prefill_scheduled_tokens', 'Decode_scheduled_tokens',
               'total_scheduled_tokens']] = pd.DataFrame(results.tolist(), index=batch_df.index)
+
+    return batch_df
+
+
+def add_dp_rank_column(batch_df, tx_data_df):
+    """
+    根据 tx_data_df 中 domain/name 都为 Meta 且 dpRankId 有值的数据，为 batch_df 添加 dp_rank 列
+    """
+
+    dp_rank_column = 'dp_rank'
+
+    if batch_df is None:
+        return batch_df
+
+    if 'pid' not in batch_df.columns:
+        batch_df[dp_rank_column] = pd.NA
+        return batch_df
+
+    if tx_data_df is None or tx_data_df.empty:
+        batch_df[dp_rank_column] = pd.NA
+        return batch_df
+
+    required_columns = {'pid', 'dpRankId', 'domain', 'name'}
+    if not required_columns.issubset(tx_data_df.columns):
+        batch_df[dp_rank_column] = pd.NA
+        return batch_df
+
+    dp_rank_df = tx_data_df[
+        (tx_data_df['domain'] == 'Meta') &
+        (tx_data_df['name'] == 'Meta') &
+        (tx_data_df['dpRankId'].notna())
+    ][['pid', 'dpRankId']].drop_duplicates()
+
+    if dp_rank_df.empty:
+        batch_df[dp_rank_column] = pd.NA
+        return batch_df
+
+    dp_rank_df = dp_rank_df.rename(columns={'dpRankId': dp_rank_column})
+
+    batch_df = batch_df.merge(dp_rank_df, how='left', on='pid')
+
+    if dp_rank_column not in batch_df.columns:
+        batch_df[dp_rank_column] = pd.NA
 
     return batch_df
 
@@ -397,7 +467,7 @@ class ExporterBatchData(ExporterBase):
                 logger.warning("No batch data found. batch.csv will not be generated. Please check ")
                 return
             # 筛选显示
-            batch_df = filter_batch_df(batch_name, batch_df)
+            batch_df = filter_batch_df(batch_name, batch_df, df)
 
             # 构建batch_req_df和batch_exec_df
             batch_event_df = data.get('batch_event_df')
