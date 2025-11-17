@@ -193,14 +193,6 @@
   --disable_names model.layers.0.mlp.down_proj model.layers.1.mlp.down_proj model.layers.2.mlp.down_proj model.layers.79.mlp.down_proj
   ```
 
-##### <span id="qwen25-72b-vllm-ascend量化">Qwen2.5-72B-Instruct vllm-ascend量化</span>
-
-对于需要使用vllm-ascend推理引擎部署的模型，请使用以下非PDMIX量化配置：
-
-  ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen2.5-72B-Instruct --config_path ./best_practice/qwen2.5-72b-w8a8c8-no-pdmix.yaml --trust_remote_code True
-  ```
-
 ##### <span id="qwen25-72b-instruct-w4a16-量化">Qwen2.5-72B-Instruct W4A16 量化</span>
 当传入 mindie_format 参数时，量化权重不会将 int4 打包成 int8，当不传入 mindie_format 参数时，量化权重将 int4 打包成 int8，减少存储空间，同时减少模型部署时加载时间。
   ```shell
@@ -235,18 +227,13 @@
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8C8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8c8 --trust_remote_code True
   ```
 
-##### <span id="qwen3-32b-vllm-ascend量化">Qwen3-32B vllm-ascend量化</span>
+##### <span id="qwen3-32b-vllm-ascend量化">Qwen3-32B w8a8 vllm-ascend量化</span>
 
-对于需要使用vllm-ascend推理引擎部署的模型，请使用以下非PDMIX量化配置：
+使用vllm-ascend推理引擎部署量化模型请使用以下非PDMIX量化方案的最佳实践：
 
 **W8A8量化：**
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3-32B --config_path ./best_practice/qwen3-32b-w8a8-no-pdmix.yaml --trust_remote_code True
-  ```
-
-**W8A8C8量化：**
-  ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3-32B --config_path ./best_practice/qwen3-32b-w8a8c8-no-pdmix.yaml --trust_remote_code True
   ```
 
 ##### <span id="qwen3-32b-稀疏量化">Qwen3-32B 稀疏量化</span>
@@ -276,13 +263,6 @@
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-14B --quant_type w8a8 --trust_remote_code True
   ```
 
-##### <span id="qwen3-14b-w8a8-vllm-ascend量化">Qwen3-14B W8A8 vllm-ascend量化</span>
-
-对于需要使用vllm-ascend推理引擎部署的模型，请使用以下非PDMIX量化配置，该配置将PDMIX量化改为纯静态量化，未验证精度效果，请谨慎使用：
-
-  ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3-14B --config_path ./best_practice/qwen3-14b-w8a8-no-pdmix.yaml --trust_remote_code True
-  ```
 ##### <span id="qwen3-14b-稀疏量化">Qwen3-14B 稀疏量化</span>
 
 该模型的量化已经集成至[一键量化](../../docs/功能指南/一键量化/使用说明.md)。
