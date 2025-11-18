@@ -4,7 +4,7 @@
 
 使用msit benchmark 提供的api需要安装`ais_bench`和`aclruntime`包。安装方法有：
 - 1、参考[一体化安装指导](https://gitcode.com/Ascend/msit/blob/master/msit/docs/install/README.md)安装msit benchmark工具
-- 2、依据需求，单独安装ais_bench包和aclruntime包([安装包获取地址](https://gitcode.com/Ascend/msit/blob/master/msit/components/benchmark/README.md#下载whl包安装))：
+- 2、依据需求，单独安装ais_bench包和aclruntime包([安装包获取地址](https://gitee.com/ascend/tools/tree/master/ais-bench_workload/tool/ais_bench#%E5%B7%A5%E5%85%B7%E5%AE%89%E8%A3%85%E6%96%B9%E5%BC%8F))：
 
   ``` cmd
   # 安装aclruntime
