@@ -30,7 +30,7 @@
 
 ### 环境说明
 - 安装 msit
-- ATB cpp 模型迁移需要获取 [Gitee ascend/MindIE-LLM](https://gitee.com/ascend/MindIE-LLM) 最新源码
+- ATB cpp 模型迁移需要获取 [Gitcode ascend/MindIE-LLM](https://gitcode.com/Ascend/MindIE-LLM) 最新源码
 - ATB Python 模型迁移需要安装 MindIE
 - 准备待迁移的 transformers 模型目录
 
@@ -245,7 +245,7 @@ msit llm transform [-h] -s SOURCE [-atb ATB_MODEL_PATH] [--enable-sparse] [--to-
   ```sh
   python qwen/run.py --model_path=/data/qwen-14b-chat
   ```
-  run.py的参数说明见[MindIE-LLM中run_pa.py的参数说明](https://gitee.com/ascend/MindIE-LLM/blob/master/examples/atb_models/examples/README.md#run_papy%E8%84%9A%E6%9C%AC%E5%8F%82%E6%95%B0%E4%BB%8B%E7%BB%8D)
+  run.py的参数说明见[MindIE-LLM中run_pa.py的参数说明](https://gitcode.com/Ascend/MindIE-LLM/blob/master/examples/atb_models/examples/README.md#run_papy%E8%84%9A%E6%9C%AC%E5%8F%82%E6%95%B0%E4%BB%8B%E7%BB%8D)
 
   由于迁移的适配性问题，以及 `MindIE-LLM` 迭代更新，推理过程可能存在报错，仍依赖用户手动修复 python 文件中错误。
 ### ATB cpp 仅生成 python 调用代码
@@ -275,7 +275,7 @@ msit llm transform [-h] -s SOURCE [-atb ATB_MODEL_PATH] [--enable-sparse] [--to-
 
 ### 准备
 - 安装 msit
-- 获取 [Gitee ascend/MindIE-LLM](https://gitee.com/ascend/MindIE-LLM) 源码，找到待迁移模型 layer 定义
+- 获取 [Gitcode ascend/MindIE-LLM](https://gitcode.com/Ascend/MindIE-LLM) 源码，找到待迁移模型 layer 定义
 
 ### Baichuan2 7B 迁移示例
 - 模型 layer 定义位置
