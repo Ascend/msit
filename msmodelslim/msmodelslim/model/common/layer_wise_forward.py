@@ -103,5 +103,5 @@ def transformers_generated_forward_func(model: torch.nn.Module,
     for name, block in transformer_blocks:
         args, kwargs = current_inputs
         outputs = yield ProcessRequest(name, block, args, kwargs)
-        hidden_states = outputs[0]
+        hidden_states = outputs[0] if isinstance(outputs, tuple) else outputs
         current_inputs = ((hidden_states,), current_inputs[1])
