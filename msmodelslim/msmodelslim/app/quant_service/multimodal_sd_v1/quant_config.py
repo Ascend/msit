@@ -14,7 +14,7 @@
 #  limitations under the License.
 
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self, Literal
@@ -46,7 +46,7 @@ class MultimodalSDConfig(BaseModel):
 
 class MultimodalSDServiceConfig(ModelslimV1ServiceConfig):
     # 支持直接传入字典作为配置，或使用 MultimodalSDConfig 实例
-    multimodal_sd_config: Dict[str, Any] | MultimodalSDConfig = Field(
+    multimodal_sd_config: Union[Dict[str, Any], MultimodalSDConfig] = Field(
         default_factory=lambda: MultimodalSDConfig().model_dump()
     )
 

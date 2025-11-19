@@ -1,5 +1,5 @@
 #  Copyright (c) 2025-2025 Huawei Technologies Co., Ltd.
-
+import sys
 import traceback
 from importlib.metadata import entry_points
 from typing import Dict, Type
@@ -12,8 +12,17 @@ _QUANT_SERVICE_PLUGINS: Dict[str, Type[BaseQuantService]] = {}
 _FAILED_PLUGINS: Dict[str, str] = {}  # 记录加载失败的插件及其错误信息
 
 
+def get_entry_points(group_name):
+    if sys.version_info >= (3, 10):
+        # Python 3.10+ 使用新API
+        return entry_points().select(group=group_name)
+    else:
+        # Python 3.8-3.9 使用旧API
+        return entry_points().get(group_name, [])
+
+
 def load_plugins() -> Dict[str, Type[BaseQuantService]]:
-    for entry in entry_points(group="msmodelslim.quant_service.plugins"):
+    for entry in get_entry_points(group_name="msmodelslim.quant_service.plugins"):
         try:
             plugin_class = entry.load()
             if issubclass(plugin_class, BaseQuantService):
