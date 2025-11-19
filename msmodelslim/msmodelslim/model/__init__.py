@@ -8,5 +8,6 @@ from .factory import ModelFactory
 from .qwen2_5 import Qwen25ModelAdapter
 from .qwen3 import Qwen3ModelAdapter
 from .qwen3_moe import Qwen3MoeModelAdapter
+from .qwen3_next import Qwen3NextModelAdapter
 from .qwq import QwqModelAdapter
 from .wan2_1 import Wan2Point1Adapter
