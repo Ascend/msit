@@ -164,7 +164,7 @@ def prepare_domain_for_process(all_data_df):
         all_data_df = all_data_df[~all_data_df['name'].isin(['httpReq', 'httpRes', "getOutputAsync"])]
 
     # 对于非Request, RequestState, KVCache泳道区分tid显示
-    mask = ~all_data_df['domain'].isin(['Request', 'RequestState', 'Schedule.KVCache'])
+    mask = ~all_data_df['domain'].isin(['Request', 'RequestState', 'Schedule.KVCache', 'KVCache'])
     all_data_df.loc[mask, 'domain'] = (
             all_data_df.loc[mask, 'domain'].astype(str)
             + '('
@@ -305,7 +305,7 @@ def add_flow_event(flow_event_df):
 
 
 def create_trace_events(all_data_df, pid_label_map=None, pid_ppid_map=None):
-    metric_event = ['npu', 'Schedule.KVCache', 'PullKVCache', 'Queue']
+    metric_event = ['npu', 'Schedule.KVCache', 'KVCache', 'PullKVCache', 'Queue']
 
     # name 非空
     name_notna_condition = all_data_df['name'].notna()
@@ -329,7 +329,10 @@ def create_trace_events(all_data_df, pid_label_map=None, pid_ppid_map=None):
         npu_trace_events = add_npu_events(all_data_df[all_data_df['name'] == 'npu'])
         trace_events.extend(npu_trace_events)
 
-        kv_trace_events = add_kvcache_events(all_data_df[all_data_df['domain'] == 'Schedule.KVCache'], pid_label_map)
+        kv_trace_events = add_kvcache_events(
+            all_data_df[all_data_df['domain'].isin(['Schedule.KVCache', 'KVCache'])],
+            pid_label_map
+        )
         trace_events.extend(kv_trace_events)
 
         queue_trace_events = add_queue_events(all_data_df[all_data_df['name'] == 'Queue'])
@@ -418,7 +421,8 @@ def sort_trace_events_by_pid(pid_label_map, pid_ppid_map, coordinator_pid=None):
 
 
 def sort_trace_events_by_tid(trace_events):
-    tid_sorting_order = ['Schedule.KVCache', 'Communication', 'Schedule', 'Execute', 'Engine', 'Api', 'Kernel']
+    tid_sorting_order = ['Schedule.KVCache', 'KVCache', 'Communication',
+                         'Schedule', 'Execute', 'Engine', 'Api', 'Kernel']
     main_pid = 0
     for event_info in trace_events:
         if event_info.get("tid") in tid_sorting_order:
@@ -639,11 +643,15 @@ def add_npu_events(npu_data_df):
 
 def add_kvcache_events(kv_data_df, pid_label_map=None):
     # 检查是否包含所需的列
+    has_free_blocks_cal = 'free_blocks' in kv_data_df.columns
     has_device_block = 'deviceBlock=' in kv_data_df.columns
     has_free_blocks = 'FreeBlocks=' in kv_data_df.columns
 
-    if not has_device_block and not has_free_blocks:
+    if not has_free_blocks_cal and not has_free_blocks and not has_device_block:
+        logger.warning('No KVCache related columns found')
         return []
+
+    logger.debug('KVCache columns found, proceeding with event generation')
 
     # 预声明变量避免分支中重复检查
     has_pid_map = pid_label_map is not None and "pid" in kv_data_df.columns
@@ -654,16 +662,17 @@ def add_kvcache_events(kv_data_df, pid_label_map=None):
 
     # 根据条件设置args值，优先使用FreeBlocks=，否则使用deviceBlock=
     args_values = []
-    if has_free_blocks:
-        # 如果有FreeBlocks=，优先使用它
-        if has_device_block:
-            # 两个都有，优先使用FreeBlocks=
-            args_values = [{'Device Block': x} for x in kv_data_df['FreeBlocks=']]
-        else:
-            # 只有FreeBlocks=
-            args_values = [{'Device Block': x} for x in kv_data_df['FreeBlocks=']]
+    if has_free_blocks_cal:
+        # 优先使用插件计算的新列 free_blocks
+        logger.debug("Using free_blocks column for KVCache events")
+        args_values = [{'Device Block': x} for x in kv_data_df['free_blocks']]
+    elif has_free_blocks:
+        # 其次使用vllm的采集落盘 FreeBlocks=
+        logger.debug("Using FreeBlocks= column for KVCache events")
+        args_values = [{'Device Block': x} for x in kv_data_df['FreeBlocks=']]
     else:
-        # 只有deviceBlock=
+        # 兼容旧版 deviceBlock=
+        logger.debug("Using deviceBlock= column for KVCache events")
         args_values = [{'Device Block': x} for x in kv_data_df['deviceBlock=']]
 
     # 构建结果DataFrame

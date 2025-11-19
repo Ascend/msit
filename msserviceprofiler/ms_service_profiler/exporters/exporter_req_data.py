@@ -30,6 +30,7 @@ def get_req_base_info(df):
         new_req = {
             'rid': rid,
             'start_time': '',
+            'start_datetime': '',
             'end_time': '',
             'recvTokenSize=': '',
             'replyTokenSize=': '',
@@ -42,6 +43,7 @@ def get_req_base_info(df):
         if not http_req_df.empty:
             first_row = http_req_df.iloc[0]
             new_req['start_time'] = first_row.get("start_time", 0)
+            new_req['start_datetime'] = first_row.get("start_datetime", 0)
 
         # 获取 httpRes
         # 由于存在httpRes提前被调用，导致请求结束时间过早的情况，所以当前取httpRes和DecodeEnd中最晚一个点作为请求结束时间
@@ -77,6 +79,8 @@ def get_req_base_info(df):
             new_req['end_time'] = new_req['end_time'] // US_PER_MS
             new_req['start_time'] = new_req['start_time'] // US_PER_MS
             new_req['execution_time'] = (new_req['end_time'] - new_req['start_time'])
+
+            new_req['start_datetime'] = new_req['start_datetime']
 
         req_base_info.append(new_req)
     return pd.DataFrame(req_base_info)
@@ -154,8 +158,12 @@ class ExporterReqData(ExporterBase):
         req_base = get_req_base_info(df)
         req_base_info = safe_merge_ttft_que(req_base, ttft_df, que_wait_df)
 
+        if 'cache_hit_rate' in req_base_info.columns:
+            # 将空字符串或NaN替换为 'N/A'
+            req_base_info['cache_hit_rate'] = req_base_info['cache_hit_rate'].replace('', 'N/A').fillna('N/A')
+
         required_colunms = [
-            'rid', 'start_time', 'recvTokenSize=', 'replyTokenSize=',
+            'rid', 'start_time', 'start_datetime', 'recvTokenSize=', 'replyTokenSize=',
             'execution_time', 'que_wait_time', 'ttft', 'cache_hit_rate'
         ]
         filtered_df = req_base_info.reindex(columns=required_colunms)
@@ -172,6 +180,8 @@ class ExporterReqData(ExporterBase):
         # 数据完整性检查之后，重命名之前添加排序逻辑
         filtered_df = filtered_df.sort_values(by='start_time').reset_index(drop=True)
 
+        filtered_df = filtered_df.drop(columns=['start_time'])
+
         filtered_df = filtered_df.rename(columns={
                 'rid': 'http_rid',
                 'recvTokenSize=': 'recv_token_size',
@@ -181,14 +191,15 @@ class ExporterReqData(ExporterBase):
             })
 
         if 'db' in cls.args.format:
-            write_result_to_db(CREATE_REQUEST_TABLE_CONFIG, filtered_df)
+            db_cache_hit = filtered_df['cache_hit_rate'].replace('N/A', None)
+            write_result_to_db(CREATE_REQUEST_TABLE_CONFIG, filtered_df.assign(cache_hit_rate=db_cache_hit))
 
         if 'csv' in cls.args.format:
             write_result_to_csv(filtered_df, output, "request", REQUEST_DATA_RENAME_COLS)
 
 
 REQUEST_DATA_RENAME_COLS = {
-    'start_time': 'start_time(ms)', 'execution_time': 'execution_time(ms)',
+    'start_datetime': 'start_datetime', 'execution_time': 'execution_time(ms)',
     'queue_wait_time': 'queue_wait_time(ms)', 'first_token_latency': 'first_token_latency(ms)',
     'cache_hit_rate': 'cache_hit_rate'
 }

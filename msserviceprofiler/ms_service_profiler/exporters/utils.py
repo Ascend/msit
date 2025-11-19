@@ -119,7 +119,7 @@ def create_view_with_renamed_column(cursor, table_name, view_name, rename_cols):
         if col in rename_cols:
             select_parts.append(f'"{col}" AS "{rename_cols[col]}"')
         else:
-            select_parts.append(col)
+            select_parts.append(f'"{col}"')
 
     select_clause = ", ".join(select_parts)
 
