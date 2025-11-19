@@ -24,11 +24,17 @@ def filter_batch_df(batch_name, batch_df, tx_data_df=None):
         batch_df = batch_df.copy()
         batch_df['batch_size'] = batch_df['batch_size'].astype(float)
 
-    filtered_df = batch_df[batch_df['name'].isin(['modelExec', batch_name])].copy()
+    filtered_df = batch_df[batch_df['name'].isin(['modelExec', 'Execute', batch_name])].copy()
+
+    # 新增：为 BatchSchedule 行匹配上层计算好的 KVCache 字段
+    filtered_df = add_precomputed_kv_cache_fields(filtered_df, tx_data_df)
 
     base_columns = [
-        'name', 'res_list', 'start_time', 'end_time', 'during_time',
-        'batch_type', 'prof_id', 'batch_size'
+        'name', 'res_list', 'start_datetime', 'end_datetime', 'during_time',
+        'batch_type', 'prof_id', 'batch_size',
+        # 新增 KVCache 字段
+        'total_blocks', 'used_blocks', 'free_blocks',
+        'blocks_allocated', 'blocks_freed', 'kvcache_usage_rate'
     ]
     batch_columns = [col for col in base_columns if col in filtered_df.columns]
 
@@ -38,10 +44,6 @@ def filter_batch_df(batch_name, batch_df, tx_data_df=None):
 
     if 'during_time' in filtered_df.columns:
         filtered_df['during_time'] = filtered_df['during_time'] / US_PER_MS
-    if 'start_time' in filtered_df.columns:
-        filtered_df['start_time'] = filtered_df['start_time'] // US_PER_MS
-    if 'end_time' in filtered_df.columns:
-        filtered_df['end_time'] = filtered_df['end_time'] // US_PER_MS
 
     filtered_df = add_columns_for_batch_size_and_tokens(filtered_df)
     filtered_df = add_dp_rank_column(filtered_df, tx_data_df)
@@ -54,6 +56,144 @@ def filter_batch_df(batch_name, batch_df, tx_data_df=None):
     filtered_df = filtered_df[desired_order + remaining_columns]
 
     return filtered_df
+
+
+def _is_valid_input_data(batch_df, tx_data_df):
+    """检查输入数据是否有效"""
+    if batch_df is None:
+        return False
+    if batch_df.empty:
+        return False
+    if tx_data_df is None:
+        return False
+    if tx_data_df.empty:
+        return False
+    return True
+
+
+def add_precomputed_kv_cache_fields(batch_df, tx_data_df):
+    """
+    为每个 BatchSchedule 行匹配上层计算好的 KVCache 字段
+    匹配规则：找到与 BatchSchedule 同一 prof_id 且时间最接近的 KVCacheStatus 数据
+    """
+    if not _is_valid_input_data(batch_df, tx_data_df):
+        logger.warning("Input data is empty: batch_df is None or empty: {}, tx_data_df is None or empty: {}".format(
+            batch_df is None or batch_df.empty, tx_data_df is None or tx_data_df.empty))
+        return batch_df
+
+    # 初始化新列
+    new_columns = ['total_blocks', 'used_blocks', 'free_blocks',
+                   'blocks_allocated', 'blocks_freed', 'kvcache_usage_rate']
+    for col in new_columns:
+        batch_df[col] = pd.NA
+
+    # 获取 BatchSchedule 行
+    batch_schedule_mask = batch_df['name'] == 'BatchSchedule'
+    if not batch_schedule_mask.any():
+        logger.warning("No BatchSchedule records found in batch_df")
+        return batch_df
+
+    batch_count = batch_schedule_mask.sum()
+    logger.debug(f"Found {batch_count} BatchSchedule records to process")
+
+    # 检查并预过滤 KVCacheStatus 数据
+    available_kv_cols = [col for col in new_columns if col in tx_data_df.columns]
+    logger.debug(f"Available KVCache columns in tx_data_df: {available_kv_cols}")
+
+    if not available_kv_cols:
+        logger.warning("No precomputed KVCache fields found in tx_data_df")
+        return batch_df
+
+    kv_cache_mask = (
+            (tx_data_df['name'] == 'KVCacheStatus') &
+            (tx_data_df[available_kv_cols].notna().any(axis=1))
+    )
+    filtered_tx_data = tx_data_df[kv_cache_mask].copy()
+
+    if filtered_tx_data.empty:
+        logger.warning("No KVCacheStatus records with non-empty values found in tx_data_df")
+        return batch_df
+
+    # 按 prof_id 分组处理
+    batch_schedules_grouped = batch_df[batch_schedule_mask].groupby('prof_id')
+    filtered_tx_data_grouped = filtered_tx_data.groupby('prof_id')
+
+    total_matched = 0
+    total_unmatched = 0
+
+    for prof_id, prof_batch_schedules in batch_schedules_grouped:
+        if prof_id not in filtered_tx_data_grouped.groups:
+            logger.debug(f"Prof_id {prof_id}: No KVCacheStatus records found")
+            continue
+
+        prof_kv_cache_data = filtered_tx_data_grouped.get_group(prof_id).sort_values('start_time')
+        logger.debug(
+            f"Prof_id {prof_id}: Found {len(prof_batch_schedules)} BatchSchedule "
+            f"records and {len(prof_kv_cache_data)} KVCacheStatus records")
+
+        # 向量化匹配
+        batch_times = prof_batch_schedules['start_time'].values
+        kv_times = prof_kv_cache_data['start_time'].values
+        kv_cache_indices = prof_kv_cache_data.index
+
+        # 批量处理当前 prof_id 的所有 BatchSchedule
+        for i, batch_idx in enumerate(prof_batch_schedules.index):
+            closest_idx = find_closest_kv_cache_idx(batch_times[i], kv_times, kv_cache_indices)
+            if closest_idx is None:
+                logger.debug(
+                    f"No matching KVCacheStatus data found for prof_id {prof_id}, batch_idx {batch_idx}")
+                total_unmatched += 1
+                continue
+
+            closest_row = filtered_tx_data.loc[closest_idx]
+            match_type = "after" if closest_row['start_time'] >= batch_times[i] else "before"
+            logger.debug(
+                f"Matched BatchSchedule (idx={batch_idx}, time={batch_times[i]}) "
+                f"with KVCacheStatus data (time={closest_row['start_time']}, match_type={match_type})")
+
+            # 复制字段值
+            for col in new_columns:
+                if col in closest_row:
+                    original_value = closest_row[col]
+                    batch_df.at[batch_idx, col] = original_value
+                    logger.debug(f"  Setting {col} = {original_value} (type: {type(original_value)})")
+                    if original_value == 0 or pd.isna(original_value):
+                        logger.debug(f"  Warning: {col} is 0 or NaN, checking if field name is different")
+
+            total_matched += 1
+
+    # 检查最终结果
+    result_values = batch_df[new_columns].dropna(how='all')
+    logger.debug(
+        f"Successfully matched {total_matched} records, "
+        f"{total_unmatched} unmatched, {len(result_values)} with KVCache fields")
+
+    if not result_values.empty:
+        for col in new_columns:
+            non_null_count = result_values[col].notna().sum()
+            if non_null_count > 0:
+                non_zero_count = (result_values[col] != 0).sum()
+                sample_values = result_values[col].dropna().head(3).tolist()
+                logger.debug(
+                    f"  {col}: {non_null_count} non-null values, "
+                    f"{non_zero_count} non-zero values, samples: {sample_values}")
+    else:
+        logger.warning("No KVCache fields were successfully added")
+
+    return batch_df
+
+
+def find_closest_kv_cache_idx(batch_time, kv_times, kv_cache_indices):
+    """查找最接近的 KVCacheStatus 索引"""
+    after_mask = kv_times >= batch_time
+    if after_mask.any():
+        return kv_cache_indices[after_mask][0]
+
+    before_mask = kv_times < batch_time
+    if before_mask.any():
+        return kv_cache_indices[before_mask][-1]
+
+    return None
 
 
 def add_columns_for_batch_size_and_tokens(batch_df):
@@ -71,7 +211,6 @@ def add_columns_for_batch_size_and_tokens(batch_df):
     ])
 
     def process_res_list(res_list):
-
         if not res_list or not isinstance(res_list, list):
             return BatchResult(0, 0, 0, 0, 0)
 
@@ -84,12 +223,34 @@ def add_columns_for_batch_size_and_tokens(batch_df):
             for res_data in res_list:
                 if not isinstance(res_data, dict):
                     continue
-                if res_data.get("type", -1) == 0:
+
+                # 兼容处理：如果没有type字段，则使用iter字段判断
+                if "type" in res_data:
+                    req_type = res_data.get("type", -1)
+                else:
+                    # iter=0 对应 type=0 (Prefill), iter>0 对应 type=1 (Decode)
+                    req_type = 0 if res_data.get("iter", -1) == 0 else 1
+
+                # 兼容处理：获取 token 数量，支持两种字段名
+                num_tokens = 0
+                if "num_scheduled_tokens" in res_data:
+                    num_tokens = res_data.get("num_scheduled_tokens", 0)
+                elif "num_scheduled_tokens=" in res_data:
+                    num_tokens = res_data.get("num_scheduled_tokens=", 0)
+
+                # 如果获取到的 tokens 是字符串，尝试转换为数字
+                if isinstance(num_tokens, str):
+                    try:
+                        num_tokens = float(num_tokens)
+                    except (ValueError, TypeError):
+                        num_tokens = 0
+
+                if req_type == 0:
                     p_count_batch_size += 1
-                    p_scheduled_tokens += res_data.get("num_scheduled_tokens", 0)
-                elif res_data.get("type", -1) == 1:
+                    p_scheduled_tokens += num_tokens
+                elif req_type == 1:
                     d_count_batch_size += 1
-                    d_scheduled_tokens += res_data.get("num_scheduled_tokens", 0)
+                    d_scheduled_tokens += num_tokens
 
             return BatchResult(
                 p_count_batch_size, d_count_batch_size,
@@ -462,7 +623,7 @@ class ExporterBatchData(ExporterBase):
                 batch_name = 'batchFrameworkProcessing'
             else:
                 batch_name = 'Schedule'
-            batch_df = df[df['name'].isin([batch_name, 'modelExec'])].copy()
+            batch_df = df[df['name'].isin([batch_name, 'modelExec', 'Execute'])].copy()
             if batch_df.empty:
                 logger.warning("No batch data found. batch.csv will not be generated. Please check ")
                 return
@@ -484,8 +645,8 @@ class ExporterBatchData(ExporterBase):
 
 
 BATCH_RENAME_COLS = {
-    'start_time': 'start_time(ms)',
-    'end_time': 'end_time(ms)',
+    'start_datetime': 'start_time',
+    'end_datetime': 'end_time',
     'during_time': 'during_time(ms)',
     'batch_size': 'total_batch_size',
 }
@@ -501,14 +662,14 @@ CREATE_BATCH_TABLE_CONFIG = TableConfig(
     }
 )
 
-BATCH_SIZE_CURVE_VIEW_NAME = "Batch_Size_by_Batch_ID_curve"
-BATCH_TOKEN_CURVE_VIEW_NAME = "Batch_Token_by_Batch_ID_curve"
+BATCH_SIZE_CURVE_VIEW_NAME = "Batch_Size_curve"
+BATCH_TOKEN_CURVE_VIEW_NAME = "Batch_Token_curve"
 
 CREATE_BATCH_SIZE_VIEW_SQL = f"""
     CREATE VIEW {BATCH_SIZE_CURVE_VIEW_NAME} AS
     WITH numbered_data AS (
         SELECT 
-            ROW_NUMBER() OVER (ORDER BY "start_time") - 1 AS batch_id,
+            ROW_NUMBER() OVER (ORDER BY "start_datetime") - 1 AS batch_id,
             batch_size,
             Prefill_batch_size,
             Decode_batch_size
@@ -532,7 +693,7 @@ CREATE_BATCH_TOKEN_VIEW_SQL = f"""
     CREATE VIEW {BATCH_TOKEN_CURVE_VIEW_NAME} AS
     WITH numbered_data AS (
         SELECT 
-            ROW_NUMBER() OVER (ORDER BY "start_time") - 1 AS batch_id,
+            ROW_NUMBER() OVER (ORDER BY "start_datetime") - 1 AS batch_id,
             total_scheduled_tokens,
             Prefill_scheduled_tokens,
             Decode_scheduled_tokens

@@ -139,7 +139,7 @@ class ProcessorReq(ProcessorBase):
         req_event_df["start_time"] = http_event_df["start_time"]
         req_event_df["end_time"] = http_event_df["end_time"]
         req_event_df["end_flag"] = http_event_df.get("endFlag", None)
-        
+
         rid_recv_token_map = dict()
         rid_reply_token_map = dict()
 
@@ -149,7 +149,7 @@ class ProcessorReq(ProcessorBase):
         if "replyTokenSize=" in data_df:
             reply_token_df = data_df[data_df["replyTokenSize="].notna()]
             rid_reply_token_map = reply_token_df.set_index('rid')['replyTokenSize='].to_dict()
-        
+
         req_attr_df = pd.DataFrame({'recv_token': rid_recv_token_map, 'reply_token': rid_reply_token_map})
         req_attr_df['rid'] = req_attr_df.index
 
@@ -178,7 +178,7 @@ class ProcessorReq(ProcessorBase):
             [selected_columns]
         )
 
-        # 3. 拆解Batch
+        # 3. 拆解Batch (modelExec, Execute events)
         model_exec_df = batch_event_df[batch_event_df["event"].isin(["modelExec", "Execute"])]
         # 根据 batch id 找到 req_id_list， 拆解开
 
@@ -189,11 +189,59 @@ class ProcessorReq(ProcessorBase):
         batch_attr_explode_by_req_df['iter'] = batch_attr_explode_by_req_df['req_list'].map(
             lambda x: x.get("iter") if isinstance(x, dict) else None
         )
+        # 提取 num_scheduled_tokens ---
+        batch_attr_explode_by_req_df['num_scheduled_tokens='] = batch_attr_explode_by_req_df['req_list'].map(
+            lambda x: x.get("num_scheduled_tokens=") if isinstance(x, dict) else None
+        )
 
         merged = batch_attr_explode_by_req_df.join(model_exec_df.set_index('batch_id'), on='batch_id')
 
         req_event_df = pd.concat([req_event_df, merged[["rid", "event", "iter", "start_time", "end_time", "batch_id"]]],
                                  ignore_index=True)
+
+        # 提取 BatchSchedule 事件的时间信息
+        batch_schedule_events = batch_event_df[batch_event_df["event"] == "BatchSchedule"]
+        if batch_schedule_events.empty:
+            return req_event_df, req_attr_df, req_queue_df
+
+        original_schedule_data_df = batch_event_df.join(
+            batch_attr_df.set_index('batch_id'), on='batch_id', rsuffix='_attr'
+        )
+        schedule_data_joined = original_schedule_data_df[
+            original_schedule_data_df["event"] == "BatchSchedule"
+            ]
+        if schedule_data_joined.empty:
+            return req_event_df, req_attr_df, req_queue_df
+
+        exploded_schedule = schedule_data_joined.explode('req_list')
+        exploded_schedule['rid'] = exploded_schedule['req_list'].map(
+            lambda x: x.get("rid") if isinstance(x, dict) else None
+        )
+        exploded_schedule['iter'] = exploded_schedule['req_list'].map(
+            lambda x: x.get("iter") if isinstance(x, dict) else None
+        )
+        exploded_schedule['num_scheduled_tokens='] = exploded_schedule['req_list'].map(
+            lambda x: x.get("num_scheduled_tokens=") if isinstance(x, dict) else None
+        )
+
+        prefill_schedule = exploded_schedule[exploded_schedule['iter'] == 0].copy()
+        if prefill_schedule.empty:
+            return req_event_df, req_attr_df, req_queue_df
+
+        prefill_start_df = pd.DataFrame({
+            'rid': prefill_schedule['rid'],
+            'event': 'BatchSchedule',
+            'iter': prefill_schedule['iter'],
+            'start_time': prefill_schedule['start_time'],
+            'end_time': prefill_schedule['end_time'],
+            'batch_id': prefill_schedule['batch_id'],
+            'num_scheduled_tokens=': prefill_schedule['num_scheduled_tokens=']
+        })
+
+        prefill_start_df = prefill_start_df.dropna(subset=['rid', 'num_scheduled_tokens='])
+        prefill_start_df = prefill_start_df[prefill_start_df['num_scheduled_tokens='] > 0]
+
+        req_event_df = pd.concat([req_event_df, prefill_start_df], ignore_index=True)
         return req_event_df, req_attr_df, req_queue_df
 
     @timer(logger.debug)

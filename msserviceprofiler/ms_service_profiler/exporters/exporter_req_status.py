@@ -33,7 +33,7 @@ class ExporterReqStatus(ExporterBase):
             df = data.get('tx_data_df')
             need_columns = [ColumnConst.HOSTUID_COLUMN, ColumnConst.PID_COLUMN, ColumnConst.START_TIME_COLUMN, \
                 ColumnConst.DOMAIN_COLUMN, ColumnConst.NAME_COLUMN, ColumnConst.STATUS_COLUMN, \
-                    ColumnConst.QUEUESIZE_COLUMN]
+                    ColumnConst.QUEUESIZE_COLUMN, ColumnConst.START_DATETIME_COLUMN]
 
             mask = (
                 (df[ColumnConst.DOMAIN_COLUMN] == 'Schedule') &
@@ -51,14 +51,16 @@ class ExporterReqStatus(ExporterBase):
             # 增加timestamp(ms)列
             df[ColumnConst.TIMESTAMP_MS_COLUMN] = (df[ColumnConst.START_TIME_COLUMN] / 1000.0).round(2)
 
+            # 改为使用真实时间
+            df[ColumnConst.START_DATETIME_COLUMN] = (df[ColumnConst.START_DATETIME_COLUMN])
+
             # 增加relative_timestamp(ms)列
             df[ColumnConst.RELATIVE_TIMESTAMP_MS_COLUMN] = \
                 df.groupby(ColumnConst.PID_COLUMN)[ColumnConst.TIMESTAMP_MS_COLUMN].transform(
                     lambda x: (x - x.min()).round(2))
 
-
             desired_columns = [ColumnConst.HOSTUID_COLUMN, ColumnConst.PID_COLUMN, \
-                ColumnConst.TIMESTAMP_MS_COLUMN, ColumnConst.RELATIVE_TIMESTAMP_MS_COLUMN, \
+                ColumnConst.START_DATETIME_COLUMN, ColumnConst.RELATIVE_TIMESTAMP_MS_COLUMN, \
                 'waiting', 'running', 'swapped']
             df = df[desired_columns]
 
@@ -74,6 +76,9 @@ class ExporterReqStatus(ExporterBase):
             # 处理 status 列的映射和编码
             df = cls._process_status_columns(df, metrics)
 
+            if 'QueueSize=' not in df.columns and ColumnConst.QUEUESIZE_COLUMN in df.columns:
+                df['QueueSize='] = df[ColumnConst.QUEUESIZE_COLUMN]
+
             write_result_to_db(TableConfig(table_name="request_status"), df, CREATE_REQUEST_STATE_CURVE_VIEW_CONFIG)
 
     @classmethod
@@ -85,7 +90,7 @@ class ExporterReqStatus(ExporterBase):
 
         need_columns = [ColumnConst.HOSTUID_COLUMN, ColumnConst.PID_COLUMN, ColumnConst.START_TIME_COLUMN, \
             ColumnConst.DOMAIN_COLUMN, ColumnConst.NAME_COLUMN, ColumnConst.STATUS_COLUMN, \
-                ColumnConst.QUEUESIZE_COLUMN]
+                ColumnConst.QUEUESIZE_COLUMN, ColumnConst.START_DATETIME_COLUMN]
         if not check_columns_valid(df, need_columns, cls.name):
             return False
         if not check_domain_valid(df, ['Schedule'], cls.name):
@@ -99,7 +104,7 @@ class ExporterReqStatus(ExporterBase):
             logger.warning("There is no service prof data, request status data will not be generated. please check")
             return False
 
-        if not check_domain_valid(df, ['Request'], 'request_status'):
+        if not check_domain_valid(df, ['Request', 'Schedule'], 'request_status'):
             return False
 
         metrics = data.get('metric_data_df')
@@ -110,16 +115,51 @@ class ExporterReqStatus(ExporterBase):
         return True
 
     @classmethod
+    def _process_queue_status(cls, df, metrics):
+        """
+        专门处理队列状态数据，确保QueueSize=字段正确保留
+        """
+        # 筛选出domain为'Schedule'，name为'Queue'的记录
+        mask = (
+                (df[ColumnConst.DOMAIN_COLUMN] == 'Schedule') &
+                (df[ColumnConst.NAME_COLUMN] == 'Queue')
+        )
+        queue_df = df.loc[mask].copy()
+
+        # 如果找不到符合条件的记录，返回空DataFrame
+        if queue_df.empty:
+            return pd.DataFrame()
+
+        # 创建结果DataFrame
+        result_df = pd.DataFrame()
+
+        # 添加timestamp列
+        result_df['timestamp'] = queue_df[ColumnConst.START_DATETIME_COLUMN]
+
+        # 添加QueueSize=列
+        result_df['QueueSize='] = queue_df[ColumnConst.QUEUESIZE_COLUMN]
+
+        # 添加status列，并映射状态值
+        status_mapping = {
+            'waiting': 'WAITING',
+            'running': 'RUNNING',
+            'swapped': 'SWAPPED'
+        }
+        result_df['status'] = queue_df[ColumnConst.STATUS_COLUMN].map(status_mapping)
+
+        return result_df
+
+    @classmethod
     def _process_queue_columns(cls, df):
         need_columns = [ColumnConst.NAME_COLUMN, ColumnConst.START_DATETIME_COLUMN, \
-            ColumnConst.SCOPE_QUEUE_NAME_COLUMN, ColumnConst.QUEUESIZE_COLUMN]
+                        ColumnConst.SCOPE_QUEUE_NAME_COLUMN, ColumnConst.QUEUESIZE_COLUMN]
         if not check_columns_valid(df, need_columns, cls.name):
             return pd.DataFrame()
 
         queue_df = df[df['name'] == "Queue"]
         df = queue_df.pivot_table(
             index='start_datetime',
-            columns='scope#QueueName', 
+            columns='scope#QueueName',
             values='QueueSize=',
             aggfunc='first'
         ).reset_index()
@@ -136,6 +176,12 @@ class ExporterReqStatus(ExporterBase):
 
     @classmethod
     def _process_status_columns(cls, df, metrics):
+        # 首先尝试使用新的队列状态处理逻辑
+        queue_status_df = cls._process_queue_status(df, metrics)
+        if not queue_status_df.empty:
+            return queue_status_df
+
+        # 如果新的逻辑没有返回数据，回退到原有逻辑
         if ColumnConst.STATUS_COLUMN in df.columns:
             df = cls._map_and_encode_status(df, metrics)
         elif check_columns_valid(df, [ColumnConst.SCOPE_QUEUE_NAME_COLUMN, ColumnConst.QUEUESIZE_COLUMN], cls.name):
@@ -152,26 +198,34 @@ class ExporterReqStatus(ExporterBase):
             'running': 'RUNNING',
         }
 
+        # 保留原始数据中的 QueueSize= 字段
+        if ColumnConst.QUEUESIZE_COLUMN in df.columns:
+            df['QueueSize='] = df[ColumnConst.QUEUESIZE_COLUMN]
+
         # 将status列的值映射到旧版状态值
         df[ColumnConst.STATUS_COLUMN] = df[ColumnConst.STATUS_COLUMN].map(old_status_mapping)
 
         # 将status列转换为one-hot编码
-        df = pd.get_dummies(df[ColumnConst.STATUS_COLUMN], prefix='', prefix_sep='')
+        status_dummies = pd.get_dummies(df[ColumnConst.STATUS_COLUMN], prefix='', prefix_sep='')
+
+        # 将one-hot编码的结果与原始数据合并
+        result_df = pd.concat([df, status_dummies], axis=1)
 
         # 添加timestamp列
-        df.insert(0, 'timestamp', metrics['start_datetime'])
+        result_df.insert(0, 'timestamp', metrics['start_datetime'])
 
         # 补全缺失的状态列，值为0
         for status in old_status_mapping.values():
-            if status not in df.columns:
-                df[status] = 0
+            if status not in result_df.columns:
+                result_df[status] = 0
 
-        if 'PENDING' not in df.columns:
-            df['PENDING'] = 0
+        if 'PENDING' not in result_df.columns:
+            result_df['PENDING'] = 0
 
         # 确保列的顺序正确
-        df = df[['timestamp'] + list(old_status_mapping.values()) + ['PENDING']]
-        return df
+        result_df = result_df[['timestamp', 'QueueSize='] + list(old_status_mapping.values()) + ['PENDING']]
+
+        return result_df
 
     @classmethod
     def _prepare_metrics_df(cls, df, metrics):
@@ -192,10 +246,19 @@ REQUEST_STATE_VIEW_NAME = "Request_Status_curve"
 CREATE_REQUEST_STATE_VIEW_SQL = f"""
     CREATE VIEW {REQUEST_STATE_VIEW_NAME} AS
     SELECT
-        substr( timestamp, 1, 10 ) || ' ' || substr( timestamp, 12, 8 ) || '.' || substr( timestamp, 21, 6 ) AS time,
-        WAITING, PENDING, RUNNING
+        substr(timestamp, 1, 10) || ' ' || substr(timestamp, 12, 8) || '.' || substr(timestamp, 21, 6) AS time,
+        CASE WHEN status = 'WAITING' THEN CAST("QueueSize=" AS REAL) ELSE CAST(0 AS REAL) END as waiting,
+        CASE WHEN status = 'SWAPPED' THEN CAST("QueueSize=" AS REAL) ELSE CAST(0 AS REAL) END as swapped,
+        CASE WHEN status = 'RUNNING' THEN CAST("QueueSize=" AS REAL) ELSE CAST(0 AS REAL) END as running
     FROM
         request_status
+    WHERE
+        "QueueSize=" IS NOT NULL
+        AND (
+            (status = 'WAITING' AND "QueueSize=" != 0.0) OR
+            (status = 'SWAPPED' AND "QueueSize=" != 0.0) OR
+            (status = 'RUNNING' AND "QueueSize=" != 0.0)
+        )
     ORDER BY
         time ASC
 """
@@ -203,7 +266,7 @@ CREATE_REQUEST_STATE_CURVE_VIEW_CONFIG = CurveViewConfig(
     view_name=REQUEST_STATE_VIEW_NAME,
     sql=CREATE_REQUEST_STATE_VIEW_SQL,
     description={
-        "en": "Request Count by State Over Time", 
-        "zh": "服务中处于不同状态下的请求数目随时间变化的折线图"
+        "en": "Queue Size Over Time by Status",
+        "zh": "不同状态下队列大小随时间变化的折线图"
     }
 )
