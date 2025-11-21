@@ -2,6 +2,21 @@
 
 FLUX的推理量化依赖于FLUX.1-dev推理工程仓：[MindIE/FLUX.1-dev](https://modelers.cn/models/MindIE/FLUX.1-dev)，根据该工程仓完成配置后，使用以下示例代码进行量化。
 
+**前提条件**
+
+- 硬件支持：Atlas 800I A2
+- 软件支持：FLUX.1-dev推理工程仓，commit ID `12e09174353b1bd57bf7fcb80386f59b09fbbefe`
+
+**操作流程**
+
+- 克隆工程仓代码；
+
+- 执行 `git checkout 12e09174353b1bd57bf7fcb80386f59b09fbbefe` 切换至指定版本；
+
+- 完成后续配置与量化步骤。
+  
+**注意**：未使用指定版本可能导致兼容性问题或功能异常。
+
 ## 支持的模型版本与量化策略
 
 | 模型系列 | 模型版本 | HuggingFace链接 | 时间步量化 | FA3量化 | 异常值抑制量化 | 量化命令 |
