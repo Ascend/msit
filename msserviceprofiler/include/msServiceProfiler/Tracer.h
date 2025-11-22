@@ -297,7 +297,6 @@ public:
         const char *spanName, const char *moduleName = nullptr, bool autoEnd = true)
     {
         auto isEnable = IsEnable();
-        std::cout << isEnable << std::endl;
         auto span = Span{spanName, TraceContext::GetTraceCtx(), isEnable, moduleName, autoEnd};
         return span;
     }
