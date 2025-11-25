@@ -74,10 +74,12 @@ spec:
           qconfig: *default_w8a8_dynamic
           include:
             - "model.layers.61.mlp.experts*"
+            - "model.layers.61.mlp.shared_experts*"
         - type: "linear_quant"
           qconfig: *default_w4a8_dynamic
           include:
             - "*mlp.experts*"
+            - "*mlp.shared_experts*"
           exclude:
             - "model.layers.61.*"
     - type: "fa3_quant"
