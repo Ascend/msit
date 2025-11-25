@@ -128,6 +128,10 @@ def check_input_path_legality(value):
         return value
     inputs_list = value.split(',')
     for input_path in inputs_list:
+        if os.path.isfile(input_path):
+            check_input_file_path(input_path)
+        else:
+            check_input_dir_path(input_path)
         try:
             file_stat = FileStat(input_path)
         except Exception as err:
