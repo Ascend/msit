@@ -5,14 +5,6 @@ msit/install.sh,https://mirrors.huaweicloud.com/repository/pypi/simple,若pip源
 msit/install.sh,https://mirrors.tools.huawei.com/pypi/simple,若pip源为华为云，则优先安装skl2onnx(当前mirrors.huaweicloud.com中skl2onnx已停止更新，不包含1.14.1及以上版本)
 msit/setup.py,https://gitcode.com/Ascend/msit,用于msit工具打包成python包的主页说明
 msit/components/debug/compare/setup.py,https://gitcode.com/Ascend/msit/tree/master/msit/components/debug/compare,用于compare组件打包成python包的主页说明
-msit/components/llm/README.md,https://ais-bench.obs.cn-north-4.myhuaweicloud.com/compare/20231213/msit-0.0.1-py3-none-linux_aarch64.whl,msit预编译whl包下载地址
-msit/components/llm/README.md,https://ais-bench.obs.cn-north-4.myhuaweicloud.com/compare/20231213/msit-0.0.1-py3-none-linux_x86_64.whl,msit预编译whl包下载地址
-msit/components/llm/README.md,https://ais-bench.obs.cn-north-4.myhuaweicloud.com/compare/20231226/ABI0/ait_llm-0.1.0-py3-none-linux_aarch64.whl,msit_llm预编译whl包下载地址
-msit/components/llm/README.md,https://ais-bench.obs.cn-north-4.myhuaweicloud.com/compare/20231226/ABI1/ait_llm-0.1.0-py3-none-linux_aarch64.whl,msit_llm预编译whl包下载地址
-msit/components/llm/README.md,https://ais-bench.obs.cn-north-4.myhuaweicloud.com/compare/20231226/ABI0/ait_llm-0.1.0-py3-none-linux_x86_64.whl,msit_llm预编译whl包下载地址
-msit/components/llm/README.md,https://ais-bench.obs.cn-north-4.myhuaweicloud.com/compare/20231226/ABI1/ait_llm-0.1.0-py3-none-linux_x86_64.whl,msit_llm预编译whl包下载地址
-msit/components/llm/README.md,https://ais-bench.obs.cn-north-4.myhuaweicloud.com/compare/20240117/ait_llm-0.2.0-py3-none-linux_aarch64.whl,msit_llm预编译whl包下载地址
-msit/components/llm/README.md,https://ais-bench.obs.cn-north-4.myhuaweicloud.com/compare/20240117/ait_llm-0.2.0-py3-none-linux_x86_64.whl,msit_llm预编译whl包下载地址
 msit/components/llm/setup.py,https://gitcode.com/Ascend/msit/tree/master/msit/components/llm,用于msit-llm工具打包成python包的主页说明
 msit/components/debug/surgeon/setup.py,https://gitcode.com/Ascend/msit.git,msit的gitcode仓地址
 msit/components/convert/setup.py,https://gitcode.com/Ascend/msit,msit的gitcode仓地址
