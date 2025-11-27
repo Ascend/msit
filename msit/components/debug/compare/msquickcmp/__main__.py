@@ -239,9 +239,6 @@ class CompareCommand(BaseCommand):
             mindie_torch_op_mapping = os.path.join(args.ops_json, "mindie_torch_op_mapping.json")
             if os.path.exists(mindie_rt_op_mapping) and os.path.exists(mindie_torch_op_mapping):
                 from msquickcmp.mie_torch.mietorch_comp import MIETorchCompare
-                args.golden_path = check_om_path_legality(args.golden_path)
-                args.my_path = check_om_path_legality(args.my_path)
-                args.ops_json = check_ops_json_path(args.ops_json)
                 comparer = MIETorchCompare(args.golden_path, args.my_path, args.ops_json, args.out_path)
                 comparer.compare()
                 return
