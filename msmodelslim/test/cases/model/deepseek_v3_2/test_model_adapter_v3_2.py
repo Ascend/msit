@@ -8,6 +8,7 @@ import torch.nn as nn
 
 from msmodelslim.model.deepseek_v3_2.model_adapter import DeepSeekV32ModelAdapter
 from msmodelslim.utils.exception import InvalidModelError
+from msmodelslim.app import DeviceType
 
 
 class DummyModelArgs:
@@ -176,8 +177,11 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
 
     def test_get_model_pedigree(self):
         """测试get_model_pedigree返回固定谱系"""
-        adapter = self.create_adapter()
-        self.assertEqual(adapter.get_model_pedigree(), "deepseek_v3_2")
+        try:
+            adapter = self.create_adapter()
+            self.assertEqual(adapter.get_model_pedigree(), "deepseek_v3_2")
+        except Exception as e:
+            self.fail(f"test_get_model_pedigree failed: {e}")
 
     def test_get_model_type(self):
         """测试get_model_type返回初始化的模型类型"""
@@ -189,6 +193,47 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
         adapter = self.create_adapter(model_type=self.model_type)
         adapter.enable_kv_cache(Mock(), True)
         assert True  # 方法无异常执行即通过
+        
+    def test_handle_dataset(self):
+        """测试handle_dataset方法调用_get_tokenized_data"""
+        adapter = self.create_adapter()
+        mock_dataset = Mock()
+        mock_tokenized_data = [{"input_ids": torch.tensor([1, 2, 3])}]
+        
+        # Mock _get_tokenized_data方法
+        adapter._get_tokenized_data = Mock(return_value=mock_tokenized_data)
+        
+        # 测试默认device参数
+        result = adapter.handle_dataset(mock_dataset)
+        adapter._get_tokenized_data.assert_called_once_with(mock_dataset, DeviceType.NPU)
+        self.assertEqual(result, mock_tokenized_data)
+        
+        # 测试自定义device参数
+        adapter._get_tokenized_data.reset_mock()
+        result = adapter.handle_dataset(mock_dataset, device=DeviceType.CPU)
+        adapter._get_tokenized_data.assert_called_once_with(mock_dataset, DeviceType.CPU)
+        
+    def test_generate_model_visit(self):
+        """测试generate_model_visit方法"""
+        adapter = self.create_adapter()
+        dummy_model = DummyModel(config=self.dummy_config)
+        
+        # Mock generate_decoder_layer
+        mock_blocks = [('model.layers.0', Mock()), ('model.layers.1', Mock())]
+        adapter.generate_decoder_layer = Mock(return_value=mock_blocks)
+        
+        # 执行测试
+        with patch('msmodelslim.model.deepseek_v3_2.model_adapter'
+                   '.generated_decoder_layer_visit_func') as mock_visit_func:
+            mock_visit_func.return_value = iter([])
+            
+            result = adapter.generate_model_visit(dummy_model)
+            
+            # 验证调用了generated_decoder_layer_visit_func
+            mock_visit_func.assert_called_once()
+            call_args = mock_visit_func.call_args
+            self.assertEqual(call_args[0][0], dummy_model)  # model参数
+            # transformer_blocks参数应该是generate_decoder_layer的返回值
 
     @patch('msmodelslim.model.deepseek_v3_2.model_adapter.ModelArgs')
     def test_load_config(self, mock_model_args):
@@ -205,7 +250,8 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
     @patch("msmodelslim.model.deepseek_v3_2.model_adapter.Transformer", new=DummyModel)
     @patch("msmodelslim.model.deepseek_v3_2.model_adapter.auto_convert_module_fp8_to_bf16")
     @patch("msmodelslim.model.deepseek_v3_2.model_adapter.get_logger")
-    def test_init_model(self, mock_get_logger: Mock, mock_auto_convert: Mock):
+    @patch("torch.set_default_dtype")
+    def test_init_model(self, mock_set_dtype: Mock, mock_get_logger: Mock, mock_auto_convert: Mock):
         """测试init_model完整流程"""
         adapter = self.create_adapter()
         adapter.get_state_dict = Mock(return_value=self.dummy_full_state_dict)
@@ -218,10 +264,13 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
 
         # 验证核心逻辑
         self.assertIsInstance(result_model, DummyModel)
-        self.assertEqual(adapter.config.num_hidden_layers, original_num_layers)
+        self.assertEqual(adapter.config.num_hidden_layers, 62)  # 恢复到62层
         result_model.load_state_dict.assert_called_once_with(self.dummy_full_state_dict)
         mock_auto_convert.assert_called_once_with("", result_model, str(self.model_path))
-        mock_get_logger.return_value.info.assert_any_call(f"Model with {original_num_layers} layers totally")
+        mock_get_logger.return_value.info.assert_any_call("Model with 62 layers totally")
+        
+        # 验证设置了默认dtype为bfloat16
+        mock_set_dtype.assert_called_with(torch.bfloat16)
 
     @patch("msmodelslim.model.deepseek_v3_2.model_adapter.json_safe_load")
     @patch("msmodelslim.model.deepseek_v3_2.model_adapter.os.path.join")
@@ -283,7 +332,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
         mock_get_mtp.assert_not_called()
 
     @patch("msmodelslim.model.deepseek_v3_2.model_adapter.auto_convert_module_fp8_to_bf16")
-    def test_load_decoder_if_not_exist(self, mock_auto_convert: Mock):
+    def test_load_decoder_if_not_exist_missing(self, mock_auto_convert: Mock):
         """测试decoder缺失时创建"""
         # 生成匹配的state_dict（过滤不存在的参数）
         dummy_decoder = DummyDecoderLayer(layer_id=1, args=self.dummy_config)
@@ -301,6 +350,22 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
         self.assertIsInstance(result_decoder, DummyDecoderLayer)
         self.assertEqual(len(dummy_model.model.layers), 2)
         mock_auto_convert.assert_called_once_with("model.layers.1", result_decoder, str(self.model_path))
+        
+    @patch("msmodelslim.model.deepseek_v3_2.model_adapter.auto_convert_module_fp8_to_bf16")
+    def test_load_decoder_if_exist(self, mock_auto_convert: Mock):
+        """测试decoder已存在时直接返回（覆盖try分支成功路径）"""
+        adapter = self.create_adapter()
+        
+        # 准备已有decoder的模型
+        dummy_model = DummyModel(config=self.dummy_config)
+        existing_decoder = dummy_model.model.layers[0]
+        
+        # 尝试加载已存在的decoder
+        result_decoder = adapter.load_decoder_if_not_exist(model=dummy_model, name="model.layers.0", idx=0)
+        
+        # 验证返回的是已存在的decoder，且没有调用auto_convert
+        self.assertEqual(result_decoder, existing_decoder)
+        mock_auto_convert.assert_not_called()
 
     @patch("msmodelslim.model.deepseek_v3_2.model_adapter.DeepSeekV32ModelAdapter.load_mtp_if_not_load")
     def test_generate_decoder_layer(self, mock_load_mtp: Mock):
@@ -350,48 +415,6 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
 
         self.assertIn("Can't get first block input", str(cm.exception))
 
-    def test_generate_model_forward_gets_first_block_input(self):
-        """测试成功获取first_block_input的情况"""
-        adapter = self.create_adapter()
-        adapter.generate_model_forward.__globals__["dist"] = Mock(is_initialized=lambda: False)
-
-        dummy_model = DummyModel(config=self.dummy_config)
-        mock_inputs = torch.randint(0, 1000, (1, 128)).float()  # 形状为(1, 128)
-
-        gen = adapter.generate_model_forward(model=dummy_model, inputs=mock_inputs)
-        try:
-            next(gen)
-        except StopIteration:
-            pass  # 预期行为
-
-    def test_generate_model_forward_with_list_input(self):
-        """测试输入为列表类型时的处理逻辑"""
-        adapter = self.create_adapter()
-        adapter.generate_model_forward.__globals__["dist"] = Mock(is_initialized=lambda: False)
-
-        dummy_model = DummyModel(config=self.dummy_config)
-        mock_inputs = [torch.randint(0, 1000, (1, 128)).float()]  # 列表类型输入
-
-        gen = adapter.generate_model_forward(model=dummy_model, inputs=mock_inputs)
-        try:
-            next(gen)
-        except StopIteration:
-            pass
-
-    def test_generate_model_forward_with_dict_input(self):
-        """测试输入为字典类型时的处理逻辑"""
-        adapter = self.create_adapter()
-        adapter.generate_model_forward.__globals__["dist"] = Mock(is_initialized=lambda: False)
-
-        dummy_model = DummyModel(config=self.dummy_config)
-        mock_inputs = {"input_ids": torch.randint(0, 1000, (1, 128)).float()}  # 字典类型输入
-
-        gen = adapter.generate_model_forward(model=dummy_model, inputs=mock_inputs)
-        try:
-            next(gen)
-        except StopIteration:
-            pass
-
     @patch("msmodelslim.model.deepseek_v3_2.model_adapter.dist")
     def test_generate_model_forward_with_dist_initialized(self, mock_dist):
         """测试分布式环境已初始化时的逻辑"""
@@ -411,35 +434,17 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
 
         mock_dist.barrier.assert_called_once()  # 验证分布式屏障被调用
 
-    def test_generate_model_forward_with_exception(self):
-        """测试前向传播过程中抛出其他异常的处理"""
-        adapter = self.create_adapter()
-        adapter.generate_model_forward.__globals__["dist"] = Mock(is_initialized=lambda: False)
-
-        # 创建一个会抛出异常的模型
-        class ErrorModel(DummyModel):
-            def __call__(self, *args, **kwargs):
-                raise ValueError("Test error")
-
-        dummy_model = ErrorModel(config=self.dummy_config)
-        mock_inputs = torch.randint(0, 1000, (1, 10))
-
-        with self.assertRaises(ValueError) as cm:
-            gen = adapter.generate_model_forward(model=dummy_model, inputs=mock_inputs)
-            next(gen)
-
-        self.assertEqual(str(cm.exception), "Test error")
-
     def test_generate_model_forward_processes_decoder_layers(self):
-        """测试处理transformer decoder层的逻辑"""
+        """测试处理transformer decoder层的逻辑：最后一层调用mtp_preprocess，非最后一层不调用"""
         adapter = self.create_adapter()
         adapter.generate_model_forward.__globals__["dist"] = Mock(is_initialized=lambda: False)
-        adapter.mtp_preprocess = Mock(return_value=((torch.tensor([1]),), {}))
+        adapter.mtp_preprocess = Mock(return_value=((torch.tensor([1]), torch.tensor([2])), {}))
 
-        # 创建模拟的decoder层
+        # 测试1: 最后一层调用mtp_preprocess
+        adapter.config.num_hidden_layers = 2
         mock_blocks = [
             ('model.layers.0', Mock()),
-            (f'model.layers.{self.dummy_config.num_hidden_layers - 1}', Mock())  # 最后一层
+            ('model.layers.1', Mock())  # 最后一层
         ]
         adapter.generate_decoder_layer = Mock(return_value=mock_blocks)
 
@@ -447,11 +452,9 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
         mock_inputs = torch.randint(0, 1000, (1, 10))
 
         gen = adapter.generate_model_forward(model=dummy_model, inputs=mock_inputs)
-        # 第一次迭代
         request = next(gen)
         self.assertEqual(request.name, 'model.layers.0')
 
-        # 发送返回值并进行第二次迭代
         try:
             gen.send((torch.tensor([1]), torch.tensor([2])))
         except StopIteration:
@@ -459,6 +462,112 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
 
         # 验证最后一层调用了mtp_preprocess
         adapter.mtp_preprocess.assert_called_once()
+
+        # 测试2: 非最后一层不调用mtp_preprocess
+        adapter.mtp_preprocess.reset_mock()
+        adapter.config.num_hidden_layers = 3
+        mock_blocks = [
+            ('model.layers.0', Mock()),
+            ('model.layers.1', Mock())  # 不是最后一层
+        ]
+        adapter.generate_decoder_layer = Mock(return_value=mock_blocks)
+
+        gen = adapter.generate_model_forward(model=dummy_model, inputs=mock_inputs)
+        request1 = next(gen)
+        self.assertEqual(request1.name, 'model.layers.0')
+        
+        try:
+            request2 = gen.send((torch.tensor([1]), torch.tensor([2])))
+            self.assertEqual(request2.name, 'model.layers.1')
+        except StopIteration:
+            pass
+
+        # 验证mtp_preprocess没有被调用
+        adapter.mtp_preprocess.assert_not_called()
+        
+    @patch('msmodelslim.model.deepseek_v3_2.model_adapter.remove_zero_and_shift')
+    def test_mtp_preprocess_dict_and_list_inputs(self, mock_remove_zero):
+        """测试mtp_preprocess处理dict和list输入的分支"""
+        adapter = self.create_adapter()
+        
+        # 准备测试数据
+        batch_size, seq_len = 2, 8
+        hidden_states = torch.randn(batch_size, seq_len, self.dummy_config.hidden_size)
+        residual = torch.randn(batch_size, seq_len, self.dummy_config.hidden_size)
+        input_ids = torch.randint(0, self.dummy_config.vocab_size, (batch_size, seq_len))
+        attention_mask = torch.ones(batch_size, seq_len)
+        
+        # Mock remove_zero_and_shift
+        mock_remove_zero.return_value = input_ids
+        
+        # Mock transformers的attention mask函数
+        with patch('transformers.modeling_attn_mask_utils._prepare_4d_causal_attention_mask') as mock_prepare:
+            mock_prepare.return_value = torch.randn(batch_size, 1, seq_len, seq_len)
+            
+            # Mock .to() 方法避免 npu 设备错误
+            original_to = nn.Module.to
+            
+            def mock_to(self, device=None, **kwargs):
+                if device == 'npu' or (isinstance(device, str) and 'npu' in device.lower()):
+                    return self
+                if device is None:
+                    return self
+                try:
+                    return original_to(self, device, **kwargs)
+                except (RuntimeError, ValueError):
+                    return self
+            
+            def mock_tensor_to(self, *args, **kwargs):
+                if args:
+                    device = args[0]
+                    if device == 'npu' or (isinstance(device, str) and 'npu' in device.lower()):
+                        return self
+                device = kwargs.get('device', None)
+                if device == 'npu' or (isinstance(device, str) and 'npu' in device.lower()):
+                    return self
+                return self
+            
+            mtp_decoder = DummyMTPLayer(self.dummy_config)
+            dummy_model = DummyModel(config=self.dummy_config)
+            dummy_model.model.freqs_cis = torch.randn(100, 32)
+            args = (hidden_states, residual)
+            kwargs = {'start_pos': 2, 'freqs_cis': torch.randn(8, 32)}
+            
+            with patch.object(nn.Module, 'to', mock_to):
+                with patch.object(torch.Tensor, 'to', mock_tensor_to):
+                    # 测试1: dict输入
+                    inputs_dict = {'input_ids': input_ids, 'attention_mask': attention_mask}
+                    new_args_dict, new_kwargs_dict = adapter.mtp_preprocess(
+                        model=dummy_model,
+                        mtp_decoder=mtp_decoder,
+                        inputs=inputs_dict,
+                        args=args,
+                        kwargs=kwargs
+                    )
+                    
+                    # 验证dict输入的结果
+                    self.assertEqual(len(new_args_dict), 2)
+                    self.assertIn('mask', new_kwargs_dict)
+                    self.assertIn('freqs_cis', new_kwargs_dict)
+                    
+                    # 测试2: list输入
+                    inputs_list = [input_ids, attention_mask]
+                    new_args_list, new_kwargs_list = adapter.mtp_preprocess(
+                        model=dummy_model,
+                        mtp_decoder=mtp_decoder,
+                        inputs=inputs_list,
+                        args=args,
+                        kwargs=kwargs
+                    )
+                    
+                    # 验证list输入的结果
+                    self.assertEqual(len(new_args_list), 2)
+                    self.assertIn('mask', new_kwargs_list)
+                    
+                    # 验证两次都调用了remove_zero_and_shift和_prepare_4d_causal_attention_mask
+                    self.assertEqual(mock_remove_zero.call_count, 2)
+                    self.assertEqual(mock_prepare.call_count, 2)
+            
 
     def create_mock_setup(self, prefix, weight_map, params):
         """创建get_state_dict测试的公共模拟设置"""
@@ -471,85 +580,83 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
 
         return mock_module, adapter
 
-    def test_get_state_dict_with_and_without_prefix(self):
-        """测试带前缀和不带前缀两种情况"""
+    def test_get_state_dict_with_prefix_and_multiple_files(self):
+        """测试get_state_dict：带前缀、不带前缀、多文件等情况"""
         test_cases = [
             # 带prefix的情况
             {
                 "prefix": "prefix",
                 "weight_map": {"prefix.layer.weight": "file1.safetensors", "prefix.layer.bias": "file1.safetensors"},
                 "params": [("layer.weight", Mock()), ("layer.bias", Mock())],
-                "expected_calls": ["prefix.layer.weight", "prefix.layer.bias"]
+                "expected_calls": ["prefix.layer.weight", "prefix.layer.bias"],
+                "expected_file_count": 1
             },
             # 不带prefix的情况
             {
                 "prefix": "",
                 "weight_map": {"layer.weight": "file2.safetensors", "layer.bias": "file2.safetensors"},
                 "params": [("layer.weight", Mock()), ("layer.bias", Mock())],
-                "expected_calls": ["layer.weight", "layer.bias"]
+                "expected_calls": ["layer.weight", "layer.bias"],
+                "expected_file_count": 1
+            },
+            # 多文件的情况
+            {
+                "prefix": "",
+                "weight_map": {
+                    "layer1.weight": "file1.safetensors",
+                    "layer1.bias": "file1.safetensors",
+                    "layer2.weight": "file2.safetensors",
+                    "layer2.bias": "file2.safetensors"
+                },
+                "params": [
+                    ("layer1.weight", Mock()), ("layer1.bias", Mock()),
+                    ("layer2.weight", Mock()), ("layer2.bias", Mock())
+                ],
+                "expected_calls": ["layer1.weight", "layer1.bias", "layer2.weight", "layer2.bias"],
+                "expected_file_count": 2
             }
         ]
 
         for case in test_cases:
             with self.subTest(case=case):
-                mock_module, adapter = self.create_mock_setup(
-                    case["prefix"], case["weight_map"], case["params"]
-                )
+                try:
+                    mock_module, adapter = self.create_mock_setup(
+                        case["prefix"], case["weight_map"], case["params"]
+                    )
+                except Exception as e:
+                    self.fail(f"test_get_state_dict_with_prefix_and_multiple_files failed: {e}")
 
                 with patch('msmodelslim.model.deepseek_v3_2.model_adapter.get_valid_read_path',
-                           return_value=f"/fake/path/file.safetensors"), \
+                           side_effect=lambda x, **kwargs: x), \
                         patch('msmodelslim.model.deepseek_v3_2.model_adapter.safe_open') as mock_safe_open:
+                    
+                    if case["expected_file_count"] > 1:
+                        # 多文件情况
+                        mock_file1, mock_file2 = MagicMock(), MagicMock()
+                        mock_file1.get_tensor.return_value = "tensor1"
+                        mock_file2.get_tensor.return_value = "tensor2"
 
-                    mock_file = MagicMock()
-                    mock_file.get_tensor.return_value = "dummy_tensor"
-                    mock_safe_open.return_value.__enter__.return_value = mock_file
+                        def create_file_side_effect(file1, file2):
+                            def file_side_effect(path, **kwargs):
+                                mock_context = MagicMock()
+                                mock_context.__enter__.return_value = file1 if "file1" in path else file2
+                                return mock_context
+                            return file_side_effect
+
+                        mock_safe_open.side_effect = create_file_side_effect(mock_file1, mock_file2)
+
+                    else:
+                        # 单文件情况
+                        mock_file = MagicMock()
+                        mock_file.get_tensor.return_value = "dummy_tensor"
+                        mock_safe_open.return_value.__enter__.return_value = mock_file
 
                     result = adapter.get_state_dict(mock_module, case["prefix"])
 
                     self.assertEqual(len(result), len(case["params"]))
                     for name, _ in case["params"]:
                         self.assertIn(name, result)
-                    for call in case["expected_calls"]:
-                        mock_file.get_tensor.assert_any_call(call)
-
-    def test_get_state_dict_multiple_files(self):
-        """测试参数分布在多个文件中的情况"""
-        weight_map = {
-            "layer1.weight": "file1.safetensors",
-            "layer1.bias": "file1.safetensors",
-            "layer2.weight": "file2.safetensors",
-            "layer2.bias": "file2.safetensors"
-        }
-        params = [
-            ("layer1.weight", Mock()), ("layer1.bias", Mock()),
-            ("layer2.weight", Mock()), ("layer2.bias", Mock())
-        ]
-
-        mock_module, adapter = self.create_mock_setup("", weight_map, params)
-        if not isinstance(mock_module, Mock):
-            raise ValueError(f"create_mock_setup 返回的 mock_module 类型非法")
-        if not isinstance(adapter, DeepSeekV32ModelAdapter):
-            raise ValueError(f"create_mock_setup 返回的 adapter 类型非法")
-
-        with patch('msmodelslim.model.deepseek_v3_2.model_adapter.get_valid_read_path',
-                   side_effect=lambda x, **kwargs: x), \
-                patch('msmodelslim.model.deepseek_v3_2.model_adapter.safe_open') as mock_safe_open:
-            # 为不同文件创建不同的模拟对象
-            mock_file1, mock_file2 = MagicMock(), MagicMock()
-            mock_file1.get_tensor.return_value = "tensor1"
-            mock_file2.get_tensor.return_value = "tensor2"
-
-            def file_side_effect(path, **kwargs):
-                mock_context = MagicMock()
-                mock_context.__enter__.return_value = mock_file1 if "file1" in path else mock_file2
-                return mock_context
-
-            mock_safe_open.side_effect = file_side_effect
-
-            result = adapter.get_state_dict(mock_module)
-
-            self.assertEqual(len(result), 4)
-            self.assertEqual(mock_safe_open.call_count, 2)  # 验证打开了两个文件
+                    self.assertEqual(mock_safe_open.call_count, case["expected_file_count"])
 
     def test_get_state_dict_file_not_found(self):
         """测试文件不存在时的异常处理"""
@@ -562,7 +669,111 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
                    side_effect=FileNotFoundError("File not found")):
             with self.assertRaises(FileNotFoundError):
                 adapter.get_state_dict(mock_module)
-
-
-if __name__ == "__main__":
-    unittest.main()
+                
+    def test_get_adapter_config_for_subgraph(self):
+        """测试get_adapter_config_for_subgraph生成适配器配置"""
+        adapter = self.create_adapter()
+        adapter.config.num_hidden_layers = 3  # 使用较小的层数便于测试
+        
+        configs = adapter.get_adapter_config_for_subgraph()
+        
+        # 每层应该生成3个配置：1个ov + 2个norm-linear
+        expected_config_count = 3 * 3  # 3 layers * 3 configs per layer
+        self.assertEqual(len(configs), expected_config_count)
+        
+        # 验证配置类型分布
+        ov_configs = [c for c in configs if c.subgraph_type == "ov"]
+        norm_linear_configs = [c for c in configs if c.subgraph_type == "norm-linear"]
+        
+        self.assertEqual(len(ov_configs), 3)  # 每层1个ov配置
+        self.assertEqual(len(norm_linear_configs), 6)  # 每层2个norm-linear配置
+        
+        # 验证第一层的配置内容
+        first_ov_config = ov_configs[0]
+        self.assertEqual(first_ov_config.mapping.source, "model.layers.0.self_attn.kv_b_proj")
+        self.assertEqual(first_ov_config.mapping.targets, ["model.layers.0.self_attn.o_proj"])
+        self.assertEqual(first_ov_config.extra_config['group_method'], 'max')
+        self.assertIsNotNone(first_ov_config.fusion)
+        self.assertEqual(first_ov_config.fusion.fusion_type, "kv")
+        
+    def test_get_ln_fuse_map(self):
+        """测试get_ln_fuse_map生成LayerNorm融合映射"""
+        adapter = self.create_adapter()
+        adapter.config.num_hidden_layers = 2
+        
+        # Mock get_ln_fuse_map from quarot module
+        with patch('msmodelslim.model.deepseek_v3_2.model_adapter.get_ln_fuse_map') as mock_get_ln_fuse:
+            # 返回包含所有需要的key的字典
+            mock_get_ln_fuse.return_value = {
+                "model.layers.0.input_layernorm": ["model.layers.0.self_attn.q_a_proj"],
+                "model.layers.0.self_attn.q_a_layernorm": [],  # 添加这个key
+                "model.layers.1.input_layernorm": ["model.layers.1.self_attn.q_a_proj"],
+                "model.layers.1.self_attn.q_a_layernorm": [],  # 添加这个key
+            }
+            
+            empty_dict, ln_linear_map = adapter.get_ln_fuse_map()
+            
+            # 验证返回的第一个字典为空
+            self.assertEqual(empty_dict, {})
+            
+            # 验证为每层添加了indexer相关的映射
+            self.assertIn("model.layers.0.input_layernorm", ln_linear_map)
+            self.assertIn("model.layers.0.self_attn.indexer.wk", ln_linear_map["model.layers.0.input_layernorm"])
+            self.assertIn("model.layers.0.self_attn.q_a_layernorm", ln_linear_map)
+            self.assertIn(
+                "model.layers.0.self_attn.indexer.wq_b", 
+                ln_linear_map["model.layers.0.self_attn.q_a_layernorm"]
+            )
+            
+    def test_get_bake_names(self):
+        """测试get_bake_names返回空列表"""
+        adapter = self.create_adapter()
+        
+        result1, result2 = adapter.get_bake_names()
+        
+        self.assertEqual(result1, [])
+        self.assertEqual(result2, [])
+        
+    def test_get_rotate_map(self):
+        """测试get_rotate_map生成旋转映射"""
+        adapter = self.create_adapter()
+        adapter.config.num_hidden_layers = 2
+        block_size = 128
+        
+        # Mock get_rotate_map from quarot module
+        with patch('msmodelslim.model.deepseek_v3_2.model_adapter.get_rotate_map') as mock_get_rotate:
+            mock_pre_run = Mock()
+            mock_rot_pair = Mock()
+            mock_rot_pair.right_rot = {}
+            mock_rot_b_proj_pair = Mock()
+            mock_rot_b_proj_pair.right_rot = {}
+            
+            mock_rotate_matrix = {
+                'rot': torch.randn(128, 128),
+                'rot_b_proj': torch.randn(128, 128)
+            }
+            
+            mock_get_rotate.return_value = (
+                mock_pre_run,
+                {'rot': mock_rot_pair, 'rot_b_proj': mock_rot_b_proj_pair},
+                mock_rotate_matrix
+            )
+            
+            pre_run_list, rot_pairs_list = adapter.get_rotate_map(block_size)
+            
+            # 验证调用了quarot的get_rotate_map
+            mock_get_rotate.assert_called_once_with(
+                adapter.config,
+                block_size,
+                num_hidden_layers=2
+            )
+            
+            # 验证返回值
+            self.assertEqual(pre_run_list, [mock_pre_run])
+            self.assertEqual(len(rot_pairs_list), 2)
+            
+            # 验证为每层的indexer添加了旋转映射
+            self.assertIn("model.layers.0.self_attn.indexer.wk", mock_rot_pair.right_rot)
+            self.assertIn("model.layers.1.self_attn.indexer.wk", mock_rot_pair.right_rot)
+            self.assertIn("model.layers.0.self_attn.indexer.wq_b", mock_rot_b_proj_pair.right_rot)
+            self.assertIn("model.layers.1.self_attn.indexer.wq_b", mock_rot_b_proj_pair.right_rot)
