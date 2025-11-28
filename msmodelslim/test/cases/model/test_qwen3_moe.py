@@ -191,3 +191,96 @@ class TestQwen3MoeModelAdapter(unittest.TestCase):
             # 验证返回空列表
             self.assertEqual(len(result), 0)
             self.assertIsInstance(result, list)
+
+
+class TestQwen3MoeModuleFunctions(unittest.TestCase):
+
+    def setUp(self):
+        """测试前的准备工作"""
+        self.config = DummyConfig()
+        # 为测试函数添加必要的配置属性
+        self.config.num_experts = 4  # 添加专家数量
+        self.config.hidden_size = 128  # 添加隐藏层大小
+        self.config.head_dim = 64  # 添加头维度
+
+    def test_qwen3_moe_get_ln_fuse_map_when_called_then_return_correct_mapping(self):
+        """测试qwen3_moe_get_ln_fuse_map方法：调用时应返回正确的融合映射"""
+        from msmodelslim.model.qwen3_moe import qwen3_moe_get_ln_fuse_map
+        
+        result = qwen3_moe_get_ln_fuse_map(self.config)
+        
+        # 验证返回字典
+        self.assertIsInstance(result, dict)
+        
+        # 验证包含必要的键
+        self.assertIn("model.norm", result)
+        self.assertIn("model.layers.0.input_layernorm", result)
+        self.assertIn("model.layers.0.post_attention_layernorm", result)
+        
+        # 验证input_layernorm的映射
+        input_ln_targets = result["model.layers.0.input_layernorm"]
+        expected_input_targets = [
+            "model.layers.0.self_attn.q_proj",
+            "model.layers.0.self_attn.k_proj",
+            "model.layers.0.self_attn.v_proj"
+        ]
+        for target in expected_input_targets:
+            self.assertIn(target, input_ln_targets)
+        
+        # 验证post_attention_layernorm的映射包含专家和gate
+        post_ln_targets = result["model.layers.0.post_attention_layernorm"]
+        self.assertIn("model.layers.0.mlp.gate", post_ln_targets)
+        
+        # 验证专家数量正确
+        expert_targets = [t for t in post_ln_targets if "experts" in t]
+        self.assertEqual(len(expert_targets), self.config.num_experts * 2)  # gate_proj + up_proj
+
+    def test_qwen3_moe_get_rotate_map_when_called_then_return_correct_rotate_commands(self):
+        """测试qwen3_moe_get_rotate_map方法：调用时应返回正确的旋转命令"""
+        from msmodelslim.model.qwen3_moe import qwen3_moe_get_rotate_map
+        from msmodelslim.quant.processor.quarot import QuaRotInterface
+        
+        block_size = 64
+        pre_run, rot_pairs, rot, rot_uv = qwen3_moe_get_rotate_map(self.config, block_size)
+        
+        # 验证返回类型
+        self.assertIsInstance(pre_run, QuaRotInterface.RotatePair)
+        self.assertIsInstance(rot_pairs, dict)
+        
+        # 验证pre_run包含embed_tokens
+        self.assertIn("model.embed_tokens", pre_run.right_rot)
+        
+        # 验证rot_pairs包含rot和rot_uv
+        self.assertIn("rot", rot_pairs)
+        self.assertIn("rot_uv", rot_pairs)
+        
+        # 验证rot包含正确的层数
+        rot_pair = rot_pairs["rot"]
+        self.assertIn("lm_head", rot_pair.right_rot)
+        
+        # 验证包含self_attn层
+        for layer_idx in range(self.config.num_hidden_layers):
+            for proj in ["q_proj", "k_proj", "v_proj"]:
+                key = f"model.layers.{layer_idx}.self_attn.{proj}"
+                self.assertIn(key, rot_pair.right_rot)
+            
+            # 验证o_proj在left_rot中
+            o_proj_key = f"model.layers.{layer_idx}.self_attn.o_proj"
+            self.assertIn(o_proj_key, rot_pair.left_rot)
+            
+            # 验证专家层
+            for i in range(self.config.num_experts):
+                for proj in ["gate_proj", "up_proj"]:
+                    key = f"model.layers.{layer_idx}.mlp.experts.{i}.{proj}"
+                    self.assertIn(key, rot_pair.right_rot)
+                
+                down_proj_key = f"model.layers.{layer_idx}.mlp.experts.{i}.down_proj"
+                self.assertIn(down_proj_key, rot_pair.left_rot)
+            
+            # 验证gate
+            gate_key = f"model.layers.{layer_idx}.mlp.gate"
+            self.assertIn(gate_key, rot_pair.right_rot)
+
+
+if __name__ == '__main__':
+    unittest.main()
