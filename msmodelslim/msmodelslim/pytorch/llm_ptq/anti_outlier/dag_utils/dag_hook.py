@@ -201,7 +201,7 @@ class DagHook(DirectedAcyclicGraph, ABC):
         node_output_dict[id_output] = dag_node_output
 
         if isinstance(output, dict):
-            for key, sub_output in output:
+            for key, sub_output in output.items():
                 node_output_dict.update(
                     self.get_node_output(sub_output, deduplicate, name + '.' + str(key)))
         elif isinstance(output, list) or isinstance(output, tuple):
