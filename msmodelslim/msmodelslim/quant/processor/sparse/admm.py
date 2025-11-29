@@ -268,7 +268,8 @@ class AdmmPruner:
         
         keep_mask = get_keep_mask2(keep_proportion=KEEP_PROPORTION)
         # 应用L2量化，保持重要位置的精度
-        self.layer.weight.data = quantize_l2(keep_mask=keep_mask, para=self.layer.weight.data, threshold=KEEP_BITS)
+        self.layer.weight.data = quantize_l2(keep_mask=keep_mask, para=self.layer.weight.data,
+                                             threshold=KEEP_BITS).to(self.layer.weight.data.dtype)
 
     def free(self):
         """释放内存"""
