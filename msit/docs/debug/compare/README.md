@@ -1,10 +1,10 @@
 # msit debug compare功能使用指南
 
 ## 简介
-- compare一键式全流程精度比对（推理）功能将推理场景的精度比对做了自动化，适用于 TensorFlow、TensorFlow2.0、ONNX、Caffe、MindIE-Torch模型，用户输入原始模型，对应的离线模型和输入，输出整网比对的结果，还可以输入已dump的CPU和NPU侧的算子数据直接进行精度比对。离线模型为通过 ATC 工具转换的 om 模型，输入 bin 文件需要符合模型的输入要求（支持模型多输入）。在模型比对完成后，对首个精度问题节点进行误差定界定位，判断其是单层误差还是累计误差，并输出误差区间，相关信息存储在输出目录下。
+- compare一键式全流程精度比对（推理）功能将推理场景的精度比对做了自动化，适用于TensorFlow、TensorFlow2.0、ONNX、Caffe、MindIE-Torch模型，用户输入原始模型，对应的离线模型和输入，输出整网比对的结果，还可以输入已dump的CPU和NPU侧的算子数据直接进行精度比对。离线模型为通过ATC工具转换的om模型，输入bin文件需要符合模型的输入要求（支持模型多输入）。在模型比对完成后，对首个精度问题节点进行误差定界定位，判断其是单层误差还是累计误差，并输出误差区间，相关信息存储在输出目录下。
 - 支持动态shape模型精度比对；支持单算子比对；支持AIPP(Artificial Intelligence Pre-Processing)数据预处理功能。
 - 该功能使用约束场景说明，参考链接：[Tensor比对/说明与约束](https://www.hiascend.com/document/detail/zh/canncommercial/81RC1/devaids/devtools/modelaccuracy/atlasaccuracy_16_0072.html)
-- 对于 Caffe 模型，目前不支持动态 shape 的模型比对。对于 `yolov2` / `yolov3` / `ssd` 等需要自定义实现层的模型，需要自行编译安装特定版本的 caffe。
+- 对于Caffe模型，目前不支持动态shape的模型比对。对于 `yolov2` / `yolov3` / `ssd` 等需要自定义实现层的模型，需要自行编译安装特定版本的caffe。
 - **注意**：请确保ATC工具转换的om与当前运行环境使用的芯片型号一致。
 
 
@@ -65,7 +65,7 @@ compare功能可以直接通过msit命令行形式启动精度对比。启动方
 
 #### 输出结果说明和分析步骤参考
 
-请移步[对比结果分析步骤](/msit/examples/cli/debug/compare/result_analyse/README.md)
+请移步[对比结果分析步骤](../../../examples/cli/debug/compare/result_analyse/README.md)
 
 #### 安全风险提示
 
@@ -106,29 +106,29 @@ compare功能可以直接通过msit命令行形式启动精度对比。启动方
 
 ### 使用场景
 
-请移步[compare使用示例](/msit/examples/cli/debug/compare/)
+请移步[compare使用示例](../../../examples/cli/debug/compare/)
 
-| 使用示例                                                                                             | 使用场景                                 |
-|--------------------------------------------------------------------------------------------------|--------------------------------------|
-| [01_basic_usage](/msit/examples/cli/debug/compare/01_basic_usage)                             | 基础示例，运行onnx和om模型精度比对                 |
-| [02_specify_input_data](/msit/examples/cli/debug/compare/02_specify_input_data)               | 指定模型输入数据                             |
-| [03_save_output_data](/msit/examples/cli/debug/compare/03_save_output_data)                   | 指定结果输出目录                             |
-| [04_specify_input_shape_info](/msit/examples/cli/debug/compare/04_specify_input_shape_info)   | 指定模型输入的shape信息(动态场景必须进行指定)。          |
-| [05_aipp_model_compare](/msit/examples/cli/debug/compare/05_aipp_model_compare)               | 提供模型转换开启aipp参数的om模型与onnx模型进行精度比对的功能。 |
-| [06_npu_custom_op](/msit/examples/cli/debug/compare/06_npu_custom_op)                         | onnx模型中存在NPU自定义算子场景                  |
-| [07_caffe_model](/msit/examples/cli/debug/compare/07_caffe_model)                             | 标杆模型为Caffe框架的一键式精度比对                 |
-| [08_accuracy_error_location](/msit/examples/cli/debug/compare/08_accuracy_error_location)     | 误差及累计误差一键式自动定位                       |
-| [09_single_op](/msit/examples/cli/debug/compare/09_single_op)                                 | 单算子比对模式                              |
-| [10_fusion_switch_file](/msit/examples/cli/debug/compare/10_fusion_switch_file)               | 关闭融合规则.om模型和原始.om模型精度比对              |
-| [11_mixing_precison_compare](/msit/examples/cli/debug/compare/11_mixing_precison_compare)      | 混合精度策略的.om模型和.om模型的精度比对              |
-| [14_alone_compare](/msit/examples/cli/debug/compare/14_alone_compare)                            | 指定dump数据的精度比对                        |
-| [15_saved_model](/msit/examples/cli/debug/compare/15_saved_model)                            | 标杆模型为tensorflow2.6框架下saved_model模型的一键式精度比对                        |
-| [16_mindie_torch_compare](/msit/examples/cli/debug/compare/16_mindie_torch_compare)                            | MindIE-Torch场景-整网算子精度对比场景                        |
-| [17_autofuse_compare](/msit/examples/cli/debug/compare/17_autofuse_compare)                    | 开启自动融合优化的精度比对场景    |
+| 使用示例                                                                                     | 使用场景                                 |
+|------------------------------------------------------------------------------------------|--------------------------------------|
+| [01_basic_usage](../../../examples/cli/debug/compare/01_basic_usage)                     | 基础示例，运行onnx和om模型精度比对                 |
+| [02_specify_input_data](../../../examples/cli/debug/compare/02_specify_input_data)               | 指定模型输入数据                             |
+| [03_save_output_data](../../../examples/cli/debug/compare/03_save_output_data)                   | 指定结果输出目录                             |
+| [04_specify_input_shape_info](../../../examples/cli/debug/compare/04_specify_input_shape_info)   | 指定模型输入的shape信息(动态场景必须进行指定)。          |
+| [05_aipp_model_compare](../../../examples/cli/debug/compare/05_aipp_model_compare)          | 提供模型转换开启aipp参数的om模型与onnx模型进行精度比对的功能。 |
+| [06_npu_custom_op](../../../examples/cli/debug/compare/06_npu_custom_op)                    | onnx模型中存在NPU自定义算子场景                  |
+| [07_caffe_model](../../../examples/cli/debug/compare/07_caffe_model)                        | 标杆模型为Caffe框架的一键式精度比对                 |
+| [08_accuracy_error_location](../../../examples/cli/debug/compare/08_accuracy_error_location) | 误差及累计误差一键式自动定位                       |
+| [09_single_op](../../../examples/cli/debug/compare/09_single_op)                            | 单算子比对模式                              |
+| [10_fusion_switch_file](../../../examples/cli/debug/compare/10_fusion_switch_file)          | 关闭融合规则.om模型和原始.om模型精度比对              |
+| [11_mixing_precison_compare](../../../examples/cli/debug/compare/11_mixing_precison_compare) | 混合精度策略的.om模型和.om模型的精度比对              |
+| [14_alone_compare](../../../examples/cli/debug/compare/14_alone_compare)                    | 指定dump数据的精度比对                        |
+| [15_saved_model](../../../examples/cli/debug/compare/15_saved_model)                        | 标杆模型为tensorflow2.6框架下saved_model模型的一键式精度比对                        |
+| [16_mindie_torch_compare](../../../examples/cli/debug/compare/16_mindie_torch_compare)      | MindIE-Torch场景-整网算子精度对比场景                        |
+| [17_autofuse_compare](../../../examples/cli/debug/compare/17_autofuse_compare)              | 开启自动融合优化的精度比对场景    |
 
 ### 常见问题FAQ
 
-* [compare常见问题](/msit/docs/debug/compare/FAQ.md)
+* [compare常见问题](FAQ.md)
 
 
 # TFDebugRunner使用说明
