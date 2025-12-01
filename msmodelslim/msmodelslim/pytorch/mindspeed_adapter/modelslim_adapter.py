@@ -16,7 +16,7 @@ from megatron.core.tensor_parallel.mappings import (
 from megatron.training import get_args
 
 from ascend_utils.common.security import check_dict_element, check_type
-from modelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator
 from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import TorchDAGAdapter
 
 _SUPPORTED_DEVICES = ["npu", 'gpu']
@@ -135,7 +135,7 @@ class ModelAdapter(nn.Module):
         if prefix == '':
             org_state = self.model.state_dict(prefix=self.prefix)
         else:
-            org_state = self.mdoel.state_dict(prefix=prefix)
+            org_state = self.model.state_dict(prefix=prefix)
         state = OrderedDict()
         for key, value in org_state.items():
             if value is not None:
