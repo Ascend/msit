@@ -277,7 +277,7 @@ msModelSlim认为量化本质上是对模型局部结构的修改和替换，基
       <td>训练后量化</td>
       <td><a href="./功能指南/脚本量化与其他功能/pytorch/quant/训练后量化.md">训练后量化</a></td>
       <td>
-        <a href="./接口说明/Python-API接口说明/量化接口/训练后量化（PyTorch）/QuantConfig.md">QuantConfig</a>
+        <a href="./接口说明/Python-API接口说明/量化接口/训练后量化（PyTorch）/QuantConfig.md">QuantConfig</a><br>
         <a href="./接口说明/Python-API接口说明/量化接口/训练后量化（PyTorch）/Calibrator.md">Calibrator</a><br>
         <a href="./接口说明/Python-API接口说明/量化接口/训练后量化（PyTorch）/get_quant_params.md">get_quant_params</a><br>
         <a href="./接口说明/Python-API接口说明/量化接口/训练后量化（PyTorch）/export_param.md">export_param</a><br>
@@ -289,7 +289,7 @@ msModelSlim认为量化本质上是对模型局部结构的修改和替换，基
       <td>量化感知训练</td>
       <td><a href="./功能指南/脚本量化与其他功能/pytorch/quant/量化感知训练.md">量化感知训练</a></td>
       <td>
-        <a href="./接口说明/Python-API接口说明/量化接口/量化感知训练/QatConfig.md">QatConfig</a>
+        <a href="./接口说明/Python-API接口说明/量化接口/量化感知训练/QatConfig.md">QatConfig</a><br>
         <a href="./接口说明/Python-API接口说明/量化接口/量化感知训练/qsin_qat.md">qsin_qat</a><br>
         <a href="./接口说明/Python-API接口说明/量化接口/量化感知训练/save_qsin_qat_model.md">save_qsin_qat_model</a><br>
       </td>
