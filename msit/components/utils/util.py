@@ -154,17 +154,24 @@ def load_file_to_read_common_check(path: str, exts=None):
     return path
 
 
+def is_valid_command(arg_str, index):
+    first_whitelist_pattern = re.compile(r"^[a-zA-Z0-9_\-./=:,\[\] ]+$")
+    whitelist_pattern = re.compile(r"^[a-zA-Z0-9_\-./=:,\[\] ;]+$")
+
+    if index == 0:
+        return re.fullmatch(first_whitelist_pattern, arg_str), first_whitelist_pattern
+    else:
+        return re.fullmatch(whitelist_pattern, arg_str), whitelist_pattern
+
+
 def filter_cmd(paras):
-    whitelist_pattern = re.compile(r"^[a-zA-Z0-9_\-./=:,\[\] ]+$")
     filtered = []
-    for arg in paras:
+    for index, arg in enumerate(paras):
         arg_str = str(arg)
-        if whitelist_pattern.fullmatch(arg_str):
-            filtered.append(arg_str)
-        else:
-            raise ValueError(
-                f'The command contains invalid characters. Only the "{whitelist_pattern}" pattern is allowed.'
-            )
+        valid, pattern = is_valid_command(arg_str, index)
+        if not valid:
+            raise ValueError(f"The command contains invalid characters. Only the '{pattern}' pattern is allowed.")
+        filtered.append(arg_str)
     return filtered
 
 
