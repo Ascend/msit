@@ -250,7 +250,7 @@ class AutoroundQuantProcessor(AutoSessionProcessor):
 - **使用限制**：
   - 适用于llm中的线性层量化。
   - 需要足够的校准数据或训练迭代次数来优化参数。
-  - **低比特量化极度依赖于良好的离群值抑制算法，建议用户配合[QuaRot](QuaRot.md)或[Iterative Smooth](Iterative_Smooth)等离群值抑制方法一起使用，不建议用户（尤其是缺乏量化调优经验的基础用户）单独使用AutoRound，否则可能导致模型精度严重下降、对话输出异常或其他不可预期的行为，相关风险由用户自行承担。**
+  - **低比特量化极度依赖于良好的离群值抑制算法，建议用户配合[QuaRot](QuaRot.md)或[Iterative Smooth](Iterative_Smooth.md)等离群值抑制方法一起使用，不建议用户（尤其是缺乏量化调优经验的基础用户）单独使用AutoRound，否则可能导致模型精度严重下降、对话输出异常或其他不可预期的行为，相关风险由用户自行承担。**
 
 ## 常见问题排查
 

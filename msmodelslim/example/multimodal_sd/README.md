@@ -6,7 +6,7 @@
 
 [Open-Sora-Plan v1.2](https://github.com/PKU-YuanGroup/Open-Sora-Plan) 是一个开源的多模态视频生成模型，由北大-兔展AIGC联合实验室共同发起，专注于高效视频生成任务。
 
-[Flux.1](https://blackforestlabs.io/flux-1/)是由 Black Forest Labs 开发的一款开源的 120 亿参数的图像生成模型，它能够根据文本描述生成高质量的图像。
+[Flux.1](https://github.com/black-forest-labs/flux)是由 Black Forest Labs 开发的一款开源的 120 亿参数的图像生成模型，它能够根据文本描述生成高质量的图像。
 
 [HunyuanVideo](https://github.com/Tencent-Hunyuan/HunyuanVideo) 是腾讯发布的一种新颖的开源视频基础模型，它在视频生成方面的性能可与领先的闭源模型相媲美，甚至优于领先的闭源模型。
 
