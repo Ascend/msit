@@ -194,16 +194,21 @@ class DeepSeekV32ModelAdapter(TransformersModel,
             )
 
             # Norm-Linear融合的映射配置1：q_a_proj, kv_a_proj_with_mqa -> input_layernorm
-            norm_linear_mapping_config1 = MappingConfig(
+            input_norm_mapping_config = MappingConfig(
                 source=f"model.layers.{layer_idx}.input_layernorm",  # 第一个LayerNorm
                 targets=[f"model.layers.{layer_idx}.self_attn.q_a_proj",
-                         f"model.layers.{layer_idx}.self_attn.kv_a_proj_with_mqa"]  # 注意力层的Q_a,KV_a投影
+                         f"model.layers.{layer_idx}.self_attn.kv_a_proj_with_mqa",
+                         f"model.layers.{layer_idx}.self_attn.indexer.wk",
+                         f"model.layers.{layer_idx}.self_attn.indexer.weights_proj",
+                         ]  # 注意力层的Q_a,KV_a投影
             )
 
             # Norm-Linear融合的映射配置2：q_b_proj -> q_a_layernorm
-            norm_linear_mapping_config2 = MappingConfig(
+            qa_norm_mapping_config = MappingConfig(
                 source=f"model.layers.{layer_idx}.self_attn.q_a_layernorm",  # q_a_layernorm
-                targets=[f"model.layers.{layer_idx}.self_attn.q_b_proj"]  # q_b投影
+                targets=[f"model.layers.{layer_idx}.self_attn.q_b_proj",
+                         f"model.layers.{layer_idx}.self_attn.indexer.wq_b",
+                         ]  # q_b投影
             )
 
             # 为当前layer添加4个配置
@@ -226,11 +231,11 @@ class DeepSeekV32ModelAdapter(TransformersModel,
                 ),
                 AdapterConfig(
                     subgraph_type="norm-linear",
-                    mapping=norm_linear_mapping_config1
+                    mapping=input_norm_mapping_config
                 ),
                 AdapterConfig(
                     subgraph_type="norm-linear",
-                    mapping=norm_linear_mapping_config2
+                    mapping=qa_norm_mapping_config
                 ),
             ])
 
