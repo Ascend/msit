@@ -196,8 +196,11 @@ class ProcessorReq(ProcessorBase):
 
         merged = batch_attr_explode_by_req_df.join(model_exec_df.set_index('batch_id'), on='batch_id')
 
-        req_event_df = pd.concat([req_event_df, merged[["rid", "event", "iter", "start_time", "end_time", "batch_id"]]],
-                                 ignore_index=True)
+        req_event_df = pd.concat([
+            req_event_df,
+            merged[
+                ["rid", "event", "iter", "start_time", "end_time", "batch_id", "batch_size", "num_scheduled_tokens="]]
+        ], ignore_index=True)
 
         # 提取 BatchSchedule 事件的时间信息
         batch_schedule_events = batch_event_df[batch_event_df["event"] == "BatchSchedule"]
@@ -235,7 +238,8 @@ class ProcessorReq(ProcessorBase):
             'start_time': prefill_schedule['start_time'],
             'end_time': prefill_schedule['end_time'],
             'batch_id': prefill_schedule['batch_id'],
-            'num_scheduled_tokens=': prefill_schedule['num_scheduled_tokens=']
+            'num_scheduled_tokens=': prefill_schedule['num_scheduled_tokens='],
+            'batch_size': prefill_schedule['batch_size']
         })
 
         prefill_start_df = prefill_start_df.dropna(subset=['rid', 'num_scheduled_tokens='])
@@ -266,11 +270,11 @@ class ProcessorReq(ProcessorBase):
         non_empty_dfs = [df for df in [calc_df, first_decode] if not df.empty]
         calc_df = pd.concat(non_empty_dfs, ignore_index=True) if non_empty_dfs else calc_df
 
-        # 取最后一个 sendResponse
+        # 之前ttft算的有问题，应该是取第一个 sendResponse
         last_send_response = (
             req_event_df[req_event_df["event"] == "sendResponse"]
             .groupby("rid")
-            .last()
+            .first()
             .reset_index()
         )
         if not last_send_response.empty:
