@@ -310,6 +310,9 @@ class DeepSeekV32ModelAdapter(TransformersModel,
             ln_linear_map[f"model.layers.{layer_idx}.input_layernorm"].append(
                 f"model.layers.{layer_idx}.self_attn.indexer.wk",
             )
+            ln_linear_map[f"model.layers.{layer_idx}.input_layernorm"].append(
+                f"model.layers.{layer_idx}.self_attn.indexer.weights_proj",
+            )
             ln_linear_map[f"model.layers.{layer_idx}.self_attn.q_a_layernorm"].append(
                 f"model.layers.{layer_idx}.self_attn.indexer.wq_b"
             )
@@ -324,6 +327,8 @@ class DeepSeekV32ModelAdapter(TransformersModel,
                                                            num_hidden_layers=self.config.num_hidden_layers)
         for layer_idx in range(self.config.num_hidden_layers):
             rot_pairs['rot'].right_rot[f"model.layers.{layer_idx}.self_attn.indexer.wk"] = rotate_matrix['rot']
+            rot_pairs['rot'].right_rot[f"model.layers.{layer_idx}.self_attn.indexer.weights_proj"] = \
+                rotate_matrix['rot']
             rot_pairs['rot_b_proj'].right_rot[f"model.layers.{layer_idx}.self_attn.indexer.wq_b"] = \
                 rotate_matrix['rot_b_proj']
         return [pre_run], [pair for pair in rot_pairs.values()]
