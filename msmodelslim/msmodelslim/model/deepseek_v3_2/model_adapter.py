@@ -43,6 +43,7 @@ from ..transformers import TransformersModel
 
 
 @ModelFactory.register("DeepSeek-V3.2-Exp")
+@ModelFactory.register("DeepSeek-V3.2")
 @logger_setter("msmodelslim.model.deepseek_v3_2")
 class DeepSeekV32ModelAdapter(TransformersModel,
                               ModelInfoInterface,
