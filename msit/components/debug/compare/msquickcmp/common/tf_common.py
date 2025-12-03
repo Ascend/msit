@@ -147,7 +147,7 @@ def get_inputs_tensor(global_graph, input_shape_str):
     tensor_index = {}
     operations = global_graph.get_operations()
     op_names = [op.name for op in operations if "Placeholder" == op.type]
-    utils.logger.info(op_names)
+    utils.logger.info(str(op_names))
     for _, tensor_name in enumerate(input_shapes):
         utils.check_input_name_in_model(op_names, tensor_name)
     for op in operations:

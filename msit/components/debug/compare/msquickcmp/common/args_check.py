@@ -165,7 +165,7 @@ def check_debug_compare_input_data_path(path):
         return path
     input_item_paths = path.split(',')
     for input_item_path in input_item_paths:
-        input_item_path = check_input_data_path_legality(input_item_path)
+        check_input_file_path(input_item_path)
         if not is_endswith_extensions(input_item_path, ['.npy', '.bin']):
             raise argparse.ArgumentTypeError(f"input data path:{path} is illegal. Please check.")
         check_path_no_group_others_write(input_item_path)
