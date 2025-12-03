@@ -471,3 +471,9 @@ class AscendV1Saver(AutoSaverProcessor):
             return
         if self.QUANT_TYPE_PRIORITY.index(quant_type) > self.QUANT_TYPE_PRIORITY.index(self.model_quant_type):
             self.model_quant_type = quant_type
+
+    def _process_module(self, prefix: str, module: nn.Module):
+        if isinstance(self.adapter, AscendV1SaveInterface):
+            self.processed_modules.add(module)
+            module = self.adapter.ascendv1_save_module_preprocess(prefix, module, self.model) or module
+        super()._process_module(prefix=prefix, module=module)
