@@ -156,6 +156,8 @@ class TfDumpData(DumpData):
             self.net_output_name.append(tensor_name)
         if self.args.input_shape:
             cmd += " -s " + '"' + self.args.input_shape + '"'
+        cmd = cmd.split()
+        cmd = [item.strip('"') for item in cmd]
         self.tf_common.execute_command(cmd)
 
     def _run_model_tf1x(self, outputs_tensor):
