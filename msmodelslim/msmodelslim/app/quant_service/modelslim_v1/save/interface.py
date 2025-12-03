@@ -14,16 +14,19 @@
 #  limitations under the License.
 
 from abc import ABC, abstractmethod
-
+from typing import Optional
 import torch.nn as nn
 
 
 class AscendV1SaveInterface(ABC):
-    @abstractmethod
+
     def ascendv1_save_postprocess(self, model: nn.Module, save_directory: str) -> None:
         """
         导出件后处理
         @param model: 量化模型
         @param save_directory: 包含导出件（如config.json，quant_model_description.json等）的量化模型存储路径
         """
-        ...
+        pass
+
+    def ascendv1_save_module_preprocess(self, prefix: str, module: nn.Module, model: nn.Module) -> Optional[nn.Module]:
+        pass
