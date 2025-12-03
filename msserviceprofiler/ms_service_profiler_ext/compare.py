@@ -14,44 +14,40 @@
 # limitations under the License.
 
 import os
-import re
-import sqlite3
 import argparse
-import shutil
-from pathlib import Path
-from contextlib import contextmanager
 
 import pandas as pd
 
-from ms_service_profiler_ext.compare_tools import CSVComparator, DBComparator
-from ms_service_profiler_ext.compare_tools.collector import FileCollector
-
-from ms_service_profiler.exporters.utils import check_input_path_valid, check_output_path_valid
+from ms_service_profiler.data_source.db_data_source import DBDataSource
+from ms_service_profiler.exporters.utils import save_dataframe_to_csv
 from ms_service_profiler.utils.log import set_log_level, logger
+from ms_service_profiler.exporters.utils import check_input_dir_valid, check_output_path_valid
 
 
-@contextmanager
-def connect_db(db_path):
-    connection = None
-    
-    try:
-        connection = sqlite3.connect(db_path)
-        yield connection
-        connection.commit()
-    except:
-        if connection:
-            connection.rollback()
-        raise
-    finally:
-        if connection:
-            connection.close()
+def read_sql_from_given_path(given_path):
+    profiler_files_input = os.listdir(given_path)
+
+    profiler_inputs = []
+    for file in profiler_files_input:
+        if file.endswith('.db'):
+            data_dict = DBDataSource.process(os.path.join(given_path, file))
+            if not data_dict.get('tx_data_df').empty:
+                df = data_dict.get('tx_data_df')
+                profiler_inputs.append(df)
+
+    if profiler_inputs:
+        sql_df_result = pd.concat(profiler_inputs, axis=0, ignore_index=True)
+        return sql_df_result
+    else:
+        logger.error(f'the data from {given_path} is empty.')
+        return pd.DataFrame()
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="MS Server Profiler Compare Tool")
 
-    parser.add_argument("input_path", type=check_input_path_valid, help="Directory containing analyzed results")
-    parser.add_argument("golden_path", type=check_input_path_valid, help="Directory containing analyzed results")
+    parser.add_argument("input_path", type=check_input_dir_valid, help="Directory containing analyzed results")
+    parser.add_argument("golden_path", type=check_input_dir_valid, help="Directory containing analyzed results")
     parser.add_argument(
         "--output-path",
         type=check_output_path_valid,
@@ -69,49 +65,48 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def process_files(file_pairs, output_db, output_excel):
-    comparators = {
-        '.csv': CSVComparator,
-        '.db': DBComparator
-    }
-    
-    with connect_db(output_db) as db_conn:
-        with pd.ExcelWriter(output_excel, engine='openpyxl') as excel_writer:
-            for file_a, file_b in file_pairs:
-                ext = Path(file_a).suffix.lower()
-                logger.info("Begin to compare %r and %r", file_a, file_b)
-                for comparator_cls in comparators.values():
-                    if comparator_cls.supports(ext):
-                        comparator = comparator_cls(db_conn, excel_writer)
-                        try:
-                            comparator.process(file_a, file_b)
-                        except Exception as e:
-                            logger.error(
-                                "During comparing %r and %r, there is an error ocurred: %r", file_a, file_b, e
-                            )
-                logger.info("End to compare %r and %r", file_a, file_b)
-
-    shutil.copy(
-        Path(__file__).parent / 'compare_tools' / 'compare_visualization.json',
-        Path(output_db).with_name("compare_visualization.json")
-    )
-
-
-def main():    
+def main():
     args = parse_args()
     set_log_level(args.log_level)
-    
-    result_prefix = os.path.join(args.output_path, 'compare_result')
-    file_collector = FileCollector(
-        pattern=re.compile(r'(batch|service|request)_summary\.csv|profiler\.db'),
-        max_iter=100
-    )
 
-    file_pairs = file_collector.collect_pairs(args.input_path, args.golden_path)
-    process_files(file_pairs, f'{result_prefix}.db', f'{result_prefix}.xlsx')
-    
+    profiler_input_df = read_sql_from_given_path(args.input_path)
+
+    profiler_input_df.reset_index(drop=True, inplace=True)
+
+    profiler_input_df['name'] = profiler_input_df['message'].apply(lambda x: x.get('name'))
+    profiler_input_result = profiler_input_df.groupby('name')['during_time'].agg([
+        'mean',
+        ('A-P50', lambda x: x.quantile(0.50)),
+        ('A-P90', lambda x: x.quantile(0.90))
+    ])
+    profiler_input_result.rename(columns={'mean': 'A-AVG'}, inplace=True)
+
+    profiler_golden_df = read_sql_from_given_path(args.golden_path)
+
+    profiler_golden_df.reset_index(drop=True, inplace=True)
+
+    profiler_golden_df['name'] = profiler_golden_df['message'].apply(lambda x: x.get('name'))
+    profiler_golden_result = profiler_golden_df.groupby('name')['during_time'].agg([
+        'mean',
+        ('B-P50', lambda x: x.quantile(0.50)),
+        ('B-P90', lambda x: x.quantile(0.90))
+    ])
+    profiler_golden_result.rename(columns={'mean': 'B-AVG'}, inplace=True)
+
+    result_concat = pd.concat([profiler_input_result, profiler_golden_result], axis=1)
+
+    result_concat['DIFF-AVG'] = result_concat['A-AVG'] - result_concat['B-AVG']
+    result_concat['DIFF-P50'] = result_concat['A-P50'] - result_concat['B-P50']
+    result_concat['DIFF-P90'] = result_concat['A-P90'] - result_concat['B-P90']
+    result_concat['RDIFF-AVG'] = result_concat['DIFF-AVG'] / result_concat['A-AVG']
+    result_concat['RDIFF-P50'] = result_concat['DIFF-P50'] / result_concat['A-P50']
+    result_concat['RDIFF-P90'] = result_concat['DIFF-P90'] / result_concat['A-P90']
+    result_concat = result_concat.reset_index()
+    result_concat = result_concat.rename(columns={'index': 'name'})
+
+    save_dataframe_to_csv(result_concat, args.output_path, 'span_comparation_result.csv')
+
     logger.info("Comparing finished successfully, the results stored under %r", args.output_path)
-    logger.info("\nWhat's Next?\n\tYou may use the `grafana` to have a better visualization of the comparison results")
 
 
 if __name__ == '__main__':
