@@ -57,7 +57,7 @@ def get_rotate_map(config, block_size, num_hidden_layers=None):
         num_hidden_layers = config.num_hidden_layers + 1
     rot = QuaRotInterface.get_rotate_command(
         size=config.hidden_size,
-        mode=QuaRotInterface.QuaRotMode.BLOCK_HADAMARD,
+        mode=QuaRotInterface.QuaRotMode.HADAMARD,
         block_size=block_size,
     )
     rot_b_proj = QuaRotInterface.get_rotate_command(
@@ -67,12 +67,12 @@ def get_rotate_map(config, block_size, num_hidden_layers=None):
     )
     rot_uv = QuaRotInterface.get_rotate_command(
         size=config.v_head_dim,
-        mode=QuaRotInterface.QuaRotMode.BLOCK_HADAMARD,
+        mode=QuaRotInterface.QuaRotMode.HADAMARD,
         block_size=block_size,
     )
     rot_kv_b_proj = QuaRotInterface.get_rotate_command(
         size=config.kv_lora_rank,
-        mode=QuaRotInterface.QuaRotMode.BLOCK_HADAMARD,
+        mode=QuaRotInterface.QuaRotMode.HADAMARD,
         block_size=block_size,
     )
     # pre run 
