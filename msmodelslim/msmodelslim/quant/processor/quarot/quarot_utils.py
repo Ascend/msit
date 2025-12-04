@@ -35,7 +35,6 @@ def random_hadamard_matrix_block(in_channel, stride, eye_step, dtype=torch.float
 
 class QuaRotMode(Enum):
     HADAMARD = "hadamard"
-    BLOCK_HADAMARD = "block_hadamard"
     BLOCK_HADAMARD_SHIFTED = "block_hadamard_shifted"
 
 
@@ -47,17 +46,19 @@ def create_rot(mode: QuaRotMode,
     shift = 16
     device = torch.device("cpu")
     dtype = torch.float32
-    if block_size == -1:
-        transformation_dim = size
-    else:
-        transformation_dim = block_size
 
     if mode == QuaRotMode.HADAMARD:
+        if block_size == -1:
+            transformation_dim = size
+        else:
+            transformation_dim = block_size
         rot = random_hadamard_matrix(transformation_dim, dtype, device)
-    elif mode == QuaRotMode.BLOCK_HADAMARD:
-        rot = random_hadamard_matrix_block(size, 32, eye_step, dtype, device)
+        if block_size != -1:
+            rot = rot.repeat(size // block_size, 1, 1)
+            rot = torch.block_diag(*rot)
     elif mode == QuaRotMode.BLOCK_HADAMARD_SHIFTED:
-        rot = random_hadamard_matrix_block(size, 32, eye_step, dtype, device)
+        block_size = 32 if block_size == -1 else block_size
+        rot = random_hadamard_matrix_block(size, block_size, eye_step, dtype, device)
         identity = torch.eye(size, dtype=torch.float32)
         p = torch.cat((identity[:, -shift:], identity[:, :-shift]), dim=1).to(rot.device)
         if rot_step == 1:
@@ -69,10 +70,6 @@ def create_rot(mode: QuaRotMode,
         else:
             raise UnsupportedError("rot_step must be 1, 2, or 3!",
                                    action="Please check the rot_step!")
-
-    if block_size != -1:
-        rot = rot.repeat(size // block_size, 1, 1)
-        rot = torch.block_diag(*rot)
 
     return rot
 

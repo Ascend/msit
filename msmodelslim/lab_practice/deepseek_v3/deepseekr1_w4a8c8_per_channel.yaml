@@ -49,6 +49,7 @@ default_w4a8_dynamic: &default_w4a8_dynamic
 spec:
   process:
     - type: "quarot"
+      block_size: 32
     - type: "flex_smooth_quant"
       enable_subgraph_type:
         - 'norm-linear'
