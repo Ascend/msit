@@ -870,7 +870,7 @@ def _qwen3_vl_moe_get_rotate_map(config, block_size):
     # Create rotation matrices
     rot = QuaRotInterface.get_rotate_command(
         size=config.text_config.hidden_size,
-        mode=QuaRotInterface.QuaRotMode.BLOCK_HADAMARD,
+        mode=QuaRotInterface.QuaRotMode.HADAMARD,
         block_size=block_size,
     )
     rot_uv = QuaRotInterface.get_rotate_command(
