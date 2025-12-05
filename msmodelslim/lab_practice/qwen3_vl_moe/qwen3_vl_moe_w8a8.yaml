@@ -39,6 +39,7 @@ default_w8a8: &default_w8a8
 spec:
   process:
     - type: "quarot"
+      block_size: 32
     - type: "iter_smooth"                  
       alpha: 0.9  # 浮点数, > 0, 默认 0.9，平衡参数，控制激活和权重的相对重要性。
       scale_min: 1e-5  # 浮点数, > 0, 默认 1e-5，缩放因子的下界，防止数值过小导致数值不稳定。
