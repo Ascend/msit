@@ -29,7 +29,7 @@ from msmodelslim.utils.seed import seed_all
 from .quant_config import MultimodalVLMModelslimV1QuantConfig
 
 
-@logger_setter(prefix='msmodelslim.app.quant_service.multimodal_vlm_v1')
+@logger_setter(prefix='msmodelslim.app.quant_service.multimodal_vlm_modelslim_v1')
 class MultimodalVLMModelslimV1QuantService(BaseQuantService):
     """
     Quantization service for multimodal vision-language models (V1 framework).
@@ -169,7 +169,8 @@ class MultimodalVLMModelslimV1QuantService(BaseQuantService):
         get_logger().info(f"==========QUANTIZATION: Run Quantization==========")
         
         if quant_config.spec.runner != "layer_wise":
-            get_logger().warning(f"runner for multimodal_vlm_v1 is not layer_wise, will be converted to layer_wise.")
+            get_logger().warning(
+                f"runner for multimodal_vlm_modelslim_v1 is not layer_wise, will be converted to layer_wise.")
         
         runner = LayerWiseRunner(adapter=model_adapter)
 
