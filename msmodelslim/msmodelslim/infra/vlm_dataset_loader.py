@@ -149,7 +149,15 @@ class VLMDatasetLoader(DatasetLoaderInterface):
                     f"Failed to resolve dataset path: {dataset_name}",
                     action=f"Please check if the path is valid and accessible"
                 ) from e
-        
+
+        # 新增：兜底检查路径是否存在，避免走到类型判断分支才报错
+        if not resolved_path.exists():
+            get_logger().error(f"Dataset path not found: {resolved_path}")
+            raise InvalidDatasetError(
+                f"Dataset path does not exist: {resolved_path}",
+                action=f"Please check if the path '{resolved_path}' is correct and exists"
+            )
+
         # Now check what type of resource resolved_path is
         if resolved_path.is_dir():
             resolved_path = get_valid_read_path(str(resolved_path), is_dir=True, check_user_stat=True)
