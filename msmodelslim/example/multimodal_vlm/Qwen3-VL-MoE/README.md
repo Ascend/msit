@@ -12,13 +12,13 @@ Qwen3-VL-MoE 是阿里云 Qwen 团队推出的大规模多模态视觉语言 Mix
 ## 环境配置
 
 - 基础环境配置请参考[安装指南](../../../docs/安装指南.md)，注意：由于高版本transformers的特殊性，PyTorch及torch_npu需要配置安装为2.7.1版本
-- 还需要安装 flax 依赖：
-  ```bash
-  pip install flax
-  ```
 - 针对 Qwen3-VL-MoE，transformers 版本需要 4.57.1：
   ```bash
   pip install transformers==4.57.1
+  ```
+- 还需要安装 flax 依赖：
+  ```bash
+  pip install flax
   ```
 
 ## Qwen3-VL-MoE 模型当前已验证的量化方法
@@ -60,15 +60,13 @@ Qwen3-VL-MoE 是阿里云 Qwen 团队推出的大规模多模态视觉语言 Mix
 
 ## 生成量化权重
 
-### 使用一键量化命令
+### 使用案例
 
-Qwen3-VL-MoE 使用 msmodelslim 的一键量化接口，无需编写量化脚本。
+#### <span id="qwen3-vl-moe-w8a8-混合量化">Qwen3-VL-235B-A22B W8A8 混合量化</span>
 
-#### <span id="qwen3-vl-moe-w8a8-混合量化">Qwen3-VL-MoE W8A8 混合量化</span>
+该模型的量化已经集成至[一键量化](../../../docs/功能指南/一键量化/使用说明.md#接口说明)。
 
-**方式一：使用 quant_type 参数进行一键量化，以Qwen3-VL-235B-A22B为例**
-
-```bash
+```shell
 msmodelslim quant \
     --model_path /path/to/qwen3_vl_moe_float_weights \
     --save_path /path/to/qwen3_vl_moe_quantized_weights \
@@ -78,157 +76,6 @@ msmodelslim quant \
     --trust_remote_code True
 ```
 
-**方式二：使用 config_path 参数指定配置文件进行一键量化，以Qwen3-VL-235B-A22B为例**
-
-```bash
-msmodelslim quant \
-    --model_path /path/to/qwen3_vl_moe_float_weights \
-    --save_path /path/to/qwen3_vl_moe_quantized_weights \
-    --device npu \
-    --model_type Qwen3-VL-235B-A22B \
-    --config_path /path/to/qwen3_vl_moe_w8a8.yaml \
-    --trust_remote_code True
-```
-
-### 一键量化命令参数说明
-
-一键量化参数基本说明可参考：[一键量化参数说明](../../../docs/功能指南/一键量化/使用说明.md#接口说明)
-
-针对 Qwen3-VL-MoE 模型，参数配置要求如下：
-
-| 参数名称 | 解释 | 是否可选 | 范围 |
-|---------|------|---------|------|
-| model_path | Qwen3-VL-MoE 浮点权重目录 | 必选 | 类型：Str |
-| save_path | Qwen3-VL-MoE 量化权重保存路径 | 必选 | 类型：Str |
-| device | 量化设备 | 必选 | 1. 类型：Str <br>2. 仅支持 "npu" |
-| model_type | 模型名称 | 必选 | 1. 类型：Str <br>2. 大小写敏感，可选值："Qwen3-VL-30B-A3B", "Qwen3-VL-235B-A22B"。[Qwen3-VL-30B-A3B](https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct/tree/main) 尚未验证过量化精度，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。 |
-| config_path | 指定配置路径 | 与 "quant_type" 二选一 | 1. 类型：Str <br>2. 配置文件格式为 yaml <br>3. 当前只支持最佳实践库中已验证的配置 [qwen3_vl_moe_w8a8.yaml](../../../lab_practice/qwen3_vl_moe/qwen3_vl_moe_w8a8.yaml)，若自定义配置，msmodelslim 不为量化结果负责 |
-| quant_type | 量化类型 | 与 "config_path" 二选一 | 1. 类型：Str <br>2. 当前仅支持配置为 "w8a8" |
-| trust_remote_code | 是否信任自定义代码 | 可选 | 1. 类型：Bool，默认值：False <br>2. 指定 `trust_remote_code=True` 让修改后的自定义代码文件能够正确地被加载（请确保所加载的自定义代码文件来源可靠，避免潜在的安全风险） |
-
-## 配置文件说明
-
-### 基础配置结构
-
-```yaml
-apiversion: multimodal_vlm_modelslim_v1
-metadata:
-  config_id: qwen3_vl_moe_w8a8
-  score: 90
-  verified_model_types:
-    - Qwen3-VL-235B-A22B
-  label:
-    w_bit: 8
-    a_bit: 8
-    is_sparse: False
-    kv_cache: False
-
-default_w8a8_dynamic: &default_w8a8_dynamic
-  act:
-    scope: "per_token"
-    dtype: "int8"
-    symmetric: True
-    method: "minmax"
-  weight:
-    scope: "per_channel"
-    dtype: "int8"
-    symmetric: True
-    method: "minmax"
-
-default_w8a8: &default_w8a8
-  act:
-    scope: "per_tensor"
-    dtype: "int8"
-    symmetric: False
-    method: "minmax"
-  weight:
-    scope: "per_channel"
-    dtype: "int8"
-    symmetric: True
-    method: "minmax"
-
-spec:
-  process:
-    - type: "iter_smooth"                  
-      alpha: 0.9  # 浮点数, > 0, 默认 0.9，平衡参数，控制激活和权重的相对重要性。
-      scale_min: 1e-5  # 浮点数, > 0, 默认 1e-5，缩放因子的下界，防止数值过小导致数值不稳定。
-      symmetric: True  # 使用is_shift=True时，应该将symmetric设置为False
-      enable_subgraph_type:
-        - 'norm-linear'
-        - 'linear-linear'
-        - 'ov'
-        - 'up-down'
-      include:                             
-        - "*"
-    - type: "linear_quant"
-      qconfig: *default_w8a8
-      include:
-        - "*"
-      exclude:
-        - "*experts*"  # Exclude MoE experts for dynamic quantization
-        - "*linear_fc2"
-        - "*merger*"
-        - "*deepstack_merger_list*"
-        - "*mlp.gate"
-    - type: "linear_quant"
-      qconfig: *default_w8a8_dynamic
-      include:
-        - "*experts*"  # MoE experts use dynamic quantization
-      exclude:
-        - "*linear_fc2"
-        - "*merger*"
-        - "*deepstack_merger_list*"
-        - "*mlp.gate"
-  save:
-    - type: "ascendv1_saver"
-      part_file_size: 4
-  dataset: "calibImages"  # Short name: auto-searches in lab_calib/
-```
-
-### 关键配置参数
-
-此处只说明关键配置参数，更多参数说明可见：
-- [Iterative Smooth 算法配置字段说明](../../../docs/算法说明/Iterative_Smooth.md#yaml配置字段详解)
-- [LinearQuantProcess 线性层量化处理器配置字段说明](../../../docs/功能指南/一键量化/features/linear_quant.md#yaml配置字段详解)
-- [保存处理器配置字段说明](../../../docs/功能指南/一键量化/配置协议说明.md#保存器配置字段-save)
-
-
-#### 异常值抑制配置 (iter_smooth)
-
-- **type**: 处理器类型，固定为 "iter_smooth"
-- **alpha**: 平滑强度系数，范围 [0, 1]，默认 0.9
-- **scale_min**: 最小缩放因子，防止数值不稳定，推荐 1e-5
-- **symmetric**: 是否对称量化，True为对称，False为非对称，默认True
-- **enable_subgraph_type**: 启用的子图类型
-  - `norm-linear`: LayerNorm → Linear 结构
-  - `linear-linear`: Linear → Linear 结构
-  - `ov`: Attention 中的 V → O 投影
-  - `up-down`: MLP 中的 Up → Down 结构
-- **include**: 包含的层模式，支持通配符匹配
-- **exclude**: 排除的层模式, 支持通配符匹配
-
-#### 量化配置 (linear_quant)
-
-**静态量化配置** (`default_w8a8`):
-- **act.scope**: "per_tensor"，所有 token 共享一个量化 scale
-- **act.symmetric**: False，允许非对称量化，适应偏移分布
-- 适用于：Attention 层、常规 MLP 层等
-
-**动态量化配置** (`default_w8a8_dynamic`):
-- **act.scope**: "per_token"，每个 token 独立计算量化 scale
-- **act.symmetric**: True，对称量化，适合动态范围变化大的场景
-- 适用于：MoE experts 层
-
-#### 保存配置 (save)
-
-- **type**: 保存器类型，使用 "ascendv1_saver" 格式
-- **part_file_size**: 分片文件大小（GB），推荐 4GB 避免单个文件过大
-
-#### 校准数据集 (dataset)
-
-- **短名称自动解析**: 配置为 "calibImages"，自动解析为 `lab_calib/calibImages/`
-- **完整路径**: 也可配置为绝对路径或相对路径
-- **数据来源**: 推荐从 [COCO](https://cocodataset.org/#download) 或 [textvqa](https://huggingface.co/datasets/maoxx241/textvqa_subset) 数据集中选取 20-30 张图片作为校准集
 
 ## 常见问题
 
