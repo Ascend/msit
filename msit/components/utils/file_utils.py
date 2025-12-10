@@ -874,6 +874,16 @@ def check_input_dir_path(path):
     check_path_owner_consistent(path)
 
 
+def check_input_dir_path_for_cann(path):
+    path = os.path.realpath(path)
+    check_path_exists(path)
+    check_path_type_is_dir(path)
+    check_path_length(path)
+    check_path_pattern_valid(path)
+    check_path_readability(path)
+    check_path_owner_consistent(path)
+
+
 def check_output_file_path(path):
     path = os.path.realpath(path)
     check_link(path)
