@@ -18,45 +18,55 @@ from typing import Optional, Dict, Any, List
 from .logger import logger
 
 
-def find_config_path() -> Optional[str]:
-    """查找性能分析配置文件，按优先级顺序查找。
+def find_config_path_by_framework(framework) -> Optional[str]:
+    """根据当前框架类型查找性能分析配置文件。
     
-    查找顺序：
-    1. vllm_ascend 安装目录: vllm_ascend/profiling_config/service_profiling_symbols.yaml
-    2. 本项目目录: <this>/config/service_profiling_symbols.yaml
+    查找逻辑：
+    1. 对于 sglang 框架：仅查找本项目目录下的 <this>/config/sglang_profiling_symbols.yaml
+    2. 对于 vllm 或其他框架：保持原有逻辑，依次查找：
+        1) vllm_ascend 安装目录: vllm_ascend/profiling_config/service_profiling_symbols.yaml
+        2) 本项目目录: <this>/config/service_profiling_symbols.yaml
     
     Returns:
         Optional[str]: 配置文件路径，如果未找到则返回 None
     """
-    # 1) vllm_ascend installation path
-    try:
-        # Try common distribution/package names
-        for dist_name in ('vllm-ascend', 'vllm_ascend'):
-            try:
-                dist = importlib_metadata.distribution(dist_name)  # type: ignore
-            except Exception as e:
-                logger.debug(f"Tried to import distribution {dist_name}, but not found: {e}")
-            # Resolve the package directory using locate_file on the package name
-            try:
-                ascend_pkg_dir = dist.locate_file('vllm_ascend')  # type: ignore
-                ascend_dir = os.fspath(ascend_pkg_dir)
-            except Exception:
-                ascend_dir = None
-            if ascend_dir and os.path.isdir(ascend_dir):
-                candidate = os.path.join(ascend_dir, 'profiling_config', 'service_profiling_symbols.yaml')
-                if os.path.isfile(candidate):
-                    logger.debug(f"Using profiling symbols from vllm_ascend distribution: {candidate}")
-                    return candidate
-    except Exception as e:
-        logger.warning(f"Failed to find profiling symbols from vllm_ascend distribution: {e}")
+    if framework == "sglang":
+        local_candidate = os.path.join(os.path.dirname(__file__), 'config', 'sglang_profiling_symbols.yaml')
+        if os.path.isfile(local_candidate):
+            logger.debug(f"Using SGLang profiling symbols from local project: {local_candidate}")
+            return local_candidate
+        logger.debug("No SGLang profiling config found in local project.")
+        return None
+    else:
+        # 1) vllm_ascend installation path
+        try:
+            for dist_name in ('vllm-ascend', 'vllm_ascend'):
+                try:
+                    dist = importlib_metadata.distribution(dist_name)  # type: ignore
+                except Exception as e:
+                    logger.debug(f"Tried to import distribution {dist_name}, but not found: {e}")
+                    continue
+                # Resolve the package directory using locate_file on the package name
+                try:
+                    ascend_pkg_dir = dist.locate_file('vllm_ascend')  # type: ignore
+                    ascend_dir = os.fspath(ascend_pkg_dir)
+                except Exception:
+                    ascend_dir = None
+                if ascend_dir and os.path.isdir(ascend_dir):
+                    candidate = os.path.join(ascend_dir, 'profiling_config', 'service_profiling_symbols.yaml')
+                    if os.path.isfile(candidate):
+                        logger.debug(f"Using profiling symbols from vllm_ascend distribution: {candidate}")
+                        return candidate
+        except Exception as e:
+            logger.warning(f"Failed to find profiling symbols from vllm_ascend distribution: {e}")
 
-    # 2) local project config path
-    local_candidate = os.path.join(os.path.dirname(__file__), 'config', 'service_profiling_symbols.yaml')
-    if os.path.isfile(local_candidate):
-        logger.debug(f"Using profiling symbols from local project: {local_candidate}")
-        return local_candidate
+        # 2) local project config path (for vLLM)
+        local_candidate = os.path.join(os.path.dirname(__file__), 'config', 'service_profiling_symbols.yaml')
+        if os.path.isfile(local_candidate):
+            logger.debug(f"Using profiling symbols from local project: {local_candidate}")
+            return local_candidate
 
-    return None
+        return None
 
 
 def load_yaml_config(config_path: str) -> Optional[List[Dict[str, Any]]]:

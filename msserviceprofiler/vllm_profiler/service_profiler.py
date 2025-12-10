@@ -14,8 +14,9 @@
 
 import os
 import sys
+import importlib_metadata
 from .logger import logger
-from .utils import find_config_path, load_yaml_config, auto_detect_v1_default
+from .utils import find_config_path_by_framework, load_yaml_config, auto_detect_v1_default
 from .symbol_watcher import SymbolWatchFinder
 
 
@@ -40,6 +41,7 @@ class ServiceProfiler:
         self._hooks_applied = False
         self._symbol_watcher = None
         self._vllm_use_v1 = ServiceProfiler._detect_vllm_version()
+        self.framework = ServiceProfiler._detect_framework()
 
     @staticmethod
     def _detect_vllm_version() -> str:
@@ -50,21 +52,26 @@ class ServiceProfiler:
         """
         env_v1 = os.environ.get('VLLM_USE_V1')
         return env_v1 if env_v1 is not None else auto_detect_v1_default()
-    
+
     @staticmethod
-    def _load_config():
-        """加载配置文件。
+    def _detect_framework():
+        """检测当前是vLLM还是SGLang环境"""
+        try:
+            # 优先尝试导入SGLang
+            importlib_metadata.version("sglang")
+            return "sglang"
+        except importlib_metadata.PackageNotFoundError:
+            pass
         
-        Returns:
-            Optional[Dict]: 配置数据，失败时返回 None
-        """
-        cfg_path = find_config_path()
-        if not cfg_path:
-            logger.warning("No config file found")
-            return None
-            
-        return load_yaml_config(cfg_path)
-    
+        try:
+            # 尝试导入vLLM
+            importlib_metadata.version("vllm")
+            return "vllm"
+        except importlib_metadata.PackageNotFoundError:
+            # 都未安装，默认为vllm（保持原有行为）
+            logger.warning("Could not find vLLM or SGLang package; defaulting to vLLM.")
+            return "vllm"
+
     def initialize(self):
         """初始化服务分析器。
         
@@ -97,21 +104,41 @@ class ServiceProfiler:
         self._hooks_applied = True
         logger.debug("Service profiler initialized successfully")
     
+    def _load_config(self):
+        """加载配置文件。
+        
+        Returns:
+            Optional[Dict]: 配置数据，失败时返回 None
+        """
+        cfg_path = find_config_path_by_framework(self.framework)
+        if not cfg_path:
+            logger.warning("No config file found")
+            return None
+            
+        return load_yaml_config(cfg_path)
+
     def _import_hookers(self):
-        """按版本导入内置 hookers。
+        """根据检测到的框架 按版本导入内置 hookers。
         
         根据 vLLM 版本导入相应的内置 hooker 模块。
         """
-        if self._vllm_use_v1 == "0":
-            logger.debug("Initializing service profiler with vLLM V0 interface")
-            from .vllm_v0 import batch_hookers, kvcache_hookers, model_hookers, request_hookers
-        elif self._vllm_use_v1 == "1":
-            logger.debug("Initializing service profiler with vLLM V1 interface")
-            from .vllm_v1 import batch_hookers, kvcache_hookers, meta_hookers, model_hookers, request_hookers
+        if self.framework == "vllm":
+            if self._vllm_use_v1 == "0":
+                logger.debug("Initializing service profiler with vLLM V0 interface")
+                from .vllm_v0 import batch_hookers, kvcache_hookers, model_hookers, request_hookers
+            elif self._vllm_use_v1 == "1":
+                logger.debug("Initializing service profiler with vLLM V1 interface")
+                from .vllm_v1 import batch_hookers, kvcache_hookers, meta_hookers, model_hookers, request_hookers
+            else:
+                logger.error(f"unknown vLLM interface version: VLLM_USE_V1={self._vllm_use_v1}")
+                return
+        elif self.framework == "sglang":
+            from .sglang import scheduler_hookers, request_hookers, model_hookers
+            logger.debug("Initializing service profiler with SGLang interface")
         else:
-            logger.error(f"unknown vLLM interface version: VLLM_USE_V1={self._vllm_use_v1}")
+            logger.error(f"unknown framework: {self.framework}")
             return
-    
+
     def _init_symbol_watcher(self, config_data):
         """初始化 symbol 监听器。
         
@@ -127,7 +154,7 @@ class ServiceProfiler:
         
         # 检查目标模块是否已经被导入，如果是则立即应用 hooks
         self._check_and_apply_existing_modules()
-    
+
     def _check_and_apply_existing_modules(self):
         """检查目标模块是否已经被导入，如果是则立即应用 hooks。
         
