@@ -22,8 +22,8 @@
 
 | 模型       | 原始浮点权重 | 量化方式 | 推理框架支持情况| 量化命令 |
 |------------|-------------|---------|----------------|---------|
-| Qwen2.5-VL-7B-Instruct | [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct/tree/main) | W8A8静态量化 | MindIE 预计2.2.RC1版本支持<br>vLLM Ascend v0.10.2rc2及之后版本支持 | [W8A8静态量化(m2)](#11-qwen25-vl-w8a8静态量化-异常值抑制算法使用m2) |
-| Qwen2.5-VL-72B-Instruct | [Qwen2.5-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct/tree/main) | W8A8静态量化 | MindIE 预计2.2.RC1版本支持<br>vLLM Ascend v0.10.2rc2及之后版本支持 | [W8A8静态量化(m2)](#11-qwen25-vl-w8a8静态量化-异常值抑制算法使用m2) |
+| Qwen2.5-VL-7B-Instruct | [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct/tree/main) | W8A8静态量化 | MindIE 2.2.RC1及之后版本支持<br>vLLM Ascend v0.10.2rc2及之后版本支持 | [W8A8静态量化(m2)](#11-qwen25-vl-w8a8静态量化-异常值抑制算法使用m2) |
+| Qwen2.5-VL-72B-Instruct | [Qwen2.5-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct/tree/main) | W8A8静态量化 | MindIE 2.2.RC1及之后版本支持<br>vLLM Ascend v0.10.2rc2及之后版本支持 | [W8A8静态量化(m2)](#11-qwen25-vl-w8a8静态量化-异常值抑制算法使用m2) |
 | Qwen2.5-VL-7B-Instruct | [Qwen2.5-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct/tree/main) | W4A8动态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W4A8动态量化](#13-qwen25-vl-w4a8动态量化-异常值抑制算法使用m4) |
 | Qwen2.5-VL-72B-Instruct | [Qwen2.5-VL-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct/tree/main) | W4A8动态量化 | MindIE当前不支持<br>vLLM Ascend当前不支持 | [W4A8动态量化](#13-qwen25-vl-w4a8动态量化-异常值抑制算法使用m4) |
 
