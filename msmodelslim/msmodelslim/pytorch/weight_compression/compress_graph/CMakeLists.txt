@@ -30,6 +30,7 @@ include_directories(
         ${ASCEND_PATH}/include/parser
 	    ${ASCEND_PATH}/${ARCH}-linux/include/
 	    ${ASCEND_PATH}/${ARCH}-linux/include/ge/
+        ${ASCEND_PATH}/${ARCH}-linux/include/external/
 	    ${ASCEND_PATH}/${ARCH}-linux/include/parser/
         ./src/
         ${TOOLS_PATH}/security/src/
