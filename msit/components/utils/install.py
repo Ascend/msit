@@ -224,7 +224,9 @@ def build_extra(name, find_links):
 
     if pkg_name is None:
         raise ValueError("unknow error, pkg_name not found.")
-    logger.info(f"building extra of {pkg_name}")
+    # msit-convert 没有extra包，跳过构建extra提示
+    if pkg_name != "msit-convert":
+        logger.info(f"building extra of {pkg_name}")
     pkg_installer = get_installer(pkg_name)
 
     if not pkg_installer:

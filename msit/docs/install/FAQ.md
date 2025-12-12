@@ -9,8 +9,7 @@
 - [7、Q：安装msit时，出现skl2onnx组件安装失败的情况](#7q安装msit时出现skl2onnx组件安装失败的情况)
 - [8、Q: OpenSSL: error:1408F10B:SSL routines:ssl3\_get\_record:wrong version number](#8q-openssl-error1408f10bssl-routinesssl3_get_recordwrong-version-number)
 - [9、Q：如果使用过程中出现`No module named 'acl'`，请检验CANN包环境变量是否正确](#9q如果使用过程中出现no-module-named-acl请检验cann包环境变量是否正确)
-- [10、Q：如果安装过程中，出现以下提示：WARNING: env ASCEND\_HOME is not set. aie command cannot be used.](#10q如果安装过程中出现以下提示warning-env-ascend_home-is-not-set-aie-command-cannot-be-used)
-- [11、Q：如果安装过程中，出现以下提示：WARNING: env ACLTRANSFORMER\_HOME\_PATH is not set. Dump on demand package cannot be used.](#11q如果安装过程中出现以下提示warning-env-acltransformer_home_path-is-not-set-dump-on-demand-package-cannot-be-used)
+- [10、Q：如果安装过程中，出现以下提示：WARNING: env ACLTRANSFORMER\_HOME\_PATH is not set. Dump on demand package cannot be used.](#11q如果安装过程中出现以下提示warning-env-acltransformer_home_path-is-not-set-dump-on-demand-package-cannot-be-used)
 
 ## 1、Q： 安装失败，提示“find no cann path”，如何处理？
 
@@ -118,11 +117,7 @@ export https_proxy="http://用户名:密码@代理地址"
     ```
     > * 普通用户下`ACTUAL_CANN_PATH`一般为`$HOME`，root用户下一般为`/usr/local`
 
-## 10、Q：如果安装过程中，出现以下提示：WARNING: env ASCEND_HOME is not set. aie command cannot be used.
-**A:** 如果不使用msit convert aie命令，忽略此告警。具体参考[convert功能使用指南](../convert/README.md)
-
-
-## 11、Q：如果安装过程中，出现以下提示：WARNING: env ACLTRANSFORMER_HOME_PATH is not set. Dump on demand package cannot be used.
+## 10、Q：如果安装过程中，出现以下提示：WARNING: env ACLTRANSFORMER_HOME_PATH is not set. Dump on demand package cannot be used.
 **A:** 如果不使用大模型精度比对功能，忽略此告警。
 
 
