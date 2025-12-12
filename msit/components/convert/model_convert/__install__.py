@@ -14,8 +14,7 @@
 # limitations under the License.
 
 import sys
-import os
-import subprocess
+
 from components.utils.install import AitInstaller
 
 
@@ -23,12 +22,6 @@ class ConvertInstall(AitInstaller):
     @staticmethod
     def check():
         check_res = []
-
-        if not os.path.exists(os.path.join(os.path.dirname(__file__), "aie", "aie_convert")):
-            check_res.append(
-                "[warnning] build aie_convert failed. will make the AIE feature unusable. "
-                "use `msit build-extra convert` to try again"
-            )
 
         if not check_res:
             return "OK"
@@ -39,7 +32,3 @@ class ConvertInstall(AitInstaller):
     def build_extra(find_links=None):
         if sys.platform == 'win32':
             return
-
-        subprocess.run(
-            ["/bin/bash", os.path.abspath(os.path.join(os.path.dirname(__file__), "install.sh"))], shell=False
-        )

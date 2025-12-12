@@ -25,7 +25,7 @@ with open('requirements.txt', encoding='utf-8') as f:
 msit_sub_tasks = [{
     "name": "convert",
     "help_info": "convert tool converts the model from ONNX, TensorFlow, Caffe and MindSpore to OM. \
-                   It supports atc, aoe and aie.",
+                   It supports atc, aoe.",
     "module": "model_convert.__main__",
     "attr": "get_cmd_instance"
 }]

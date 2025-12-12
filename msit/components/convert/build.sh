@@ -28,22 +28,3 @@ fi
 
 MODEL_CONVERT_PATH=$(dirname $(${PYTHON} -c "import model_convert;print(model_convert.__file__)"))
 CUR_PATH=$(dirname $(readlink -f $0))
-
-build_aie_convert(){
-  cd ${CUR_PATH}/model_convert/aie/cpp
-  rm -rf build && mkdir build && cd build && cmake .. && make -j
-
-  AIE_CONVERT=${CUR_PATH}/model_convert/aie/cpp/build/aie_convert
-
-  if [ -f ${AIE_CONVERT} ];then
-    cp ${AIE_CONVERT} ${MODEL_CONVERT_PATH}/aie
-    else
-      echo "WARNING: Build aie_convert failed. aie command cannot be used."
-  fi
-}
-
-if [ ${ASCENDIE_HOME} ];then
-  build_aie_convert
-  else
-    echo "WARNING: env ASCENDIE_HOME is not set. aie command cannot be used."
-fi
