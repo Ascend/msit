@@ -242,6 +242,8 @@ def main():
     if args.fa_quant:
         if 'R1' in args.model_path.upper():
             disable_attn_layers = [0, 1, 2, 46, 47, 50, 54, 55, 56, 57, 58, 59, 60]
+        elif 'V3.1' in args.model_path.upper():
+            disable_attn_layers = [0, 1, 2, 50, 51, 53, 54, 55, 56, 57, 58, 59, 60]
         elif 'V3' in args.model_path.upper():
             disable_attn_layers = [0, 1, 2, 46, 50, 51, 53, 54, 55, 56, 57, 59, 60]
         else:
