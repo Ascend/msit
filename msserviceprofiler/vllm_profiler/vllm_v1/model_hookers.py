@@ -25,6 +25,7 @@ try:
 except ImportError:
     def synchronize(_):
         pass
+from ms_service_profiler.profiler import prof_step
 
 
 # 线程安全的全局状态
@@ -68,7 +69,8 @@ def sampler_forward(original_func, this, *args, **kwargs):
 @vllm_hook(
     hook_points=[
         ("vllm.v1.executor.abstract", "Executor.execute_model"),
-        ("vllm.v1.executor.multiproc_executor", "MultiprocExecutor.execute_model")
+        ("vllm.v1.executor.multiproc_executor", "MultiprocExecutor.execute_model"),
+        ("vllm_ascend.worker.model_runner_v1", "NPUModelRunner.execute_model")
     ],
     min_version="0.9.1",
 )
@@ -76,6 +78,7 @@ def execute_model(original_func, this, scheduler_output, *args, **kwargs):
     """处理执行模型钩子"""
     state = _get_state()
     request_id_list, request_id_with_iter_list, batch_type = classify_requests(state, scheduler_output)
+    prof_step()
 
     if request_id_list:
         prof = Profiler(Level.INFO).domain("Execute")

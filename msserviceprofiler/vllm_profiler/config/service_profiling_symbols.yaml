@@ -67,6 +67,11 @@
   name: _prepare_inputs
   domain: Execute
 
+- symbol: vllm_ascend.worker.model_runner_v1:NPUModelRunner.execute_model
+  min_version: "0.9.1"
+  handler: msserviceprofiler.vllm_profiler.vllm_v1.model_hookers:execute_model
+  name: torchProfiler
+
 #- symbol: vllm.forward_context:set_forward_context
 #  min_version: "0.9.1"
 #  handler: msserviceprofiler.vllm_profiler.vllm_v1.model_hookers:set_forward_context
