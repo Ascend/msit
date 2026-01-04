@@ -200,8 +200,8 @@ def init_next_round_input(original_func, this, *args, **kwargs):
     ret = original_func(this, *args, **kwargs)
 
     if this.origin_input_ids != 0:
-        Profiler(Level.INFO).domain("Schedule.KVCache").\
-            metric("hitRate", len(this.prefix_indices) / len(this.origin_input_ids)).\
+        Profiler(Level.INFO).domain("HitCache").\
+            metric("hitRate", str(len(this.prefix_indices) / len(this.origin_input_ids))).\
             res(str(this.rid)).event("HitCache")
 
     return ret
@@ -245,17 +245,23 @@ def process_batch_result_prefill(original_func, this, batch, *args, **kwargs):
     min_version="0.5.4"
 )
 def process_batch_result_decode(original_func, this, batch, *args, **kwargs):
+    prof_list = []
     for req in batch.reqs:
-        if req.is_retracted:
-            continue
-
-        if req.finished():
-            Profiler(Level.INFO).domain("Request").res(str(req.rid)).\
-                metric("recvTokenSize", len(req.origin_input_ids)).\
-                metric("replyTokenSize", len(req.output_ids)).\
-                event("DecodeEnd")
+        if this.enable_overlap and (req.finished() or req.is_retracted):
+            prof_list.append(None)
+        elif req.is_retracted:
+            prof_list.append(None)
+        else:
+            prof_list.append(Profiler(Level.INFO).domain("Request").span_start("DecodeEnd"))
 
     ret = original_func(this, batch, *args, **kwargs)
+
+    for i, req in enumerate(batch.reqs):
+        if req.finished() and prof_list[i] is not None:
+            prof_list[i].res(str(req.rid)).\
+                metric("recvTokenSize", len(req.origin_input_ids)).\
+                metric("replyTokenSize", len(req.output_ids)).\
+                span_end()
 
     prof_kvcache_info(this, "free")
 

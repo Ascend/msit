@@ -21,15 +21,12 @@ from ..module_hook import vllm_hook
     min_version="0.5.4"
 )
 def handle_batch_token_id_out(original_func, this, recv_obj, *args, **kwargs):
-    prof_list = []
-    for rid in recv_obj.rids:
-        prof_list.append(Profiler(Level.INFO).domain("Request").\
-            res(str(rid)).span_start("detokenize"))
+    prof = Profiler(Level.INFO).domain("Request").\
+            res(recv_obj.rids).span_start("detokenize")
 
     ret = original_func(this, recv_obj, *args, **kwargs)
 
-    for prof in prof_list:
-        prof.span_end()
+    prof.span_end()
 
     return ret
 
