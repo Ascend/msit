@@ -221,6 +221,26 @@ def main():
         help="Whether to have the current device host the external shared experts",
     )
 
+    # Image parameters
+    parser.add_argument(
+        "--image-batch-size",
+        type=check_positive_integer,
+        default=None,
+        help="Batch size for image processing",
+    )
+    parser.add_argument(
+        "--image-height",
+        type=check_positive_integer,
+        default=None,
+        help="Height of the input images",
+    )
+    parser.add_argument(
+        "--image-width",
+        type=check_positive_integer,
+        default=None,
+        help="Width of the input images",
+    )
+
     args = parser.parse_args()
 
     if args.log_level:
