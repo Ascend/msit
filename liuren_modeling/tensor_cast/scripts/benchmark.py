@@ -16,7 +16,7 @@ from ..performance_model.analytic import AnalyticPerformanceModel
 from ..performance_model.memory_tracker import MemoryTracker
 from ..runtime import Runtime
 from ..transformers.model import TransformerModel
-from .utils import check_positive_integer
+from .utils import check_positive_integer, confirm_continue_without_upgrade
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +164,8 @@ def find_best_throughput(
 
 
 def main():
+    confirm_continue_without_upgrade()
+
     parser = argparse.ArgumentParser(
         description="Benchmark LLM inference on given devices and models to search for best throughput under "
         "given input/output sequence length and SLO limitations",

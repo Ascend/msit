@@ -1,3 +1,7 @@
+## ⚠️ Important Notice: Instructions for Independent Tool Migration
+> This tool has matured and is now branching out as a fully independent project: [msModeling@GitCode](https://gitcode.com/Ascend/msmodeling).<br>You can access the latest features and updates in the new repository.
+<br>**Migration Time**: January 12, 2026
+
 # How to use
 
 ## Install requirements

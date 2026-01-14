@@ -7,13 +7,14 @@ from ..core.model_runner import ModelRunner
 from ..core.quantization.datatypes import QuantizeAttentionAction, QuantizeLinearAction
 from ..core.user_config import UserInputConfig
 from ..device import DeviceProfile
-from .utils import check_positive_integer
+from .utils import check_positive_integer, confirm_continue_without_upgrade
 
 
 def main():
     """
     Main function to parse arguments and run the inference simulation.
     """
+    confirm_continue_without_upgrade()
     # TODO: add parallel configuration
     # TODO: add quantization configuration
     parser = argparse.ArgumentParser(

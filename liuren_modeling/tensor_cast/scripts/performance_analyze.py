@@ -29,6 +29,7 @@ from tensor_cast.service.utils import (
     logger,
     set_log_level,
 )
+from .utils import confirm_continue_without_upgrade
 
 
 def arg_parse():
@@ -157,6 +158,7 @@ def arg_parse():
 
 
 def main():
+    confirm_continue_without_upgrade()
     start_time = time.time()
     args = arg_parse()
     if args.max_prefill_tokens < args.input_length:
