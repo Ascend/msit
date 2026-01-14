@@ -22,7 +22,7 @@ from ..performance_model.memory_tracker import MemoryTracker
 from ..quantize_utils import QuantGranularity
 from ..runtime import Runtime
 from ..utils import str_to_dtype
-from .utils import check_positive_integer
+from .utils import check_positive_integer, confirm_continue_without_upgrade
 
 
 def generate_diffusers_inputs(
@@ -242,6 +242,7 @@ def run_inference(
 
 
 def main():
+    confirm_continue_without_upgrade()
     # TODO add parallel config
     # TODO add quant config
     parser = argparse.ArgumentParser(

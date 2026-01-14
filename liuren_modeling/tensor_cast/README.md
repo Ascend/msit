@@ -1,3 +1,7 @@
+## ⚠️ Important Notice: Instructions for Independent Tool Migration
+> This tool has matured and is now branching out as a fully independent project: [msModeling@GitCode](https://gitcode.com/Ascend/msmodeling).<br>You can access the latest features and updates in the new repository.
+<br>**Migration Time**: January 12, 2026
+
 ## Introduction
 TensorCast is a performance simulation and analysis framework for PyTorch programs. It empowers developers and researchers to predict the performance of their neural network models on specific hardware configurations without needing access to the physical machine.
 
