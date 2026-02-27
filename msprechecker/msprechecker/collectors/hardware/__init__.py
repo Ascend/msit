@@ -14,7 +14,7 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-__all__ = ['BaseStressCollector', 'CPUStressCollector', 'NPUStressCollector']
+__all__ = ["BaseStressCollector", "CPUStressCollector", "NPUStressCollector"]
 
 from .base import BaseStressCollector
 from .cpu import CPUStressCollector

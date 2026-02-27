@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -16,36 +15,43 @@
 # -------------------------------------------------------------------------
 
 __all__ = [
-    'Version', 'get_pkg_version',
-    'get_npu_count', 'get_npu_type', 'RankTableParser', 'get_conn_mode', 'NpuType',
-    'get_current_ip_and_addr',
-    "MacroExpander", "ExpandError",
-    'Evaluator',
-    'SimpleProgressBar',
-    'is_in_container', 'singleton',
-    'global_logger',
-    'Traverser',
-    'get_handler', 
-    'ErrorSeverity', 'ErrorType', 
-    'CollectError', 'BaseError', 'CheckError', 
-    'ErrorHandler', 'CollectErrorHandler', 'CheckErrorHandler', 'ConfigErrorHandler', 'CompareErrorHandler'
+    "Version",
+    "get_pkg_version",
+    "get_npu_count",
+    "get_npu_type",
+    "RankTableParser",
+    "get_conn_mode",
+    "NpuType",
+    "get_current_ip_and_addr",
+    "MacroExpander",
+    "ExpandError",
+    "Evaluator",
+    "SimpleProgressBar",
+    "is_in_container",
+    "singleton",
+    "Traverser",
+    "get_handler",
+    "ErrorSeverity",
+    "ErrorType",
+    "CollectError",
+    "BaseError",
+    "CheckError",
+    "ErrorHandler",
+    "CollectErrorHandler",
+    "CheckErrorHandler",
+    "ConfigErrorHandler",
+    "CompareErrorHandler",
 ]
 
-from .version import Version, get_pkg_version
 from .ascend import (
-    get_npu_count, get_npu_type, get_conn_mode, NpuType, ParserRegistry, FrameworkType,
-    get_model_type, update_model_type
+    Framework,
+    get_conn_mode,
+    get_npu_count,
+    get_npu_type,
+    NpuType,
+    ParserRegistry
 )
-from .network import get_current_ip_and_addr
-from .macro_expander import MacroExpander, ExpandError
-from .evaluator import Evaluator
-from .progress_bar import SimpleProgressBar
 from .helper import is_in_container, singleton
-from .log import global_logger
-from .traverser import Traverser
-from .errors import (
-    get_handler, 
-    ErrorSeverity, ErrorType, 
-    CollectError, BaseError, CheckError, 
-    ErrorHandler, CollectErrorHandler, CheckErrorHandler, ConfigErrorHandler, CompareErrorHandler
-)
+from .network import get_current_ip_and_addr
+from .progress_bar import SimpleProgressBar
+from .version import get_pkg_version, Version

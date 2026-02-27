@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -18,6 +17,7 @@
 import os
 import unittest
 from unittest.mock import patch
+
 from msprechecker.collectors import EnvCollector
 
 
@@ -37,8 +37,8 @@ class TestEvaluator(unittest.TestCase):
         with patch.dict(os.environ, test_data, clear=True):
             collect_result = self.filtered_collector.collect()
             self.assertEqual(collect_result.data, {"ASCEND": "123"})
-    
-    @patch('os.environ')
+
+    @patch("os.environ")
     def test_when_occur_collect_error_should_added_in_error_handler(self, mock_environ):
         mock_environ.items.side_effect = RuntimeError
         collect_result = self.normal_collector.collect()

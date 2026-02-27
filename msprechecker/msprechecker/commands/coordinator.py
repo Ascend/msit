@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,64 +14,46 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-import os
-import json
 import argparse
-from typing import List
+import json
+import os
 
 import yaml
 from msguard.security import open_s
 
-from .base import CommandType
-from .legacy import show_legacy_warnings
-from .banner import BannerPresenter
-from ..collectors import ConfigCollector, CollectResult
-from ..reporters import Reporter
-from ..presets import RuleManager
-from .base import CommandStrategy, CommandType
-from ..collectors import (
-    BaseCollector,
-    EnvCollector,
-    SysCollector,
-    ConfigCollector,
-    AscendCollector,
-    HCCLCollector,
-    PingCollector,
-    WeightCollector,
-    CPUStressCollector,
-    NPUStressCollector,
-    UserConfigCollector,
-    MindIEEnvCollector,
-    ModelConfigCollector,
-    MIESConfigCollector,
-    TlsCollector,
-    VnicCollector,
-    LinkCollector,
-)
 from ..checkers import (
-    UserConfigChecker,
+    AscendChecker,
+    EnvChecker,
+    HCCLChecker,
+    LinkChecker,
+    MIESConfigChecker,
     MindIEEnvChecker,
     ModelConfigChecker,
-    EnvChecker,
-    SysChecker,
-    AscendChecker,
-    HCCLChecker,
-    StressChecker,
     PDChecker,
-    MIESConfigChecker,
-    TlsChecker,
-    VnicChecker,
-    LinkChecker,
     PingChecker,
-)
-from ..comparators import Comparator
-from ..reporters import Reporter
-from ..utils import (
-    FrameworkType, ParserRegistry, update_model_type,
-    CheckErrorHandler, ConfigErrorHandler, global_logger, singleton
+    StressChecker,
+    SysChecker,
+    TlsChecker,
+    UserConfigChecker,
+    VnicChecker,
 )
 from ..cmate import inspect, run
 from ..cmate.cmate import _parse_configs, _parse_contexts
+from ..comparators import Comparator
+from ..presets import RuleManager
+from ..reporters import Reporter
+from ..utils import (
+    CheckErrorHandler,
+    ConfigErrorHandler,
+    Framework,
+    logger,
+    ParserRegistry,
+    singleton,
+    update_model_type,
+)
+from .banner import BannerPresenter
+
+from .base import CmdStrategy, CmdType
 
 
 class CollectorFactory:
@@ -82,9 +63,13 @@ class CollectorFactory:
             SysCollector(),
             AscendCollector(),
         ]  # all scenes applies
-        if getattr(args, 'framework', 'mindie') == 'vllm' or \
-            getattr(args, 'command') == CommandType.CMD_DUMP:
-            default_collectors.append(EnvCollector(filter_env=getattr(args, 'filter_env', False)))
+        if (
+            getattr(args, "framework", "mindie") == "vllm"
+            or args.command == CmdType.CMD_DUMP
+        ):
+            default_collectors.append(
+                EnvCollector(filter_env=getattr(args, "filter_env", False))
+            )
 
         special_collectors = CollectorFactory.dispatch_collectors_by_scene(args)
         extra_collectors = CollectorFactory.dispatch_extra_collectors(args)
@@ -92,13 +77,17 @@ class CollectorFactory:
         return list(set(default_collectors + special_collectors + extra_collectors))
 
     @staticmethod
-    def dispatch_collectors_by_scene(args: argparse.Namespace) -> List[BaseCollector]:
+    def dispatch_collectors_by_scene(args: argparse.Namespace):
         collectors = []
 
         # 大 EP
-        if getattr(args, "user_config_path", None) or getattr(args, "mindie_env_path", None):
+        if getattr(args, "user_config_path", None) or getattr(
+            args, "mindie_env_path", None
+        ):
             if getattr(args, "user_config_path", None):
-                collectors.append(UserConfigCollector(config_path=args.user_config_path))
+                collectors.append(
+                    UserConfigCollector(config_path=args.user_config_path)
+                )
             if getattr(args, "mindie_env_path", None):
                 collectors.append(MindIEEnvCollector(config_path=args.mindie_env_path))
 
@@ -106,26 +95,30 @@ class CollectorFactory:
 
         # PD Mix
         elif getattr(args, "mies_config_path", None):
-            collectors.append(EnvCollector(filter_env=getattr(args, 'filter_env', False)))
+            collectors.append(
+                EnvCollector(filter_env=getattr(args, "filter_env", False))
+            )
             collectors.append(MIESConfigCollector(config_path=args.mies_config_path))
 
         return collectors
 
     @staticmethod
-    def dispatch_extra_collectors(args: argparse.Namespace) -> List[BaseCollector]:
+    def dispatch_extra_collectors(args: argparse.Namespace):
         collectors = []
 
         if getattr(args, "rank_table_path", None):
             if not getattr(args, "framework", None):
-                global_logger.warning(
+                logger.warning(
                     "Passing '--rank-table-path' without providing '--scene', "
                     "msprechecker cannot determine the exact framework type of the rank table. "
                     "Will use 'mindie' as the default framework."
                 )
-                args.framework = FrameworkType.TP_MINDIE
+                args.framework = Framework.MINDIE
 
-            framework_type = FrameworkType(args.framework)
-            rank_table_parser = ParserRegistry.get(framework_type)()  # create parser instance
+            framework_type = Framework(args.framework)
+            rank_table_parser = ParserRegistry.get(
+                framework_type
+            )()  # create parser instance
             rank_table = rank_table_parser.parse(args.rank_table_path)
 
             collectors.extend(
@@ -142,10 +135,12 @@ class CollectorFactory:
             model_config_path = os.path.join(args.weight_dir, "config.json")
             collectors.append(ModelConfigCollector(config_path=model_config_path))
 
-            if getattr(args, "command", None) == CommandType.CMD_DUMP:
-                chunk_size = getattr(args, 'chunk_size', 32)
-                chunk_size *= 1024 ** 2
-                collectors.append(WeightCollector(weight_dir=args.weight_dir, chunk_size=chunk_size))
+            if getattr(args, "command", None) == CmdType.CMD_DUMP:
+                chunk_size = getattr(args, "chunk_size", 32)
+                chunk_size *= 1024**2
+                collectors.append(
+                    WeightCollector(weight_dir=args.weight_dir, chunk_size=chunk_size)
+                )
 
         if getattr(args, "hardware", False):
             collectors.extend((CPUStressCollector(), NPUStressCollector()))
@@ -163,7 +158,9 @@ class CheckerFactory:
     def default_param_extractor(args, collect_result):
         return {
             "rule_manager": RuleManager(
-                scene=args.scene, framework=args.framework, custom_rule_path=args.custom_config_path
+                scene=args.scene,
+                framework=args.framework,
+                custom_rule_path=args.custom_config_path,
             ),
             "error_handler": CheckErrorHandler(severity=args.severity_level),
         }
@@ -173,16 +170,22 @@ class CheckerFactory:
         data, file_lines, key_mapping, context_hierarchy = collect_result.data
         return {
             "rule_manager": RuleManager(
-                scene=args.scene, framework=args.framework, custom_rule_path=args.custom_config_path
+                scene=args.scene,
+                framework=args.framework,
+                custom_rule_path=args.custom_config_path,
             ),
-            "error_handler": ConfigErrorHandler(args.severity_level, file_lines, key_mapping, context_hierarchy),
+            "error_handler": ConfigErrorHandler(
+                args.severity_level, file_lines, key_mapping, context_hierarchy
+            ),
         }
 
     @staticmethod
     def stress_param_extractor(args, collect_result):
         return {
             "rule_manager": RuleManager(
-                scene=args.scene, framework=args.framework, custom_rule_path=args.custom_config_path
+                scene=args.scene,
+                framework=args.framework,
+                custom_rule_path=args.custom_config_path,
             ),
             "error_handler": CheckErrorHandler(severity=args.severity_level),
             "threshold": getattr(args, "threshold", None),
@@ -194,7 +197,9 @@ class CheckerFactory:
 
     def create(self, collector_cls, args, collect_result):
         if collector_cls not in self._registry:
-            raise KeyError(f"No checker registered for collector: {collector_cls.__name__}")
+            raise KeyError(
+                f"No checker registered for collector: {collector_cls.__name__}"
+            )
 
         checker_cls, param_extractor = self._registry[collector_cls]
         params = param_extractor(args, collect_result)
@@ -207,20 +212,28 @@ class CheckerFactory:
         self.register(HCCLCollector, HCCLChecker)
         self.register(CPUStressCollector, StressChecker, self.stress_param_extractor)
         self.register(NPUStressCollector, StressChecker, self.stress_param_extractor)
-        self.register(UserConfigCollector, UserConfigChecker, self.config_param_extractor)
+        self.register(
+            UserConfigCollector, UserConfigChecker, self.config_param_extractor
+        )
         self.register(MindIEEnvCollector, MindIEEnvChecker, self.config_param_extractor)
-        self.register(ModelConfigCollector, ModelConfigChecker, self.config_param_extractor)
-        self.register(MIESConfigCollector, MIESConfigChecker, self.config_param_extractor)
+        self.register(
+            ModelConfigCollector, ModelConfigChecker, self.config_param_extractor
+        )
+        self.register(
+            MIESConfigCollector, MIESConfigChecker, self.config_param_extractor
+        )
         self.register(TlsCollector, TlsChecker)
         self.register(VnicCollector, VnicChecker)
         self.register(LinkCollector, LinkChecker)
         self.register(PingCollector, PingChecker)
 
 
-class PrecheckStrategy(CommandStrategy):
+class PrecheckStrategy(CmdStrategy):
     @staticmethod
     def execute_pd_disagg(args):
-        rule_manager = RuleManager(scene=args.scene, custom_rule_path=args.custom_config_path)
+        rule_manager = RuleManager(
+            scene=args.scene, custom_rule_path=args.custom_config_path
+        )
         reporter = Reporter()
 
         paths_to_find = rule_manager.get_rules().keys()
@@ -230,20 +243,26 @@ class PrecheckStrategy(CommandStrategy):
             if "ref" in path:
                 continue
             if os.path.isabs(path):
-                global_logger.warning("unsafe, key should not be abspath: {path!r}")
+                logger.warning("unsafe, key should not be abspath: {path!r}")
                 continue
             full_path = os.path.join(args.config_parent_dir, path)
-            load_fn = json.load if full_path.endswith(".json") else lambda f: list(yaml.safe_load_all(f))
+            load_fn = (
+                json.load
+                if full_path.endswith(".json")
+                else lambda f: list(yaml.safe_load_all(f))
+            )
             try:
                 with open_s(full_path) as f:
                     data = load_fn(f)
-            except Exception as e:
-                global_logger.error("missing file: %r", full_path)
+            except Exception:
+                logger.error("missing file: %r", full_path)
                 return 1
 
             collect_data[path] = data
 
-        error_handler = CheckErrorHandler(severity=args.severity_level, type_="PD Disaggregation")
+        error_handler = CheckErrorHandler(
+            severity=args.severity_level, type_="PD Disaggregation"
+        )
         collect_result = CollectResult(collect_data, error_handler)
         checker = PDChecker(rule_manager=rule_manager, error_handler=error_handler)
         check_result = checker.check(collect_result)
@@ -254,7 +273,7 @@ class PrecheckStrategy(CommandStrategy):
     def execute(args: argparse.Namespace) -> int:
         if args.scene and "pd_disaggregation" in args.scene:
             if not args.config_parent_dir:
-                global_logger.error(
+                logger.error(
                     "Passing '--scene' without providing '--config-parent-dir' will not take any effect!"
                 )
             return PrecheckStrategy.execute_pd_disagg(args)
@@ -262,7 +281,7 @@ class PrecheckStrategy(CommandStrategy):
         if args.scene and "," in args.scene:
             parts = args.scene.split(",", 1)
             if len(parts) != 2 or not all(parts):
-                global_logger.error("Invalid scene format! Use 'framework,scene'")
+                logger.error("Invalid scene format! Use 'framework,scene'")
                 return 1
             args.framework = parts[0].strip()
             args.scene = parts[1].strip()
@@ -283,7 +302,7 @@ class PrecheckStrategy(CommandStrategy):
         return 0
 
 
-class DumpStrategy(CommandStrategy):
+class DumpStrategy(CmdStrategy):
     @staticmethod
     def execute(args: argparse.Namespace) -> int:
         collectors = CollectorFactory.create(args)
@@ -306,11 +325,11 @@ class DumpStrategy(CommandStrategy):
         with open_s(args.output_path, "w") as f:
             json.dump(dump_content, f, indent=4)
 
-            global_logger.info(
+            logger.info(
                 "All information has been saved in: %r. You can use '--output-path' to specify the save location.",
                 args.output_path,
             )
-            global_logger.info(
+            logger.info(
                 "What's Next?\n\t"
                 "You may now use 'msprechecker compare' to compare two or more dumped files for discrepancies!"
             )
@@ -321,14 +340,18 @@ class DumpStrategy(CommandStrategy):
     def _display_collect_warning(error_handler):
         for error in error_handler:
             context = error.context
-            global_logger.warning("Error occured while collecting '%s': %s", error_handler.type, context.what)
+            logger.warning(
+                "Error occured while collecting '%s': %s",
+                error_handler.type,
+                context.what,
+            )
 
 
-class CompareStrategy(CommandStrategy):
+class CompareStrategy(CmdStrategy):
     @staticmethod
     def execute(args: argparse.Namespace) -> int:
         if len(args.dumped_path) < 2:
-            global_logger.error("You need two or more files to compare!")
+            logger.error("You need two or more files to compare!")
             return 1
 
         path_to_data = CompareStrategy._load_dumped_files(args.dumped_path)
@@ -350,7 +373,7 @@ class CompareStrategy(CommandStrategy):
         return path_to_data
 
 
-class RunStrategy(CommandStrategy):
+class RunStrategy(CmdStrategy):
     @staticmethod
     def execute(args):
         BannerPresenter().print_banner()
@@ -363,29 +386,37 @@ class RunStrategy(CommandStrategy):
         if not ret:
             return 1
 
-        return run(args.rule, configs, contexts, args.failfast, args.verbose, args.collect_only, args.severity)
+        return run(
+            args.rule,
+            configs,
+            contexts,
+            args.failfast,
+            args.verbose,
+            args.collect_only,
+            args.severity,
+        )
 
 
-class InspectStrategy(CommandStrategy):
+class InspectStrategy(CmdStrategy):
     @staticmethod
     def execute(args):
         return inspect(args.rule, args.format)
 
 
-class CommandStrategyFactory:
+class CmdStrategyFactory:
     def __init__(self) -> None:
         self._registry = {
-            CommandType.CMD_PRECHECK: PrecheckStrategy,
-            CommandType.CMD_DUMP: DumpStrategy,
-            CommandType.CMD_COMPARE: CompareStrategy,
-            CommandType.CMD_RUN: RunStrategy,
-            CommandType.CMD_INSPECT: InspectStrategy,
+            CmdType.CMD_PRECHECK: PrecheckStrategy,
+            CmdType.CMD_DUMP: DumpStrategy,
+            CmdType.CMD_COMPARE: CompareStrategy,
+            CmdType.CMD_RUN: RunStrategy,
+            CmdType.CMD_INSPECT: InspectStrategy,
         }
 
     def register(self, cmd_type, strategy_class) -> None:
         self._registry[cmd_type] = strategy_class
 
-    def create_strategy(self, cmd: CommandType) -> CommandStrategy:
+    def create_strategy(self, cmd: CmdType) -> CmdStrategy:
         if cmd not in self._registry:
             raise ValueError(f"No strategy registered for command: {cmd}")
 
@@ -394,7 +425,7 @@ class CommandStrategyFactory:
 
 class Coordinator:
     def __init__(self) -> None:
-        self._strategy_factory = CommandStrategyFactory()
+        self._strategy_factory = CmdStrategyFactory()
 
     def execute(self, parser: argparse.ArgumentParser) -> int:
         """Execute the appropriate action based on command"""
@@ -408,6 +439,6 @@ class Coordinator:
             parser.print_help()
             return 1
 
-        args.command = CommandType(cmd)
+        args.command = CmdType(cmd)
         strategy = self._strategy_factory.create_strategy(args.command)
         return strategy.execute(args)

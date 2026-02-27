@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -56,7 +55,7 @@ class TestVersion(unittest.TestCase):
         with self.assertRaises(ValueError):
             Version("invalid")
 
-    @patch('msprechecker.utils.version.get_pkg_version')
+    @patch("msprechecker.utils.version.get_pkg_version")
     def test_init_with_package_name(self, mock_get_pkg_version):
         """测试使用包名初始化Version对象"""
         mock_get_pkg_version.return_value = "1.2.3"
@@ -116,19 +115,19 @@ class TestVersion(unittest.TestCase):
     def test_cmp_tuple_with_patch(self):
         """测试补丁版本号的比较元组生成"""
         version_obj = Version("1.2.3")
-        self.assertEqual(version_obj.cmp_tuple(), (1, 2, 3, float('inf'), float('inf')))
+        self.assertEqual(version_obj.cmp_tuple(), (1, 2, 3, float("inf"), float("inf")))
 
     def test_cmp_tuple_with_rc(self):
         """测试RC版本号的比较元组生成"""
         version_obj = Version("1.2.rc3")
-        self.assertEqual(version_obj.cmp_tuple(), (1, 2, 0, 3, float('inf')))
+        self.assertEqual(version_obj.cmp_tuple(), (1, 2, 0, 3, float("inf")))
 
     def test_cmp_tuple_with_rc_beta(self):
         """测试RC+Beta版本号的比较元组生成"""
         version_obj = Version("1.2.rc3.b4")
         self.assertEqual(version_obj.cmp_tuple(), (1, 2, 0, 3, 4))
 
-    @patch('msprechecker.utils.version.get_pkg_version')
+    @patch("msprechecker.utils.version.get_pkg_version")
     def test_parse_version_str_with_package_name(self, mock_get_pkg_version):
         """测试使用包名解析版本字符串"""
         mock_get_pkg_version.return_value = "1.2.3"
@@ -138,7 +137,7 @@ class TestVersion(unittest.TestCase):
         self.assertEqual(result.group("minor"), "2")
         self.assertEqual(result.group("patch"), "3")
 
-    @patch('msprechecker.utils.version.get_pkg_version')
+    @patch("msprechecker.utils.version.get_pkg_version")
     def test_parse_version_str_with_invalid_package(self, mock_get_pkg_version):
         """测试使用无效包名解析版本字符串"""
         mock_get_pkg_version.return_value = None

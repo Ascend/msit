@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,7 +14,7 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-__all__ = ['run', 'inspect', 'parse', 'main']
+__all__ = ["run", "inspect", "parse", "main"]
 
 
-from .cmate import run, inspect, parse, main
+from .cmate import inspect, main, parse, run

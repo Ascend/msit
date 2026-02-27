@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,9 +14,9 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
+import logging
 import sys
 import time
-import logging
 
 
 class ProcessBarStreamHandler(logging.StreamHandler):
@@ -77,7 +76,7 @@ class SimpleProgressBar:
         else:
             remaining_time = 0
 
-        trailing_space = " " * 4 # invisible but better for progress bar
+        trailing_space = " " * 4  # invisible but better for progress bar
         self.logger.info(
             f"\r{self.desc} |{bar}| {percent:.1f}% [{self.current}/{self.total}] "
             f"ETA: {remaining_time:.1f}s{trailing_space}"

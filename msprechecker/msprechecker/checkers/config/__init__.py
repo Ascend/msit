@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -16,13 +15,13 @@
 # -------------------------------------------------------------------------
 
 __all__ = [
-    'UserConfigChecker',
-    'MindIEEnvChecker',
-    'ModelConfigChecker',
-    'MIESConfigChecker'
+    "UserConfigChecker",
+    "MindIEEnvChecker",
+    "ModelConfigChecker",
+    "MIESConfigChecker",
 ]
 
-from .user_config import UserConfigChecker
+from .mies_config import MIESConfigChecker
 from .mindie_env import MindIEEnvChecker
 from .model_config import ModelConfigChecker
-from .mies_config import MIESConfigChecker
+from .user_config import UserConfigChecker

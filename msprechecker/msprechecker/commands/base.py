@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -13,24 +12,25 @@
 # EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 # See the Mulan PSL v2 for more details.
-# -------------------------------------------------------------------------
 
 import argparse
-from enum import Enum
 from abc import ABC, abstractmethod
+from enum import Enum
+
+from ..utils.ascend import get_weight_dir, get_framework
 
 
-class CommandType(Enum):
-    CMD_PRECHECK = "precheck"
-    CMD_DUMP = "dump"
-    CMD_COMPARE = "compare"
-    CMD_RUN = "run"
-    CMD_INSPECT = "inspect"
+class CmdType(Enum):
+    PRECHECK = "precheck"
+    DUMP = "dump"
+    COMPARE = "compare"
 
 
-class CommandStrategy(ABC):
-    @staticmethod
+class CmdStrategy(ABC):
+    def __init__(self):
+        self._framework = get_framework()
+        self._weight_dir = get_weight_dir()
+
     @abstractmethod
-    def execute(args: argparse.Namespace) -> int:
+    def execute(self, args: argparse.Namespace) -> int:
         """Execute the command strategy"""
-        pass
