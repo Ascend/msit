@@ -14,8 +14,8 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-from .base import BaseStressCollector
 from ...utils import SimpleProgressBar
+from .base import BaseStressCollector
 
 
 class NPUStressCollector(BaseStressCollector):
@@ -28,10 +28,10 @@ class NPUStressCollector(BaseStressCollector):
         except ImportError as e:
             self.error_handler.add_error(
                 filename=__file__,
-                function='__init__',
+                function="__init__",
                 lineno=25,
                 what="当前环境没有安装 torch_npu",
-                reason=str(e)
+                reason=str(e),
             )
             self.torch_npu = None
         else:
@@ -42,7 +42,7 @@ class NPUStressCollector(BaseStressCollector):
             return []
 
         device_ids = self.torch_npu.npu.device_count()
-        output = {device_id: 0 for device_id in range(device_ids)}
+        output = dict.fromkeys(range(device_ids), 0)
 
         for device_id in SimpleProgressBar(range(device_ids)):
             # 创建事件对象，用于记录运算的开始和结束时间
@@ -50,7 +50,7 @@ class NPUStressCollector(BaseStressCollector):
             end_event = self.torch_npu.npu.Event(enable_timing=True)
 
             start_event.record()
-            self._matmul_stress_test('npu', device_id)
+            self._matmul_stress_test("npu", device_id)
             end_event.record()
 
             # 同步当前流，确保全部运算均已完成
@@ -68,9 +68,9 @@ class NPUStressCollector(BaseStressCollector):
         else:
             self.error_handler.add_error(
                 filename=__file__,
-                function='_get_free_memory',
+                function="_get_free_memory",
                 lineno=62,
                 what=f"尝试获取 device '{device}' 上剩余的内存失败",
-                reason="'self.torch.npu.is_available()' 返回了 False"
+                reason="'self.torch.npu.is_available()' 返回了 False",
             )
             return 0

@@ -19,8 +19,9 @@ import time
 
 import psutil
 
-from .base import BaseStressCollector
 from ...utils import SimpleProgressBar
+
+from .base import BaseStressCollector
 
 
 class CPUStressCollector(BaseStressCollector):
@@ -33,18 +34,18 @@ class CPUStressCollector(BaseStressCollector):
             return []
 
         cpu_ids = os.cpu_count()
-        output = {device_id: 0 for device_id in range(cpu_ids)}
+        output = dict.fromkeys(range(cpu_ids), 0)
 
         self.torch.set_num_threads(cpu_ids)
 
         for cpu_id in SimpleProgressBar(range(cpu_ids)):
             start_time = time.time()
-            self._matmul_stress_test('cpu', cpu_id)
+            self._matmul_stress_test("cpu", cpu_id)
             end_time = time.time()
             cpu_time = (end_time - start_time) * 1000
 
             output[cpu_id] = cpu_time
         return output
-    
+
     def _get_free_memory(self, device):
         return psutil.virtual_memory().available

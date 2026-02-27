@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -16,15 +15,40 @@
 # -------------------------------------------------------------------------
 
 __all__ = [
-    'setup_precheck_parser',
-    'setup_compare_parser',
-    'setup_dump_parser',
-    'Coordinator'
+    "BannerPresenter",
+    "CmdStrategy",
+    "CmdType",
+    "setup_compare_parser",
+    "Compare",
+    "setup_dump_parser",
+    "Dump",
 ]
 
-
+from .banner import BannerPresenter
+from .base import CmdStrategy, CmdType
+from .compare import Compare, setup_compare_parser
+from .dump import Dump, setup_dump_parser
 from .precheck import setup_precheck_parser
-from .compare import setup_compare_parser
-from .dump import setup_dump_parser
-from ._cmate import setup_cmate_parser
-from .coordinator import Coordinator
+
+
+class CmdStrategyFactory:
+    def __init__(self) -> None:
+        self._registry = {
+            # CmdType.PRECHECK: Precheck,
+            CmdType.DUMP: Dump,
+            CmdType.COMPARE: Compare,
+        }
+
+    def register(self, cmd_type, strategy_cls) -> None:
+        if not issubclass(strategy_cls, CmdStrategy):
+            raise TypeError(
+                f"Expected 'strategy_cls' to be 'Cmdstrategy' class name. Got {strategy_cls} instead"
+            )
+
+        self._registry[cmd_type] = strategy_cls
+
+    def get(self, cmd: CmdType) -> CmdStrategy:
+        if cmd not in self._registry:
+            raise ValueError(f"No strategy registered for command: {cmd}")
+
+        return self._registry[cmd]()

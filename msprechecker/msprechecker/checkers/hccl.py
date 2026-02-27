@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -30,12 +29,13 @@ class LinkChecker(BaseChecker):
         for device_id, result in enumerate(results):
             if success_pattern not in result:
                 self.error_handler.add_error(
-                    path=f'Device ID: {device_id}',
-                    actual=result, expected="link status: UP",
+                    path=f"Device ID: {device_id}",
+                    actual=result,
+                    expected="link status: UP",
                     reason='当前机器的网卡 LINK 状态应该要全为 "UP"',
-                    severity="high"
+                    severity="high",
                 )
- 
+
 
 class VnicChecker(BaseChecker):
     def _check(self, results):
@@ -49,17 +49,21 @@ class VnicChecker(BaseChecker):
             fields = result.strip().split("\n")
             if not len(fields) == 3:
                 self.error_handler.add_error(
-                    path=f'Device ID: {device_id}',
-                    actual=result, reason='要有 link status, ipaddr 和 netmask',
-                    severity="high"
+                    path=f"Device ID: {device_id}",
+                    actual=result,
+                    reason="要有 link status, ipaddr 和 netmask",
+                    severity="high",
                 )
                 continue
 
-            if fields[0] != "vnic link status: UP" or not fields[1].startswith("vnic ipaddr:"):
+            if fields[0] != "vnic link status: UP" or not fields[1].startswith(
+                "vnic ipaddr:"
+            ):
                 self.error_handler.add_error(
-                    path=f'Device ID: {device_id}',
-                    actual=result, reason='如果是 A3 机器，板内的 VNIC IP 需要配置，且连接状态为 UP',
-                    severity="high"
+                    path=f"Device ID: {device_id}",
+                    actual=result,
+                    reason="如果是 A3 机器，板内的 VNIC IP 需要配置，且连接状态为 UP",
+                    severity="high",
                 )
 
 
@@ -70,19 +74,21 @@ class TlsChecker(BaseChecker):
         """
         if not results:
             return
-        
+
         tls_switch_pattern = "tls switch["
         for device_id, result in enumerate(results):
             if tls_switch_pattern not in result:
-                continue # no certificates regarding as passed
+                continue  # no certificates regarding as passed
 
             tls_switch_idx = result.index(tls_switch_pattern)
             switch_state = result[tls_switch_idx + len(tls_switch_pattern)]
-            if switch_state != '0':
+            if switch_state != "0":
                 self.error_handler.add_error(
-                    path=f'Device ID: {device_id}', expected='0', actual=result,
-                    reason='当前机器的 TLS 证书需要被使能，注意需要在 root 用户下执行该项检测',
-                    severity="medium"
+                    path=f"Device ID: {device_id}",
+                    expected="0",
+                    actual=result,
+                    reason="当前机器的 TLS 证书需要被使能，注意需要在 root 用户下执行该项检测",
+                    severity="medium",
                 )
 
 
@@ -93,13 +99,9 @@ class HCCLChecker(BaseChecker):
         """
         if not results:
             return
-        
+
         for cmd, (ret, out) in results.items():
             if ret:
-                self.error_handler.add_error(
-                    path=cmd, reason=out, severity='high'
-                )
-            elif '3 received' not in out:
-                self.error_handler.add_error(
-                    path=cmd, reason=out, severity='high'
-                )
+                self.error_handler.add_error(path=cmd, reason=out, severity="high")
+            elif "3 received" not in out:
+                self.error_handler.add_error(path=cmd, reason=out, severity="high")

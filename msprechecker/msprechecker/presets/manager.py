@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -21,16 +20,12 @@ import platform
 import yaml
 from msguard.security import open_s
 
-from ..utils import (
-    NpuType, ErrorSeverity,
-    get_npu_count, get_npu_type,
-    global_logger
-)
+from ..utils import ErrorSeverity, get_npu_count, get_npu_type, logger, NpuType
 
 
 class RuleManager:
     """规则管理器，负责加载内置规则和用户自定义规则并进行合并"""
-    
+
     SCENE_MAPPING = {
         "user_config": "config_check_dsr1_pd.yaml",
         "mindie_env": "env_check_dsr1_pd.yaml",
@@ -41,17 +36,13 @@ class RuleManager:
         "ep": "ep_default.yaml",
         "default": "default.yaml",
     }
-    
-    ARCH_MAPPING = {
-        "x86_64": "x86",
-        "aarch64": "arm"
-    }
 
+    ARCH_MAPPING = {"x86_64": "x86", "aarch64": "arm"}
 
     FRAMEWORK_MAPPING = {
         "vllm": "vllm",
     }
-    
+
     def __init__(self, *, scene=None, framework=None, custom_rule_path=None):
         self.scene = scene
         self.framework = framework
@@ -67,26 +58,22 @@ class RuleManager:
     @staticmethod
     def create_rule(type_, value, reason="", severity=ErrorSeverity.ERR_HIGH):
         return {
-            "expected":
-                {
-                    "type": type_,
-                    "value": value
-                },
+            "expected": {"type": type_, "value": value},
             "reason": reason,
-            "severity": severity
+            "severity": severity,
         }
 
     def get_rules(self):
         # 1. 获取内置规则
         rules = self._get_builtin_rules()
-        
+
         # 2. 获取用户自定义规则（如果有）
         custom_rules = self._get_custom_rules()
-        
+
         # 3. 更新 env 规则
-        if 'env' in custom_rules and 'env' in rules:
-            custom_env_rules = custom_rules['env']
-            rules['env'].update(custom_env_rules)
+        if "env" in custom_rules and "env" in rules:
+            custom_env_rules = custom_rules["env"]
+            rules["env"].update(custom_env_rules)
 
         return rules
 
@@ -102,16 +89,16 @@ class RuleManager:
         if self.framework == "vllm":
             if self.framework not in self.FRAMEWORK_MAPPING:
                 raise ValueError(
-                f"Expected 'scene' to be {', '.join(self.FRAMEWORK_MAPPING)}. Got {self.framework} instead."
-            )
+                    f"Expected 'scene' to be {', '.join(self.FRAMEWORK_MAPPING)}. Got {self.framework} instead."
+                )
             # 获取框架目录
             framework_dir = self.FRAMEWORK_MAPPING.get(self.framework)
 
             # 构建新路径 <preset><framework><scene>
             rule_path = os.path.join(cur_dir, framework_dir, rule_file)
-            with open_s(rule_path, 'r', encoding='utf-8') as f:
+            with open_s(rule_path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f)
-        
+
         if self.scene not in self.SCENE_MAPPING:
             raise ValueError(
                 f"Expected 'scene' to be {', '.join(self.SCENE_MAPPING)}. Got {self.scene} instead."
@@ -125,39 +112,41 @@ class RuleManager:
             if self._npu_type == NpuType.TP_A2:
                 arch_dir = self.ARCH_MAPPING.get(self._arch)
                 if not arch_dir:
-                    global_logger.warning(
+                    logger.warning(
                         "Unsupported architecture: %s. Using '%s' as a fall back",
                         self._arch,
-                        NpuType.TP_A2.display
+                        NpuType.TP_A2.display,
                     )
-                    arch_dir = "arm"   
+                    arch_dir = "arm"
                 rule_path = os.path.join(cur_dir, "A2", arch_dir, rule_file)
 
                 if self._arch == "x86_64" and self._npu_count != 16:
-                    global_logger.warning(
+                    logger.warning(
                         "Unsupported type: %s x86_64 but %s chips (expected 16 chips). Use '%s' as a fall back",
                         NpuType.TP_A2.display,
                         self._npu_count,
-                        NpuType.TP_A3.display
+                        NpuType.TP_A3.display,
                     )
                     rule_path = os.path.join(cur_dir, "A3", rule_file)
             else:  # A3 or default to A3
                 rule_path = os.path.join(cur_dir, "A3", rule_file)
-        
-        with open_s(rule_path, 'r', encoding='utf-8') as f:
+
+        with open_s(rule_path, "r", encoding="utf-8") as f:
             try:
                 return yaml.safe_load(f)
             except Exception as e:
                 raise ValueError("Invalid rule yaml file: %r" % rule_path) from e
-    
+
     def _get_custom_rules(self):
         """获取用户自定义规则，如果没有则返回空字典"""
         if not self.custom_rule_path:
             return {}
 
         try:
-            with open_s(self.custom_rule_path, 'r', encoding='utf-8') as f:
+            with open_s(self.custom_rule_path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f) or {}
         except Exception as e:
-            global_logger.warning("'--custom-config-path' passed an insecure path, skipped\n%s", e)
+            logger.warning(
+                "'--custom-config-path' passed an insecure path, skipped\n%s", e
+            )
             return {}

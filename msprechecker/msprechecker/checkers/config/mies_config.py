@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,8 +14,8 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-from ..base import NodeChecker
 from ...utils import get_model_type
+from ..base import NodeChecker
 
 
 class MIESConfigChecker(NodeChecker):
@@ -30,4 +29,4 @@ class MIESConfigChecker(NodeChecker):
             self.rule_manager.scene = "pd_mix"
         else:
             self.rule_manager.scene = "pd_mix_dsr1"
-        return self.rule_manager.get_rules()['mies_config']
+        return self.rule_manager.get_rules()["mies_config"]

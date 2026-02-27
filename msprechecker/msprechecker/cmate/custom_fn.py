@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -30,20 +29,17 @@ def path_exists(path: str):
         return False
 
 
-def is_port_in_use(port: int, host: str = 'localhost', protocol: str = 'tcp'):
+def is_port_in_use(port: int, host: str = "localhost", protocol: str = "tcp"):
     protocol = protocol.lower()
 
-    protocol_map = {
-        'tcp': socket.SOCK_STREAM,
-        'udp': socket.SOCK_DGRAM
-    }
+    protocol_map = {"tcp": socket.SOCK_STREAM, "udp": socket.SOCK_DGRAM}
 
     if protocol not in protocol_map:
         raise ValueError
-    
+
     sock_type = protocol_map[protocol]
     with socket.socket(socket.AF_INET, sock_type) as sock:
-        if protocol.lower() == 'tcp':
+        if protocol.lower() == "tcp":
             result = sock.connect_ex((host, port))
             return result == 0
         else:

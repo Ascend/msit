@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,13 +14,17 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
+import logging
 import os
-import shutil
 import platform
+import shutil
 from abc import ABC, abstractmethod
 
-from ..collectors import AscendCollector, LscpuCollector
-from ..utils import get_pkg_version, get_npu_type, get_npu_count, global_logger
+from ..core.strategy import Ascend, Lscpu
+from ..utils import get_npu_count, get_npu_type, get_pkg_version
+
+
+logger = logging.getLogger(__name__)
 
 
 class InfoSection(ABC):
@@ -52,9 +55,10 @@ class PythonInfoSection(InfoSection):
 
 class CpuInfoSection(InfoSection):
     def get_info(self):
-        ret = LscpuCollector().collect()
-        data = ret.data
-        model_name = data.get('model_name', 'Unknown Type')
+        data = Lscpu().execute()
+        model_name = (
+            data.get("model_name", "Unknown Type") if isinstance(data, dict) else None
+        )
         return f"CPU: {model_name} ({os.cpu_count()} cores)"
 
 
@@ -69,8 +73,7 @@ class NpuInfoSection(InfoSection):
 
 class AscendInfoSection(InfoSection):
     def get_info(self):
-        ret = AscendCollector().collect()
-        data = ret.data
+        data = Ascend().execute()
         if not data:
             return "Ascend: not found"
         return self._format_ascend_info(data)
@@ -86,18 +89,18 @@ class AscendInfoSection(InfoSection):
         return "\n".join(lines)
 
     def _format_version(self, info):
-        comp_ver = info.get('version', "not found")
-        timestamp = info.get('timestamp')
+        comp_ver = info.get("version", "not found")
+        timestamp = info.get("timestamp")
         if timestamp:
             comp_ver += f" ({timestamp})"
-        commit_id = info.get('commit')
+        commit_id = info.get("commit")
         if commit_id:
             comp_ver += f" -- {commit_id}"
         return comp_ver
 
 
 class BannerPresenter:
-    PYTHON_INFO_PACKAGES = ['msprechecker', 'torch', 'torch_npu', 'transformers']
+    PYTHON_INFO_PACKAGES = ["msprechecker", "torch", "torch_npu", "transformers"]
 
     def __init__(self, *, sections=None):
         self.sections = sections or [
@@ -105,19 +108,19 @@ class BannerPresenter:
             PythonInfoSection(self.PYTHON_INFO_PACKAGES),
             CpuInfoSection(),
             NpuInfoSection(),
-            AscendInfoSection()
+            AscendInfoSection(),
         ]
 
     def add_section(self, section: InfoSection):
         self.sections.append(section)
-    
+
     def print_banner(self):
         cols, _ = shutil.get_terminal_size()
 
         title = "MindStudio Prechecker Tool"
-        global_logger.info(f" {title} ".center(cols, "="))
+        logger.info(f" {title} ".center(cols, "="))
 
         for section in self.sections:
-            global_logger.info(section.get_info())
+            logger.info(section.get_info())
 
-        global_logger.info("-" * cols)
+        logger.info("-" * cols)

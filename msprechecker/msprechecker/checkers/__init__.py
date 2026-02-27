@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -16,19 +15,30 @@
 # -------------------------------------------------------------------------
 
 __all__ = [
-    'BaseChecker', 'NodeChecker',
-    'EnvChecker', 'SysChecker', 'AscendChecker', 'HCCLChecker',
-    'UserConfigChecker', 'MindIEEnvChecker', 'ModelConfigChecker',
-    'StressChecker',
-    'PDChecker'
+    "BaseChecker",
+    "NodeChecker",
+    "EnvChecker",
+    "SysChecker",
+    "AscendChecker",
+    "HCCLChecker",
+    "UserConfigChecker",
+    "MindIEEnvChecker",
+    "ModelConfigChecker",
+    "StressChecker",
+    "PDChecker",
 ]
 
-from .base import BaseChecker, NodeChecker
-from .env import EnvChecker
-from .sys import SysChecker
 from .ascend import AscendChecker
-from .hccl import HCCLChecker, TlsChecker, LinkChecker, VnicChecker
-from .config import UserConfigChecker, MindIEEnvChecker, ModelConfigChecker, MIESConfigChecker
-from .stress import StressChecker
-from .pd import PDChecker
+from .base import BaseChecker, NodeChecker
+from .config import (
+    MIESConfigChecker,
+    MindIEEnvChecker,
+    ModelConfigChecker,
+    UserConfigChecker,
+)
+from .env import EnvChecker
+from .hccl import HCCLChecker, LinkChecker, TlsChecker, VnicChecker
 from .network import PingChecker
+from .pd import PDChecker
+from .stress import StressChecker
+from .sys import SysChecker

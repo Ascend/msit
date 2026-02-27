@@ -27,13 +27,19 @@ class StressChecker(BaseChecker):
 
     def _check(self, results):
         if not isinstance(results, dict):
-            raise TypeError(f"Expected 'collect_data.data' to be dict. Got {type(results).__name__} instead.")
+            raise TypeError(
+                f"Expected 'collect_data.data' to be dict. Got {type(results).__name__} instead."
+            )
         if not results:
-            raise ValueError(f"No data collected and no errors occured during collection.")
+            raise ValueError(
+                "No data collected and no errors occured during collection."
+            )
 
         mean_time_cost = mean(results.values())
         if mean_time_cost == 0:
-            mean_time_cost += 1e-6 # this should not happen since there will be no negative time cost
+            mean_time_cost += (
+                1e-6  # this should not happen since there will be no negative time cost
+            )
 
         expected_time_cost = self.threshold * mean_time_cost + mean_time_cost
         for i, time_cost in results.items():
@@ -44,5 +50,5 @@ class StressChecker(BaseChecker):
                     actual=f"Time Cost: {time_cost:.3f}ms",
                     expected=f"Time Cost <= {expected_time_cost:.3f}ms",
                     reason=f"该核计算时长大于平均时长的 {score:.2%}",
-                    severity="high" 
+                    severity="high",
                 )

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -19,9 +18,9 @@ import re
 from functools import total_ordering
 
 try:
-    from importlib.metadata import version, PackageNotFoundError
+    from importlib.metadata import PackageNotFoundError, version
 except ImportError:
-    from importlib_metadata import version, PackageNotFoundError
+    from importlib_metadata import PackageNotFoundError, version
 
 
 def get_pkg_version(pkg_name):
@@ -30,6 +29,7 @@ def get_pkg_version(pkg_name):
     except PackageNotFoundError:
         try:
             from importlib import import_module
+
             version_str = import_module(pkg_name).__version__
         except Exception:
             version_str = None
@@ -95,7 +95,7 @@ class Version:
         if ver:
             return Version._parse_version_str(ver)
 
-        raise ValueError("Invalid version string: {}".format(version_str))
+        raise ValueError(f"Invalid version string: {version_str}")
 
     @staticmethod
     def _other_version(other):
@@ -110,5 +110,5 @@ class Version:
             int(self._minor),
             int(self._patch) if self._patch else 0,
             int(self._rc) if self._rc else float("inf"),
-            int(self._beta) if self._beta else float("inf")
+            int(self._beta) if self._beta else float("inf"),
         )
