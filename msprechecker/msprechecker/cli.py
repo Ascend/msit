@@ -16,18 +16,19 @@ import argparse
 import logging
 from textwrap import dedent
 
-from .commands import (
-    CmdStrategyFactory,
-    CmdType,
-    setup_compare_parser,
-    setup_dump_parser,
-    setup_precheck_parser,
-)
-from .utils.constant import LOG_FORMAT, LOG_LEVELS
-
-
 
 def main() -> int:
+    from .util import LOG_FORMAT, LOG_LEVELS
+
+    global_parser = argparse.ArgumentParser(add_help=False)
+    global_parser.add_argument(
+        "--log-level",
+        "-l",
+        choices=LOG_LEVELS,
+        default="info",
+        help="Set the logging level.",
+    )
+
     main_parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=dedent("""\
@@ -47,20 +48,27 @@ def main() -> int:
         dest="command", title="Available Commands", metavar=""
     )
 
-    setup_precheck_parser(subparsers)
-    setup_dump_parser(subparsers)
-    setup_compare_parser(subparsers)
+    from .commands.cmate import setup_cmate
+    from .commands.compare import setup_compare
+    from .commands.dump import setup_dump
+    from .commands.precheck import setup_precheck
+
+    setup_precheck(subparsers, [global_parser])
+    setup_dump(subparsers, [global_parser])
+    setup_compare(subparsers, [global_parser])
+    setup_cmate(subparsers, [global_parser])
 
     args = main_parser.parse_args()
-    logging.basicConfig(
-        level=LOG_LEVELS[args.log_level.lower()],
-        format=LOG_FORMAT,
-    )
+    from .commands.banner import BannerPresenter
 
+    BannerPresenter().print_banner()
     cmd = getattr(args, "command", None)
     if not cmd:
         main_parser.print_help()
         return 1
+
+    logging.basicConfig(format=LOG_FORMAT, level=LOG_LEVELS[args.log_level])
+    from .commands import CmdStrategyFactory, CmdType
 
     strategy_factory = CmdStrategyFactory()
     args.command = CmdType(cmd)

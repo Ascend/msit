@@ -15,132 +15,204 @@
 # -------------------------------------------------------------------------
 
 import argparse
+import logging
+from pathlib import Path
 from textwrap import dedent
 
-from .base import CmdType
+from ..core.checker import has_errors, Severity
+from ..core.runner import PrecheckRunner
+from ..core.suite import build_suite
+from ..util import detect_framework
+
+from . import CmdStrategy, CmdType
 
 
-def setup_precheck_parser(subparsers):
+logger = logging.getLogger(__name__)
+
+
+def setup_precheck(subparsers: argparse._SubParsersAction, parents=None):
+    if parents is None:
+        parents = []
     desc = dedent("""\
-        PRECHECK - Run a seires of validations and checks for different PD deployment.
+        PRECHECK - Run a series of validations for different PD deployment scenarios.
 
         Mix Mode (default):
-          - Validate environment, system, and HCCL settings.
-          - Generate 'msprechecker_env.sh' if environment issues found.
+          Validate environment, system, and HCCL settings.
 
         Disaggregation Mode:
-          - Validate only user_config.json and mindie_env.json.
-          - Skip environment/system/HCCL checks.
+          Validate only user_config.json and mindie_env.json.
     """)
     epilog = dedent("""\
         Examples:
-          msprechecker precheck --rank-table hccl_8s_64p.json --weight-dir ./Llama3-70B
-              # Full validation (default)
-          msprechecker precheck --user-config-path /config/user.json --mindie-env-path /env/mindie.json
-              # Disaggregation mode
+          msprechecker precheck --rank-table-path hccl_8s_64p.json
+          msprechecker precheck --user-config-path /cfg/user.json --mindie-env-path /cfg/mindie.json
     """)
-
-    precheck_parser = subparsers.add_parser(
+    parser = subparsers.add_parser(
         CmdType.PRECHECK.value,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=desc,
         usage="msprechecker precheck [OPTIONS]",
         epilog=epilog,
-        help="Run comprehensive system validation for different PD deployment scenarios",
+        help="Run comprehensive system validation for PD deployment scenarios",
+        parents=parents,
     )
-
-    _add_pd_disagg_args(precheck_parser)
-    _add_pd_mix_args(precheck_parser)
-    _add_network_args(precheck_parser)
-    _add_model_args(precheck_parser)
-    _add_stress_test_args(precheck_parser)
-    _add_custom_validation_args(precheck_parser)
-
-    return precheck_parser
+    _add_disagg_args(parser)
+    _add_mix_args(parser)
+    _add_network_args(parser)
+    _add_model_args(parser)
+    _add_stress_args(parser)
+    _add_output_args(parser)
+    return parser
 
 
-def _add_pd_disagg_args(parser):
-    group = parser.add_argument_group("PD Disaggregation Options")
-    group.add_argument(
+def _add_disagg_args(p):
+    g = p.add_argument_group("PD Disaggregation Options")
+    g.add_argument(
         "--scene",
         metavar="",
-        help="Specify different deploy scene. Supports: pd_disaggregation, "
-        "pd_disaggregation_single_container, mindie, vllm, vllm,ep.",
+        help="Deploy scene: pd_disaggregation, mindie, vllm, vllm,ep ...",
     )
-    group.add_argument(
+    g.add_argument(
         "--user-config-path",
         metavar="",
-        help="Path to the 'user_config.json' file for Kubernetes-based deployments.",
+        help="Path to user_config.json for Kubernetes deployments.",
     )
-    group.add_argument(
+    g.add_argument(
         "--mindie-env-path",
         metavar="",
-        help="Path to the 'mindie_env.json' file for Kubernetes-based deployments.",
+        help="Path to mindie_env.json for Kubernetes deployments.",
     )
-    group.add_argument(
+    g.add_argument(
         "--config-parent-dir",
         metavar="",
-        help="Path to the parent directory for Kubernetes-based deployments",
+        help="Parent directory for Kubernetes deployments.",
     )
 
 
-def _add_pd_mix_args(parser):
-    group = parser.add_argument_group("PD Mixed Mode Options")
-    group.add_argument(
+def _add_mix_args(p):
+    g = p.add_argument_group("PD Mixed Mode Options")
+    g.add_argument(
         "--mies-config-path",
         metavar="",
-        help="Path to the 'config.json' file for daemon-based deployments.",
+        help="Path to config.json for daemon-based deployments.",
     )
 
 
-def _add_network_args(parser):
-    group = parser.add_argument_group("Network Options")
-    group.add_argument(
+def _add_network_args(p):
+    g = p.add_argument_group("Network Options")
+    g.add_argument(
         "--rank-table-path",
         metavar="",
-        help="Path to the rank table file. Supports both A2 and A3 formats.",
+        help="Path to rank table file (A2 / A3 format).",
     )
 
 
-def _add_model_args(parser):
-    group = parser.add_argument_group("Model Options")
-    group.add_argument(
-        "--weight-dir", metavar="", help="Directory path containing model weights."
+def _add_model_args(p):
+    g = p.add_argument_group("Model Options")
+    g.add_argument(
+        "--weight-dir", metavar="", help="Directory containing model weights."
     )
 
 
-def _add_stress_test_args(parser):
-    group = parser.add_argument_group("Stress Test Options")
-    group.add_argument(
+def _add_stress_args(p):
+    g = p.add_argument_group("Stress Test Options")
+    g.add_argument(
         "--hardware",
         action="store_true",
         default=False,
-        help="Enable hardware stress testing. Default: False.",
+        help="Enable hardware stress testing.",
     )
-    group.add_argument(
+    g.add_argument(
         "--threshold",
         type=int,
         choices=range(0, 101),
         default=20,
         metavar="0-100",
-        help="Set the failure threshold percentage (0-100). Default: 20.",
+        help="Failure threshold percentage (0-100). Default: 20.",
     )
 
 
-def _add_custom_validation_args(parser):
-    group = parser.add_argument_group("Custom Validation Options")
-    group.add_argument(
-        "--custom-config-path",
-        metavar="",
-        help="Path to a custom validation rules configuration file.",
+def _add_output_args(p):
+    g = p.add_argument_group("Output Options")
+    g.add_argument(
+        "-s",
+        "--severity-level",
+        choices=["info", "warning", "error"],
+        default="info",
+        help="Minimum severity level to report. Default: info.",
     )
-    # group.add_argument(
-    #     "-l", "--severity-level", metavar="",
-    #     choices=[
-    #         ErrorSeverity.ERR_LOW,
-    #         ErrorSeverity.ERR_MEDIUM,
-    #         ErrorSeverity.ERR_HIGH
-    #     ], default=ErrorSeverity.ERR_LOW,
-    #     type=ErrorSeverity,
-    #     help="Report only issues with the specified severity level or higher. Default: low."
-    # )
+
+
+class Precheck(CmdStrategy):
+    @staticmethod
+    def _has_config_args(args: argparse.Namespace) -> bool:
+        return any(
+            [
+                args.user_config_path,
+                args.mindie_env_path,
+                args.config_parent_dir,
+                args.mies_config_path,
+            ]
+        )
+
+    @staticmethod
+    def _delegate_to_cmate(args: argparse.Namespace) -> int:
+        from ..cmate.cmate import _parse_configs, _parse_contexts, run
+
+        configs = []
+        if args.user_config_path:
+            configs.append(f"user_config:{args.user_config_path}@json")
+        if args.mindie_env_path:
+            configs.append(f"mindie_env:{args.mindie_env_path}@json")
+        if args.mies_config_path:
+            configs.append(f"config:{args.mies_config_path}@json")
+
+        scene = args.scene or ""
+        preset_name = "vllm" if "vllm" in scene.lower() else "mindie"
+        preset_path = Path(__file__).parent.parent / "presets" / f"{preset_name}.cmate"
+
+        if not preset_path.exists():
+            logger.error("Preset file not found: %s", preset_path)
+            return 1
+
+        contexts = ["deploy_mode:ep"] if "ep" in scene.lower() else []
+
+        ret, parsed_configs = _parse_configs(configs)
+        if not ret:
+            return 1
+        ret, parsed_contexts = _parse_contexts(contexts)
+        if not ret:
+            return 1
+
+        return run(
+            str(preset_path),
+            parsed_configs,
+            parsed_contexts,
+            failfast=False,
+            verbosity=False,
+            collect_only=False,
+            output_path="",
+            severity="info",
+        )
+
+    def execute(self, args: argparse.Namespace) -> int:
+        if self._has_config_args(args):
+            logger.warning(
+                "Environment / Config validation via 'precheck' is deprecated and will be removed "
+                "in May 2025. Please use 'msprechecker run' instead."
+            )
+            return self._delegate_to_cmate(args)
+
+        framework = detect_framework()
+        min_severity = Severity[args.severity_level.upper()]
+
+        suite = build_suite(
+            framework=framework,
+            scene=args.scene or "",
+            rank_table_path=args.rank_table_path or "",
+            hardware=args.hardware,
+            threshold=args.threshold,
+        )
+
+        result = PrecheckRunner(min_severity=min_severity).run(suite)
+        return has_errors(result)

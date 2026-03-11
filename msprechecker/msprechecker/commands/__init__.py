@@ -14,30 +14,38 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-__all__ = [
-    "BannerPresenter",
-    "CmdStrategy",
-    "CmdType",
-    "setup_compare_parser",
-    "Compare",
-    "setup_dump_parser",
-    "Dump",
-]
+from enum import Enum
+from abc import ABC, abstractmethod
 
-from .banner import BannerPresenter
-from .base import CmdStrategy, CmdType
-from .compare import Compare, setup_compare_parser
-from .dump import Dump, setup_dump_parser
-from .precheck import setup_precheck_parser
+
+class CmdStrategy(ABC):
+    @abstractmethod
+    def execute(self) -> int:
+        """Execute the command."""
+        pass
+
+
+class CmdType(Enum):
+    PRECHECK = "precheck"
+    DUMP = "dump"
+    COMPARE = "compare"
+    RUN = "run"
+    INSPECT = "inspect"
 
 
 class CmdStrategyFactory:
-    def __init__(self) -> None:
-        self._registry = {
-            # CmdType.PRECHECK: Precheck,
-            CmdType.DUMP: Dump,
-            CmdType.COMPARE: Compare,
-        }
+    from .cmate import Inspect, Run
+    from .compare import Compare
+    from .dump import Dump
+    from .precheck import Precheck
+
+    _registry = {
+        CmdType.PRECHECK: Precheck,
+        CmdType.DUMP: Dump,
+        CmdType.COMPARE: Compare,
+        CmdType.RUN: Run,
+        CmdType.INSPECT: Inspect,
+    }
 
     def register(self, cmd_type, strategy_cls) -> None:
         if not issubclass(strategy_cls, CmdStrategy):
