@@ -17,7 +17,6 @@
 import hashlib
 import json
 import logging
-import math
 import os
 import platform
 import re
@@ -26,19 +25,18 @@ import shutil
 import subprocess
 import time
 from abc import ABC, abstractmethod
-from concurrent.futures import as_completed, ProcessPoolExecutor
-
+from concurrent.futures import as_completed, ProcessPoolExecutor, ThreadPoolExecutor
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from ..utils.ascend import get_npu_count, RankTable, search_weight_dir_mindie, search_weight_dir_vllm, search_weight_dir_sglang, get_framework, Framework
-from ..utils.helper import is_valid_ip
+from ..util import get_npu_count, is_valid_ip, RankTable
 
 
 logger = logging.getLogger(__name__)
 
 
 class CollectStrategy(ABC):
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self._name = name
 
     @property
@@ -51,38 +49,45 @@ class CollectStrategy(ABC):
 
 
 class CollectStrategyGroup(CollectStrategy):
-    def __init__(self, name: str, strategies: Optional[List[CollectStrategy]] = None):
-        self._strategies = []
+    def __init__(
+        self,
+        name: str,
+        strategies: Optional[List[CollectStrategy]] = None,
+    ) -> None:
+        super().__init__(name)
+        self._strategies: List[CollectStrategy] = []
+
         if strategies is not None:
             try:
-                self._strategies = list(strategies)
+                strategies = list(strategies)
             except TypeError:
-                logger.error(
+                logger.exception(
                     "strategies must be an iterable. Got %s instead", strategies
                 )
                 raise
 
-        if not all(
-            isinstance(strategy, (CollectStrategy, CollectStrategyGroup))
-            for strategy in self._strategies
-        ):
-            raise TypeError(
-                "All collect_strategies must be instances of CollectStrategy or CollectStrategyGroup"
-            )
-
-        super().__init__(name)
+            for strategy in strategies:
+                self.add(strategy)
 
     def add(self, strategy: CollectStrategy) -> "CollectStrategyGroup":
-        if not isinstance(strategy, (CollectStrategy, CollectStrategyGroup)):
-            raise TypeError(
-                "collect_strategy must be an instance of CollectStrategy or CollectStrategyGroup"
+        if not isinstance(strategy, CollectStrategy):
+            raise TypeError("collect_strategy must be an instance of CollectStrategy")
+        if any(s.name == strategy.name for s in self._strategies):
+            raise ValueError(
+                f"A strategy with name {strategy.name!r} already exists in this group"
             )
-
         self._strategies.append(strategy)
         return self
 
-    def execute(self) -> Dict[str, Dict[str, Any]]:
-        return {strategy.name: strategy.execute() for strategy in self._strategies}
+    def execute(self) -> Dict[str, Any]:
+        results: Dict[str, Any] = {}
+        for strategy in self._strategies:
+            try:
+                results[strategy.name] = strategy.execute()
+            except Exception:
+                logger.exception("Strategy %r failed", strategy.name)
+                results[strategy.name] = None
+        return results
 
 
 class Env(CollectStrategy):
@@ -135,7 +140,9 @@ class Lscpu(CollectStrategy):
                 continue
 
             key, value = [x.strip() for x in line.split(":", 1)]
-            info[key] = value
+            # Silently skip duplicate keys; first occurrence wins
+            if key not in info:
+                info[key] = value
 
         return info or None
 
@@ -150,8 +157,8 @@ class Lscpu(CollectStrategy):
                 self._output = subprocess.check_output(
                     [lscpu_path], stderr=subprocess.DEVNULL, text=True
                 )
-            except Exception as e:
-                logger.warning("Failed to execute lscpu command: %s", str(e))
+            except Exception:
+                logger.exception("Failed to execute lscpu command:")
                 return None
 
         return self._parse_output(self._output)
@@ -165,7 +172,13 @@ class CPUHighPerformance(CollectStrategy):
         self._lshw_output = None
 
     @staticmethod
-    def _check_by_psutil():
+    def _check_via_psutil():
+        """
+        Last-resort check: compares current CPU frequency to the reported maximum.
+        NOTE: On modern CPUs with dynamic frequency scaling (e.g. Intel Speed Shift),
+        the current frequency may drop during idle even in 'performance' governor mode.
+        This method can produce false negatives; treat result as advisory only.
+        """
         import psutil
 
         cpu_freq = psutil.cpu_freq()
@@ -174,20 +187,21 @@ class CPUHighPerformance(CollectStrategy):
             return False
         return cpu_freq.current == cpu_freq.max
 
-    def _check_by_dmidecode(self):
+    def _check_via_dmidecode(self):
         dmidecode_path = shutil.which("dmidecode")
         if dmidecode_path is None:
             logger.debug("dmidecode command not found in system PATH")
             return False
 
-        if not self._dmidecode_output:
+        if self._dmidecode_output is None:
             cmd = shlex.split(f"{dmidecode_path} -t processor")
             try:
                 self._dmidecode_output = subprocess.check_output(
                     cmd, stderr=subprocess.DEVNULL, text=True
                 )
-            except Exception as e:
-                logger.debug(f"Failed to execute dmidecode command: {e}")
+            except Exception:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Failed to execute dmidecode command")
                 return False
 
         return self._parse_dmidecode_output()
@@ -209,20 +223,21 @@ class CPUHighPerformance(CollectStrategy):
 
         return bool(max_speeds and current_speeds and max_speeds == current_speeds)
 
-    def _check_by_cpupower(self):
+    def _check_via_cpupower(self):
         cpupower_path = shutil.which("cpupower")
         if cpupower_path is None:
             logger.debug("cpupower command not found in system PATH")
             return False
 
-        if not self._cpupower_output:
+        if self._cpupower_output is None:
             cmd = shlex.split(f"{cpupower_path} frequency-info")
             try:
                 self._cpupower_output = subprocess.check_output(
                     cmd, stderr=subprocess.DEVNULL, text=True
                 )
-            except Exception as e:
-                logger.debug(f"Failed to execute cpupower command: {e}")
+            except Exception:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Failed to execute cpupower command")
                 return False
 
         return self._parse_cpupower_output()
@@ -245,20 +260,21 @@ class CPUHighPerformance(CollectStrategy):
             return max_limit == cur_freq
         return False
 
-    def _check_by_lshw(self):
+    def _check_via_lshw(self):
         lshw_path = shutil.which("lshw")
         if lshw_path is None:
             logger.debug("lshw command not found in system PATH")
             return False
 
-        if not self._lshw_output:
+        if self._lshw_output is None:
             cmd = shlex.split(f"{lshw_path} -c cpu")
             try:
                 self._lshw_output = subprocess.check_output(
                     cmd, stderr=subprocess.DEVNULL, text=True
                 )
-            except Exception as e:
-                logger.debug(f"Failed to execute lshw command: {e}")
+            except Exception:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Failed to execute lshw command")
                 return False
 
         return self._parse_lshw_output()
@@ -280,7 +296,7 @@ class CPUHighPerformance(CollectStrategy):
                 capacities.append(m_capacity.group(1).strip())
         return bool(sizes and capacities and sizes == capacities)
 
-    def _check_by_scaling_governor(self):
+    def _check_via_scaling_governor(self):
         cpu_count = os.cpu_count()
         if cpu_count is None:
             logger.debug("Unable to determine CPU count")
@@ -292,30 +308,39 @@ class CPUHighPerformance(CollectStrategy):
         for core_id in range(cpu_count):
             gov_path = scaling_governor_pattern.format(core_id)
             if not os.path.isfile(gov_path):
-                logger.debug(f"Scaling governor file not found for CPU core {core_id}")
+                logger.debug("Scaling governor file not found for CPU core %s", core_id)
                 return False
 
             try:
                 with open(gov_path, encoding="utf-8") as f:
                     if f.read().strip() != "performance":
                         logger.debug(
-                            f"CPU core {core_id} scaling governor is not set to performance mode"
+                            "CPU core %s scaling governor is not set to performance mode",
+                            core_id,
                         )
                         return False
-            except Exception as e:
-                logger.debug(
-                    f"Failed to read scaling governor file for CPU core {core_id}: {e}"
-                )
+            except Exception:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception(
+                        "Failed to read scaling governor file for CPU core %s", core_id
+                    )
                 return False
         return True
 
     def execute(self):
+        # Check order: most reliable → least reliable.
+        # scaling_governor: direct kernel sysfs read, most authoritative.
+        # dmidecode: reads BIOS-reported speeds, reliable but requires root on some systems.
+        # cpupower: userspace tool, requires cpupower package.
+        # lshw: hardware lister, broad compatibility.
+        # psutil (last resort): instantaneous frequency; may yield false negatives on
+        #   CPUs with dynamic scaling even when governor is set to 'performance'.
         return (
-            self._check_by_dmidecode()
-            or self._check_by_scaling_governor()
-            or self._check_by_cpupower()
-            or self._check_by_psutil()
-            or self._check_by_lshw()
+            self._check_via_scaling_governor()
+            or self._check_via_dmidecode()
+            or self._check_via_cpupower()
+            or self._check_via_lshw()
+            or self._check_via_psutil()
         )
 
 
@@ -333,8 +358,8 @@ class VirtualMachine(CollectStrategy):
         try:
             with open(cpu_info_path) as f:
                 return any("hypervisor" in line for line in f)
-        except Exception as e:
-            logger.warning(f"Failed to read /proc/cpuinfo file: {e}")
+        except Exception:
+            logger.exception("Failed to read /proc/cpuinfo file")
             return False
 
 
@@ -352,8 +377,8 @@ class TransparentHugepage(CollectStrategy):
         try:
             with open(transparent_hugepage_path) as f:
                 return f.read().strip()
-        except Exception as e:
-            logger.warning(f"Failed to read transparent hugepage configuration: {e}")
+        except Exception:
+            logger.exception("Failed to read transparent hugepage configuration")
             return None
 
 
@@ -372,205 +397,255 @@ class PageSize(CollectStrategy):
     def execute(self):
         try:
             return os.sysconf("SC_PAGESIZE")
-        except Exception as e:
-            logger.warning(f"Failed to get system page size: {e}")
+        except Exception:
+            logger.exception("Failed to get system page size")
             return None
+
+
+class JeMalloc(CollectStrategy):
+    def __init__(self, name: str = "jemalloc"):
+        super().__init__(name)
+
+    def _check_via_apt(self) -> bool:
+        """Check if jemalloc is installed via apt."""
+        try:
+            result_apt = subprocess.run(
+                ["/usr/bin/apt", "list", "--installed", "libjemalloc*"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return False
+
+        return result_apt.returncode == 0 and "libjemalloc" in result_apt.stdout
+
+    def _check_via_yum(self) -> bool:
+        """Check if jemalloc is installed via yum."""
+        try:
+            result_yum = subprocess.run(
+                ["/usr/bin/yum", "list", "installed", "jemalloc*"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return False
+
+        return result_yum.returncode == 0 and "jemalloc" in result_yum.stdout
+
+    def execute(self) -> bool:
+        return self._check_via_apt() or self._check_via_yum()
 
 
 class Sys(CollectStrategyGroup):
     def __init__(
         self,
         name="sys",
-        strategies=[
-            Lscpu(),
-            CPUHighPerformance(),
-            VirtualMachine(),
-            TransparentHugepage(),
-            Kernel(),
-            PageSize(),
-        ],
+        strategies=None,
     ):
-        super().__init__(name, strategies)
+        super().__init__(
+            name,
+            strategies
+            or [
+                Lscpu(),
+                CPUHighPerformance(),
+                VirtualMachine(),
+                TransparentHugepage(),
+                Kernel(),
+                PageSize(),
+                JeMalloc(),
+            ],
+        )
 
 
 class Config(CollectStrategy):
     def __init__(self, name, *, config_path):
         super().__init__(name)
         self._config_path = config_path
-        self._framework = get_framework()
+        self._processor = {
+            ".json": self._process_json,
+            ".yaml": self._process_yaml,
+            ".yml": self._process_yaml,
+            ".sh": self._process_shell,
+        }
 
     def _process_json(self, content):
-        logger.debug('Processing JSON configuration file: %r', self._config_path)
+        logger.debug("Processing JSON configuration file: %r", self._config_path)
         try:
             return json.loads(content)
-        except json.JSONDecodeError as e:
-            logger.warning("Failed to parse JSON configuration file %r: %s", self._config_path, str(e))
+        except json.JSONDecodeError:
+            logger.exception(
+                "Failed to parse JSON configuration file %r", self._config_path
+            )
             return content
 
     def _process_yaml(self, content):
-        logger.debug('Processing YAML configuration file: %s', self._config_path)
+        logger.debug("Processing YAML configuration file: %s", self._config_path)
         import yaml
+
         try:
             if "---" in content:
                 return list(yaml.safe_load_all(content))
             return yaml.safe_load(content)
-        except yaml.YAMLError as e:
-            logger.warning("Failed to parse YAML configuration file %r: %s", self._config_path, str(e))
+        except yaml.YAMLError:
+            logger.exception(
+                "Failed to parse YAML configuration file %r", self._config_path
+            )
             return content
 
     def _process_shell(self, content):
-        logger.debug('Processing shell configuration file: %s', self._config_path)
+        logger.debug("Processing shell configuration file: %s", self._config_path)
         return content
 
-    def execute(self):
+    def _read_file(self) -> Optional[str]:
         if not self._config_path:
             logger.warning("Configuration path is empty or not provided")
             return None
-
-        from msguard import Rule
-
-        rule = Rule.input_file_read
-        if not rule.is_satisfied_by(self._config_path):
-            logger.warning("Expected %r to be %s", self._config_path, rule)
+        if not os.path.isfile(self._config_path):
+            logger.warning("Configuration file %r not found", self._config_path)
+            return None
+        try:
+            with open(self._config_path) as f:
+                return f.read()
+        except OSError:
+            logger.exception("Failed to read configuration file %r", self._config_path)
             return None
 
-        with open(self._config_path) as f:
-            content = f.read()
-
-        extension_to_process_method = {
-            '.json': self._process_json,
-            '.yaml': self._process_yaml,
-            '.yml': self._process_yaml,
-            '.sh': self._process_shell
-        }
-
-        if '.' not in self._config_path:
-            logger.warning(
-                "Unsupported configuration file format: %r", self._config_path
-            )
-            return content
-
+    def _parse(self, content: str):
         ext = os.path.splitext(self._config_path)[-1]
-        if ext not in extension_to_process_method:
+        processor = self._processor.get(ext)
+        if processor is None:
             logger.warning(
                 "Unsupported configuration file format: %r", self._config_path
             )
             return content
+        return processor(content)
 
-        return extension_to_process_method[ext](content)
+    def execute(self):
+        content = self._read_file()
+        if content is None:
+            return None
+        return self._parse(content)
 
 
 class Weight(CollectStrategy):
+    """Collect strategy that computes SHA-256 hashes of safetensor weight files."""
+
+    # Matches the shard index in filenames like ``model-00003-of-00010.safetensors``
+    _TENSOR_ID_RE = re.compile(r"(\d{5})-of-\d{5}")
+
     def __init__(
         self,
         name: str = "weight",
         *,
         weight_dir: str = "",
-        tensor_suffix=".safetensors",
-        max_size: int = 10 * 1024**3,
-        chunk_size: int = 256 * 1024**2,
+        tensor_suffix: str = ".safetensors",
+        max_size: int = 10 * 1024**3,  # 10 GiB – skip files larger than this
+        chunk_size: int = 256 * 1024**2,  # 256 MiB read buffer
+        max_hash_workers: int = 4,
     ):
         super().__init__(name)
         self._weight_dir = weight_dir
         self._tensor_suffix = tensor_suffix
-        self.max_size = max_size
+        self._max_size = max_size
         self._chunk_size = chunk_size
+        self._max_hash_workers = max_hash_workers
 
-    def _calculate_hash256(self, tensor_file):
-        sha256_hash = hashlib.sha256()
+    def _validate_weight_dir(self) -> bool:
+        if not os.path.isdir(self._weight_dir):
+            logger.warning(
+                "Expected %r to be a directory. Weight strategy skipped",
+                self._weight_dir,
+            )
+            return False
+        return True
+
+    def _is_valid_tensor_file(self, path: str) -> bool:
+        if os.path.islink(path):
+            logger.warning(
+                "Expected %r to be a regular file. Weight strategy skipped", path
+            )
+            return False
+
+        if not os.path.isfile(path) or not path.endswith(self._tensor_suffix):
+            return False
+
+        file_size = os.path.getsize(path)
+        if file_size > self._max_size:
+            logger.warning(
+                "Tensor file %r (%d bytes) exceeds max_size (%d bytes), skipping",
+                path,
+                file_size,
+                self._max_size,
+            )
+            return False
+        return True
+
+    def _filter_valid_tensor_files(self) -> List[str]:
+        result = []
+        for filename in os.listdir(self._weight_dir):
+            full_path = os.path.join(self._weight_dir, filename)
+            if self._is_valid_tensor_file(full_path):
+                result.append(full_path)
+        return result
+
+    def _get_tensor_id(self, tensor_file: str) -> str:
+        """Return the zero-padded shard index, or the basename as fallback."""
+        m = self._TENSOR_ID_RE.search(os.path.basename(tensor_file))
+        return m.group(1) if m else os.path.basename(tensor_file)
+
+    def _calculate_hash256(self, tensor_file: str) -> str:
+        sha256 = hashlib.sha256()
         with open(tensor_file, "rb") as f:
             while True:
-                data = f.read(self._chunk_size)
-                if not data:
+                chunk = f.read(self._chunk_size)
+                if not chunk:
                     break
-                sha256_hash.update(data)
-        return sha256_hash.hexdigest()
+                sha256.update(chunk)
+        return sha256.hexdigest()
 
-    def _validate_weight_dir(self):
-        from msguard import Rule
+    def _parallel_hash_calculation(
+        self, tensor_files: List[str]
+    ) -> Dict[str, Optional[str]]:
+        max_workers = min(len(tensor_files), self._max_hash_workers)
+        results: Dict[str, Optional[str]] = {}
 
-        rule = Rule.input_dir_traverse
-        if not rule.is_satisfied_by(self._weight_dir):
-            logger.warning("Expected %r to be %s", self._weight_dir, rule)
-            return False
-        return True
-
-    def _is_valid_tensor_file(self, tensor_file, weight_rule):
-        if not os.path.isfile(tensor_file) or not tensor_file.endswith(
-            self._tensor_suffix
-        ):
-            return False
-        if not weight_rule.is_satisfied_by(tensor_file):
-            logger.warning("Expected %r to be %s. Skipped", tensor_file, weight_rule)
-            return False
-
-        return True
-
-    def _filter_valid_tensor_files(self):
-        from msguard import Path, where
-
-        weight_rule = where(
-            os.getuid() == 0,
-            Path.is_file(),
-            Path.is_file()
-            & ~Path.has_soft_link()
-            & Path.is_readable()
-            & ~Path.is_writable_to_group_or_others()
-            & Path.is_consistent_to_current_user()
-            & Path.is_size_reasonable(size_limit=self.max_size),
-            description="current user is root",
-        )
-
-        return [
-            os.path.join(self._weight_dir, f)
-            for f in os.listdir(self._weight_dir)
-            if self._is_valid_tensor_file(os.path.join(self._weight_dir, f), weight_rule)
-        ]
-
-    def _parallel_hash_calculation(self, tensor_files):
-        if not tensor_files:
-            logger.warning("No valid tensor files found in the specified directory")
-            return None
-
-        max_workers = min(len(tensor_files), os.cpu_count() or 1)
-        tensor_id_pattern = re.compile(
-            r"(\d{5})-of-\d{5}" + re.escape(self._tensor_suffix)
-        )
-
-        results = {}
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            future_to_id = {}
-            for tensor_file in tensor_files:
-                tensor_basename = os.path.basename(tensor_file)
-                m = tensor_id_pattern.search(tensor_basename)
-                tensor_id = m.group(1) if m else tensor_basename
-                future = executor.submit(self._calculate_hash256, tensor_file)
-                future_to_id[future] = tensor_id
-
+            future_to_id = {
+                executor.submit(self._calculate_hash256, f): self._get_tensor_id(f)
+                for f in tensor_files
+            }
             for future in as_completed(future_to_id):
                 tensor_id = future_to_id[future]
                 try:
-                    result = future.result()
-                except Exception as e:
-                    logger.warning(
-                        "Failed to calculate hash for tensor id %r: %s", tensor_id, e
+                    results[tensor_id] = future.result()
+                except Exception:
+                    logger.exception(
+                        "Failed to calculate hash for tensor id %r", tensor_id
                     )
-                    result = None
-                results[tensor_id] = result
+                    results[tensor_id] = None
 
         return results
 
-    def execute(self):
+    def execute(self) -> Optional[Dict[str, Optional[str]]]:
         if not self._validate_weight_dir():
             return None
+
         tensor_files = self._filter_valid_tensor_files()
         if not tensor_files:
-            logger.warning("No valid tensor files found in the specified directory")
+            logger.warning("No valid tensor files found in %r", self._weight_dir)
             return None
+
         return self._parallel_hash_calculation(tensor_files)
 
 
 class _Ascend(CollectStrategy):
+    """Base collect strategy for Ascend component version files.
+
+    Subclass via ``_AscendComponent`` for zero-boilerplate components.
+    """
+
     def __init__(
         self,
         name: str,
@@ -584,353 +659,482 @@ class _Ascend(CollectStrategy):
         self._default_home = default_home
         self._home_environ = home_environ
 
-    def execute(self) -> Any:
-        home_path = os.getenv(self._home_environ) if self._home_environ else ""
-        base_path = home_path or self._default_home
-        if self._version_path.startswith("/"):
-            full_path = os.path.normpath(self._version_path)
-        else:
-            full_path = os.path.normpath(os.path.join(base_path, self._version_path))
+    def _resolve_home(self) -> str:
+        """Return a validated home path from the environment, or empty string."""
+        if not self._home_environ:
+            return ""
 
-        if not os.path.isfile(full_path):
-            logger.debug("The version file is not found at: %r", full_path)
-            return None
+        home_path = os.getenv(self._home_environ, "")
+        if not home_path:
+            return ""
 
-        results = {}
-        with open(full_path) as f:
+        if not self._default_home:
+            # No reference root to validate against; trust the env var.
+            return home_path
+
+        # Use pathlib.relative_to() instead of startswith() to avoid the
+        # "/usr/local/Ascend-evil" false-positive bypass.
+        allowed_root = Path(self._default_home).parent.resolve()
+        candidate = Path(home_path).resolve()
+        try:
+            candidate.relative_to(allowed_root)
+            return home_path
+        except ValueError:
+            logger.warning(
+                "Environment variable %r points to %r which is outside "
+                "the expected root %r, falling back to default",
+                self._home_environ,
+                home_path,
+                str(allowed_root),
+            )
+            return ""
+
+    def _resolve_full_path(self, home_path: str) -> Path:
+        """Combine home and version_path into an absolute, normalised path."""
+        vp = Path(self._version_path)
+        if vp.is_absolute():
+            return vp.resolve()
+
+        base = Path(home_path or self._default_home)
+        return (base / vp).resolve()
+
+    @staticmethod
+    def _parse_version_file(path: Path) -> Dict[str, str]:
+        """Parse ``KEY=VALUE`` or ``KEY: VALUE`` lines from *path*."""
+        results: dict[str, str] = {}
+        with open(path) as f:
             for line in f:
                 line = line.strip()
-
                 if not line:
-                    logger.debug("The version file is empty: %r", full_path)
-                    return None
-
+                    continue
                 parts = line.split("=", 1) if "=" in line else line.split(":", 1)
                 if len(parts) != 2:
                     logger.debug("Unexpected format in line: %r", line)
                     continue
                 results[parts[0].strip()] = parts[1].strip()
+        return results
 
-        return results if results else None
+    def execute(self) -> Any:
+        home_path = self._resolve_home()
+        full_path = self._resolve_full_path(home_path)
+
+        if not full_path.is_file():
+            logger.debug("Version file not found at: %r", str(full_path))
+            return None
+
+        try:
+            results = self._parse_version_file(full_path)
+        except OSError:
+            logger.exception("Failed to read version file %r", str(full_path))
+            return None
+
+        if not results:
+            logger.debug("Version file yielded no data: %r", str(full_path))
+            return None
+
+        return results
 
 
-class Driver(_Ascend):
+class _AscendComponent(_Ascend):
+    """Declare ``_DEFAULT_*`` class variables; get a concrete component for free.
+
+    Example::
+
+        class Toolkit(_AscendComponent):
+            _DEFAULT_NAME = "toolkit"
+            _DEFAULT_VERSION_PATH = "toolkit/version.info"
+            _DEFAULT_HOME = "/usr/local/Ascend/ascend-toolkit/latest"
+            _DEFAULT_ENVIRON = "ASCEND_TOOLKIT_HOME"
+    """
+
+    _DEFAULT_NAME: str
+    _DEFAULT_VERSION_PATH: str
+    _DEFAULT_HOME: str = ""
+    _DEFAULT_ENVIRON: str = ""
+
     def __init__(
         self,
-        name: str = "driver",
+        name: Optional[str] = None,
         *,
-        version_path: str = "/usr/local/Ascend/driver/version.info",
-        default_home: str = "",
-        home_environ: str = "",
+        version_path: Optional[str] = None,
+        default_home: Optional[str] = None,
+        home_environ: Optional[str] = None,
     ):
         super().__init__(
-            name,
-            version_path=version_path,
-            default_home=default_home,
-            home_environ=home_environ,
+            name if name is not None else self._DEFAULT_NAME,
+            version_path=version_path
+            if version_path is not None
+            else self._DEFAULT_VERSION_PATH,
+            default_home=default_home
+            if default_home is not None
+            else self._DEFAULT_HOME,
+            home_environ=home_environ
+            if home_environ is not None
+            else self._DEFAULT_ENVIRON,
         )
 
 
-class Toolkit(_Ascend):
-    def __init__(
-        self,
-        name: str = "toolkit",
-        *,
-        version_path: str = "toolkit/version.info",
-        default_home: str = "/usr/local/Ascend/ascend-toolkit/latest",
-        home_environ: str = "ASCEND_TOOLKIT_HOME",
-    ):
-        super().__init__(
-            name,
-            version_path=version_path,
-            default_home=default_home,
-            home_environ=home_environ,
-        )
+class Driver(_AscendComponent):
+    # Driver has no home directory concept; version_path is always absolute.
+    _DEFAULT_NAME = "driver"
+    _DEFAULT_VERSION_PATH = "/usr/local/Ascend/driver/version.info"
 
 
-class OppKernel(_Ascend):
-    def __init__(
-        self,
-        name: str = "opp_kernel",
-        *,
-        version_path: str = "opp_kernel/version.info",
-        default_home: str = "/usr/local/Ascend/ascend-toolkit/latest",
-        home_environ: str = "ASCEND_TOOLKIT_HOME",
-    ):
-        super().__init__(
-            name,
-            version_path=version_path,
-            default_home=default_home,
-            home_environ=home_environ,
-        )
+class Toolkit(_AscendComponent):
+    _DEFAULT_NAME = "toolkit"
+    _DEFAULT_VERSION_PATH = "toolkit/version.info"
+    _DEFAULT_HOME = "/usr/local/Ascend/ascend-toolkit/latest"
+    _DEFAULT_ENVIRON = "ASCEND_TOOLKIT_HOME"
 
 
-class TB(_Ascend):
-    def __init__(
-        self,
-        name: str = "atb",
-        *,
-        version_path: str = "../../version.info",
-        default_home: str = "/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_0",
-        home_environ: str = "ATB_HOME_PATH",
-    ):
-        super().__init__(
-            name,
-            version_path=version_path,
-            default_home=default_home,
-            home_environ=home_environ,
-        )
+class OppKernel(_AscendComponent):
+    _DEFAULT_NAME = "opp_kernel"
+    _DEFAULT_VERSION_PATH = "opp_kernel/version.info"
+    _DEFAULT_HOME = "/usr/local/Ascend/ascend-toolkit/latest"
+    _DEFAULT_ENVIRON = "ASCEND_TOOLKIT_HOME"
 
 
-class MindIE(_Ascend):
-    def __init__(
-        self,
-        name: str = "mindie",
-        *,
-        version_path: str = "../version.info",
-        default_home: str = "/usr/local/Ascend/mindie/latest/mindie-llm",
-        home_environ: str = "MINDIE_LLM_HOME_PATH",
-    ):
-        super().__init__(
-            name,
-            version_path=version_path,
-            default_home=default_home,
-            home_environ=home_environ,
-        )
+class TB(_AscendComponent):
+    # version.info lives two levels above the ATB CXX ABI directory.
+    # Using an explicit absolute path avoids silent drift if _DEFAULT_HOME changes.
+    _DEFAULT_NAME = "atb"
+    _DEFAULT_VERSION_PATH = "/usr/local/Ascend/nnal/atb/latest/version.info"
+    _DEFAULT_HOME = "/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_0"
+    _DEFAULT_ENVIRON = "ATB_HOME_PATH"
 
 
-class TBSpeed(_Ascend):
-    def __init__(
-        self,
-        name: str = "atb-models",
-        *,
-        version_path: str = "version.info",
-        default_home: str = "/usr/local/Ascend/atb-models",
-        home_environ: str = "ATB_SPEED_HOME_PATH",
-    ):
-        super().__init__(
-            name,
-            version_path=version_path,
-            default_home=default_home,
-            home_environ=home_environ,
-        )
+class MindIE(_AscendComponent):
+    # version.info lives one level above the MindIE-LLM directory.
+    _DEFAULT_NAME = "mindie"
+    _DEFAULT_VERSION_PATH = "/usr/local/Ascend/mindie/latest/version.info"
+    _DEFAULT_HOME = "/usr/local/Ascend/mindie/latest/mindie-llm"
+    _DEFAULT_ENVIRON = "MINDIE_LLM_HOME_PATH"
+
+
+class TBSpeed(_AscendComponent):
+    _DEFAULT_NAME = "atb-models"
+    _DEFAULT_VERSION_PATH = "version.info"
+    _DEFAULT_HOME = "/usr/local/Ascend/atb-models"
+    _DEFAULT_ENVIRON = "ATB_SPEED_HOME_PATH"
 
 
 class Ascend(CollectStrategyGroup):
     def __init__(
         self,
         name: str = "ascend",
-        strategies=[
-            Driver(),
-            Toolkit(),
-            OppKernel(),
-            TB(),
-            MindIE(),
-            TBSpeed(),
-        ],
+        strategies=None,
     ):
-        super().__init__(name, strategies)
+        super().__init__(
+            name,
+            strategies
+            or [
+                Driver(),
+                Toolkit(),
+                OppKernel(),
+                TB(),
+                MindIE(),
+                TBSpeed(),
+            ],
+        )
 
 
 class Ping(CollectStrategy):
-    def __init__(self, name="ping", *, ip: str = ""):
+    def __init__(self, name: str = "ping", *, ip: str) -> None:
         if not isinstance(ip, str):
-            raise TypeError("IP address must be a string: %r" % ip)
-
+            raise TypeError(f"IP address must be a string: {ip!r}")
         if not is_valid_ip(ip):
-            raise ValueError("IP address format is invalid: %r" % ip)
+            raise ValueError(f"IP address format is invalid: {ip!r}")
 
         super().__init__(name)
         self._ip = ip
+        self._ping_path = shutil.which("ping")
 
-    def execute(self) -> Any:
-        if not self._ip:
-            logger.warning("IP address is empty or not provided")
+    def _ping_ip(self) -> Optional[str]:
+        """Ping the IP address and return the output."""
+        cmd = f"{self._ping_path} -c 3 -q -W 2 {self._ip}"
+        try:
+            return subprocess.check_output(
+                shlex.split(cmd),
+                stderr=subprocess.STDOUT,
+                text=True,
+                timeout=5,
+            )
+        except Exception:
+            logger.warning(
+                "Failed to execute ping command for IP %s", self._ip, exc_info=True
+            )
             return None
 
-        ping_path = shutil.which("ping")
-        if ping_path is None:
+    def execute(self) -> Optional[str]:
+        if self._ping_path is None:
             logger.warning("ping command not found in system PATH")
             return None
 
-        cmd = f"{ping_path} -c 3 -q -W 2 {self._ip}"
-
-        try:
-            output = subprocess.check_output(
-                shlex.split(cmd), stderr=subprocess.STDOUT, text=True, timeout=5
-            )
-            return output
-        except Exception as e:
-            logger.warning(
-                "Failed to execute ping command for IP %s: %s", self._ip, str(e)
-            )
-            return None
+        return self._ping_ip()
 
 
 class HccnTool(CollectStrategy):
-    def __init__(self, name: str, *, device_id: int, timeout=None):
+    """Base class for all hccn_tool-based collect strategies."""
+
+    HCCN_TOOL_PATH = "/usr/local/Ascend/driver/tools/hccn_tool"
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        device_ids: List[int],
+        max_workers: int = 8,
+        timeout: float = 3,
+    ):
         super().__init__(name)
-        self._device_id = device_id
-        self._timeout = timeout or 3
+        self._device_ids = device_ids
+        self._max_workers = max_workers
+        self._timeout = timeout
+        self._bin_path = shutil.which("hccn_tool") or self.HCCN_TOOL_PATH
 
-        self._output = None
-        self._hccn_tool_path = '/usr/local/Ascend/driver/tools/hccn_tool'
-
-    @property
-    @abstractmethod
-    def cmd(self) -> str:
-        pass
-
-    def execute(self):
-        from msguard import Rule
-
-        rule = Rule.input_file_exec
-        if not rule.is_satisfied_by(self._hccn_tool_path):
-            logger.warning("Expected %r to be %s", self._hccn_tool_path, rule)
+    def _run(self, cmd: List[str]) -> Optional[str]:
+        """Execute a single hccn_tool command and return its stdout and stderr."""
+        try:
+            return subprocess.check_output(
+                cmd,
+                stderr=subprocess.STDOUT,
+                text=True,
+                timeout=self._timeout,
+            )
+        except Exception:
+            if logger.isEnabledFor(logging.WARNING):
+                logger.exception("Failed to execute command: %s", cmd)
             return None
 
-        if self._output is None:
-            try:
-                self._output = subprocess.check_output(
-                    shlex.split(self.cmd), stderr=subprocess.DEVNULL, text=True,
-                    timeout=self._timeout
-                )
-            except Exception as e:
-                logger.warning(
-                    "Failed to execute hccn_tool command for device %s: %s",
-                    self._device_id,
-                    str(e),
-                )
-                self._output = "100% packet loss"
-
-        return {self._device_id: self._output}
+    @abstractmethod
+    def execute(self) -> List[Any]:
+        """Execute the hccn_tool command for each device and return a list of results."""
 
 
-class Vnic(HccnTool):
-    def __init__(self, name: str = "vnic", *, device_id: int):
-        super().__init__(name, device_id=device_id)
+class _SingleOption(HccnTool):
+    """
+    Runs:  hccn_tool -i <device_id> <option> -g
+    Returns: List[Optional[str]]  — one entry per device_id
+    """
 
-    @property
-    def cmd(self):
-        return f"{self._hccn_tool_path} -i {self._device_id} -vnic -g"
+    option: str
+    default_name: str
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if not isinstance(getattr(cls, "option", None), str):
+            raise TypeError(
+                f"{cls.__name__} must define a string class variable 'option'"
+            )
+        if not isinstance(getattr(cls, "default_name", None), str):
+            raise TypeError(
+                f"{cls.__name__} must define a string class variable 'default_name'"
+            )
+
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        *,
+        device_ids: List[int],
+        max_workers: int = 8,
+        timeout: float = 3,
+    ):
+        super().__init__(
+            name=name or self.default_name,
+            device_ids=device_ids,
+            max_workers=max_workers,
+            timeout=timeout,
+        )
+
+    def _build_cmd(self, device_id: int) -> List[str]:
+        return [self._bin_path, "-i", str(device_id), self.option, "-g"]
+
+    def execute(self) -> List[Optional[str]]:
+        cmds = [self._build_cmd(device_id) for device_id in self._device_ids]
+        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+            return list(executor.map(self._run, cmds))
 
 
-class Link(HccnTool):
-    def __init__(self, name: str = "link", *, device_id: int):
-        super().__init__(name, device_id=device_id)
+class _OptionIp(HccnTool):
+    """
+    Runs:  hccn_tool -i <device_id> <option> -g address <peer_ip>
+           for every (device_id, peer_ip) combination.
 
-    @property
-    def cmd(self):
-        return f"{self._hccn_tool_path} -i {self._device_id} -link -g"
+    Returns:
+        List[Dict[str, Optional[str]]]
+        — one dict per device_id; keys are peer IPs, values are raw output.
+    """
+
+    option: str
+    default_name: str
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if not isinstance(getattr(cls, "option", None), str):
+            raise TypeError(
+                f"{cls.__name__} must define a string class variable 'option'"
+            )
+        if not isinstance(getattr(cls, "default_name", None), str):
+            raise TypeError(
+                f"{cls.__name__} must define a string class variable 'default_name'"
+            )
+
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        *,
+        device_ids: List[int],
+        device_ips: List[str],
+        max_workers: int = 8,
+        timeout: float = 3,
+    ):
+        super().__init__(
+            name=name or self.default_name,
+            device_ids=device_ids,
+            max_workers=max_workers,
+            timeout=timeout,
+        )
+        self._device_ips = device_ips
+
+    def _build_cmd(self, device_id: int, ip: str) -> List[str]:
+        return [self._bin_path, "-i", str(device_id), self.option, "-g", "address", ip]
+
+    def _probe_device(self, device_id: int) -> Dict[str, Optional[str]]:
+        """Run probes for all peer IPs from a single device — sequentially."""
+        return {
+            ip: self._run(self._build_cmd(device_id, ip)) for ip in self._device_ips
+        }
+
+    def execute(self) -> List[Dict[str, Optional[str]]]:
+        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+            return list(executor.map(self._probe_device, self._device_ids))
 
 
-class Tls(HccnTool):
-    def __init__(self, name: str = "tls", *, device_id: int):
-        super().__init__(name, device_id=device_id)
-
-    @property
-    def cmd(self):
-        return f"{self._hccn_tool_path} -i {self._device_id} -tls -g"
+class Vnic(_SingleOption):
+    option = "-vnic"
+    default_name = "vnic"
 
 
-class HcclPing(HccnTool):
-    def __init__(self, name: str = "hccl_ping", *, device_id: int, device_ip: str):
-        if not isinstance(device_ip, str):
-            raise TypeError("IP address must be a string: %r" % device_ip)
-
-        if not is_valid_ip(device_ip):
-            raise ValueError("IP address format is invalid: %r" % device_ip)
-
-        super().__init__(name, device_id=device_id)
-        self._device_ip = device_ip
-
-    @property
-    def cmd(self):
-        return f"{self._hccn_tool_path} -i {self._device_id} -ping -g address {self._device_ip}"
+class Link(_SingleOption):
+    option = "-link"
+    default_name = "link"
 
 
-class HccsPing(HccnTool):
-    def __init__(self, name: str = "hccl_ping", *, device_id: int, device_ip: str):
-        if not isinstance(device_ip, str):
-            raise TypeError("IP address must be a string: %r" % device_ip)
+class Tls(_SingleOption):
+    option = "-tls"
+    default_name = "tls"
 
-        if not is_valid_ip(device_ip):
-            raise ValueError("IP address format is invalid: %r" % device_ip)
 
-        super().__init__(name, device_id=device_id)
-        self._device_ip = device_ip
+class HcclPing(_OptionIp):
+    option = "-ping"
+    default_name = "hccl_ping"
 
-    @property
-    def cmd(self):
-        return f"{self._hccn_tool_path} -i {self._device_id} -hccs_ping -g address {self._device_ip}"
+
+class HccsPing(_OptionIp):
+    option = "-hccs_ping"
+    default_name = "hccs_ping"
 
 
 class Network(CollectStrategyGroup):
+    _HCCS_PING_VERSION = "1.2"
+
     def __init__(
         self,
         name: str = "network",
-        strategies=None,
         *,
         rank_table: RankTable,
-        npu_count=None,
+        npu_count: Optional[int] = None,
     ):
         if not isinstance(rank_table, RankTable):
             raise TypeError("rank_table must be an instance of RankTable")
 
-        npu_count = npu_count if npu_count else get_npu_count()
+        npu_count = npu_count if npu_count is not None else get_npu_count()
         if npu_count == 0:
             raise ValueError("No NPU devices found in the system")
 
-        all_device_ips = (
-            device_info.device_ip
-            for device_info_list in rank_table.host_to_devices.values()
-            for device_info in device_info_list
+        # Collect all unique device IPs from rank table
+        all_device_ips = list(
+            dict.fromkeys(
+                device_info.device_ip
+                for device_info_list in rank_table.host_to_devices.values()
+                for device_info in device_info_list
+            )
         )
+
         if not all_device_ips:
             raise ValueError("No device IP addresses found in the rank table")
 
+        device_ids = list(range(npu_count))
+
+        # Determine which ping class to use based on rank table version
         ping_cls = (
-            HccsPing if getattr(rank_table, "version", "1.0") == "1.2" else HcclPing
+            HccsPing if rank_table.version == self._HCCS_PING_VERSION else HcclPing
         )
-        strategies = [Ping(ip=host_ip) for host_ip in rank_table.host_to_devices]
-        for device_id in range(npu_count):
-            strategies.extend(
-                (
-                    Vnic(device_id=device_id),
-                    Link(device_id=device_id),
-                    Tls(device_id=device_id),
-                )
-            )
-            for device_ip in all_device_ips:
-                strategies.append(ping_cls(device_id=device_id, device_ip=device_ip))
+
+        # Build strategies list
+        # Each Ping needs a unique name based on the IP
+        strategies = [Ping(name=f"ping_{ip}", ip=ip) for ip in all_device_ips]
+        strategies.extend(
+            [
+                Vnic(device_ids=device_ids),
+                Link(device_ids=device_ids),
+                Tls(device_ids=device_ids),
+                ping_cls(device_ids=device_ids, device_ips=all_device_ips),
+            ]
+        )
 
         super().__init__(name, strategies=strategies)
-        self._rank_table = rank_table
 
 
 class Stress(CollectStrategy):
-    def __init__(self, name, *, batch_size, seq_len, hidden_size, intermediate_size):
+    def __init__(
+        self, name, *, batch_size, seq_len, hidden_size, intermediate_size, epochs=5
+    ):
         self._torch = None
         try:
             import torch
 
             self._torch = torch
         except ImportError:
-            logger.warning()
+            logger.warning("Failed to import torch")
+
+        for param_name, param_value in [
+            ("batch_size", batch_size),
+            ("seq_len", seq_len),
+            ("hidden_size", hidden_size),
+            ("intermediate_size", intermediate_size),
+            ("epochs", epochs),
+        ]:
+            if not isinstance(param_value, int) or param_value <= 0:
+                raise ValueError(
+                    f"{param_name} must be a positive integer, got {param_value!r}"
+                )
 
         super().__init__(name)
         self._batch_size = batch_size
         self._seq_len = seq_len
         self._hidden_size = hidden_size
         self._intermediate_size = intermediate_size
+        self._epochs = epochs
 
-    @staticmethod
-    def _calculate_tensor_memory(shape):
-        return math.prod(shape) * 4  # default to float32
+    @property
+    @abstractmethod
+    def device_type(self) -> str:
+        pass
 
     @abstractmethod
-    def _get_free_memory(self, device):
+    def _get_free_memory(self, device) -> float:
         pass
+
+    def _calculate_tensor_memory(self, shape):
+        if not isinstance(shape, tuple):
+            shape = (shape,)
+        import operator
+
+        # Use functools.reduce for Python 3.7 compatibility (math.prod added in 3.8)
+        from functools import reduce
+
+        return reduce(operator.mul, shape, 1) * 4  # float32 = 4 bytes
 
     def _check_memory_for_matmul(self, device_pos):
         mat_a_mem = self._calculate_tensor_memory(
@@ -939,6 +1143,7 @@ class Stress(CollectStrategy):
         mat_b_mem = self._calculate_tensor_memory(
             (self._batch_size, self._hidden_size, self._intermediate_size)
         )
+        # addbmm output shape is (seq_len, intermediate_size); unchanged
         mat_c_mem = self._calculate_tensor_memory(
             (self._seq_len, self._intermediate_size)
         )
@@ -946,49 +1151,171 @@ class Stress(CollectStrategy):
 
         free_memory = self._get_free_memory(device_pos)
         safety_margin = 0.2
-
         available_with_margin = free_memory * (1 - safety_margin)
         has_enough_mem = total_required <= available_with_margin
+        logger.debug(
+            "Device %s - Required memory: %d bytes, Free memory: %d bytes, "
+            "Available with margin: %d bytes",
+            device_pos,
+            total_required,
+            free_memory,
+            available_with_margin,
+        )
 
         if not has_enough_mem:
-            logger.warning()
+            logger.warning(
+                "Insufficient memory on device %s for matmul operation", device_pos
+            )
             return False
 
         return True
 
-    def _matmul_stress_test(self, device_type, device_id):
-        device_pos = f"{device_type}:{device_id}"
+    def _matmul_stress_test(self, device_id):
+        """Run matrix-multiply stress on one device and return elapsed ms."""
+        device_pos = f"{self.device_type}:{device_id}"
 
         if not self._check_memory_for_matmul(device_pos):
-            return
+            return 0.0
 
-        # 执行多次矩阵运算：mat_c + mat_a × mat_b
-        for _ in range(10):
-            mat_a = self.torch.randn(
+        start_time = time.perf_counter()
+        for _ in range(self._epochs):
+            mat_a = self._torch.randn(
                 self._batch_size, self._seq_len, self._hidden_size
             ).to(device_pos)
-            mat_b = self.torch.randn(
+            mat_b = self._torch.randn(
                 self._batch_size, self._hidden_size, self._intermediate_size
             ).to(device_pos)
-            mat_c = self.torch.randn(self._seq_len, self._intermediate_size).to(
+            mat_c = self._torch.zeros(self._seq_len, self._intermediate_size).to(
                 device_pos
             )
-            self.torch.addbmm(mat_c, mat_a, mat_b)
+            self._torch.addbmm(mat_c, mat_a, mat_b)
+
+        end_time = time.perf_counter()
+        return (end_time - start_time) * 1000
 
     def execute(self):
-        if not self.torch:
+        if not self._torch:
+            logger.error("torch is not available, skip the stress test")
             return None
 
-        cpu_ids = os.cpu_count()
-        self.torch.set_num_threads(cpu_ids)
-
-        output = dict.fromkeys(range(cpu_ids), 0)
-        for cpu_id in SimpleProgressBar(range(cpu_ids)):
-            start_time = time.time()
-            self._matmul_stress_test(cpu_id)
-            end_time = time.time()
-            cpu_time = (end_time - start_time) * 1000
-
-            output[cpu_id] = cpu_time
+        output = {}
+        cpu_count = os.cpu_count() or 1
+        self._torch.set_num_threads(cpu_count)
+        with ThreadPoolExecutor(max_workers=cpu_count) as executor:
+            future_to_id = {
+                executor.submit(self._matmul_stress_test, cpu_id): cpu_id
+                for cpu_id in range(cpu_count)
+            }
+            for future in as_completed(future_to_id):
+                cpu_id = future_to_id[future]
+                try:
+                    elapsed_ms = future.result()
+                    logger.debug(
+                        "Stress test completed on device %s:%s in %.2f ms",
+                        self.device_type,
+                        cpu_id,
+                        elapsed_ms,
+                    )
+                    output[cpu_id] = elapsed_ms
+                except Exception:
+                    logger.exception(
+                        "Stress test failed on device %s:%s",
+                        self.device_type,
+                        cpu_id,
+                    )
+                    output[cpu_id] = None
 
         return output
+
+
+class CPU(Stress):
+    def __init__(
+        self,
+        name: str = "cpu",
+        *,
+        batch_size=1,
+        seq_len=512,
+        hidden_size=1024,
+        intermediate_size=64,
+        epochs=5,
+    ):
+        super().__init__(
+            name,
+            batch_size=batch_size,
+            seq_len=seq_len,
+            hidden_size=hidden_size,
+            intermediate_size=intermediate_size,
+            epochs=epochs,
+        )
+
+    @property
+    def device_type(self) -> str:
+        return "cpu"
+
+    def _get_free_memory(self, device) -> float:
+        import psutil
+
+        memory_available = psutil.virtual_memory().available
+        logger.debug("Available CPU memory: %d bytes", memory_available)
+        return memory_available
+
+
+class NPU(Stress):
+    def __init__(
+        self,
+        name: str = "npu",
+        *,
+        batch_size=1,
+        seq_len=4096,
+        hidden_size=8192,
+        intermediate_size=3584,
+        epochs=5,
+    ):
+        super().__init__(
+            name,
+            batch_size=batch_size,
+            seq_len=seq_len,
+            hidden_size=hidden_size,
+            intermediate_size=intermediate_size,
+            epochs=epochs,
+        )
+
+        self._torch_npu = None
+        try:
+            import torch_npu
+
+            self._torch_npu = torch_npu
+        except ImportError:
+            logger.warning("Failed to import torch_npu")
+
+    @property
+    def device_type(self) -> str:
+        return "npu"
+
+    def _get_free_memory(self, device):
+        if self._torch_npu is None:
+            logger.warning("torch_npu is not available")
+            return 0
+
+        if not self._torch_npu.npu.is_available():
+            logger.warning("NPU device is not available: %s", device)
+            return 0
+
+        total_memory = self._torch_npu.npu.get_device_properties(device).total_memory
+        used_memory = self._torch_npu.npu.memory_allocated(device)
+        logger.debug(
+            "NPU device %s - Total memory: %d bytes, Used memory: %d bytes, "
+            "Free memory: %d bytes",
+            device,
+            total_memory,
+            used_memory,
+            total_memory - used_memory,
+        )
+        return total_memory - used_memory
+
+    def execute(self):
+        if not self._torch_npu:
+            logger.warning("torch_npu is not available, skip the stress test")
+            return None
+
+        return super().execute()

@@ -1,5 +1,5 @@
 [lintrunner]
-# mode = 'whole_repo'
+mode = 'whole_repo'
 verbose = true
 
 [[linter]]
