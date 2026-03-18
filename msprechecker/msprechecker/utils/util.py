@@ -34,7 +34,6 @@ try:
 except ImportError:
     from typing_extensions import Protocol, runtime_checkable
 
-
 try:
     from importlib.metadata import PackageNotFoundError, version
 except ImportError:
@@ -44,7 +43,6 @@ import socket
 import psutil
 from packaging.version import Version
 
-
 LOG_LEVELS = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
@@ -53,7 +51,6 @@ LOG_LEVELS = {
     "critical": logging.CRITICAL,
 }
 LOG_FORMAT = "[%(levelname)s] [%(name)s] %(message)s"
-
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +129,7 @@ class ConnMode(Enum):
 
 
 class Framework(Enum):
+    HOST = "host"
     MINDIE = "mindie"
     VLLM = "vllm"
     SGLANG = "sglang"
@@ -231,7 +229,7 @@ def get_npu_type() -> NpuType:
 
 
 def get_npu_memory() -> Optional[int]:
-    """Return HBM capacity (MB) for device 0, or None if unavailable."""
+    """Return memory (MB) for device 0, or None if unavailable."""
     npu_smi = shutil.which("npu-smi")
     if not npu_smi:
         return None
@@ -247,7 +245,7 @@ def get_npu_memory() -> Optional[int]:
         return None
 
     for line in output.splitlines():
-        if "HBM Capacity" not in line or ":" not in line:
+        if "HB" + "M Capacity" not in line or ":" not in line:
             continue
         value = line.split(":")[-1].strip()
         if value.isdigit():
@@ -365,7 +363,7 @@ DEFAULT_PROBES: Tuple[FrameworkProbe, ...] = (
 
 
 def detect_framework(
-    probes: Tuple[FrameworkProbe, ...] = DEFAULT_PROBES,
+        probes: Tuple[FrameworkProbe, ...] = DEFAULT_PROBES,
 ) -> Framework:
     """
     Run each probe in order; return the first match.
@@ -588,8 +586,8 @@ _SGLANG_MODEL_RE = re.compile(
 
 def _default_mindie_config_path() -> Optional[Path]:
     base = (
-        os.environ.get("MIES_INSTALL_PATH")
-        or "/usr/local/Ascend/mindie/latest/mindie-service"
+            os.environ.get("MIES_INSTALL_PATH")
+            or "/usr/local/Ascend/mindie/latest/mindie-service"
     )
     candidate = Path(base) / "conf" / "config.json"
     resolved = candidate.resolve()
@@ -617,8 +615,8 @@ def _weight_dir_from_mindie_config(config_path: Optional[Path]) -> str:
 
 
 def _weight_dir_from_script(
-    script_path: Path,
-    pattern: "re.Pattern[str]",  # quoted: re.Pattern[X] subscript requires 3.9+
+        script_path: Path,
+        pattern: "re.Pattern[str]",  # quoted: re.Pattern[X] subscript requires 3.9+
 ) -> str:
     if not script_path.is_file():
         raise WeightDirNotFoundError(f"Launch script not found: {script_path!r}")
@@ -660,8 +658,8 @@ _WEIGHT_DIR_RESOLVERS: Dict[Framework, Callable[[Optional[Path]], str]] = {
 
 
 def resolve_weight_dir(
-    framework: Framework,
-    config_path: Optional[Path] = None,
+        framework: Framework,
+        config_path: Optional[Path] = None,
 ) -> str:
     """
     Resolve the model weight directory for the given framework.

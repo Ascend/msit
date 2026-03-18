@@ -17,10 +17,8 @@
 import logging
 from typing import Any, Dict
 
-from .strategy import CollectStrategy
-
-
-logger = logging.getLogger(__name__)
+from ..strategies import CollectStrategy, CollectStrategyGroup
+from ..utils import LOGGER
 
 
 class Collector:
@@ -30,15 +28,15 @@ class Collector:
             try:
                 self._collect_strategies = list(collect_strategies)
             except TypeError:
-                logger.error(
+                LOGGER.error(
                     "collect_strategies must be an iterable. Got %s instead",
                     collect_strategies,
                 )
                 raise
 
         if not all(
-            isinstance(strategy, CollectStrategy)
-            for strategy in self._collect_strategies
+                isinstance(strategy, (CollectStrategy, CollectStrategyGroup))
+                for strategy in self._collect_strategies
         ):
             raise TypeError(
                 "All collect_strategies must be instances of CollectStrategy"
@@ -54,3 +52,7 @@ class Collector:
         return {
             strategy.name: strategy.execute() for strategy in self._collect_strategies
         }
+
+    def sync(self, target):
+        for strategy in self._collect_strategies:
+            strategy.sync(target)

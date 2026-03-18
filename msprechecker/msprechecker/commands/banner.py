@@ -14,27 +14,23 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-import logging
 import os
 import platform
 import shutil
 from abc import ABC, abstractmethod
 
 from ..core.strategy import Ascend, Lscpu
-from ..util import get_npu_count, get_npu_type, get_pkg_version
-
-
-logger = logging.getLogger(__name__)
+from ..utils import get_npu_count, get_npu_type, get_pkg_version, LOGGER
 
 
 class InfoSection(ABC):
     @abstractmethod
-    def get_info(self) -> str:
+    def get_info(self):
         pass
 
 
 class PlatformInfoSection(InfoSection):
-    def get_info(self) -> str:
+    def get_info(self):
         return f"Platform: {platform.platform()}"
 
 
@@ -42,7 +38,7 @@ class PythonInfoSection(InfoSection):
     def __init__(self, packages):
         self.packages = packages
 
-    def get_info(self) -> str:
+    def get_info(self):
         python_info = f"Python {platform.python_version()}"
         for package in self.packages:
             package_ver = get_pkg_version(package)
@@ -54,71 +50,58 @@ class PythonInfoSection(InfoSection):
 
 
 class CpuInfoSection(InfoSection):
-    def get_info(self) -> str:
+    def get_info(self):
         data = Lscpu().execute()
         model_name = (
-            data.get("Model name", "Unknown") if isinstance(data, dict) else "Unknown"
+            data.get("model_name", "Unknown Type") if isinstance(data, dict) else None
         )
         return f"CPU: {model_name} ({os.cpu_count()} cores)"
 
 
 class NpuInfoSection(InfoSection):
-    def get_info(self) -> str:
-        # get_npu_type() returns (npu_type, npu_device_nums):
-        #   npu_device_nums = physical device count (e.g. number of cards)
-        # get_npu_count() returns total chip count across all devices
-        npu_type = get_npu_type()
+    def get_info(self):
+        npu_type, npu_device_nums = get_npu_type()
+        npu_type = npu_type.display if npu_type else "Unknown Type"
+        npu_device_nums = npu_device_nums or 0
         npu_count = get_npu_count()
-        return f"NPU: {npu_type.value} ({npu_count} chips)"
+        return f"NPU: {npu_type} ({npu_device_nums} devices {npu_count} chips)"
 
 
 class AscendInfoSection(InfoSection):
-    def get_info(self) -> str:
+    def get_info(self):
         data = Ascend().execute()
         if not data:
             return "Ascend: not found"
         return self._format_ascend_info(data)
 
-    def _format_ascend_info(self, data) -> str:
+    def _format_ascend_info(self, data):
         prefix = "Ascend: "
         indent = " " * len(prefix)
+        items = list(data.items())
         lines = []
-        for idx, (comp, info) in enumerate(data.items()):
+        for idx, (comp, info) in enumerate(items):
             line_prefix = prefix if idx == 0 else indent
             lines.append(f"{line_prefix}{comp}: {self._format_version(info)}")
         return "\n".join(lines)
 
-    def _format_version(self, info) -> str:
-        if not info:
-            return "not found"
-
-        version = None
-        timestamp = None
-        commit_id = None
-        for key in info:
-            if key.lower() == "version":
-                version = info[key]
-            elif key.lower() == "timestamp":
-                timestamp = info[key]
-            elif key.lower() == "commit":
-                commit_id = info[key]
-
-        comp_ver = f"{version} ({timestamp})" if timestamp else version
+    def _format_version(self, info):
+        comp_ver = info.get("version", "not found")
+        timestamp = info.get("timestamp")
+        if timestamp:
+            comp_ver += f" ({timestamp})"
+        commit_id = info.get("commit")
         if commit_id:
             comp_ver += f" -- {commit_id}"
-
         return comp_ver
 
 
 class BannerPresenter:
-    TITLE = "MindStudio Prechecker Tool"
     PYTHON_INFO_PACKAGES = ["msprechecker", "torch", "torch_npu", "transformers"]
 
-    def __init__(self, *, sections=None, python_packages=None):
-        packages = python_packages or self.PYTHON_INFO_PACKAGES
+    def __init__(self, *, sections=None):
         self.sections = sections or [
             PlatformInfoSection(),
-            PythonInfoSection(packages),
+            PythonInfoSection(self.PYTHON_INFO_PACKAGES),
             CpuInfoSection(),
             NpuInfoSection(),
             AscendInfoSection(),
@@ -127,14 +110,13 @@ class BannerPresenter:
     def add_section(self, section: InfoSection):
         self.sections.append(section)
 
-    def render(self) -> str:
-        """Return the full banner as a string (enables testing and logging)."""
-        cols, _ = shutil.get_terminal_size()
-        lines = [f" {self.TITLE} ".center(cols, "=")]
-        for section in self.sections:
-            lines.append(section.get_info())
-        lines.append("-" * cols)
-        return "\n".join(lines)
-
     def print_banner(self):
-        print(self.render())
+        cols, _ = shutil.get_terminal_size()
+
+        title = "MindStudio Prechecker Tool"
+        LOGGER.info(f" {title} ".center(cols, "="))
+
+        for section in self.sections:
+            LOGGER.info(section.get_info())
+
+        LOGGER.info("-" * cols)

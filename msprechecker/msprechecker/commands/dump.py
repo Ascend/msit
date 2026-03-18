@@ -13,27 +13,19 @@
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 # See the Mulan PSL v2 for more details.
 
+import os
 import argparse
 import json
-import logging
-import os
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple, List, Dict
 
-from ..core.collector import Collector
-from ..core.strategy import Ascend, Config, Env, Network, Sys, Weight
-from ..util import (
-    detect_framework,
-    Framework,
-    parse_rank_table,
-    resolve_weight_dir,
-    WeightDirNotFoundError,
-)
+from ..core import Collector
+from ..strategies import Image, Network, Ascend, Weight, Configs, Config, Sys, Env
+from ..utils import Utils, PreFetch, Output, Framework, LOGGER, resolve_weight_dir, WeightDirNotFoundError, \
+    parse_rank_table
+
 from . import CmdStrategy, CmdType
-
-
-logger = logging.getLogger(__name__)
 
 
 def setup_dump(subparsers: argparse._SubParsersAction, parents=None):
@@ -48,10 +40,9 @@ def setup_dump(subparsers: argparse._SubParsersAction, parents=None):
 
     epilog = dedent("""\
         Example:
-          msprechecker dump                              # Default saved to current dir 'msprechecker_dumped.json'
-          msprechecker dump --output-path /output/path   # Save snapshots to custom path: '/output/path'
-          msprechecker dump -c user_config:user_config.json \\
-            mindie_env:mindie_env.json                   # Dump extra PD disaggregation configuration files
+          msprechecker dump                                                                           # Default saved to current dir 'msprechecker_dumped.json'
+          msprechecker dump --output-path /output/path                                                # Save snapshots to custom path: '/output/path'
+          msprechecker dump --user-config-path user_config.json --mindie-env-path mindie_env.json     # Dump extra PD disaggregation configuration files
     """)
 
     dump_parser = subparsers.add_parser(
@@ -67,10 +58,10 @@ def setup_dump(subparsers: argparse._SubParsersAction, parents=None):
     dump_parser.add_argument(
         "--output-path",
         metavar="",
-        default="./msprechecker_dumped.json",
+        default="./msprechecker-dumped-{}.json",
         help=(
             "Path to save the dumped context (JSON format). "
-            "Default: './msprechecker_dumped.json'."
+            "Default: ./msprechecker-dumped-{current_time}.json."
         ),
     )
     _add_extra_options(dump_parser)
@@ -79,6 +70,14 @@ def setup_dump(subparsers: argparse._SubParsersAction, parents=None):
 
 
 def _add_extra_options(dump_parser):
+    framework = PreFetch.get_framework()
+    if framework == Framework.HOST:
+        LOGGER.debug("Non-Container environment detected.")
+    elif framework == Framework.UNKNOWN:
+        LOGGER.debug("Unknown image type, skip.")
+    else:
+        LOGGER.debug(f"Detected image type: {framework.value}.")
+
     env_group = dump_parser.add_argument_group("Env Options")
     env_group.add_argument(
         "--ascend-only",
@@ -94,7 +93,7 @@ def _add_extra_options(dump_parser):
 
     # Cache the detection result for the lifetime of this setup call so that
     # the framework is only probed once, not on every attribute access.
-    framework = detect_framework()
+    framework = PreFetch.get_framework()
     nargs = "+" if framework in {Framework.VLLM, Framework.SGLANG} else "*"
     config_group = dump_parser.add_argument_group("Config Options")
     config_group.add_argument(
@@ -110,7 +109,7 @@ def _add_extra_options(dump_parser):
 
     weight_group = dump_parser.add_argument_group("Weight Options")
     weight_group.add_argument(
-        "--weight-dir", metavar="", help="Directory path containing model weights."
+        "-w", "--weight-dir", metavar="", help="Directory path containing model weights."
     )
     weight_group.add_argument(
         "--chunk-size",
@@ -127,59 +126,12 @@ def _add_extra_options(dump_parser):
 
 
 class Dump(CmdStrategy):
-    @staticmethod
-    def _split_config_field(config_field: str) -> Optional[Tuple[str, str]]:
-        """
-        Parse a single 'name:path' string into (name, path).
-        Returns None and logs a warning if the format is invalid.
-        """
-        if ":" not in config_field:
-            logger.warning(
-                'Invalid config field format, expected "name:path": %s', config_field
-            )
-            return None
-
-        name, path = config_field.split(":", 1)
-        name, path = name.strip(), path.strip()
-
-        if not name:
-            logger.warning("Empty config name in field: %s", config_field)
-            return None
-
-        return name, path
-
-    @staticmethod
-    def _parse_config_fields(config_fields: List[str]) -> Dict[str, str]:
-        """
-        Parse and validate a list of 'name:path' config fields.
-        Returns a dict mapping name -> validated path.
-        """
-        name_to_path: Dict[str, str] = {}
-
-        for field in config_fields:
-            result = Dump._split_config_field(field)
-            if result is None:
-                continue
-
-            name, path = result
-            if not os.path.isfile(path):
-                logger.warning("Config file %r not found", path)
-                continue
-
-            if name in name_to_path:
-                logger.warning(
-                    "Duplicate config name %r, overwriting previous path", name
-                )
-
-            name_to_path[name] = path
-
-        return name_to_path
 
     @staticmethod
     def _resolve_weight_dir(
-        framework: Framework,
-        name_to_path: Dict[str, str],
-        cli_weight_dir: Optional[str],
+            framework: Framework,
+            paths: List[str],
+            cli_weight_dir: Optional[str],
     ) -> Tuple[Optional[str], bool]:
         """
         Try to resolve weight_dir from config files.
@@ -189,7 +141,7 @@ class Dump(CmdStrategy):
         """
         resolved: Optional[str] = None
 
-        for path in name_to_path.values():
+        for path in paths:
             ext = os.path.splitext(path)[1].lower()
             if ext not in {".json", ".sh"}:
                 continue
@@ -197,11 +149,11 @@ class Dump(CmdStrategy):
             try:
                 weight_dir = resolve_weight_dir(framework, config_path=Path(path))
             except WeightDirNotFoundError:
-                logger.debug("No weight directory found in config %r; skipping", path)
+                LOGGER.debug("No weight directory found in config %r; skipping", path)
                 continue
 
             if cli_weight_dir is not None and cli_weight_dir != weight_dir:
-                logger.error(
+                LOGGER.error(
                     "Weight directory conflict: config specifies %r but CLI provides %r",
                     weight_dir,
                     cli_weight_dir,
@@ -214,18 +166,19 @@ class Dump(CmdStrategy):
 
     @staticmethod
     def _build_collector(
-        framework: Framework,
-        name_to_path: Dict[str, str],
-        weight_dir: Optional[str],
-        rank_table_path: Optional[str],
+            framework: Framework,
+            paths: List[str],
+            weight_dir: Optional[str],
+            rank_table_path: Optional[str],
     ) -> Collector:
         """
         Assemble a Collector with all applicable strategies.
         """
-        strategies = [Env(), Sys(), Ascend()]
-
-        for name, path in name_to_path.items():
-            strategies.append(Config(name=name, config_path=path))
+        strategies = [Env(), Sys(), Ascend(), Image()]
+        configs = Configs()
+        for path in paths:
+            configs.add(Config(name=path, config_path=path))
+        strategies.append(configs)
 
         if weight_dir:
             strategies.append(Weight(weight_dir=weight_dir))
@@ -253,12 +206,21 @@ class Dump(CmdStrategy):
         Returns:
             0 if successful, 1 if error occurred
         """
-        framework = detect_framework()
+        framework = PreFetch.get_framework()
+        if framework == Framework.HOST:
+            Utils.log_error_and_exit("Running msprechecker dump in a non-container environment is not supported.")
+        elif framework == Framework.UNKNOWN:
+            Utils.log_error_and_exit("Unsupported image type, exit.")
 
-        name_to_path = self._parse_config_fields(args.configs) if args.configs else {}
+        if not args.configs and framework == Framework.MINDIE:
+            default_config_path = "/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json"
+            LOGGER.info(f"Using default mindie config path: {default_config_path}")
+            configs = [default_config_path]
+        else:
+            configs = args.configs
 
         weight_dir, has_conflict = self._resolve_weight_dir(
-            framework, name_to_path, args.weight_dir
+            framework, configs, args.weight_dir
         )
         if has_conflict:
             return 1
@@ -266,19 +228,20 @@ class Dump(CmdStrategy):
         effective_weight_dir = weight_dir or args.weight_dir
 
         collector = self._build_collector(
-            framework, name_to_path, effective_weight_dir, args.rank_table_path
+            framework, configs, effective_weight_dir, args.rank_table_path
         )
-
+        abspath = os.path.abspath(args.output_path.format(Utils.get_time_stamp()))
         try:
             data = collector.collect()
-            with open(args.output_path, "w") as f:
+            data['timestamp'] = Utils.get_time_stamp()
+            with open(abspath, "w") as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)
-        except Exception:
-            logger.exception("Error occurred while saving to %r", args.output_path)
-            return 1
+        except Exception as e:
+            LOGGER.error(e)
+            Utils.log_error_and_exit("Error occurred while saving to {}".format(abspath))
 
-        print(f"All information has been saved in: {args.output_path!r}")
-        print(
-            "You may now use 'msprechecker compare' to compare dumped files for discrepancies!"
+        Output.message("All information has been saved in: {}".format(abspath))
+        Output.message(
+            "You may now use 'msprechecker compare' to compare two or more dumped files for discrepancies!"
         )
         return 0
