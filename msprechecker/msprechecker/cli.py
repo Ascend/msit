@@ -13,21 +13,21 @@
 # limitations under the License.
 
 import argparse
-import logging
+import sys
+import traceback
 from textwrap import dedent
+
+from .commands import CmdStrategyFactory, CmdType
+from .commands.cmate import setup_cmate
+from .commands.compare import setup_compare
+from .commands.dump import setup_dump
+from .commands.sync import setup_sync
+from .commands.precheck import setup_precheck
+from .utils import LOGGER, CustomError, LOG_LEVELS
 
 
 def main() -> int:
-    from .util import LOG_FORMAT, LOG_LEVELS
-
     global_parser = argparse.ArgumentParser(add_help=False)
-    global_parser.add_argument(
-        "--log-level",
-        "-l",
-        choices=LOG_LEVELS,
-        default="info",
-        help="Set the logging level.",
-    )
 
     main_parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -40,37 +40,44 @@ def main() -> int:
               msprechecker precheck                          # Run validations
               msprechecker dump --output-path baseline.json  # Create a snapshot of current context
               msprechecker compare old.json new.json         # Compare two snapshots
+              msprechecker sync baseline.json                # Replicate snapshots from baseline.json
 
             For detailed help on each command, use: msprechecker <command> --help
         """),
     )
+    main_parser.add_argument('-l', '--log-level', type=int, choices=range(0, 5), default=1,
+                             help="Specify the print log level, "
+                                  "0(debug) | 1(info) | 2(warning) | 3(error) | 4(critical), default is 1(info).")
     subparsers = main_parser.add_subparsers(
         dest="command", title="Available Commands", metavar=""
     )
 
-    from .commands.cmate import setup_cmate
-    from .commands.compare import setup_compare
-    from .commands.dump import setup_dump
-    from .commands.precheck import setup_precheck
+    try:
+        setup_precheck(subparsers, [global_parser])
+        setup_dump(subparsers, [global_parser])
+        setup_compare(subparsers, [global_parser])
+        setup_sync(subparsers, [global_parser])
+        setup_cmate(subparsers, [global_parser])
+        args = main_parser.parse_args()
 
-    setup_precheck(subparsers, [global_parser])
-    setup_dump(subparsers, [global_parser])
-    setup_compare(subparsers, [global_parser])
-    setup_cmate(subparsers, [global_parser])
+        LOGGER.setLevel(LOG_LEVELS[args.log_level])
 
-    args = main_parser.parse_args()
-    from .commands.banner import BannerPresenter
-
-    BannerPresenter().print_banner()
-    cmd = getattr(args, "command", None)
-    if not cmd:
-        main_parser.print_help()
-        return 1
-
-    logging.basicConfig(format=LOG_FORMAT, level=LOG_LEVELS[args.log_level])
-    from .commands import CmdStrategyFactory, CmdType
-
-    strategy_factory = CmdStrategyFactory()
-    args.command = CmdType(cmd)
-    strategy = strategy_factory.get(args.command)
-    return strategy.execute(args)
+        cmd = getattr(args, "command", None)
+        if not cmd:
+            main_parser.print_help()
+            return 1
+        strategy_factory = CmdStrategyFactory()
+        args.command = CmdType(cmd)
+        strategy = strategy_factory.get(args.command)
+        return strategy.execute(args)
+    except ValueError as e:
+        LOGGER.error(traceback.format_exc())
+        LOGGER.error(e)
+        sys.exit(2)
+    except CustomError as e:
+        if hasattr(e, 'code'):
+            sys.exit(int(e.code))
+        sys.exit(0)
+    except Exception as e:
+        LOGGER.error(e)
+        LOGGER.error(traceback.format_exc())

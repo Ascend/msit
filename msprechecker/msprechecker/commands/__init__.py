@@ -31,6 +31,7 @@ class CmdType(Enum):
     COMPARE = "compare"
     RUN = "run"
     INSPECT = "inspect"
+    SYNC = "sync"
 
 
 class CmdStrategyFactory:
@@ -38,6 +39,7 @@ class CmdStrategyFactory:
     from .compare import Compare
     from .dump import Dump
     from .precheck import Precheck
+    from .sync import SyncCmd
 
     _registry = {
         CmdType.PRECHECK: Precheck,
@@ -45,6 +47,7 @@ class CmdStrategyFactory:
         CmdType.COMPARE: Compare,
         CmdType.RUN: Run,
         CmdType.INSPECT: Inspect,
+        CmdType.SYNC: SyncCmd,
     }
 
     def register(self, cmd_type, strategy_cls) -> None:

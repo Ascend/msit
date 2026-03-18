@@ -1,0 +1,15 @@
+{
+  "mindie": {
+    "MindIE 2.3.0.B160": {
+      "aarch64": {
+        "A2": {
+          "openeuler": {
+            "tag": "2.3.0-800I-A2-py311-openeuler24.03-lts",
+            "version_type": "release",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.3.0-800I-A2-py311-openeuler24.03-lts"
+          }
+        }
+      }
+    }
+  }
+}
