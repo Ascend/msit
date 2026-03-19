@@ -8,7 +8,6 @@
 *.npy
 *.csv
 **/app_analyze/headers
-**/build
 **/*.egg-info
 **/ait_transplt.log
 **/dist

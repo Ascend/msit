@@ -47,9 +47,10 @@ class Weight(CollectStrategy):
         self._max_hash_workers = max_hash_workers
 
     def _validate_weight_dir(self) -> bool:
+        LOGGER.info("Validating weight directory: {}".format(self._weight_dir))
         if not os.path.isdir(self._weight_dir):
             Utils.log_error_and_exit(
-                "Expected {} to be a directory. Weight strategy skipped".format(self._weight_dir),
+                "Expected {} to be a directory. Weight strategy failed".format(self._weight_dir),
             )
         return True
 
@@ -72,7 +73,7 @@ class Weight(CollectStrategy):
     def _is_valid_tensor_file(self, path: str) -> bool:
         if os.path.islink(path):
             Utils.log_error_and_exit(
-                "Expected {} to be a regular file. Weight strategy skipped".format(path)
+                "Expected {} to be a regular file. Weight strategy failed".format(path)
             )
             return False
 
@@ -163,7 +164,7 @@ class Weight(CollectStrategy):
 
         name = weight_map.get("name", "")
         url = weight_map.get("modelscope", "")
-        Utils.log_error_and_exit(f"Please download {name} from {url}. "
+        Utils.log_error_and_exit(f"Please download {name} from {url} "
                                  f"After downloading, please rerun the command using the [-w/--weight-dir] option.")
 
     def get_weight_dir(self):

@@ -305,7 +305,7 @@ class Utils:
         result_out = result.stdout
         if not result_out:
             LOGGER.warning("No stdout from command, record stderr.")
-            value = result.stderr
+            return False, result.stderr, result.stderr
         else:
             value = result.stdout
         LOGGER.debug("Successfully execute cmd: {}".format(' '.join(args)))
@@ -319,6 +319,13 @@ class Utils:
         if isinstance(err_msg, dict):
             err_msg["msg"] = err
         return '--'
+
+    @staticmethod
+    def grep_lines(lines, keyword):
+        for line in lines.strip().splitlines():
+            if keyword in line:
+                return line.split(":")[-1].strip()
+        return ""
 
     @classmethod
     def get_text_real_length(cls, text):
@@ -433,22 +440,12 @@ class PreFetch:
     def get_framework():
         if not Utils.is_in_container():
             return Framework.HOST
-        try:
-            import vllm_ascend
-            framework = Framework.VLLM
-            return framework
-        except ImportError:
-            vllm_workspace = '/vllm-workspace/vllm-ascend'
-            if os.path.isdir(vllm_workspace):
-                framework = Framework.VLLM
-                return framework
 
-        try:
-            import sglang
-            framework = Framework.SGLANG
-            return framework
-        except ImportError:
-            pass
+        if os.path.isdir('/vllm-workspace/vllm-ascend') or shutil.which("vllm"):
+            return Framework.VLLM
+
+        if shutil.which("sglang"):
+            return Framework.SGLANG
 
         mindie_dir = '/usr/local/Ascend/mindie'
         if os.path.isdir(mindie_dir) or any('MINDIE' in env_name for env_name in os.environ):

@@ -15,6 +15,7 @@
 import argparse
 import sys
 import traceback
+import warnings
 from textwrap import dedent
 
 from .commands import CmdStrategyFactory, CmdType
@@ -24,6 +25,8 @@ from .commands.dump import setup_dump
 from .commands.sync import setup_sync
 from .commands.precheck import setup_precheck
 from .utils import LOGGER, CustomError, LOG_LEVELS
+
+warnings.filterwarnings("ignore")
 
 
 def main() -> int:

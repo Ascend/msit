@@ -70,14 +70,6 @@ def setup_dump(subparsers: argparse._SubParsersAction, parents=None):
 
 
 def _add_extra_options(dump_parser):
-    framework = PreFetch.get_framework()
-    if framework == Framework.HOST:
-        LOGGER.debug("Non-Container environment detected.")
-    elif framework == Framework.UNKNOWN:
-        LOGGER.debug("Unknown image type, skip.")
-    else:
-        LOGGER.debug(f"Detected image type: {framework.value}.")
-
     env_group = dump_parser.add_argument_group("Env Options")
     env_group.add_argument(
         "--ascend-only",
@@ -100,6 +92,7 @@ def _add_extra_options(dump_parser):
         "--configs",
         "-c",
         nargs=nargs,
+        required=framework in {Framework.VLLM, Framework.SGLANG},
         help=(
             "Configuration files to validate, specified as '<name>:<path>'.\n"
             "  - <name>: Configuration identifier that will be used as a key in the dumped file\n"
@@ -211,6 +204,8 @@ class Dump(CmdStrategy):
             Utils.log_error_and_exit("Running msprechecker dump in a non-container environment is not supported.")
         elif framework == Framework.UNKNOWN:
             Utils.log_error_and_exit("Unsupported image type, exit.")
+        else:
+            LOGGER.debug(f"Detected image type: {framework.value}.")
 
         if not args.configs and framework == Framework.MINDIE:
             default_config_path = "/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json"
@@ -231,14 +226,10 @@ class Dump(CmdStrategy):
             framework, configs, effective_weight_dir, args.rank_table_path
         )
         abspath = os.path.abspath(args.output_path.format(Utils.get_time_stamp()))
-        try:
-            data = collector.collect()
-            data['timestamp'] = Utils.get_time_stamp()
-            with open(abspath, "w") as f:
-                json.dump(data, f, indent=4, ensure_ascii=False)
-        except Exception as e:
-            LOGGER.error(e)
-            Utils.log_error_and_exit("Error occurred while saving to {}".format(abspath))
+        data = collector.collect()
+        data['timestamp'] = Utils.get_time_stamp()
+        with open(abspath, "w") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
 
         Output.message("All information has been saved in: {}".format(abspath))
         Output.message(

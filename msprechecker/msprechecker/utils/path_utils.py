@@ -50,9 +50,6 @@ class PathUtil:
         """
         获取资源文件根目录
         """
-        meipass = PathUtil._get_meipass()
-        if meipass is not None:
-            return os.path.join(meipass, 'resources')
         return os.path.join(PathUtil.get_root_dir_path(), 'resources')
 
     @staticmethod

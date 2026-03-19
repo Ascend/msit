@@ -103,25 +103,20 @@ class NPUSmi(CollectStrategy):
     def __init__(self, name: str = "npu-smi"):
         super().__init__(name)
 
-    @staticmethod
-    def _grep_lines(lines, keywords):
-        for line in lines.strip().splitlines():
-            if keywords in line:
-                return line.split(":")[-1].strip()
-        return ""
-
     def _get_performance(self, data):
         chip_name = data.get("Chip Name")
         memory = int(data.get("HB"+"M Capacity")) // 1024
         return self.SPECIFICATIONS[chip_name][memory]
 
     def _collect_single_data(self, cmd, keyword):
-        output = Utils.collect_data(cmd)
+        output = Utils.collect_data(cmd, {"LD_LIBRARY_PATH":
+                                              "/usr/local/Ascend/driver/lib64/common/:"
+                                              "/usr/local/Ascend/driver/lib64/driver/:"})
         if output == "--":
             Utils.log_error_and_exit(
                 f"Failed to execute command: {' '.join(cmd)}")
             return {}
-        return {keyword: self._grep_lines(output, keyword)}
+        return {keyword: Utils.grep_lines(output, keyword)}
 
     def _check_npu_performance(self, current):
         target_performance = self._get_performance(self._target)
@@ -222,19 +217,22 @@ class _Ascend(CollectStrategy):
 
         if not full_path.is_file():
             LOGGER.debug("Version file not found at: %r", str(full_path))
-            return None
+            return {}
 
         try:
             results = self._parse_version_file(full_path)
         except OSError:
             LOGGER.exception("Failed to read version file %r", str(full_path))
-            return None
+            return {}
 
         if not results:
             LOGGER.debug("Version file yielded no data: %r", str(full_path))
-            return None
+            return {}
 
         return results
+
+    def sync(self, target_data: dict) -> Any:
+        pass
 
 
 class _AscendComponent(_Ascend):

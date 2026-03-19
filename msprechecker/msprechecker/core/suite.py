@@ -45,7 +45,7 @@ from typing import Callable, Optional
 
 from packaging.version import InvalidVersion, Version
 
-from ..util import (
+from ..utils import (
     ConnMode,
     detect_framework,
     Framework,
@@ -54,7 +54,7 @@ from ..util import (
     parse_rank_table,
 )
 from .checker import Check, CheckGroup, CheckOutcome, Failed, Passed, Severity, Skipped
-from .strategy import (
+from ..strategies import (
     CPU,
     CPUHighPerformance,
     Driver,
@@ -65,7 +65,6 @@ from .strategy import (
     TransparentHugepage,
     VirtualMachine,
 )
-
 
 # ── section groups ────────────────────────────────────────────────────────────
 
@@ -227,7 +226,7 @@ def _driver_version(*, framework: Framework, scene: str) -> CheckOutcome:
             "不升级可能导致 dispatch_combine 等算子失败"
             if is_vllm_ep
             else f"当前驱动版本 {version_str} 低于推荐版本 {min_str}，"
-            "建议升级至最新驱动以获得更好的性能"
+                 "建议升级至最新驱动以获得更好的性能"
         )
         return Failed(
             msg=msg,
@@ -350,7 +349,7 @@ def _network_checks(rank_table_path: str) -> list[Check]:
 
 
 def _find_abnormal(
-    results: dict[int, Optional[float]], threshold_pct: int
+        results: dict[int, Optional[float]], threshold_pct: int
 ) -> list[int]:
     valid = {k: v for k, v in results.items() if v is not None and v > 0}
     if not valid:
@@ -423,12 +422,12 @@ def _stress_checks(threshold: int) -> list[Check]:
 
 
 def build_suite(
-    *,
-    framework: Framework,
-    scene: str,
-    rank_table_path: str = "",
-    hardware: bool = False,
-    threshold: int = 20,
+        *,
+        framework: Framework,
+        scene: str,
+        rank_table_path: str = "",
+        hardware: bool = False,
+        threshold: int = 20,
 ) -> list[Check]:
     """
     Assemble and return the full list of ``Check`` objects for a deployment scenario.

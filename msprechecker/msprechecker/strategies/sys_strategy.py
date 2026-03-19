@@ -76,24 +76,24 @@ class Lscpu(CollectStrategy):
         current_architecture = current.get("Architecture")
         if target_architecture != current_architecture:
             Utils.log_error_and_exit("Current architecture {} is not equal to the architecture {} in dump file"
-                                    "".format(current_architecture, target_architecture))
+                                     "".format(current_architecture, target_architecture))
 
     def compare_cpu(self, current: dict):
         target_cpu = int(self._target.get("CPU(s)"))
         current_cpu = int(current.get("CPU(s)"))
         if target_cpu > current_cpu:
             LOGGER.warning("Current cpus {} is less than the cpus {} in dump file, "
-                        "which may cause performance issue".format(current_cpu, target_cpu))
+                           "which may cause performance issue".format(current_cpu, target_cpu))
         elif target_cpu < current_cpu:
             LOGGER.warning("Current cpus {} is greater than the cpus {} in dump file, "
-                        "which may cause performance issue when enable some features".format(current_cpu,
+                           "which may cause performance issue when enable some features".format(current_cpu,
                                                                                                 target_cpu))
 
     def compare_hyper_threading(self, current: dict):
         current_threads = int(current.get("Thread(s) per core", 0))
         if current_threads > 1:
             LOGGER.warning("Hyper-threading is enabled. It is recommended to disable it for better performance while "
-                        "using CPU binding strategy.")
+                           "using CPU binding strategy.")
 
     def execute(self):
         lscpu_path = shutil.which("lscpu")
@@ -104,7 +104,7 @@ class Lscpu(CollectStrategy):
         if self._output is None:
             try:
                 self._output = subprocess.check_output(
-                    [lscpu_path], stderr=subprocess.DEVNULL, text=True
+                    [lscpu_path], stderr=subprocess.DEVNULL, text=True, env={"LANG": "en_US.UTF-8"}
                 )
             except Exception as e:
                 LOGGER.warning("Failed to execute lscpu command: %s", str(e))
@@ -297,7 +297,7 @@ class CPUHighPerformance(CollectStrategy):
     def sync(self, target_data: dict):
         super().sync(target_data)
         if not self._target:
-            Utils.log_error_and_exit(f"CPU high performance strategy is disabled. It is recommended to enable it.")
+            LOGGER.warning(f"CPU high performance strategy is disabled. It is recommended to enable it.")
 
 
 class VirtualMachine(CollectStrategy):

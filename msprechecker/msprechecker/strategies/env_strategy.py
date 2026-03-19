@@ -40,6 +40,7 @@ class Env(CollectStrategy):
     def __init__(self, name: str = "env", ascend_only: bool = False):
         super().__init__(name)
         self._ascend_only = ascend_only
+        self.env_path = None
 
     def execute(self):
         env_items = os.environ.items()
@@ -59,3 +60,4 @@ class Env(CollectStrategy):
             for k, v in self._target.items():
                 f.write(f"{k}={v}\n")
         LOGGER.info(f"Env file {env_file_name} generated, you may source it to set environment variables.")
+        self.env_path = os.path.abspath(env_file_name)
