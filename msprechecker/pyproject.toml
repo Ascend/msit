@@ -34,7 +34,10 @@ dependencies = [
     "psutil",
     "importlib_metadata; python_version == '3.7'",
     "ply",
-    "colorama"
+    "colorama",
+    "docker",
+    "msguard",
+    "packaging"
 ]
 requires-python = ">=3.7"
 

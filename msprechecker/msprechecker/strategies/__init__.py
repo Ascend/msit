@@ -15,6 +15,8 @@
 # -------------------------------------------------------------------------
 
 __all__ = [
+    "CollectStrategyGroup",
+    "CollectStrategy",
     "Image",
     "Network",
     "Ascend",
@@ -34,6 +36,7 @@ __all__ = [
     "NPU",
 ]
 
+from .base_strategy import CollectStrategyGroup, CollectStrategy
 from .image_strategy import Image
 from .network_strategy import Network
 from .ascend_strategy import Ascend

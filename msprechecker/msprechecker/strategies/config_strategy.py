@@ -18,6 +18,7 @@ import os
 from typing import Optional
 
 from .base_strategy import CollectStrategyGroup, CollectStrategy
+from .env_strategy import Env
 from ..utils import PreFetch, Framework, Utils, LOGGER
 
 
@@ -39,7 +40,11 @@ class Configs(CollectStrategyGroup):
                     Utils.log_error_and_exit(f"Config directory {config_dir} does not exist")
                 LOGGER.info(f"Override {config_path} with config from dumped file")
             else:
-                Utils.dump_file(os.path.basename(config_path), config_data)
+                # for vLLM and SGLang, save the config file in the current directory and add source env on the top
+                source_env_txt = "source {}\n".format(Env().env_path)
+                new_file_name = (f"sync-{target_data.get('image', {}).get('image_type', '')}-"
+                                 f"{target_data.get('timestamp', '')}-{os.path.basename(config_path)}")
+                Utils.dump_file(new_file_name, source_env_txt + config_data)
 
 
 class Config(CollectStrategy):

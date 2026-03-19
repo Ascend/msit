@@ -114,7 +114,7 @@ class AntiCRLFLogRecord(logging.LogRecord):
 
 def get_logger():
     logging.setLogRecordFactory(AntiCRLFLogRecord)
-    logger = LeveledLogger("msprechecker", logging.INFO)
+    logger = LeveledLogger("msprechecker", logging.DEBUG)
     logger.propagate = False
     if not logger.handlers:
         stream_handler = logging.StreamHandler()

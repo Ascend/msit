@@ -22,7 +22,7 @@ from textwrap import dedent
 from ..core.checker import has_errors, Severity
 from ..core.runner import PrecheckRunner
 from ..core.suite import build_suite
-from ..util import detect_framework
+from ..utils import detect_framework
 
 from . import CmdStrategy, CmdType
 

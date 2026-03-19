@@ -32,8 +32,17 @@ class Image(CollectStrategy):
 
     @staticmethod
     def _get_vllm_version():
-        from vllm_ascend import _version
-        return _version.commit_id
+        try:
+            from importlib.metadata import version
+            return version("vllm-ascend")
+        except Exception:
+            cmd = ["pip", "show", "vllm-ascend"]
+            output = Utils.collect_data(cmd)
+            if output == "--":
+                Utils.log_error_and_exit(
+                    f"Failed to execute command: {' '.join(cmd)}")
+                return {}
+            return Utils.grep_lines(output, "Version")
 
     @staticmethod
     def _get_npu_type():
@@ -49,6 +58,8 @@ class Image(CollectStrategy):
     @staticmethod
     def _get_mindie_version():
         mindie_version_path = '/usr/local/Ascend/mindie/latest/version.info'
+        if not os.path.exists(mindie_version_path):
+            Utils.log_error_and_exit(f"MindIE version file {mindie_version_path} not exist.")
         try:
             with open_s(mindie_version_path, 'r', encoding='utf-8') as f:
                 lines = f.read().strip()
@@ -72,8 +83,8 @@ class Image(CollectStrategy):
                      .get(self._target.get("os_name", "").lower(), {})
                      )
         if not image_dir:
-            Utils.log_error_and_exit("Image({}) from dumped file not found in image resource, "
-                                     "please update it.".format(self._target.get("version", "")))
+            Utils.log_error_and_exit("Image (version:{}) from dumped file not found in image resource, "
+                                     "please update the resource.".format(self._target.get("version", "")))
         return image_dir
 
     def _check_image_in_images_list(self, tag):
@@ -83,7 +94,7 @@ class Image(CollectStrategy):
             images = client.images.list()
             for image in images:
                 tags = image.tags[0] if image.tags else ''
-                if tag in tags:
+                if tag == tags:
                     self._image_id = image.short_id.split(':')[-1]
                     return True
         except docker.errors.DockerException as e:
@@ -132,9 +143,16 @@ class Image(CollectStrategy):
             self._generate_docker_run_cmd(timestamp)
 
     def _sync_container(self, current):
-        current = self.execute()
+        target_image_type = self._target.get("image_type", "")
+        current_image_type = current.get("image_type", "")
+        if target_image_type != current_image_type:
+            Utils.log_error_and_exit("Image type in container({}) not match with dumped file({}), "
+                                     "please exit the container.".format(current_image_type, target_image_type))
         if self._target != current:
-            Utils.log_error_and_exit("Image info in container not match with dumped file, please exit the container.")
+            target_version = self._target.get("version", "")
+            current_version = current.get("version", "")
+            LOGGER.warning("Image version({}) in container not match with dumped file({}), "
+                           "which may lead to unpredictable issue.".format(current_version, target_version))
         else:
             LOGGER.info("Image check passed.")
 
