@@ -1,12 +1,487 @@
 {
-  "mindie": {
-    "MindIE 2.3.0.B160": {
+  "vllm": {
+    "0.17.0rc1": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "v0.17.0rc1-310p-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.17.0rc1-310p-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.17.0rc1-310p",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.17.0rc1-310p"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.17.0rc1-a2-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.17.0rc1-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.17.0rc1",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.17.0rc1"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.17.0rc1-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.17.0rc1-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.17.0rc1-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.17.0rc1-a3"
+          }
+        }
+      }
+    },
+    "0.16.0rc1": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "v0.16.0rc1-310p-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.16.0rc1-310p-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.16.0rc1-310p",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.16.0rc1-310p"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.16.0rc1-a2-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.16.0rc1-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.16.0rc1",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.16.0rc1"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.16.0rc1-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.16.0rc1-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.16.0rc1-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.16.0rc1-a3"
+          }
+        }
+      }
+    },
+    "0.15.0rc1": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "v0.15.0rc1-310p-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.15.0rc1-310p-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.15.0rc1-310p",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.15.0rc1-310p"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.15.0rc1-a2-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.15.0rc1-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.15.0rc1-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.15.0rc1"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.15.0rc1-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.15.0rc1-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.15.0rc1-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.15.0rc1-a3"
+          }
+        }
+      }
+    },
+    "0.14.0rc1": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "v0.14.0rc1-310p-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.14.0rc1-310p-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.14.0rc1-310p",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.14.0rc1-310p"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.14.0rc1-a2-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.14.0rc1-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.14.0rc1",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.14.0rc1"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.14.0rc1-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.14.0rc1-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.14.0rc1-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.14.0rc1-a3"
+          }
+        }
+      }
+    },
+    "0.13.0": {
       "aarch64": {
         "A2": {
           "openeuler": {
-            "tag": "2.3.0-800I-A2-py311-openeuler24.03-lts",
-            "version_type": "release",
+            "tag_release": "v0.13.0-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.13.0",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.13.0-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.13.0-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0-a3"
+          }
+        }
+      }
+    },
+    "0.13.0rc2": {
+      "aarch64": {
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.13.0rc2-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0rc2-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.13.0rc2",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0rc2"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.13.0rc2-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0rc2-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.13.0rc2-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0rc2-a3"
+          }
+        }
+      }
+    },
+    "0.13.0rc1": {
+      "aarch64": {
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.13.0rc1-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0rc1-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.13.0rc1",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0rc1"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.13.0rc1-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0rc1-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.13.0rc1-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0rc1-a3"
+          }
+        }
+      }
+    }
+  },
+  "mindie": {
+    "MindIE 2.3.0.B160": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.3.0-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.3.0-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.3.0-800I-A2-py311-openeuler24.03-lts",
             "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.3.0-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.3.0-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.3.0-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      },
+      "x86_64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.3.0-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.3.0-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.3.0-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.3.0-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.3.0-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.3.0-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      }
+    },
+    "MindIE 2.2.T32.B010": {
+      "aarch64": {
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.2.T32-800I-A2-py311-openeuler24.03-lts-arm64",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.2.T32-800I-A2-py311-openeuler24.03-lts-arm64"
+          },
+          "ubuntu": {
+            "tag_release": "dev-2.2.T32-800I-A2-py311-ubuntu22.04-lts-arm64",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:dev-2.2.T32-800I-A2-py311-ubuntu22.04-lts-arm64"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.2.T32-800I-A3-py311-openeuler24.03-lts-arm64",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.2.T32-800I-A3-py311-openeuler24.03-lts-arm64"
+          },
+          "ubuntu": {
+            "tag_release": "dev-2.2.T32-800I-A3-py311-ubuntu22.04-lts-arm64",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:dev-2.2.T32-800I-A3-py311-ubuntu22.04-lts-arm64"
+          }
+        }
+      }
+    },
+    "MindIE 2.2.RC1.B165": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.2.RC1-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.2.RC1-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.2.RC1-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.2.RC1-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.2.RC1-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.2.RC1-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      },
+      "x86_64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.2.RC1-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.2.RC1-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.2.RC1-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.2.RC1-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.2.RC1-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.2.RC1-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      }
+    },
+    "MindIE 2.1.RC2.B080": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.1.RC2-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC2-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.1.RC2-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC2-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.1.RC2-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC2-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      },
+      "x86_64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.1.RC2-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC2-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.1.RC2-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC2-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.1.RC2-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC2-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      }
+    },
+    "MindIE 2.1.RC1.B152": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.1.RC1-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC1-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.1.RC1-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC1-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.1.RC1-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC1-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      },
+      "x86_64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.1.RC1-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC1-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.1.RC1-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC1-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.1.RC1-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC1-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      }
+    },
+    "MindIE 2.0.RC2.B080": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.0.RC2-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC2-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.0.RC2-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC2-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.0.RC2-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC2-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      },
+      "x86_64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.0.RC2-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC2-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.0.RC2-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC2-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.0.RC2-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC2-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      }
+    },
+    "MindIE 2.0.RC1.B120": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.0.RC1-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC1-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.0.RC1-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC1-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.0.RC1-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC1-800I-A3-py311-openeuler24.03-lts"
+          }
+        }
+      },
+      "x86_64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "2.0.RC1-300I-Duo-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC1-300I-Duo-py311-openeuler24.03-lts"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "2.0.RC1-800I-A2-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC1-800I-A2-py311-openeuler24.03-lts"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "2.0.RC1-800I-A3-py311-openeuler24.03-lts",
+            "pull_cmd": "docker pull swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.0.RC1-800I-A3-py311-openeuler24.03-lts"
           }
         }
       }

@@ -106,7 +106,7 @@ class NPUSmi(CollectStrategy):
     def _get_performance(self, data):
         chip_name = data.get("Chip Name")
         memory = int(data.get("HB"+"M Capacity")) // 1024
-        return self.SPECIFICATIONS[chip_name][memory]
+        return self.SPECIFICATIONS[chip_name][memory]['performance']
 
     def _collect_single_data(self, cmd, keyword):
         output = Utils.collect_data(cmd, {"LD_LIBRARY_PATH":
