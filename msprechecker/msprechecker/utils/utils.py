@@ -40,7 +40,7 @@ class Color:
     red_format = "\033[31m%s\033[0m"
     green_format = "\033[32m%s\033[0m"
     yellow_format = "\033[33m%s\033[0m"
-    blue_format = "\033[34m%s\033[0m"
+    blue_format = "\033[4;34m%s\033[0m"
     bold_format = "\033[1m%s\033[0m"
 
 
@@ -184,6 +184,13 @@ class Utils:
         if message_args:
             message = message.format(*message_args)
         LOGGER.error(message)
+        raise CustomError(message, code)
+
+    @staticmethod
+    def log_info_and_exit(message, message_args=(), code=3):
+        if message_args:
+            message = message.format(*message_args)
+        LOGGER.info(message)
         raise CustomError(message, code)
 
     @staticmethod

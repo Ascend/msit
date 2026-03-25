@@ -150,8 +150,8 @@ class Weight(CollectStrategy):
             current = self.execute()
             current_hash = self._merge_hashes(current)
             if current_hash != target_hash:
-                LOGGER.warning(f"Weight hash {current_hash} not match weight hash {target_hash} from dumped "
-                               f"file, please check your weight dir.")
+                Utils.log_error_and_exit(f"Weight hash {current_hash} not match weight hash {target_hash} from dumped "
+                                         f"file, please check your weight dir.")
             else:
                 LOGGER.info(f"Weight check passed.")
                 return
@@ -164,8 +164,8 @@ class Weight(CollectStrategy):
 
         name = weight_map.get("name", "")
         url = weight_map.get("modelscope", "")
-        Utils.log_error_and_exit(f"Please download {name} from {url} "
-                                 f"After downloading, please rerun the command using the [-w/--weight-dir] option.")
+        Utils.log_info_and_exit(f"Please download model weights <{name}> from <{Utils.color_blue(url)}>. "
+                                f"After downloading, please rerun the command using the [-w/--weight-dir] option.")
 
     def get_weight_dir(self):
         return self._weight_dir

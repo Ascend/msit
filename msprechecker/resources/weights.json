@@ -1,4 +1,364 @@
 {
+  "503187fddb5c0df9d8dda0c179ce1cad38b9a1ea0dae8ce107830e477ebae52c": {
+    "name": "Qwen3.5-0.8B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-0.8B"
+  },
+  "45162d680fd34d4491feb787cd758d6003663d74d7ce864876a0b2d04f77e2dc": {
+    "name": "Qwen3.5-2B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-2B"
+  },
+  "7ac2c20d3174476acfe31dc167850b18a2ee639e6950d49f03d2d83e686b36eb": {
+    "name": "Qwen3.5-4B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-4B"
+  },
+  "8b36bcd5c274924af3c12fa9c381b61161d2750ab6dee649807c166b446c7c69": {
+    "name": "Qwen3.5-9B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-9B"
+  },
+  "7d7806b7ed1d3b99bc4b645bb5179696d53f85a874504662dc89d9b32f296c20": {
+    "name": "Qwen3.5-27b-GPTQ-Int4",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-27b-GPTQ-Int4"
+  },
+  "1460528af68e2fc44427aa5939c0ec607c176300be7d55a8c344e1dadf3fb116": {
+    "name": "Qwen3.5-122B-A10B-GPTQ-Int4",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-122B-A10B-GPTQ-Int4"
+  },
+  "b551310b763cc62b79ea1cdae6e7f175c447c6c4ad64f6901d1e31a214e0fda4": {
+    "name": "Qwen3.5-397B-A17B-GPTQ-Int4",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-397B-A17B-GPTQ-Int4"
+  },
+  "75909031af79e6251f1b88a9eb9d7c1975c74d65725db399099029aefc6b45ea": {
+    "name": "Qwen3.5-35B-A3B-GPTQ-Int4",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
+  },
+  "3ca7c802249eacf34fff046426dfae68ed885b8677fe4878fb719e0033f0e73d": {
+    "name": "Qwen3.5-4B-Base",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-4B-Base"
+  },
+  "a595da127f721d9a2061ad4bd2b46fd5e764cba38dfc2dc16749c84480fe6899": {
+    "name": "Qwen3.5-9B-Base",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-9B-Base"
+  },
+  "4d0e76319bd1c28eaa96c6687c24e5e317d31fb1a645a31c3de7b1bac8d46ea7": {
+    "name": "Qwen3.5-2B-Base",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-2B-Base"
+  },
+  "8f2c3664fcb34f55a2908975b95a3df6ef061d7487c4ef847407c46e738ca6f9": {
+    "name": "Qwen3.5-0.8B-Base",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-0.8B-Base"
+  },
+  "7329a1aeec61d94d98d22c476557c30439609137095863a374fbd64c6ca2ab09": {
+    "name": "Qwen3-VL-8B-Instruct",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-8B-Instruct"
+  },
+  "091135bcd3dcdb0adc18a315d77257ca9c1da50b283afd27bf88c007b4ec0f34": {
+    "name": "Qwen3.5-35B-A3B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-35B-A3B"
+  },
+  "4a0bdcc7dde117162bf7dcf635cb059342b9c2404a0cd1400ba571a130e0e012": {
+    "name": "Qwen3-VL-4B-Thinking-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-4B-Thinking-FP8"
+  },
+  "d41f96e0211a3e3e93d8fd33e2211f5675b52b119d91a965d816792648681a32": {
+    "name": "Qwen3-8B-AWQ",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-8B-AWQ"
+  },
+  "fd482fa47b5ae9ef7488e34774d79e13757fe91cbbb9c47ac8f5cfa48aabda16": {
+    "name": "Qwen3-VL-4B-Instruct-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-4B-Instruct-FP8"
+  },
+  "9bf1d0ef2d4eb21d3d010f6b549a06a2873702c4a088a48b133a568d60813429": {
+    "name": "Qwen3-VL-8B-Thinking",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-8B-Thinking"
+  },
+  "c5bae6528f4e6cb308b036cf99f1ae064af8a363122a6a4253191288c256bbc4": {
+    "name": "Qwen3.5-122B-A10B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-122B-A10B"
+  },
+  "221e1a360c9caf4e52bd31f943e411046ebf8c4e3aa9088aa47c273f0e0f723d": {
+    "name": "Qwen3-VL-8B-Instruct-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-8B-Instruct-FP8"
+  },
+  "910d8a129e78b28abcdfba79e83d892a311a2e88199cb796d08e75bdeb084965": {
+    "name": "Qwen3-0.6B-GPTQ-Int8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-0.6B-GPTQ-Int8"
+  },
+  "06e3ed74e7a1ac8514945a04c0cdcd4d73e7257524a17a8dfae9d2595dd9f31d": {
+    "name": "Qwen3-VL-4B-Instruct",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-4B-Instruct"
+  },
+  "26e7936f9d9f2ab619d15878ba3f14fd18b64c948e0bc4481f560996615ba647": {
+    "name": "Qwen3-VL-4B-Thinking",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-4B-Thinking"
+  },
+  "1c865f8d3abe7eb358bd0021d58c0fb813d4ce17d373cde83509737c28313c07": {
+    "name": "Qwen3-4B-AWQ",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-4B-AWQ"
+  },
+  "c842433256d3390e40c54558db5b8c393a03c5b3d1806d329a43c600b20526a9": {
+    "name": "Qwen3.5-397B-A17B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-397B-A17B"
+  },
+  "5521e5516906a5dfc307411a490f3a3b6936c71d6561b4b192d4c5b2008ce9ad": {
+    "name": "Qwen3-VL-8B-Thinking-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-8B-Thinking-FP8"
+  },
+  "476716f534e45e5ad1f47726960adf6eb1c38fea184be004a1acc530d1516c24": {
+    "name": "Qwen3.5-27B-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-27B-FP8"
+  },
+  "092eb2a4cf7d4441d4295cbe8440f295cbff76621b1ba023daac1383b4adffe3": {
+    "name": "Qwen3.5-397B-A17B-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-397B-A17B-FP8"
+  },
+  "cabf2c1b81bea7069424280e3c1ca4494766b8ae44061c554741887f2ad23df7": {
+    "name": "Qwen3.5-35B-A3B-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-35B-A3B-FP8"
+  },
+  "e2063ea79e77410fe5d965096adc92e637d876d60334239a0199cba2ab6144fd": {
+    "name": "Qwen3.5-122B-A10B-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-122B-A10B-FP8"
+  },
+  "c826ef43474ca3c5847c14510528991222af874e49d6faa403f34cc5ff5b7d1a": {
+    "name": "Qwen3.5-27B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-27B"
+  },
+  "ec4e50d0ce3e6f96349a4a1f3588568bfb8592e5aed2a8b052fa83aa78c36efc": {
+    "name": "Qwen3.5-35B-A3B-Base",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3.5-35B-A3B-Base"
+  },
+  "cbf6a1f485a9c186298019937aa7d7edbe628384e40b51a6d37bb7a99f4d3e2f": {
+    "name": "Qwen3-Coder-Next-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Coder-Next-FP8"
+  },
+  "d97ca4ce34021025c387648fe32c9f1456399c87ff0fdeaf4c4cb3c4276585c1": {
+    "name": "Qwen3-Coder-Next",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Coder-Next"
+  },
+  "9965f0fe07d9b5f50a5c87a042d21b81c118bc17034132b3dc67b9ebcd8070ba": {
+    "name": "Qwen3-Coder-Next-Base",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Coder-Next-Base"
+  },
+  "50047b9dbd19d8ebfa9eee4c908e26de3463a9b808347b25fd3cde1703a511ea": {
+    "name": "Qwen3-ASR-1.7B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-ASR-1.7B"
+  },
+  "1e178eb9261a2255f4b672843a18f804595fb41a070393e8dade11ca38371703": {
+    "name": "Qwen3-ASR-0.6B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-ASR-0.6B"
+  },
+  "6cf227cf819dcae4925bc98944730f2393bcc56bb80704ee13ea00c4887cf6f7": {
+    "name": "Qwen3-ForcedAligner-0.6B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-ForcedAligner-0.6B"
+  },
+  "d656cf690bfb7bfd1259e376e8a0f50afa6e73f3b5a165ab2e7304d458f38a26": {
+    "name": "Qwen3-TTS-Tokenizer-12Hz",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-TTS-Tokenizer-12Hz"
+  },
+  "11cb97ae8db8650363d91b26281eec35a75e995195ef2671f3b6a8bc3064ffb0": {
+    "name": "Qwen3-TTS-12Hz-1.7B-CustomVoice",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
+  },
+  "1f8618e1bce249970a69b7c6b5708938c49ff13028ef0a7cddf1e25ebd15681b": {
+    "name": "Qwen3-TTS-12Hz-0.6B-Base",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-0.6B-Base"
+  },
+  "c2705b6912712f617e44cc67b8e483442ddced793079afd2e7d2660febe654f5": {
+    "name": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+  },
+  "b94790fb4d042d50e66e75281c8441c1232b2bfd2b025bcf3e8fbd165215a274": {
+    "name": "Qwen3-TTS-12Hz-0.6B-CustomVoice",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+  },
+  "b0ac93abd153b7d35878a151c3b7287cbff9983d7ef7f60a90ea77f63517f72b": {
+    "name": "Qwen3-TTS-12Hz-1.7B-Base",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-TTS-12Hz-1.7B-Base"
+  },
+  "fce10608e446cccbf2cea8554af35c8e77a41b99afc02fc832f5ba3090e78a9d": {
+    "name": "Qwen3-VL-Reranker-2B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-Reranker-2B"
+  },
+  "e0d0e416fc548b69308cb5233b30e0262c48e591bb393e33bcf71703b3cf931e": {
+    "name": "Qwen3-VL-Embedding-2B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-Embedding-2B"
+  },
+  "4473f8f75f616f904abe34b23a952c8c519288ceea9677b471b163472df2fcb3": {
+    "name": "Qwen3-VL-Embedding-8B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-Embedding-8B"
+  },
+  "265fcd98de03026c232f1e1e4f7c6d04f63f78822732e0615f583b97fc9ad4ef": {
+    "name": "Qwen3-VL-Reranker-8B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-Reranker-8B"
+  },
+  "d0a784b8d20eae01caff7b9e811bd70865190dfc31073c80614e623520d8dc38": {
+    "name": "Qwen3-Coder-30B-A3B-Instruct",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Coder-30B-A3B-Instruct"
+  },
+  "438a70450e24c34e99fe218edce74f41998c30fe48eb4666064bbda2d0d01165": {
+    "name": "Qwen3-Coder-30B-A3B-Instruct-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Coder-30B-A3B-Instruct-FP8"
+  },
+  "1fc7731085b0cf279c2216c39d5d465c431b21e8ad60c07f4f0146d3bc5ce137": {
+    "name": "Qwen3-Next-80B-A3B-Thinking",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Next-80B-A3B-Thinking"
+  },
+  "f65ca33e3522c80ae6a29137132bf61e04f733e605d3abbaa097432d9011f496": {
+    "name": "Qwen3-VL-235B-A22B-Thinking",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-235B-A22B-Thinking"
+  },
+  "9114b51ca4ff551e65908df09cb162901293568538ffbebea10e1643c5ccba91": {
+    "name": "Qwen3-VL-235B-A22B-Thinking-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-235B-A22B-Thinking-FP8"
+  },
+  "891987246aac075e8c855ba1be868c3f3efe66fdbccbd72c4bc5ee5b047af164": {
+    "name": "Qwen3-VL-30B-A3B-Thinking",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-30B-A3B-Thinking"
+  },
+  "33037ec79a648c335d29dd66f80c05158a47fcb9b6734b6b39951ca045902370": {
+    "name": "Qwen3-VL-30B-A3B-Instruct",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-30B-A3B-Instruct"
+  },
+  "ff04f7fe38f6111805dda1dcc34ddd592e2b01a15ddb997b7c76c35048b7bef6": {
+    "name": "Qwen3-VL-30B-A3B-Instruct-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-30B-A3B-Instruct-FP8"
+  },
+  "ee9b4f9d644d4d12a6d2085b39e559143def90b0bdafe41be902a7f08542f86c": {
+    "name": "Qwen3-VL-235B-A22B-Instruct",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-235B-A22B-Instruct"
+  },
+  "bde3a251e3ea64e4f588c8348b5138a29119843ca095415df39cf642d0ce66cf": {
+    "name": "Qwen3-VL-235B-A22B-Instruct-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-235B-A22B-Instruct-FP8"
+  },
+  "6a625a4dc1309773dc297e16dce4d49e73c755670be3a9355e3f37ec876568b2": {
+    "name": "Qwen3-VL-30B-A3B-Thinking-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-30B-A3B-Thinking-FP8"
+  },
+  "8b52b7b8e466b31866ad9b4f0a22b3997d133721b49eb48be0a4eca4d3494fc4": {
+    "name": "Qwen3-VL-2B-Thinking-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-2B-Thinking-FP8"
+  },
+  "09d24a817790a80cb517c61b434b86497afb08b73d930cef92c66e4f23303b52": {
+    "name": "Qwen3-VL-32B-Thinking-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-32B-Thinking-FP8"
+  },
+  "12ea937484e4f93d2836a99510393153b2f94e26e36d9af14059321cbb4e1f7d": {
+    "name": "Qwen3Guard-Stream-4B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3Guard-Stream-4B"
+  },
+  "494896e8d0bae48d574119d1c5d369a0b103601e973ed8175a955e255dc1abef": {
+    "name": "Qwen3Guard-Stream-8B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3Guard-Stream-8B"
+  },
+  "9f625bb19ce7614efd0e9fe5dd0abed9e7af96ce5165213074474ada181d83df": {
+    "name": "Qwen3Guard-Gen-0.6B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3Guard-Gen-0.6B"
+  },
+  "906b94af2d06d570fa10a3d34ce9e1ad7b167498bb2a062f7720a2f08d3f8709": {
+    "name": "Qwen3Guard-Gen-4B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3Guard-Gen-4B"
+  },
+  "19ae8dca8e38fdc3efce1ea87814672146f39e8b10fe974c2c8d84aa05ab8768": {
+    "name": "Qwen3Guard-Gen-8B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3Guard-Gen-8B"
+  },
+  "20d3e357707e0168c025ceaccd87b0dc5425d03fd2e805db6e3af7c8f6827f5e": {
+    "name": "Qwen3Guard-Stream-0.6B",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3Guard-Stream-0.6B"
+  },
+  "65299c9edcd576b09b44016bd4038640a71d7b5490f86e4adc2615bb38678a1d": {
+    "name": "Qwen3-VL-2B-Instruct",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-2B-Instruct"
+  },
+  "581124026598eced3fd69acba63e03b792f7273f543c42ef6350e9dceac0992c": {
+    "name": "Qwen3-VL-32B-Instruct",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-32B-Instruct"
+  },
+  "94af7610363efc5e5822196454bc0e1957ac54efb7ad9197a3015aea7aa84797": {
+    "name": "Qwen3-VL-32B-Thinking",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-32B-Thinking"
+  },
+  "45f89a637493d97987326fab4b682f58345894bbfddd3c767c5e66595207c281": {
+    "name": "Qwen3-VL-32B-Instruct-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-32B-Instruct-FP8"
+  },
+  "59c12cefa5e4bf0db132989c70a85be40c31de958b4a22975d8080b4e8a72652": {
+    "name": "Qwen3-VL-2B-Instruct-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-2B-Instruct-FP8"
+  },
+  "be1fc913260fb8e6fd0463f91845d017edd25864e2414a8fa117d9a00ad57b2d": {
+    "name": "Qwen3-VL-2B-Thinking",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-VL-2B-Thinking"
+  },
+  "a4352b3bc30351dc9d93cdfd726bae1044c799dd242169b80696f524e8522424": {
+    "name": "Qwen3-4B-SafeRL",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-4B-SafeRL"
+  },
+  "ca6253b1e70afeb9b0bfa7465aa78fd00b77993156d3533369826a3b20ab31e0": {
+    "name": "Qwen3-Omni-30B-A3B-Instruct",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Omni-30B-A3B-Instruct"
+  },
+  "8c7090638763cc7390efbd9d11aff4a15c92a900b0a85a736cabb63a6268369a": {
+    "name": "Qwen3-Omni-30B-A3B-Captioner",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Omni-30B-A3B-Captioner"
+  },
+  "7f7796ec7e7fb7c949fae695f845dc9fd28e4b63db249bf774acdd0c1b7eff35": {
+    "name": "Qwen3-Omni-30B-A3B-Thinking",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Omni-30B-A3B-Thinking"
+  },
+  "4362aaa001ec8ece8ed93146a5db4b1c2f2ba466055f2ce68ee8a6690e08ba67": {
+    "name": "Qwen3-Next-80B-A3B-Instruct-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Next-80B-A3B-Instruct-FP8"
+  },
+  "7e5b420d3ece8314799426fc921b7e158bceda0843f8a06d43a2e9d2a1a0bd59": {
+    "name": "Qwen3-Next-80B-A3B-Thinking-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Next-80B-A3B-Thinking-FP8"
+  },
+  "1f86bb2af9548f6f8ebbfb432fdc37bf5d6835a33c3f18835ad9800c05e08948": {
+    "name": "Qwen3-30B-A3B-Instruct-2507-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-30B-A3B-Instruct-2507-FP8"
+  },
+  "d0665f82d96c56f8405282baa5cb9b8a98367ef99c92612b22692a09ca0a7f59": {
+    "name": "Qwen3-30B-A3B-Instruct-2507",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-30B-A3B-Instruct-2507"
+  },
+  "fe7a0becb5811c75bb832ff6304f983333d912c098021cd9f3a71f19bf37598c": {
+    "name": "Qwen3-235B-A22B-Instruct-2507",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-235B-A22B-Instruct-2507"
+  },
+  "dc431f74d213dd5a746c7b9286f5d23213bd16c22f615e7a3195c6b9893654c0": {
+    "name": "Qwen3-Next-80B-A3B-Instruct",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Next-80B-A3B-Instruct"
+  },
+  "6535f8c05be2956342171bd1d5c10b26d9a2a04bbcdbfb40ff261f717819257a": {
+    "name": "Qwen3-4B-Instruct-2507-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-4B-Instruct-2507-FP8"
+  },
+  "06c298164e30bb61a8a4dcff877defab3bc8aae4106db773a1e90f5e368d3273": {
+    "name": "Qwen3-4B-Instruct-2507",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-4B-Instruct-2507"
+  },
+  "60ccbde80d844e541ff10869bc6519ad8815d2231ab230e96490ea0692f7ea10": {
+    "name": "Qwen3-4B-MLX-4bit",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-4B-MLX-4bit"
+  },
+  "5f723378e1486b870ed31ca2cb1314088f77ede9698194e5ee945ebd9d2e0c07": {
+    "name": "Qwen3-Coder-480B-A35B-Instruct-FP8",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8"
+  },
+  "901716654e5467c2aa9682222dbff8c866ad75c24fd7b576151e4a8fe267d68e": {
+    "name": "Qwen3-Coder-480B-A35B-Instruct",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-Coder-480B-A35B-Instruct"
+  },
+  "b457a504e38951d4bef9b10fd3c9ba6634ce43fd49e2d1a49ba9fcc292e30106": {
+    "name": "Qwen3-235B-A22B-Thinking-2507",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-235B-A22B-Thinking-2507"
+  },
+  "7608a6cd6c8a6aab242f040f36e2f39f88733033f7e253b8bc4035f26d34a60e": {
+    "name": "Qwen3-30B-A3B-Thinking-2507",
+    "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-30B-A3B-Thinking-2507"
+  },
   "304378ae890c6afe401176f32401d93d6ef847d34be65412e3cb9aab20a7701c": {
     "name": "Qwen3-32B",
     "modelscope": "https://modelscope.cn/models/Qwen/Qwen3-32B"
