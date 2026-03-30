@@ -680,14 +680,17 @@ class TB(_Ascend):
             abi = 1 if torch.compiled_with_cxx11_abi() else 0
         except (ImportError, AttributeError):
             abi = 0
+        except RuntimeError:
+            logger.warning("Unexpected Error occured while importing torch, default to abi 0")
+            abi = 0
         return "/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_{}".format(abi)
 
 
 class MindIE(_Ascend):
     NAME = "mindie"
-    HOME_ENVIRON = "MINDIE_LLM_HOME_PATH"
+    HOME_ENVIRON = "MIES_INSTALL_PATH" # use mindie-service to locate
     RELATIVE_VERSION_PATH = "../version.info"
-    DEFAULT_HOME = "/usr/local/Ascend/mindie/latest/mindie-llm"
+    DEFAULT_HOME = "/usr/local/Ascend/mindie/latest/mindie-service"
 
 
 class TBSpeed(_Ascend):

@@ -99,10 +99,14 @@ class AscendInfoSection(InfoSection):
         commit_id = None
         for key in info:
             key_lower = key.lower()
-            if "version" in key_lower: # version choose the last match
+            if version is None and "version" in key_lower:
+                version = info[key]
+            # mindie version key name is Ascend-mindie, lower to ascend-mindie
+            elif version is None and "ascend-mindie" in key_lower:
                 version = info[key]
             elif commit_id is None and "commit" in key_lower:
                 commit_id = info[key]
+            # only matches time or timestamp, skip runtime
             elif timestamp is None and key_lower in {"time", "timestamp"}:
                 timestamp = info[key]
 
@@ -135,7 +139,7 @@ class BannerPresenter:
         packages = python_packages or self.PYTHON_INFO_PACKAGES
 
         # detect if it's mindie 3.0.0 by verifying if it is installed
-        if get_pkg_version("mindie-llm") is not None:
+        if get_pkg_version("mindie-motor") is not None:
             packages.extend(("mindie-llm", "mindie-motor", "atb-llm"))
 
         self.sections = sections or [

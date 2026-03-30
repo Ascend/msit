@@ -19,6 +19,7 @@ import sys
 import time
 import shutil
 import unittest
+from collections import defaultdict
 from .util import Severity
 
 from typing import Set
@@ -30,10 +31,11 @@ from .visitor import ASTFormatter, _ExpressionEvaluator
 
 
 class RuleAssertionError(AssertionError):
-    def __init__(self, rule_node, history):
+    def __init__(self, rule_node, history, eval_exception=None):
         super().__init__()
         self.rule_node = rule_node
-        self.history = history
+        self.history = list(history) if history is not None else []
+        self.eval_exception = eval_exception
 
         self.pretty_formatter = ASTFormatter()
 
@@ -44,6 +46,9 @@ class RuleAssertionError(AssertionError):
         test = self.pretty_formatter.visit(self.rule_node.test)
         lines.append('>'.ljust(indent) + test)
         lines.append('')
+        if self.eval_exception is not None:
+            lines.append('E'.ljust(indent) + f'{self.eval_exception.__class__.__name__}: {self.eval_exception}')
+            lines.append('')
         for k, v in self.history:
             if isinstance(v, tuple):
                 line = f'{k} -> {v[1]} -> {v[0]}'
@@ -57,7 +62,10 @@ class RuleAssertionError(AssertionError):
 
 
 class RuleTestResult(unittest.TestResult):
-    def __init__(self, stream=None, descriptions=None, verbosity=False, total_cnt=None, failfast=False):
+    def __init__(
+        self, stream=None, descriptions=None, verbosity=False, total_cnt=None, failfast=False,
+        namespace_test_counts=None,
+    ):
         super().__init__(stream=stream, descriptions=descriptions, verbosity=verbosity)
         if stream is None:
             stream = unittest.runner._WritelnDecorator(sys.stderr)
@@ -65,6 +73,9 @@ class RuleTestResult(unittest.TestResult):
         self.verbosity = verbosity
         self.total_cnt = total_cnt
         self.failfast = failfast
+        self.namespace_test_counts = namespace_test_counts or {}
+        self._ns_completed = defaultdict(int)
+        self._current_namespace = None
 
         self._cols = shutil.get_terminal_size()[0]
         self._status_chars = []
@@ -80,7 +91,13 @@ class RuleTestResult(unittest.TestResult):
     def stopTestRun(self):
         self.stream.writeln()
 
+    def _record_ns_progress(self, test):
+        ns = getattr(test, 'namespace', None)
+        if ns is not None:
+            self._ns_completed[ns] += 1
+
     def addError(self, test, err):
+        self._record_ns_progress(test)
         if self.verbosity:
             self._update_verbose(test, 'ERROR')
         else:
@@ -89,6 +106,7 @@ class RuleTestResult(unittest.TestResult):
         return super().addError(test, err)
 
     def addFailure(self, test, err):
+        self._record_ns_progress(test)
         super().addFailure(test, err)
         # change to store test instance and err instance instead
         self.failures.pop()
@@ -100,6 +118,7 @@ class RuleTestResult(unittest.TestResult):
             self._update(test, 'F')
 
     def addSuccess(self, test):
+        self._record_ns_progress(test)
         if self.verbosity:
             self._update_verbose(test, 'PASSED')
         else:
@@ -107,6 +126,7 @@ class RuleTestResult(unittest.TestResult):
         return super().addSuccess(test)
 
     def addSkip(self, test, reason):
+        self._record_ns_progress(test)
         if self.verbosity:
             self._update_verbose(test, 'SKIPPED')
         else:
@@ -114,6 +134,7 @@ class RuleTestResult(unittest.TestResult):
         return super().addSkip(test, reason)
 
     def addExpectedFailure(self, test, err):
+        self._record_ns_progress(test)
         if self.verbosity:
             self._update_verbose(test, 'EXPECTEDFAILED')
         else:
@@ -121,6 +142,7 @@ class RuleTestResult(unittest.TestResult):
         return super().addExpectedFailure(test, err)
 
     def addUnexpectedSuccess(self, test):
+        self._record_ns_progress(test)
         if self.verbosity:
             self._update_verbose(test, 'UNEXPECTEDPASSED')
         else:
@@ -143,17 +165,30 @@ class RuleTestResult(unittest.TestResult):
                 self.stream.writeln(err.build_err_msg())
         self.stream.writeln()
         self.stream.flush()
+
+    def _percent_for_progress(self, test):
+        ns = getattr(test, 'namespace', None)
+        if self.namespace_test_counts and ns and ns in self.namespace_test_counts:
+            total = max(self.namespace_test_counts[ns], 1)
+            done = self._ns_completed[ns]
+            return int(100 * min(done, total) / total)
+        total = self.total_cnt or 1
+        done = (self.testsRun or 0) + 1
+        return int(100 * min(done, total) / total)
     
     def _update(self, test, ch):
         PERCENT_PADDING = 1
         
         color_code = self._colorcode_map.get(ch, Fore.RESET)
+        namespace = getattr(test, 'namespace', '')
+        if self._current_namespace is not None and namespace != self._current_namespace:
+            self.stream.write('\n')
+            self._status_chars = []
+        self._current_namespace = namespace
+
         self._status_chars.append(f'{color_code}{ch}{Fore.RESET}')
         
-        namespace = test.namespace
-        
-        total = self.total_cnt or 1
-        percent = int(100 * (self.testsRun / total))
+        percent = self._percent_for_progress(test)
         percent_str = f'[{percent:3d}%]'
         percent_width = len(percent_str) + PERCENT_PADDING        
         colored_percent_str = f'{color_code}{percent_str}{Fore.RESET}'
@@ -185,11 +220,10 @@ class RuleTestResult(unittest.TestResult):
         STATUS_PADDING = 1
         PERCENT_PADDING = 1
         
-        namespace = test.namespace
+        namespace = getattr(test, 'namespace', '')
         color_code = self._colorcode_map.get(status_word, Fore.RESET)
 
-        total = self.total_cnt or 1
-        percent = int(100 * (self.testsRun / total))
+        percent = self._percent_for_progress(test)
         percent_str = f'[{percent:3d}%]'
         percent_width = len(percent_str) + PERCENT_PADDING
         colored_percent_str = f'{color_code}{percent_str}{Fore.RESET}'
@@ -234,7 +268,11 @@ class RuleTestRunner:
 
     def run(self, suite):
         total = suite.countTestCases()
-        res = self.rescls(stream=self.stream, verbosity=self.verbosity, total_cnt=total, failfast=self.failfast)
+        namespace_test_counts = getattr(suite, '_namespace_test_counts', None)
+        res = self.rescls(
+            stream=self.stream, verbosity=self.verbosity, total_cnt=total, failfast=self.failfast,
+            namespace_test_counts=namespace_test_counts,
+        )
         cols = shutil.get_terminal_size()[0]
         
         self.stream.writeln(f'{Style.BRIGHT}collected {total} items{Style.RESET_ALL}')
@@ -304,6 +342,7 @@ def make_test_suite(data_source, ruleset, msprechecker_output):
         suite = test_loader.loadTestsFromTestCase(test_case_cls)
         test_suite.addTest(suite)
 
+    test_suite._namespace_test_counts = {ns: len(ruleset[ns]) for ns in ruleset}
     return test_suite
 
 
@@ -325,7 +364,11 @@ def _make_test_method(rule_node: _ast.Rule, namespace, msprechecker_output):
         par = namespace
         pretty_formatter = ASTFormatter()
         test_rule = pretty_formatter.visit(rule_node.test)
-        test_result = inst.evaluator.evaluate(rule_node.test)
+        try:
+            test_result = inst.evaluator.evaluate(rule_node.test)
+        except Exception as e:
+            hist = list(getattr(inst.evaluator, 'history', None) or [])
+            raise RuleAssertionError(rule_node, hist, eval_exception=e) from None
         test_history = inst.evaluator.history
         result_entry = {
             'test': test_rule,

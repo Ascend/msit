@@ -407,6 +407,27 @@ done
     assert 'global::item' not in data_source
 
 
+def test_process_global_skips_for_loops_for_targets_not_passed_in_input_configs(parser):
+    """[global] must not read or assign from -c targets the user did not supply."""
+    data_source = DataSource()
+    data_source.flatten('mindie_ms_coordinator', [10, 20])
+    text = '''\
+[global]
+for item in ${mindie_server::__root__}:
+    from_server = ${item}
+done
+for item in ${mindie_ms_coordinator::__root__}:
+    from_coord = ${item}
+done
+---
+'''
+    document_node = parser.parse(text)
+    processor = AssignmentProcessor({'mindie_ms_coordinator': '/x.yaml'}, data_source)
+    processor.process(document_node)
+    assert 'global::from_server' not in data_source
+    assert data_source['global::from_coord'][0] == 20
+
+
 def test_process_loop_with_dictionary_iteration_then_values_correctly_extracted_and_processed(parser, input_configs, data_source):
     text = '''\
 [global]
@@ -613,6 +634,7 @@ done
 
     input_configs.__contains__.return_value = True
     data_source = DataSource()
+    data_source.flatten('global', {'test_arr': [1, 2, 3]})
     rule_collector = RuleCollector(input_configs, data_source, 'error')
     ruleset = rule_collector.collect(document_node)
     assert len(ruleset) == 1
