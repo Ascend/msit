@@ -180,6 +180,28 @@ class _ExpressionEvaluator(NodeVisitor):
         return self.visit(node)
 
 
+class _AssignmentExpressionEvaluator(_ExpressionEvaluator):
+    """Resolve ${ns::path} only for namespaces the user supplied via ``-c`` (config targets).
+
+    Other dependency namespaces yield ``NA`` so [global] does not read undeclared inputs
+    or populate variables for targets that are not being validated.
+    """
+
+    _ALWAYS_ALLOWED = frozenset({'global', 'context', 'env'})
+
+    def __init__(self, data_source, input_configs):
+        super().__init__(data_source)
+        self._input_configs = input_configs or {}
+
+    def visit_dictpath(self, node: _ast.DictPath):
+        namespace = node.namespace
+        if namespace is None:
+            namespace = 'global'
+        if namespace in self._ALWAYS_ALLOWED or namespace in self._input_configs:
+            return super().visit_dictpath(node)
+        return NA
+
+
 class InfoCollector(NodeVisitor):
     def __init__(self) -> None:
         self._metadata_map = {}
@@ -370,6 +392,9 @@ class RuleCollector(NodeVisitor):
         target = node.target.id # for xx
         self._loop_target = target
         it = self._evaluator.evaluate(node.it) # in xx
+        if it is NA:
+            self._loop_target = None
+            return
 
         if isinstance(node.it, _ast.DictPath):
             reference = self._pretty_formatter.format(node.it)
@@ -453,9 +478,9 @@ class RuleCollector(NodeVisitor):
 class AssignmentProcessor(NodeVisitor):
     def __init__(self, input_configs, data_source):
         super().__init__()
-        self._input_configs = input_configs
+        self._input_configs = input_configs or {}
         self._data_source = data_source
-        self._evaluator = _ExpressionEvaluator(self._data_source)
+        self._evaluator = _AssignmentExpressionEvaluator(self._data_source, self._input_configs)
         self._pretty_formatter = ASTFormatter()
 
         self._skip_flag = False
@@ -489,7 +514,9 @@ class AssignmentProcessor(NodeVisitor):
     def visit_for(self, node: _ast.For):
         target = node.target.id # for xx
         it = self._evaluator.evaluate(node.it) # in xx
-        
+        if it is NA:
+            return
+
         self._in_loop = True
         for i, item in enumerate(it):
             self._data_source.flatten('global', {target: item})
@@ -532,6 +559,9 @@ class AssignmentProcessor(NodeVisitor):
             )
             return
 
+        if value is NA:
+            return
+
         path = f'global::{target}'
         self._data_source.flatten('global', {target: value}) # store it first
 
@@ -546,18 +576,20 @@ class AssignmentProcessor(NodeVisitor):
                 self._data_source[path] = (value, reference)
 
     def visit_dictpath(self, node: _ast.DictPath):
-        if node.namespace in self._input_configs:
+        ns = node.namespace
+        if ns is None:
+            ns = 'global'
+        if ns in ('global', 'context', 'env') or ns in self._input_configs:
             return
 
-        if node.namespace not in {'global', None}:
-            self._skip_flag = True
-            cmate_logger.warning(
-                "Invalid assignment detected at line %d, column %d. "
-                "A variable cannot be assigned to a dict path whose namespace '%s' "
-                "references a target that was not provided as input. "
-                "The assignment will be skipped. Please ensure the target '%s' is provided using the '-c' option.",
-                node.lineno, node.col_offset, node.namespace, node.namespace
-            )
+        self._skip_flag = True
+        cmate_logger.warning(
+            "Invalid assignment detected at line %d, column %d. "
+            "A variable cannot be assigned to a dict path whose namespace '%s' "
+            "references a target that was not provided as input. "
+            "The assignment will be skipped. Please ensure the target '%s' is provided using the '-c' option.",
+            node.lineno, node.col_offset, node.namespace, node.namespace
+        )
 
     def visit_break(self, node: _ast.Break):
         if not self._in_loop:
