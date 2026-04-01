@@ -19,7 +19,7 @@
     pip3 install tqdm==4.66.1
     ```
 
-- 安装MindSpeed-LLM库,[安装指导](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/pytorch/install_guide.md)
+- 安装MindSpeed-LLM库,[安装指导](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/docs/zh/install_guide.md)
 
 ## 功能约束
 
@@ -27,7 +27,7 @@
 
 ## 量化步骤（以llama2-7b legacy为例）
 
-1.获取开源权重，转化为MindSpeed-LLM支持的模型,可以使用MindSpeed-LLM的权重[转化脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/convert_ckpt.py)，[此处有转化脚本使用教程](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/pytorch/solutions/checkpoint/checkpoint_convert.md)
+1.获取开源权重，转化为MindSpeed-LLM支持的模型,可以使用MindSpeed-LLM的权重[转化脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/convert_ckpt.py)，[此处有转化脚本使用教程](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/docs/zh/pytorch/tools/checkpoint_convert_hf_dcp.md)
 
     ```python
     python convert_ckpt.py \
