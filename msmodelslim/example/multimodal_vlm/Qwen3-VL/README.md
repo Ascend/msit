@@ -65,7 +65,7 @@ Atlas 300I DUO 使用以下方法稀疏量化
 - 权重压缩
 
   **注意**：权重压缩需要先安装MindIE
-  - 参考[MindIE-LLM安装指南](https://gitcode.com/Ascend/MindIE-LLM/blob/master/docs/zh/user_guide/installation_guide.md)
+  - 参考[MindIE-LLM安装指南](https://gitcode.com/Ascend/MindIE-LLM/blob/master/docs/zh/user_guide/install/installing_MindIE.md)
 
   ```shell
   # TP数为tensor parallel并行个数
