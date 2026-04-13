@@ -100,8 +100,14 @@ class Image(CollectStrategy):
 
         # 精确匹配
         if target_version in type_dir:
+            LOGGER.info(f"Exact match image version: {target_version}")
             return type_dir.get(target_version, {})
-        LOGGER.warning(f"Target version <{target_version}> not found in resources directory, "
+        # 精确匹配 vllm B 版本，如0.13.0rc2.dev118+g3be8e33fe
+        if image_type == Framework.VLLM.value and '+g' in target_version and target_version.split('+')[-1] in type_dir:
+            LOGGER.info(f"Exact match image vllm beta version: {target_version.split('+')[-1]}")
+            return type_dir.get(target_version.split('+')[-1], {})
+
+        LOGGER.warning(f"Target image version <{target_version}> not found in resources directory, "
                        f"try to fuzzy match the closest version.")
         # 模糊匹配最接近的版本
         if not type_dir:
@@ -139,10 +145,17 @@ class Image(CollectStrategy):
             Utils.log_error_and_exit(f"Resources file {resources_path} not exist.")
         resources_dir = Utils.load_json(resources_path)
         version_dict = self._match_version(resources_dir)
-        image_dir = (version_dict.get(self._target.get("architecture", ""), {})
-                     .get(self._target.get("npu_type", ""), {})
-                     .get(self._target.get("os_name", "").lower(), {})
-                     )
+        os_dir = (version_dict.get(self._target.get("architecture", ""), {})
+                  .get(self._target.get("npu_type", ""), {})
+                  )
+        os_name = self._target.get("os_name", "")
+        default_os_name = "openeuler"
+        if os_name not in os_dir:
+            os_name = default_os_name
+            LOGGER.warning(
+                f"Image <version:{self._target.get('version', '')}, OS:{os_name}> from dumped file not found in image resource, "
+                f"try to switch OS:<{default_os_name}>.")
+        image_dir = os_dir.get(os_name.lower(), {})
         if not image_dir:
             Utils.log_error_and_exit(
                 f"Image <version:{self._target.get('version', '')}> from dumped file not found in image resource, "
@@ -166,7 +179,7 @@ class Image(CollectStrategy):
         return False
 
     def _generate_docker_run_cmd(self, timestamp: str):
-        data_dir = os.path.dirname(Weight().get_weight_dir())
+        data_dir = os.path.dirname(os.path.realpath(Weight().get_weight_dir()))
         docker_run_cmd = f"""docker run -it --privileged --name=sync-{self._target.get('image_type', '')}-{timestamp} --net=host --shm-size=500g \\
 --device=/dev/davinci_manager \\
 --device=/dev/devmm_svm \\
@@ -180,7 +193,7 @@ class Image(CollectStrategy):
 -v /var/log/npu/:/usr/slog \\
 -v /etc/hccn.conf:/etc/hccn.conf \\
 -v /home/:/home/ \\
--v /data/:{data_dir} \\
+-v {data_dir}:/data \\
 {self._image_id} /bin/bash"""
         Utils.print_line()
         Output.message(docker_run_cmd)

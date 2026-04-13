@@ -295,8 +295,7 @@ class CPUHighPerformance(CollectStrategy):
         )
 
     def sync(self, target_data: dict):
-        super().sync(target_data)
-        if not self._target:
+        if not self.execute():
             LOGGER.warning(f"CPU high performance strategy is disabled. It is recommended to enable it.")
 
 

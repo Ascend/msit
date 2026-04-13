@@ -37,6 +37,22 @@ class Env(CollectStrategy):
         "INF_",
     ]
 
+    BLACKLIST = [
+        "HOSTNAME",
+        "SHLVL",
+        "LS_COLORS",
+        "TERM",
+        "http_proxy",
+        "https_proxy",
+        "no_proxy",
+        "PYTHONPATH",
+        "PATH",
+        "LD_LIBRARY_PATH",
+        "PWD",
+        "OLDPWD",
+        "_"
+    ]
+
     def __init__(self, name: str = "env", ascend_only: bool = False):
         super().__init__(name)
         self._ascend_only = ascend_only
@@ -51,7 +67,13 @@ class Env(CollectStrategy):
                 for k, v in env_items
                 if any(item in k for item in self.ENV_FILTERS)
             }
-        return dict(env_items)
+        filtered_env_items = {}
+        for k, v in env_items:
+            if k in self.BLACKLIST:
+                LOGGER.debug(f"Exclude {k} from environment variables.")
+                continue
+            filtered_env_items[k] = v
+        return dict(filtered_env_items)
 
     def sync(self, target_data: dict) -> None:
         super().sync(target_data)

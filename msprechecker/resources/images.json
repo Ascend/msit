@@ -1,5 +1,39 @@
 {
   "vllm": {
+    "0.18.0rc1": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "v0.18.0rc1-310p-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.18.0rc1-310p-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.18.0rc1-310p",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.18.0rc1-310p"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.18.0rc1-a2-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.18.0rc1-a2-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.18.0rc1",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.18.0rc1"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.18.0rc1-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.18.0rc1-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.18.0rc1-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.18.0rc1-a3"
+          }
+        }
+      }
+    },
     "0.17.0rc1": {
       "aarch64": {
         "Duo": {
@@ -204,6 +238,200 @@
           "ubuntu": {
             "tag_release": "v0.13.0rc1-a3",
             "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.13.0rc1-a3"
+          }
+        }
+      }
+    },
+    "0.12.0rc1": {
+      "aarch64": {
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.12.0rc1-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.12.0rc1-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.12.0rc1",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.12.0rc1"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.12.0rc1-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.12.0rc1-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.12.0rc1-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.12.0rc1-a3"
+          }
+        }
+      }
+    },
+    "0.11.0rc1.dev157+gfed8145ae": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "v0.11.0-dev-310p-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-dev-310p-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0-dev-310p",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-dev-310p"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.11.0-dev-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-dev-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0-dev",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-dev"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.11.0-dev-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-dev-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0-dev-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-dev-a3"
+          }
+        }
+      }
+    },
+    "v0.11.0": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "v0.11.0-310p-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-310p-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0-310p",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-310p"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.11.0-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.11.0-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0-a3"
+          }
+        }
+      }
+    },
+    "v0.11.0rc3": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "v0.11.0rc3-310p-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc3-310p-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0rc3-310p",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc3-310p"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.11.0rc3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0rc3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc3"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.11.0rc3-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc3-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0rc3-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc3-a3"
+          }
+        }
+      }
+    },
+    "v0.11.0rc2": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "v0.11.0rc2-310p-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc2-310p-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0rc2-310p",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc2-310p"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.11.0rc2-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc2-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0rc2",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc2"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.11.0rc2-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc2-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0rc2-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc2-a3"
+          }
+        }
+      }
+    },
+    "v0.11.0rc1": {
+      "aarch64": {
+        "Duo": {
+          "openeuler": {
+            "tag_release": "v0.11.0rc1-310p-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc1-310p-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0rc1-310p",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc1-310p"
+          }
+        },
+        "A2": {
+          "openeuler": {
+            "tag_release": "v0.11.0rc1-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc1-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0rc1",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc1"
+          }
+        },
+        "A3": {
+          "openeuler": {
+            "tag_release": "v0.11.0rc1-a3-openeuler",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc1-a3-openeuler"
+          },
+          "ubuntu": {
+            "tag_release": "v0.11.0rc1-a3",
+            "pull_cmd": "docker pull quay.io/ascend/vllm-ascend:v0.11.0rc1-a3"
           }
         }
       }

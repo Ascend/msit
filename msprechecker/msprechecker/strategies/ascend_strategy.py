@@ -44,8 +44,8 @@ class Ascend(CollectStrategyGroup):
 
 class NPUSmi(CollectStrategy):
     COMPONENTS = {
-        "Chip Name": ["npu-smi", "info", "-t", "board", "-i", "0", "-c", "0"],
-        "HB"+"M Capacity": ["npu-smi", "info", "-t", "memory", "-i", "0"],
+        "Name": ["npu-smi", "info", "-t", "board", "-i", "0", "-c", "0"],
+        "HB" + "M Capacity": ["npu-smi", "info", "-t", "memory", "-i", "0"],
         "Total Count": ["npu-smi", "info", "-l"],
         "Chip Count": ["npu-smi", "info", "-l"],
         "PCI Device ID": ["npu-smi", "info", "-t", "board", "-i", "0"]
@@ -104,8 +104,8 @@ class NPUSmi(CollectStrategy):
         super().__init__(name)
 
     def _get_performance(self, data):
-        chip_name = data.get("Chip Name")
-        memory = int(data.get("HB"+"M Capacity")) // 1024
+        chip_name = data.get("Name")
+        memory = int(data.get("HB" + "M Capacity")) // 1024
         return self.SPECIFICATIONS[chip_name][memory]['performance']
 
     def _collect_single_data(self, cmd, keyword):
@@ -130,8 +130,8 @@ class NPUSmi(CollectStrategy):
                                                                                                 target_performance))
 
     def _check_memory(self, current):
-        target_memory = int(self._target.get("HB"+"M Capacity"))
-        current_memory = int(current.get("HB"+"M Capacity"))
+        target_memory = int(self._target.get("HB" + "M Capacity"))
+        current_memory = int(current.get("HB" + "M Capacity"))
         if target_memory > current_memory:
             Utils.log_error_and_exit("Current memory {} is less than the memory {} in dump file, "
                                      "which may cause OOM".format(current_memory, target_memory))

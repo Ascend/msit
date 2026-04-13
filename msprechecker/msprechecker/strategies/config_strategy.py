@@ -15,8 +15,10 @@
 # -------------------------------------------------------------------------
 import json
 import os
+import re
 from typing import Optional
 
+from .weight_strategy import Weight
 from .base_strategy import CollectStrategyGroup, CollectStrategy
 from .env_strategy import Env
 from ..utils import PreFetch, Framework, Utils, LOGGER
@@ -30,6 +32,48 @@ class Configs(CollectStrategyGroup):
     ):
         super().__init__(name, strategies)
 
+    @staticmethod
+    def replace_weight_dir_vllm(content: str, new_weight_dir: str) -> str:
+        weight_pattern = re.compile(
+            r"""(vllm\s+serve\s+(?:["']?))([^\s"']+)|(--model(?:["']?\s*[=\s]?\s*(?:["']?)))([^\s"']+)""")
+
+        def replace_match(match):
+            if match.group(1):
+                return f"{match.group(1)}{new_weight_dir}"
+            elif match.group(3):
+                return f"{match.group(3)}{new_weight_dir}"
+            return match.group(0)
+
+        LOGGER.info(f"Replace weight dir with provided path {new_weight_dir}.")
+        return weight_pattern.sub(replace_match, content)
+
+    @staticmethod
+    def replace_weight_dir_mindie(data: dict, new_weight_dir: str):
+        if not isinstance(data, dict):
+            LOGGER.info('Config file is not a dict, skip.')
+            return
+        try:
+            data["BackendConfig"]["ModelDeployConfig"]["ModelConfig"][0][
+                "modelWeightPath"
+            ] = new_weight_dir
+        except KeyError as e:
+            LOGGER.info('Missing required configuration key in MIES config file, skip.')
+
+    @staticmethod
+    def dump_boot_script_mindie(target_data):
+        script_content = f"""#bin/bash
+source /usr/local/Ascend/mindie/set_env.sh
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/nnal/atb/set_env.sh
+source /usr/local/Ascend/atb-models/set_env.sh
+source {Env().env_path}
+
+/usr/local/Ascend/mindie/latest/mindie-service/bin/mindieservice_daemon
+        """
+        script_path = (f"sync-{target_data.get('image', {}).get('image_type', '')}-"
+                       f"{target_data.get('timestamp', '')}-boot.sh")
+        Utils.dump_file(script_path, script_content)
+
     def sync(self, target_data: dict):
         super().sync(target_data)
         framework = PreFetch.get_framework()
@@ -38,13 +82,17 @@ class Configs(CollectStrategyGroup):
                 config_dir = os.path.dirname(config_path)
                 if not os.path.exists(config_dir):
                     Utils.log_error_and_exit(f"Config directory {config_dir} does not exist")
-                LOGGER.info(f"Override {config_path} with config from dumped file")
+                self.replace_weight_dir_mindie(config_data, Weight().get_weight_dir())
+                Utils.dump_file(config_path, json.dumps(config_data))
             else:
                 # for vLLM and SGLang, save the config file in the current directory and add source env on the top
                 source_env_txt = "source {}\n".format(Env().env_path)
                 new_file_name = (f"sync-{target_data.get('image', {}).get('image_type', '')}-"
                                  f"{target_data.get('timestamp', '')}-{os.path.basename(config_path)}")
-                Utils.dump_file(new_file_name, source_env_txt + config_data)
+                new_config_data = self.replace_weight_dir_vllm(config_data, Weight().get_weight_dir())
+                Utils.dump_file(new_file_name, source_env_txt + new_config_data)
+        if framework == Framework.MINDIE:
+            self.dump_boot_script_mindie(target_data)
 
 
 class Config(CollectStrategy):
