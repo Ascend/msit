@@ -1475,7 +1475,7 @@
     "name": "Qwen2.5-14B",
     "modelscope": "https://modelscope.cn/models/Qwen/Qwen2.5-14B"
   },
-    "13c8c6a8d1a38bf7e9b5f1560eac26e8c028156eab5111d1b21436669bdaa82f": {
+  "13c8c6a8d1a38bf7e9b5f1560eac26e8c028156eab5111d1b21436669bdaa82f": {
     "name": "DeepSeek-OCR-2",
     "modelscope": "https://modelscope.cn/models/deepseek-ai/DeepSeek-OCR-2"
   },
@@ -1767,7 +1767,7 @@
     "name": "deepseek-vl-1.3b-base",
     "modelscope": "https://modelscope.cn/models/deepseek-ai/deepseek-vl-1.3b-base"
   },
-    "aa4e3be59084d38260b0beef43640f9ccb34a8f344ed08e48b7a8cb121317574": {
+  "aa4e3be59084d38260b0beef43640f9ccb34a8f344ed08e48b7a8cb121317574": {
     "name": "MiniMax-M2.5",
     "modelscope": "https://modelscope.cn/models/MiniMax/MiniMax-M2.5"
   },
@@ -2358,5 +2358,273 @@
   "ed3199566f7ca027b2b172292f7884f5feac2f35f3e53fa0a61ee52b01f2626c": {
     "name": "GOT-OCR-2.0-hf",
     "modelscope": "https://modelscope.cn/models/stepfun-ai/GOT-OCR-2.0-hf"
+  },
+  "35c445aa63706e6ca7c95bbb42cbd3e20a0890c52632bb454cdab37b8033ec47": {
+    "name": "qwen-linear-algebra-coder",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/qwen-linear-algebra-coder"
+  },
+  "d3344a8889dc442d8e90e88e99256b72aefbbbf98b2d6dfee20a48868000ef26": {
+    "name": "Qwen3-VL-8B-Instruct-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-VL-8B-Instruct-W8A8"
+  },
+  "b7a5317be1d2622578f7be9ec03c72e6b77db0a78acb49fd33f5034660552e32": {
+    "name": "Qwen3-32B-W8A8-QuaRot",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-32B-W8A8-QuaRot"
+  },
+  "928e54e5ca33e87605b257555cef8627903f9e08ee67ea110e1f6455a8a42bb1": {
+    "name": "Qwen3-30B-A3B-W8A8-QuaRot",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-30B-A3B-W8A8-QuaRot"
+  },
+  "ede0ad704404531a52d45a7f1a47ddd2dcdcc600e8d157cbc4a739d981599639": {
+    "name": "qwen3-reranker-0.6b-lora",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/qwen3-reranker-0.6b-lora"
+  },
+  "a4dd0a08de18dc21a6b4e4e7d817515ca90de9983ba42f4a8caa292206ee0220": {
+    "name": "qwen2vl-flickr-lora-tower",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/qwen2vl-flickr-lora-tower"
+  },
+  "4c9056068aef46d6b6fc0f9090496f4411cae35612ff98f6b1298b7ec293093b": {
+    "name": "qwen2vl-flickr-lora-tower-connector",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/qwen2vl-flickr-lora-tower-connector"
+  },
+  "9453db2615e559e6c8189704107727dcd5b72916bd340fc4588a07a7072cb327": {
+    "name": "qwen2vl-flickr-lora-language",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/qwen2vl-flickr-lora-language"
+  },
+  "2786977268ea11ccb44ce76bd1709c25fdc6677776ce36387e33094a645e009f": {
+    "name": "qwen3-4b-vl-lora-vision-connector",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/qwen3-4b-vl-lora-vision-connector"
+  },
+  "135e96755172fcccb84da38b18c63974520b80cc863a492046d158300457caa9": {
+    "name": "qwen2.5-3b-vl-lora-vision-connector",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/qwen2.5-3b-vl-lora-vision-connector"
+  },
+  "7ccd9b17191303f8bb20390d58f70cf15c1f63801fa86ec831d5dfe56caf2d04": {
+    "name": "qwen25-vl-lora-pokemon",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/qwen25-vl-lora-pokemon"
+  },
+  "11af38ebb9283742063e7be2a5065a5cc2610eb019cd2fb292e7cf32fa7db826": {
+    "name": "qwen2-vl-lora-pokemon",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/qwen2-vl-lora-pokemon"
+  },
+  "18d56acb0f7a1c9a51025ce1fdfda9bfc5b8324fab9ee829253e4885e4767762": {
+    "name": "Qwen3-235B-A22B-quantized.w4a8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-235B-A22B-quantized.w4a8"
+  },
+  "38416f3138d027dde868e6447d33a2c7a84e56211a98f36b0cbce84b26b42db5": {
+    "name": "Qwen3-30B-A3B-Instruct-2507-quantized.w4a8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-30B-A3B-Instruct-2507-quantized.w4a8"
+  },
+  "7537b3774160870708dacee11c977953d3c86f6a4442b7826ed9f7691e3b0066": {
+    "name": "Qwen3-235B-A22B-quantized.w8a8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-235B-A22B-quantized.w8a8"
+  },
+  "58d32704b30e4a034b94ed9560dc1a5fcf3ea24dd74bf09058918c33a3b792ea": {
+    "name": "Qwen3-30B-A3B-Instruct-2507-quantized.w8a8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-30B-A3B-Instruct-2507-quantized.w8a8"
+  },
+  "14a9fbf861984eb9a11c87bf79079332d9efa2a01c77f0fe6f5967bf56ca4201": {
+    "name": "Qwen3-a3B_eagle3",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-a3B_eagle3"
+  },
+  "1e3dfd7907ead76bb65a920b872f87feb397d0fb83d7be8d222bc05a922da88c": {
+    "name": "qwen3-moe-text3sql-spider",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/qwen3-moe-text3sql-spider"
+  },
+  "82dbeff068dd3b2cd4e61faf89216f6da3793851e9c444aed5f7e5c626f3580f": {
+    "name": "DeepSeek-V3.2-4layers",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-V3.2-4layers"
+  },
+  "9e575901c298e6d9f047ac7be3c95d3d1b214e681932288555fa9fe2e5270c34": {
+    "name": "Qwen3-Next-80B-A3B-Instruct-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-Next-80B-A3B-Instruct-W8A8"
+  },
+  "51f92e86b20a5614e46497e4b2e6d4d2b25077cc73c1d4bb2be2eccb66dd3a1e": {
+    "name": "Qwen3-235B-A22B-W4A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-235B-A22B-W4A8"
+  },
+  "d577741cfad1e1133ff014ebce57d706595ad256958f319b8b6ac8f497f39268": {
+    "name": "ilama-3.2-1B",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/ilama-3.2-1B"
+  },
+  "b89035888b792ea4cfcd84c91cb0711f64dd5adc97cdeeb6a53a2a5080d19142": {
+    "name": "Llama-3.2-3B-Instruct",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Llama-3.2-3B-Instruct"
+  },
+  "fc8f9d12e8fc5de7be27bb882adc8588a1b38da5c9faa36745bd56272cdc5613": {
+    "name": "llama32-3b-text2sql-spider",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/llama32-3b-text2sql-spider"
+  },
+  "71fbf52e1ba29440e57de09bc318783295c1dac99497e44e53330eb4ec1e7698": {
+    "name": "DeepSeek-V3.2-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-V3.2-W8A8"
+  },
+  "af87eff8ba329d5fd08ae4087363b1621020e42041833dcfab4c2116f12e5d86": {
+    "name": "Qwen3-0.6B-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-0.6B-W8A8"
+  },
+  "8a678b0883bef0715f5f9bf52abc6d4d5e3bee8e95d4ae56d1adc8002bbfa84a": {
+    "name": "DeepSeek-Math-V2-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-Math-V2-W8A8"
+  },
+  "33f969ee35114d5042a5b876cfa7624bbaced78c3c37f2a57c72dd28db368a54": {
+    "name": "Kimi-K2-Thinking-Pruning",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Kimi-K2-Thinking-Pruning"
+  },
+  "c600d540fdcc6beae6e907a5665e708b9da6dc74a965008980852a12fc8f23c3": {
+    "name": "Qwen3-32B-W8A8-PDMIX",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-32B-W8A8-PDMIX"
+  },
+  "b743ba584380d8efc885e61cc75d21662530577ec3e9669dd17445820136f51c": {
+    "name": "Qwen3-0.6B-W8A16",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-0.6B-W8A16"
+  },
+  "5ab22bbcf6866469c4cc3f842d3771e6ce018d59bc94d902196d7a9e32a9bda5": {
+    "name": "Qwen3-Next-80B-A3B-Instruct-W8A8-Pruning",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-Next-80B-A3B-Instruct-W8A8-Pruning"
+  },
+  "4a2a4e84bd3b6eb622a8aa2862f3a6ecad1d44f020800f0a5d6afceb5c552d80": {
+    "name": "Llama-2-7b-hf",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Llama-2-7b-hf"
+  },
+  "eb2b4da365fb1b1c39ac8a5b4e662b116685dbe6b687d1d24a7fa48a44e4a73e": {
+    "name": "llama-2-7b-sql-lora-test",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/llama-2-7b-sql-lora-test"
+  },
+  "437f0bd4caf6d43e8edaf929bcad00624aec5fbe5da7e30cfe57591f87743035": {
+    "name": "self_cognition_Alice",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/self_cognition_Alice"
+  },
+  "adbf7364ad29c8e03c3ab1e4d7090d1c07f2f517b001430f55b2fdfab7dce7aa": {
+    "name": "Qwen3-32B-W4A4",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-32B-W4A4"
+  },
+  "db9e393dc6593730569263b16ea67cc0dd319f26e1f7e434e7b2ea77ddfd7e47": {
+    "name": "Qwen3-32B-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-32B-W8A8"
+  },
+  "df3b6530f0cde7e9fb38b9b86c96a9e8866df5eb8925ac9cdd73de00ca97fdce": {
+    "name": "Hunyuan-1.8B-Instruct-W4A8-V1",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Hunyuan-1.8B-Instruct-W4A8-V1"
+  },
+  "3a99fc22194ace8a36911b7f5cef33d1dd785fe1306463601c7448f5449741ad": {
+    "name": "Qwen3-1.7B-W4A8-V1",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-1.7B-W4A8-V1"
+  },
+  "3456a82fe5b766d84ee23210b689c9045d943d93b08879ad9deb6dac36c7a3fc": {
+    "name": "DeepSeek-V3.2-Exp-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-V3.2-Exp-W8A8"
+  },
+  "18c1ab8bef0cea4ec3eff4e402d28f9ca089a9499668d31e25dcbfcf24c1fe13": {
+    "name": "DeepSeek-V3.1-W4A8-puring",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-V3.1-W4A8-puring"
+  },
+  "3fb7b664ab86b4b95f0d080f382896b55e5089b809d4c0589b9ec7f83c62c9eb": {
+    "name": "Qwen2.5-VL-3B-Instruct-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen2.5-VL-3B-Instruct-W8A8"
+  },
+  "6bd8893fd445ac3292599a2788729e6595de3dcfc62267e536caaccc3e53e621": {
+    "name": "Qwen3-235B-A22B-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-235B-A22B-W8A8"
+  },
+  "ee2c98686651c4a2c3f860d51eef94eca165dd0f4123c1870bdc5620c86a4762": {
+    "name": "DeepSeek-V3-W4A8-Pruing",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-V3-W4A8-Pruing"
+  },
+  "2e962f21292ef2ca88d552e0500f6e42ed8abdd8150098cc1d5a53e9cfd231ff": {
+    "name": "Kimi-K2-Instruct-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Kimi-K2-Instruct-W8A8"
+  },
+  "adc26c98fbb64f5fde085701dcd053ec1e72694433837cfe5a5a508d4a4fca94": {
+    "name": "Qwen3-30B-A3B-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-30B-A3B-W8A8"
+  },
+  "3fe3658228890efcc0cad00f2fa3b88849fe41e04a430e43b8d19fee73c89af4": {
+    "name": "Qwen2.5-0.5B-Instruct-fa3",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen2.5-0.5B-Instruct-fa3"
+  },
+  "4ec329c44793d80cb9318f9d24ddca54b417b57bbe5e5a8c0a8a0916bfa23cda": {
+    "name": "llama-160m-accelerator",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/llama-160m-accelerator"
+  },
+  "ee8ba78423704397b4333bc9ecce34b3210f7b6516bf1b7d1923818dcbdfe26e": {
+    "name": "vllm-eagle-llama-68m-random",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/vllm-eagle-llama-68m-random"
+  },
+  "1e714a6e716c0e7e8587d8d4152dcdcac1413b21f7b5c9be4dfc155545e57760": {
+    "name": "llama-160m",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/llama-160m"
+  },
+  "fb17d4122b404b63b09b8e433e992bda57189e0de4435827dfe3d6fd6fcec8dc": {
+    "name": "DeepSeek-V3-Pruning",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-V3-Pruning"
+  },
+  "37ab8c8ed3b3e9f4b65f92b3a086d7497ecc2a4725f160733c573fa40b8b603c": {
+    "name": "Qwen3-30B-A3B-Puring",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-30B-A3B-Puring"
+  },
+  "4c0965f522882e517ae88dbc06152cc60cb0a909b3fffc4480f24a7cb070e302": {
+    "name": "DeepSeek-V3-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-V3-W8A8"
+  },
+  "28738bd77a094c3acc5b666cf2b6413bcc1e779014a6da06b0c7d8ce55e00084": {
+    "name": "DeepSeek-R1-0528-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-R1-0528-W8A8"
+  },
+  "9359f920661d4f5f8d50313c625a7d1158ac1127dbb2fac2b66e2ad81a43b55a": {
+    "name": "DeepSeek-R1-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-R1-W8A8"
+  },
+  "ae6ee3539c83b23e9e1858d953fe13fdc84f73c60de6419056d8c8827c9af326": {
+    "name": "Qwen3-8B-W4A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-8B-W4A8"
+  },
+  "262d3bf9be62fa7f4f81c90a75ea4db7466c87fadf670a5efcf9f0aa789351e7": {
+    "name": "DeepSeek-R1-fa3-pruning",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-R1-fa3-pruning"
+  },
+  "c66605937cfc88fcfe4ef48c7d2f8d22900eebe554a0014ef47b0edc0c2cbbeb": {
+    "name": "DeepSeek-R1-w4a8-pruning",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-R1-w4a8-pruning"
+  },
+  "1f348304f787a492c01839a5e71eb9773ab760ab02dbe12a1c271f82c0d13acc": {
+    "name": "ilama-text2sql-spider",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/ilama-text2sql-spider"
+  },
+  "ea76fad8a127cf29957487d6f88cb6e6c09ea6a50dbaf4c461ba605df5828270": {
+    "name": "Qwen2.5-0.5B-Instruct-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen2.5-0.5B-Instruct-W8A8"
+  },
+  "d8b57cce6eb63e333d8611e2deb44df18bcc48f5da582ce5d833e6ac98acc34f": {
+    "name": "Qwen3-8B-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Qwen3-8B-W8A8"
+  },
+  "6c35610f758514c69ad33c9fbb5e684e3d81072e7b2f615c8de6b30635fcfa50": {
+    "name": "DeepSeek-V2-Lite-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/DeepSeek-V2-Lite-W8A8"
+  },
+  "8e80eb9bde7dd735f579a0c4163106db08e5f1c3d1ed37f56dee214fd15f99ba": {
+    "name": "TinyLlama-1.1B-Chat-v0.3",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/TinyLlama-1.1B-Chat-v0.3"
+  },
+  "400bf88c31f20aa9bdfb1502ec6cea113c73aea367eb3e3b8f7441cf6c18379f": {
+    "name": "QwQ-32B-W8A8",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/QwQ-32B-W8A8"
+  },
+  "f85f7b67055c9b62ade8760962a4810132c4602ddfe0dcb2db1ce367ef6740e8": {
+    "name": "gemma-1.1-2b-it",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/gemma-1.1-2b-it"
+  },
+  "52720aae6379ff40fb3c1a4a7baeffc5eb802e86abeabdd9cc9f63d46eaa1e39": {
+    "name": "Llama-3.2-1B-Instruct",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Llama-3.2-1B-Instruct"
+  },
+  "baebbfe4af8ca1bdfa5bbee2450bf3900e6ca43d907ec54d9f74da7748634acb": {
+    "name": "Pixtral-12B-2409",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Pixtral-12B-2409"
+  },
+  "2825b317e5832cc65a697c58e269cf93672e13b70cf2a53bd0a9fbf0e483c79d": {
+    "name": "Meta-Llama-3-8B-Instruct",
+    "modelscope": "https://modelscope.cn/models/vllm-ascend/Meta-Llama-3-8B-Instruct"
   }
 }
