@@ -44,7 +44,7 @@
 
 ###### msprof-analyze（MindStudio Profiler Analyze）
 
-1. 新增module_statistic分析能力：提供的针对PyTorch模型自动解析模型层级结构的分析能力，帮助精准定位性能瓶颈。
+1. 新增module_statistic分析能力：提供针对PyTorch模型自动解析模型层级结构的分析能力，帮助精准定位性能瓶颈。
 
 ###### msInsight（MindStudio Insight）
 
@@ -77,7 +77,7 @@
 7. msModelSlim 模型适配支持插件化和配置注册，支持依赖预检。
 8. msModelSlim 支持 Qwen3-235B-A22B W4A8、Qwen3-30B-A3B W4A8 量化。vLLM Ascend已支持量化模型推理部署。
 9. msModelSlim 支持 DeepSeek-V3.2-Exp W8A8 量化，单卡64G显存，100G内存即可执行。
-10. msModelSlim 现已解决Qwen3-235B-A22B在W8A8量化下频繁出现"游戏副本"等异常token的问题。
+10. msModelSlim 现已解决Qwen3-235B-A22B在W8A8量化下频繁出现“游戏副本”等异常token的问题。
 11. msModelSlim 支持DeepSeek R1 W4A8 per-channel 量化【Prototype】。
 12. msModelSlim 支持大模型量化敏感层分析。
 
@@ -91,7 +91,7 @@
 
 ###### msInsight（MindStudio Insight）
 
-1. 移除"精度颜色自定义配置"选项：原以数字表示的精度颜色，现统一调整为使用"pass""warning""error"三类状态标识，更加直观清晰。
+1. 移除“精度颜色自定义配置”选项：原以数字表示的精度颜色，现统一调整为使用"pass""warning""error"三类状态标识，更加直观清晰。
 
 #### 三、Bugfix
 

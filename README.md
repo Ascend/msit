@@ -1,144 +1,78 @@
-# **msIT**
+<h1 align="center">MindStudio Inference Tools</h1>
 
-## 最新消息
+<div align="center">
+<h2>昇腾 AI 推理开发工具链</h2>
 
-- [2026.1.12]：[msit仓库License变更通知](https://gitcode.com/Ascend/msit/discussions/1)。
+ [![Ascend](https://img.shields.io/badge/Community-MindStudio-blue.svg)](https://www.hiascend.com/developer/software/mindstudio) 
+ [![License](https://badgen.net/badge/License/MulanPSL-2.0/blue)](./LICENSE)
 
-- [2025.12.31]：昇腾平台MindStudio推理工具链全面开源，涉及如下代码仓。
+</div>
 
-    - [MindStudio-Profiler](https://gitcode.com/Ascend/msprof)  
-    构建昇腾全场景性能调优基础能力，支持采集CANN和NPU性能数据，提升昇腾设备性能调优效率。
+## ✨ 最新消息
 
-    - [MindStudio-Profiler-Analyze](https://gitcode.com/Ascend/msprof-analyze)  
-    昇腾性能分析工具，基于采集的性能数据进行分析，提供昇腾设备性能瓶颈快速识别能力。
+<span style="font-size:14px;">
+  
+🔹 **[2026.03.30]**：msit 仓库精度调试、推理服务调优、模型量化模块日落公告，详情请参见[公告](https://gitcode.com/Ascend/msit/discussions/2)  
+🔹 **[2026.01.12]**：本仓库许可证（License）变更，详情请参见 [公告](https://gitcode.com/Ascend/msit/discussions/1)    
+🔹 **[2025.12.31]**：MindStudio 推理开发工具链全面开源
 
-    - [MindStudio-MemScope](https://gitcode.com/Ascend/msmemscope)  
-    针对昇腾显存调试调优场景的专用工具，提供整网级多维度显存数据采集、自动诊断、优化分析能力。
+</span>
 
-    - [MindStudio-Service-Profiler](https://gitcode.com/Ascend/msserviceprofiler)  
-    昇腾亲和的服务化性能调优工具，支持请求调度、模型执行过程可视化，提升服务化性能分析效率。
+## ℹ️ 简介
 
-    - [MindStudio-Monitor](https://gitcode.com/Ascend/msmonitor)  
-    一站式在线监控工具，支持落盘和在线性能数据采集，提供集群场景性能监测及定位能力。
+MindStudio Inference Tools（msIT）推理开发工具链，聚焦大模型与传统模型推理开发中的关键挑战，通过提供模型压缩、调试与调优等能力，高效解决推理效率低、资源开销大等问题，助力用户实现最优推理性能。
 
-    - [MindStudio-ModelSlim](https://gitcode.com/Ascend/msmodelslim)  
-    昇腾模型压缩工具，一个以加速为目标、压缩为技术、昇腾为根本的亲和压缩工具。包含量化和压缩等一系列推理优化技术，支持大语言稠密模型、MoE模型、多模态理解模型、多模态生成模型等。
+<img src="./docs/zh/figures/readme/fullview.svg" width="1200"/>
 
-    - [MindStudio-Insight](https://gitcode.com/Ascend/msinsight)  
-    MindStudio Insight可视化工具，支持系统级、算子级、服务化等多场景多维度性能分析，深度剖析性能数据，帮助开发者完成性能诊断。
-    
-    - [MindStudio-Probe](https://gitcode.com/Ascend/msprobe)  
-    模型开发精度调试环节使用的工具包，是针对昇腾提供的全场景精度工具链，帮助用户提高模型精度定位效率。
+## ⚙️ 功能介绍
 
-## 简介
+推理开发工具链提供以下系列化工具：
 
-MindStudio Inference Tools（MindStudio昇腾推理工具链，msIT），为用户提供大模型与传统模型推理开发中常用的模型压缩、模型调试调优等功能，支持推理服务化场景下的性能调优能力，帮助用户达到最优的推理性能。
+| 类别 | 工具名称                                                                         | 功能简介                                               |
+|:--:|:-----------------------------------------------------------------------------|:---------------------------------------------------|
+| 预检 | [**msPrechecker**](https://gitcode.com/Ascend/msit/tree/master/msprechecker) | **【预检工具】** 支持环境预检、连通性预检及推理过程落盘和比对，帮助用户在部署前发现异常问题。  |
+| 量化 | [**msModelSlim**](https://gitcode.com/Ascend/msmodelslim)                    | **【模型压缩】** 包含量化和压缩等推理优化技术，支持大语言稠密模型、MoE 模型、多模态模型等。 |
+| 精度 | [**msProbe**](https://gitcode.com/Ascend/msprobe)                            | **【精度调试】** 昇腾全场景精度工具，用于精度调试与问题定位。                  |
+| 性能 | [**msProf**](https://gitcode.com/Ascend/msprof)                              | **【模型调优】** 全场景性能调优底座，采集软硬件全栈性能数据，提升设备调优效率。    |
+| 性能 | [**msprof-analyze**](https://gitcode.com/Ascend/msprof-analyze)              | **【性能分析】** 基于采集数据做性能分析，快速识别性能瓶颈。                   |
+| 性能 | [**msServiceProfiler**](https://gitcode.com/Ascend/msserviceprofiler)        | **【服务调优】** 支持请求调度、模型执行过程可视化，提升服务化性能分析效率。           |
+| 性能 | [**msMemScope**](https://gitcode.com/Ascend/msmemscope)                      | **【内存调优】** 内存调优专用工具：整网级多维度内存采集，支持自动诊断与优化分析。        |
+| 性能 | [**msInsight**](https://gitcode.com/Ascend/msinsight)                        | **【可视调优】** 可视化性能分析，覆盖系统、算子、服务化等场景，辅助完成性能诊断。        |
+| 监控 | [**msMonitor**](https://gitcode.com/Ascend/msmonitor)                        | **【在线监控】** 一站式监控，支持落盘与在线采集，面向集群的监测与问题定位。           |
 
-## 目录结构  
+## 🚀 快速入门
 
-关键目录如下。
+以简易模型为例，演示大模型推理工具链中量化、数据转储（Dump）、精度比对与性能调优等工具的使用，请参见 《[快速入门](https://gitcode.com/Ascend/msit/blob/26.0.0/docs/zh/msit_quick_start.md)》。
 
-```tex
-|—————— msit                     # msit推理工具
-|—————— msmodelslim              # msmodelslim量化工具
-|—————— msprechecker             # 预检工具
-|—————— msserviceprofiler        # 服务化调优工具
-|—————— test                     # UT测试
-|—————— README.md                # 总仓介绍
-```
+## 📘 使用指南
 
-## 快速入门
+各工具的详细使用说明请参阅其源码仓库中的 README 文件，也可通过上方功能介绍表格中的链接直接跳转。
 
-快速入门是以一个简单模型为例，介绍大模型推理工具链中的模型量化、数据dump、精度比对、性能调优等工具的使用，具体内容请参见《[快速入门](./docs/zh/msit_quick_start.md)》。
+## 🛠️ 贡献指南
 
-## 功能介绍
+欢迎参与项目贡献，请参见 《[贡献指南](./docs/zh/contributing/contributing_guide.md)》。
 
-作为昇腾平台的统一推理开发工具链，包含模型量化、精度调试和性能调优等工具，可根据下方的工具介绍，选择相应工具查看具体信息，进行模型推理。
+## ⚖️ 相关说明
 
-### 性能工具
+🔹 《[版本说明](https://gitcode.com/Ascend/msit/blob/26.0.0/docs/zh/release_notes.md)》    
+🔹 《[许可证声明](./docs/zh/license_notice.md)》     
+🔹 《[安全声明](https://gitcode.com/Ascend/msit/blob/26.0.0/docs/zh/security_statement.md)》     
+🔹 《[免责声明](./docs/zh/disclaimer.md)》     
 
-- [**msProf（MindStudio Profiler）**](https://gitcode.com/Ascend/msprof)<br>
-    **数据采集工具**：构建昇腾全场景性能调优基础能力，支持采集CANN和NPU性能数据，提升昇腾设备性能调优效率。
+## 🤝 建议与交流
 
-- [**msMonitor（MindStudio Monitor）**](https://gitcode.com/Ascend/msmonitor)<br>
-    **在线监控工具**一站式在线监控工具，支持落盘和在线性能数据采集，提供集群场景性能监测及定位能力。
+欢迎大家为社区做贡献。如果有任何疑问或建议，请提交 [Issues](https://gitcode.com/Ascend/msit/issues)，我们会尽快回复。感谢您的支持。
 
-- [**msServiceProfiler（MindStudio Service Profiler）**](https://gitcode.com/Ascend/msserviceprofiler)<br>
-    **服务化性能调优工具**：昇腾亲和的服务化性能调优工具，支持请求调度、模型执行过程可视化，提升服务化性能分析效率。
+|                                      📱 关注 MindStudio 公众号                                       | 💬 更多交流与支持                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|:-----------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <img src="./docs/zh/figures/readme/officialAccount.png" width="120"><br><sub>*扫码关注获取最新动态*</sub> | 💡 **加入微信交流群**：<br>关注公众号，回复“交流群”即可获取入群二维码。<br><br>🛠️ **其他渠道**：<br>👉 昇腾助手：[![WeChat](https://img.shields.io/badge/WeChat-07C160?style=flat-square&logo=wechat&logoColor=white)](https://gitcode.com/Ascend/msit/blob/master/docs/zh/figures/readme/xiaozhushou.png)<br>👉 昇腾论坛：[![Website](https://img.shields.io/badge/Website-%231e37ff?style=flat-square&logo=RSS&logoColor=white)](https://www.hiascend.com/forum/) |
 
-- [**msprechecker（MindStudio Prechecker Tool）**](https://gitcode.com/Ascend/msit/tree/master/msprechecker)<br>
-    **预检工具**：msprechecker提供推理场景的预检能力，支持环境预检，连通性预检，推理过程中的落盘和比对功能。帮助用户在推理业务部署前，提前发现异常问题。推理时，提高推理性能，快速复现基线。
+## 🙏 致谢
 
-- [**msprof-analyze（MindStudio Profiler Analyze）**](https://gitcode.com/Ascend/msprof-analyze)<br>
-    **昇腾性能分析工具**：基于采集的性能数据进行分析，提供昇腾设备性能瓶颈快速识别能力。
-
-- [**msInsight（MindStudio Insight）**](https://gitcode.com/Ascend/msinsight)<br>
-    **MindStudio Insight可视化工具**：支持系统级、算子级、服务化等多场景多维度性能分析，深度剖析性能数据，帮助开发者完成性能诊断。
-
-### 精度工具
-    
-- [**msProbe（MindStudio Probe）**](https://gitcode.com/Ascend/msprobe)<br>
-    **精度调试工具**：模型开发精度调试环节使用的工具包，是针对昇腾提供的全场景精度工具链，帮助用户提高模型精度定位效率。
-
-- [**msMemScope（MindStudio MemScope）**](https://gitcode.com/Ascend/msmemscope)<br>
-    **内存工具**：针对昇腾显存调试调优场景的专用工具，提供整网级多维度显存数据采集、自动诊断、优化分析能力。
-
-### 量化工具
-
-- [**msModelSlim（MindStudio ModelSlim）**](https://gitcode.com/Ascend/msmodelslim)<br>
-    **模型压缩工具**：昇腾模型压缩工具，一个以加速为目标、压缩为技术、昇腾为根本的亲和压缩工具。包含量化和压缩等一系列推理优化技术，支持大语言稠密模型、MoE模型、多模态理解模型、多模态生成模型等。
-
-## 安全声明  
-
-描述msIT相关的安全信息，公网地址以及通信矩阵等信息，具体内容请参见《[安全声明](./docs/zh/security_statement.md)》。
-
-## 免责声明
-
-- 本工具仅供调试和开发之用，不适用于生产环境。使用者需自行承担使用风险，并理解以下内容：
-
-  - [x] 仅限调试开发使用：此工具设计用于辅助开发人员进行调试，不适用于生产环境或其他商业用途。对于因误用本工具而导致的数据丢失、损坏，本工具及其开发者不承担责任。
-
-  - [x] 数据处理及删除：用户在使用本工具过程中产生的数据（包括但不限于dump的数据）属于用户责任范畴。建议用户在使用完毕后及时删除相关数据，以防泄露或不必要的信息泄露。
-
-  - [x] 数据保密与传播：使用者了解并同意不得将通过本工具产生的数据随意外泄或传播。对于由此产生的信息泄露、数据泄露或其他不良后果，本工具及其开发者概不负责。
-
-  - [x] 用户输入安全性：用户需自行保证输入的命令行的安全性，并承担因输入不当而导致的任何安全风险或损失。对于由于输入命令行不当所导致的问题，本工具及其开发者概不负责。
-
-- 免责声明范围：本免责声明适用于所有使用本工具的个人或实体。使用本工具即表示您同意并接受本声明的内容，并愿意承担因使用该功能而产生的风险和责任，如有异议请停止使用本工具。
-
-- 在使用本工具之前，请**谨慎阅读并理解以上免责声明的内容**。对于使用本工具所产生的任何问题或疑问，请及时联系开发者。
-
-## License
-
-msIT工具的使用许可证，具体请参见《[LICENSE](./LICENSE)》。
-
-msIT工具docs目录下的文档适用CC-BY 4.0许可证，具体请参见《[LICENSE](./docs/LICENSE)》。
-
-## 贡献声明
-
-1. **提交错误报告**：如果您在msIT中发现了一个不存在安全问题的漏洞，请在msIT仓库中的Issues中搜索，以防该漏洞已被提交，如果找不到漏洞可以创建一个新的Issues。如果发现了一个安全问题请不要将其公开，请参阅安全问题处理方式。提交错误报告时应该包含完整信息。
-2. **安全问题处理**：本项目中对安全问题处理的形式，请通过邮箱通知项目核心人员确认编辑。
-3. **解决现有问题**：通过查看仓库的Issues列表可以发现需要处理的问题信息, 可以尝试解决其中的某个问题。
-4. **如何提出新功能**：请使用Issues的Feature标签进行标记，我们会定期处理和确认开发。
-5. **开始贡献**：
-    1. Fork本项目的仓库。
-    2. Clone到本地。
-    3. 创建开发分支。
-    4. 本地测试：提交前请通过所有单元测试，包括新增的测试用例。
-    5. 提交代码。
-    6. 新建Pull Request。
-    7. 代码检视：您需要根据评审意见修改代码，并重新提交更新。此流程可能涉及多轮迭代。
-    8. 当您的PR获得足够数量的检视者批准后，Committer会进行最终审核。
-    9. 审核和测试通过后，CI会将您的PR合并到项目的主干分支。
-
-## 建议与交流
-
-欢迎大家为社区做贡献。如果有任何疑问或建议，请提交[Issues](https://gitcode.com/Ascend/msit/issues)，我们会尽快回复。感谢您的支持。
-
-## 致谢
-
-msIT由华为公司的下列部门联合贡献：
-
-- 昇腾计算MindStudio开发部
-
-感谢来自社区的每一个PR，欢迎贡献msIT！
+msIT 由华为公司的下列部门联合贡献：    
+🔹 昇腾计算MindStudio开发部  
+🔹 昇腾计算生态使能部  
+🔹 华为云昇腾云服务  
+🔹 2012分布式并行计算实验室  
+🔹 2012网络技术实验室  
+感谢来自社区的每一个 PR，欢迎贡献 msIT！

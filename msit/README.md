@@ -8,10 +8,6 @@ MindStudio Inference Tools(msit)作为昇腾统一推理工具，提供一体化
 
 msit中的llm组件，debug组件功能在[msprobe](https://gitcode.com/Ascend/msprobe)中已有对应的优化实现，msit中相关功能已停止演进，建议前往使用msprobe工具。
 
-## 环境部署
-
-环境依赖及工具安装请参见[msit安装指南](./docs/install/README.md)。
-
 ## 注意事项
 
 - 工具读写的所有路径，只允许包含大小写字母、数字、下划线、斜杠、点和短横线。
