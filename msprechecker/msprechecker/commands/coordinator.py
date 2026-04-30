@@ -75,6 +75,7 @@ from ..utils import (
 )
 from ..cmate import inspect, run
 from ..cmate.cmate import _parse_configs, _parse_contexts
+from .dump import Dump
 
 
 class CollectorFactory:
@@ -284,47 +285,6 @@ class PrecheckStrategy(CommandStrategy):
         return 0
 
 
-class DumpStrategy(CommandStrategy):
-    @staticmethod
-    def execute(args: argparse.Namespace) -> int:
-        collectors = CollectorFactory.create(args)
-
-        dump_content = {}
-        for collector in collectors:
-            collect_result = collector.collect()
-            if not collect_result.error_handler.empty():
-                DumpStrategy._display_collect_warning(collect_result.error_handler)
-                continue
-
-            collect_type = collect_result.error_handler.type
-            data = collect_result.data
-
-            if isinstance(collector, ConfigCollector):
-                data, _, _, _ = collect_result.data
-
-            dump_content[collect_type] = data
-
-        with open_s(args.output_path, "w") as f:
-            json.dump(dump_content, f, indent=4)
-
-            global_logger.info(
-                "All information has been saved in: %r. You can use '--output-path' to specify the save location.",
-                args.output_path,
-            )
-            global_logger.info(
-                "What's Next?\n\t"
-                "You may now use 'msprechecker compare' to compare two or more dumped files for discrepancies!"
-            )
-
-        return 0
-
-    @staticmethod
-    def _display_collect_warning(error_handler):
-        for error in error_handler:
-            context = error.context
-            global_logger.warning("Error occured while collecting '%s': %s", error_handler.type, context.what)
-
-
 class CompareStrategy(CommandStrategy):
     @staticmethod
     def execute(args: argparse.Namespace) -> int:
@@ -378,7 +338,7 @@ class CommandStrategyFactory:
     def __init__(self) -> None:
         self._registry = {
             CommandType.CMD_PRECHECK: PrecheckStrategy,
-            CommandType.CMD_DUMP: DumpStrategy,
+            CommandType.CMD_DUMP: Dump,
             CommandType.CMD_COMPARE: CompareStrategy,
             CommandType.CMD_RUN: RunStrategy,
             CommandType.CMD_INSPECT: InspectStrategy,

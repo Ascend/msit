@@ -21,7 +21,7 @@ from textwrap import dedent
 
 from .commands import (
     setup_precheck_parser,
-    setup_dump_parser,
+    setup_dump,
     setup_compare_parser,
     setup_cmate_parser,
     Coordinator
@@ -54,7 +54,7 @@ def main():
     subparsers = main_parser.add_subparsers(dest="command", title="Available Commands", metavar="")
 
     setup_precheck_parser(subparsers)
-    setup_dump_parser(subparsers)
+    setup_dump(subparsers)
     setup_compare_parser(subparsers)
     setup_cmate_parser(subparsers)
 
