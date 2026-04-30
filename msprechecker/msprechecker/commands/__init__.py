@@ -25,6 +25,6 @@ __all__ = [
 
 from .precheck import setup_precheck_parser
 from .compare import setup_compare_parser
-from .dump import setup_dump_parser
+from .dump import setup_dump
 from ._cmate import setup_cmate_parser
 from .coordinator import Coordinator

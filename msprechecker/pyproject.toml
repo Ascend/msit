@@ -13,7 +13,7 @@ find = { exclude = ["test*"] }
 # 运行相关
 [project]
 name = "msprechecker"
-version = "0.4.0"
+version = "0.5.0"
 description = "MindStudio Prechecker"
 authors = [
     {name = "AvadaKedavrua", email = "anonymousdev@163.com"},
@@ -36,7 +36,7 @@ dependencies = [
     "msguard",
     "ply",
     "colorama",
-    "packaging"
+    "packaging",
 ]
 requires-python = ">=3.7"
 
@@ -50,4 +50,4 @@ tracker = "https://gitcode.com/Ascend/msit/issues"
 
 # 可选安装项
 [project.optional-dependencies]
-test = ['pytest', 'pytest-mocker'] # ut
+test = ['pytest', 'pytest-mock'] # ut

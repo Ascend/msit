@@ -15,7 +15,9 @@
 # -------------------------------------------------------------------------
 
 import dataclasses
+import ipaddress
 import itertools
+import json
 import logging
 import os
 import re
@@ -24,12 +26,20 @@ import shutil
 import stat
 import subprocess
 from enum import Enum
-from typing import Optional
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Tuple, Union
+
+try:
+    from typing import Protocol, runtime_checkable
+except ImportError:
+    from typing_extensions import Protocol, runtime_checkable
+
 
 try:
     from importlib.metadata import PackageNotFoundError, version
 except ImportError:
     from importlib_metadata import PackageNotFoundError, version
+import socket
 
 from packaging.version import InvalidVersion, Version
 
@@ -45,6 +55,14 @@ LOG_FORMAT = "%(levelname)-5s %(asctime)s [%(filename)s:%(lineno)d] %(message)s"
 
 
 logger = logging.getLogger(__name__)
+
+
+class RankTableParseError(ValueError):
+    """Raised when a rank table file exists but cannot be parsed correctly."""
+
+
+class WeightDirNotFoundError(FileNotFoundError):
+    """Raised when the weight directory cannot be located from config/script."""
 
 
 class NpuType(Enum):
@@ -86,19 +104,62 @@ class HardwareProfile:
     conn_mode: ConnMode
 
 
+@dataclasses.dataclass(frozen=True)
+class DeviceInfo:
+    device_ip: Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
+    device_id: int
+    rank_id: int
+
+
+@dataclasses.dataclass(frozen=True)
+class RankTable:
+    host_to_devices: Dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], List[DeviceInfo]]
+    server_count: int
+    version: Version
+
+
+def deploy_mode_from_precheck_scene(scene: Optional[str]) -> DeployMode:
+    """Map ``msprechecker precheck --scene`` to :class:`DeployMode`.
+
+    Comma-separated values are supported (e.g. ``mindie,ep`` selects EP).
+
+    Args:
+        scene: Raw ``--scene`` string, or ``None`` for default mixed mode.
+
+    Returns:
+        :data:`DeployMode.PD_MIX` when *scene* is empty; :data:`DeployMode.EP`
+        when ``ep`` appears as a comma-separated token; otherwise the enum
+        member matching the trimmed string, or :data:`DeployMode.UNKNOWN`.
+    """
+    if not scene:
+        return DeployMode.PD_MIX
+    parts = [p.strip().lower() for p in scene.split(",") if p.strip()]
+    if "ep" in parts:
+        return DeployMode.EP
+    try:
+        return DeployMode(scene.strip())
+    except ValueError:
+        return DeployMode.UNKNOWN
+
+
 def get_pkg_version(pkg_name: str) -> Optional[Version]:
     try:
-        pkg_version = version(pkg_name)
+        # package version if exists must obey PEP 440
+        return Version(version(pkg_name))
     except PackageNotFoundError:
         return None
 
-    try:
-        return Version(pkg_version)
-    except InvalidVersion:
-        logger.warning(
-            "Got invalid version '%s' from package '%s'", pkg_version, pkg_name
-        )
-        return None
+
+def parse_version_heuristic(version_str: str) -> Version:
+    """Parse kernel version or ascend driver version to Version object.
+
+    The version string is expected to be in the format of "X.Y.Z" or "X.Y".
+    If the version string is not in the format of "X.Y.Z" or "X.Y", raise InvalidVersion.
+    """
+    mo = re.search(r"\d+(?:\.\d+){0,2}", version_str)
+    if not mo:
+        raise InvalidVersion(f"Invalid version: {version_str!r}") from None
+    return Version(mo.group(0))
 
 
 def get_npu_count() -> int:
@@ -223,3 +284,528 @@ def probe_hardware() -> HardwareProfile:
         npu_memory_mb=get_npu_memory(),
         conn_mode=get_conn_mode(),
     )
+
+
+def is_in_container():
+    def check_docker_env_file():
+        docker_env_file = "/.dockerenv"
+        return os.path.exists(docker_env_file)
+
+    def check_first_process():
+        first_proc = "/proc/1"
+        schedule_file = os.path.join(first_proc, "sched")
+
+        try:
+            with open(schedule_file) as f:
+                first_line = f.readlines(1)
+        except Exception:
+            return True
+
+        if first_line and first_line[0] and first_line[0].startswith("systemd"):
+            return False
+
+        return True
+
+    return check_docker_env_file() or check_first_process()
+
+
+# Shown when CPU high-performance checks all fail inside a container: host may still
+# be tuned correctly but dmidecode/tools are missing or sysfs is misleading.
+CONTAINER_CPU_HIGH_PERF_AMBIGUITY_HINT = (
+    "容器内五项 CPU 高性能检测均未通过，无法判断宿主机是否已开启高性能；若在宿主机已开启，"
+    "请执行 df -h 查看挂载路径，将宿主机的 dmidecode 拷贝到容器可访问的目录，必要时将该目录加入 "
+    "PATH 后重试。"
+)
+
+
+def get_current_ip_and_addr():
+    import psutil
+
+    for interface, addrs in psutil.net_if_addrs().items():
+        if any(interface.startswith(prefix) for prefix in ("docker", "lo")):
+            continue
+        for addr in addrs:
+            if addr.family == socket.AF_INET and not addr.address.startswith("127"):
+                return interface, addr.address
+    return "", ""
+
+
+# ---------------------------------------------------------------------------
+# Framework detection — Protocol-based, stateless, composable
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class FrameworkProbe(Protocol):
+    """Pluggable strategy for detecting a single inference framework."""
+
+    def probe(self) -> Optional[Framework]:
+        """Return the detected Framework, or None if not detected."""
+        ...
+
+
+class MindIEProbe:
+    def probe(self) -> Optional[Framework]:
+        if os.path.isdir("/usr/local/Ascend/mindie"):
+            logger.debug("MindIE detected via install directory")
+            return Framework.MINDIE
+        if any("MINDIE" in k for k in os.environ):
+            logger.debug("MindIE detected via environment variable")
+            return Framework.MINDIE
+        return None
+
+
+class VLLMProbe:
+    def probe(self) -> Optional[Framework]:
+        if os.path.isdir("/vllm-workspace/vllm-ascend"):
+            logger.debug("vLLM detected via workspace directory")
+            return Framework.VLLM
+        try:
+            import vllm_ascend  # noqa: F401
+
+            logger.debug("vLLM detected via import")
+            return Framework.VLLM
+        except ImportError:
+            return None
+
+
+class SGLangProbe:
+    def probe(self) -> Optional[Framework]:
+        try:
+            import sglang  # noqa: F401
+
+            logger.debug("SGLang detected via import")
+            return Framework.SGLANG
+        except ImportError:
+            return None
+
+
+DEFAULT_PROBES: Tuple[FrameworkProbe, ...] = (
+    MindIEProbe(),
+    VLLMProbe(),
+    SGLangProbe(),
+)
+
+
+def detect_framework(
+    probes: Tuple[FrameworkProbe, ...] = DEFAULT_PROBES,
+) -> Framework:
+    """
+    Run each probe in order; return the first match.
+
+    This function is stateless. The caller decides whether to cache the
+    result (e.g. in a module-level variable or application context object).
+
+    Args:
+        probes: Ordered tuple of FrameworkProbe instances.
+
+    Returns:
+        Detected Framework, or Framework.UNKNOWN if none matched.
+    """
+    for probe in probes:
+        result = probe.probe()
+        if result is not None:
+            return result
+    logger.debug("No framework detected, returning UNKNOWN")
+    return Framework.UNKNOWN
+
+
+# Rank table parsing
+
+_HOST_LIMIT = 1000
+_DEVICE_LIMIT_PER_HOST = 32
+
+
+def _load_json(path: str) -> dict:
+    """Load and return JSON from *path*; raise RankTableParseError on failure."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as exc:
+        raise RankTableParseError(f"Failed to load JSON from {path!r}") from exc
+
+
+def _parse_server_count(server_count: Union[int, str]) -> int:
+    """Parse server_count from rank table."""
+    if isinstance(server_count, int):
+        return server_count
+    if isinstance(server_count, str) and server_count.isdigit():
+        return int(server_count)
+    logger.warning("Unexpected server_count %r; defaulting to 0", server_count)
+    return 0
+
+
+def _parse_mindie_host_to_devices(
+    server_list: List[Dict[str, Union[str, List[Dict[str, str]]]]],
+) -> Dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], List[DeviceInfo]]:
+    """Parse host_to_devices from mindie rank table."""
+    host_to_devices: Dict[
+        Union[ipaddress.IPv4Address, ipaddress.IPv6Address], List[DeviceInfo]
+    ] = {}
+
+    if not server_list:
+        logger.warning("Expected server_list in rank table but not found")
+        return host_to_devices
+
+    for host_num, server_info in enumerate(server_list):
+        if host_num >= _HOST_LIMIT:
+            raise RankTableParseError(f"Host count exceeds limit {_HOST_LIMIT}")
+
+        host_ip_str = server_info.get("server_id", "")
+        device_list = server_info.get("device", [])
+
+        if not host_ip_str:
+            logger.warning("Expected server_id in server_list but not found, skipping")
+            continue
+
+        if not device_list:
+            logger.warning(
+                "Expected list of devices in server_list but not found, skipping"
+            )
+            continue
+
+        try:
+            host_ip = ipaddress.ip_address(host_ip_str)
+        except ValueError:
+            logger.warning(
+                "Invalid server_id %r found in server_list, skipping", host_ip_str
+            )
+            continue
+
+        if host_ip not in host_to_devices:
+            host_to_devices[host_ip] = []
+
+        for dev_num, dev_info in enumerate(device_list):
+            if dev_num >= _DEVICE_LIMIT_PER_HOST:
+                raise RankTableParseError(
+                    f"Device count for host {host_ip_str!r} exceeds limit {_DEVICE_LIMIT_PER_HOST}"
+                )
+
+            device_ip_str = dev_info.get("device_ip", "")
+            device_id_str = dev_info.get("device_id", "")
+            rank_id_str = dev_info.get("rank_id", "")
+
+            try:
+                device_ip = ipaddress.ip_address(device_ip_str)
+            except ValueError:
+                logger.warning(
+                    "Invalid device_ip %r for %r; skipping", device_ip_str, host_ip_str
+                )
+                continue
+
+            try:
+                device_id = int(device_id_str)
+            except ValueError:
+                logger.warning(
+                    "Invalid device_id %r for %r; skipping", device_id_str, host_ip_str
+                )
+                continue
+
+            try:
+                rank_id = int(rank_id_str)
+            except ValueError:
+                logger.warning(
+                    "Invalid rank_id %r for %r; skipping", rank_id_str, host_ip_str
+                )
+                continue
+
+            host_to_devices[host_ip].append(
+                DeviceInfo(
+                    device_ip=device_ip,
+                    device_id=device_id,
+                    rank_id=rank_id,
+                )
+            )
+
+    return host_to_devices
+
+
+def _parse_vllm_host_to_devices(
+    prefill_device_list, decode_device_list
+) -> Dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], List[DeviceInfo]]:
+    """Parse host_to_devices from vllm rank table."""
+    host_to_devices: Dict[
+        Union[ipaddress.IPv4Address, ipaddress.IPv6Address], List[DeviceInfo]
+    ] = {}
+
+    for list_name, device_list in (
+        ("prefill_device_list", prefill_device_list),
+        ("decode_device_list", decode_device_list),
+    ):
+        if device_list is None:
+            logger.warning("Expected %r in rank table but not found", list_name)
+            continue
+
+        if len(device_list) > _HOST_LIMIT * _DEVICE_LIMIT_PER_HOST:
+            raise RankTableParseError(
+                f"{list_name!r} length exceeds limit {_HOST_LIMIT * _DEVICE_LIMIT_PER_HOST}"
+            )
+
+        for dev in device_list:
+            host_ip_str = dev.get("server_id", "")
+            try:
+                host_ip = ipaddress.ip_address(host_ip_str)
+            except ValueError:
+                logger.warning("Invalid server_id %r; skipping", host_ip_str)
+                continue
+
+            if host_ip not in host_to_devices:
+                if len(host_to_devices) >= _HOST_LIMIT:
+                    raise RankTableParseError(f"Host count exceeds limit {_HOST_LIMIT}")
+                host_to_devices[host_ip] = []
+
+            if len(host_to_devices[host_ip]) >= _DEVICE_LIMIT_PER_HOST:
+                raise RankTableParseError(
+                    f"Device count for host {host_ip_str!r} exceeds limit {_DEVICE_LIMIT_PER_HOST}"
+                )
+
+            device_ip_str = dev.get("device_ip", "")
+            device_id_str = dev.get("device_id", "")
+            cluster_id_str = dev.get("cluster_id", "")
+
+            try:
+                device_ip = ipaddress.ip_address(device_ip_str)
+            except ValueError:
+                logger.warning(
+                    "Invalid device_ip %r for %r; skipping", device_ip_str, host_ip_str
+                )
+                continue
+
+            try:
+                device_id = int(device_id_str)
+            except ValueError:
+                logger.warning(
+                    "Invalid device_id %r for %r; skipping", device_id_str, host_ip_str
+                )
+                continue
+
+            try:
+                cluster_id = int(cluster_id_str)
+            except ValueError:
+                logger.warning(
+                    "Invalid cluster_id %r for %r; skipping",
+                    cluster_id_str,
+                    host_ip_str,
+                )
+                continue
+
+            host_to_devices[host_ip].append(
+                DeviceInfo(
+                    device_ip=device_ip,
+                    device_id=device_id,
+                    rank_id=cluster_id - 1,  # vllm cluster_id is 1-based
+                )
+            )
+    return host_to_devices
+
+
+def _parse_mindie(path: str) -> RankTable:
+    """Parse rank table in MindIE format."""
+    data = _load_json(path)
+
+    if "server_list" not in data:
+        raise RankTableParseError(f"'server_list' not found in rank table: {path!r}")
+
+    if "server_count" not in data:
+        raise RankTableParseError(f"'server_count' not found in rank table: {path!r}")
+
+    host_to_devices = _parse_mindie_host_to_devices(data["server_list"])
+
+    if not host_to_devices:
+        raise RankTableParseError(f"No devices found in rank table: {path!r}")
+
+    server_count = _parse_server_count(data["server_count"])
+    version_str = data.get("version", "1.0")  # version is optional
+    try:
+        version = Version(version_str)
+    except InvalidVersion as e:
+        raise RankTableParseError(
+            f"Invalid version {version_str!r} found in {path!r}"
+        ) from e
+
+    return RankTable(
+        host_to_devices=host_to_devices,
+        server_count=server_count,
+        version=version,
+    )
+
+
+def _parse_vllm(path: str) -> RankTable:
+    """Parse rank table in VLLM format."""
+    data = _load_json(path)
+
+    if "prefill_device_list" not in data or "decode_device_list" not in data:
+        raise RankTableParseError(
+            f"Expected 'prefill_device_list' and 'decode_device_list' in rank table: {path!r}"
+        )
+
+    host_to_devices = _parse_vllm_host_to_devices(
+        data["prefill_device_list"], data["decode_device_list"]
+    )
+
+    if not host_to_devices:
+        raise RankTableParseError(f"No devices found in rank table: {path!r}")
+
+    server_count = _parse_server_count(data.get("server_count"))
+
+    version_str = data.get("version", "1.0")  # version is optional
+    try:
+        version = Version(version_str)
+    except InvalidVersion as e:
+        raise RankTableParseError(
+            f"Invalid version {version_str!r} found in {path!r}"
+        ) from e
+
+    return RankTable(
+        host_to_devices=host_to_devices,
+        server_count=server_count,
+        version=version,
+    )
+
+
+_RANK_TABLE_PARSERS: Dict[Framework, Callable[[str], RankTable]] = {
+    Framework.MINDIE: _parse_mindie,
+    Framework.VLLM: _parse_vllm,
+}
+
+
+def parse_rank_table(path: str, framework: Framework) -> RankTable:
+    """
+    Parse a rank table file for the given framework.
+
+    Currently supported frameworks: MINDIE, VLLM.
+    SGLang does not define a rank table format and is intentionally unsupported.
+
+    Args:
+        path (str): Path to the rank table JSON file.
+        framework (Framework): Determines the parse strategy.
+
+    Returns:
+        Parsed RankTable.
+
+    Raises:
+        RankTableParseError: File exists but cannot be parsed.
+        ValueError: Framework is not supported.
+    """
+    parser = _RANK_TABLE_PARSERS.get(framework)
+    if parser is None:
+        raise ValueError(
+            f"No rank table parser for {framework!r}. Supported: {list(_RANK_TABLE_PARSERS)}"
+        )
+    return parser(path)
+
+
+# Weight directory resolution
+
+_VLLM_MODEL_RE = re.compile(
+    r"""vllm\s+serve\s+(?:"([^"]+)"|'([^']+)'|([^\s"']+))|"""
+    r"""--model[=\s](?:"([^"]+)"|'([^']+)'|([^\s"']+))"""
+)
+_SGLANG_MODEL_RE = re.compile(
+    r"""(?:sglang|python.*sglang).*--model[=\s]+["']?([^\s"']+)"""
+)
+
+
+def _default_mindie_config_path() -> Optional[Path]:
+    base = (
+        os.environ.get("MIES_INSTALL_PATH")
+        or "/usr/local/Ascend/mindie/latest/mindie-service"
+    )
+    candidate = Path(base) / "conf" / "config.json"
+    resolved = candidate.resolve()
+    return resolved if resolved.is_file() else None
+
+
+def _weight_dir_from_mindie_config(config_path: Optional[Path]) -> str:
+    path = config_path or _default_mindie_config_path()
+    if path is None or not path.is_file():
+        raise WeightDirNotFoundError(f"MindIE config not found at {path!r}")
+
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        weight_dir = data["BackendConfig"]["ModelDeployConfig"]["ModelConfig"][0][
+            "modelWeightPath"
+        ]
+    except (json.JSONDecodeError, KeyError, IndexError) as exc:
+        raise RankTableParseError(
+            f"Could not extract modelWeightPath from {path!r}"
+        ) from exc
+
+    logger.info("Resolved weight_dir from MindIE config: %r", weight_dir)
+    return weight_dir
+
+
+def _weight_dir_from_script(
+    script_path: Path,
+    pattern: "re.Pattern[str]",  # quoted: re.Pattern[X] subscript requires 3.9+
+) -> str:
+    if not script_path.is_file():
+        raise WeightDirNotFoundError(f"Launch script not found: {script_path!r}")
+
+    try:
+        with open(script_path) as f:
+            content = f.read()
+    except Exception as exc:
+        raise WeightDirNotFoundError(f"Failed to read script {script_path!r}") from exc
+
+    m = pattern.search(content)
+    if not m:
+        raise WeightDirNotFoundError(f"No model path pattern found in {script_path!r}")
+
+    # Return the first non-None capture group.
+    weight_dir = next(g for g in m.groups() if g is not None)
+    logger.info("Resolved weight_dir from %r: %r", script_path, weight_dir)
+    return weight_dir
+
+
+def _weight_dir_vllm(config_path: Optional[Path]) -> str:
+    if config_path is None:
+        raise ValueError("config_path (launch script) is required for VLLM")
+    return _weight_dir_from_script(config_path, _VLLM_MODEL_RE)
+
+
+def _weight_dir_sglang(config_path: Optional[Path]) -> str:
+    if config_path is None:
+        raise ValueError("config_path (launch script) is required for SGLANG")
+    return _weight_dir_from_script(config_path, _SGLANG_MODEL_RE)
+
+
+# Dispatch table replaces `match` statement (3.10+).
+_WEIGHT_DIR_RESOLVERS: Dict[Framework, Callable[[Optional[Path]], str]] = {
+    Framework.MINDIE: _weight_dir_from_mindie_config,
+    Framework.VLLM: _weight_dir_vllm,
+    Framework.SGLANG: _weight_dir_sglang,
+}
+
+
+def resolve_weight_dir(
+    framework: Framework,
+    config_path: Optional[Path] = None,
+) -> str:
+    """
+    Resolve the model weight directory for the given framework.
+
+    For MINDIE, *config_path* points to config.json (None = use default).
+    For VLLM and SGLANG, *config_path* is the launch shell script and is required.
+
+    The caller is responsible for caching the result.
+
+    Args:
+        framework: The active inference framework.
+        config_path: Framework-specific config file or launch script.
+
+    Returns:
+        Weight directory path string extracted from the config/script.
+
+    Raises:
+        WeightDirNotFoundError: File missing or model pattern not found.
+        RankTableParseError: JSON structure unexpected (MINDIE only).
+        ValueError: Framework unsupported, or required config_path missing.
+    """
+    resolver = _WEIGHT_DIR_RESOLVERS.get(framework)
+    if resolver is None:
+        raise ValueError(
+            f"Weight dir resolution not supported for {framework!r}. Supported: {list(_WEIGHT_DIR_RESOLVERS)}"
+        )
+    return resolver(config_path)

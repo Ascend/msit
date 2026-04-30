@@ -14,6 +14,7 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
+import hashlib
 import ipaddress
 import json
 import logging
@@ -27,7 +28,7 @@ import subprocess
 import time
 from abc import ABC, abstractmethod
 
-from concurrent.futures import as_completed, ThreadPoolExecutor
+from concurrent.futures import as_completed, ThreadPoolExecutor, ProcessPoolExecutor
 
 from functools import reduce
 from pathlib import Path
@@ -540,6 +541,117 @@ class Config(CollectStrategy):
         if content is None:
             return None
         return self._parse(content)
+
+
+class Weight(CollectStrategy):
+    """Collect strategy that computes SHA-256 hashes of safetensor weight files."""
+
+    # Matches the shard index in filenames like ``model-00003-of-00010.safetensors``
+    _TENSOR_ID_RE = re.compile(r"(\d{5})-of-\d{5}")
+
+    def __init__(
+        self,
+        name: str = "weight",
+        *,
+        weight_dir: str = "",
+        tensor_suffix: str = ".safetensors",
+        max_size: int = 10 * 1024**3,  # 10 GiB – skip files larger than this
+        chunk_size: int = 256 * 1024**2,  # 256 MiB read buffer
+        max_hash_workers: int = 4,
+    ):
+        super().__init__(name)
+        self._weight_dir = weight_dir
+        self._tensor_suffix = tensor_suffix
+        self._max_size = max_size
+        self._chunk_size = chunk_size
+        self._max_hash_workers = max_hash_workers
+
+    def _validate_weight_dir(self) -> bool:
+        if not os.path.isdir(self._weight_dir):
+            logger.warning(
+                "Expected %r to be a directory. Weight strategy skipped",
+                self._weight_dir,
+            )
+            return False
+        return True
+
+    def _is_valid_tensor_file(self, path: str) -> bool:
+        if os.path.islink(path):
+            logger.warning(
+                "Expected %r to be a regular file. Weight strategy skipped", path
+            )
+            return False
+
+        if not os.path.isfile(path) or not path.endswith(self._tensor_suffix):
+            return False
+
+        file_size = os.path.getsize(path)
+        if file_size > self._max_size:
+            logger.warning(
+                "Tensor file %r (%d bytes) exceeds max_size (%d bytes), skipping",
+                path,
+                file_size,
+                self._max_size,
+            )
+            return False
+        return True
+
+    def _filter_valid_tensor_files(self) -> List[str]:
+        result = []
+        for filename in os.listdir(self._weight_dir):
+            full_path = os.path.join(self._weight_dir, filename)
+            if self._is_valid_tensor_file(full_path):
+                result.append(full_path)
+        return result
+
+    def _get_tensor_id(self, tensor_file: str) -> str:
+        """Return the zero-padded shard index, or the basename as fallback."""
+        m = self._TENSOR_ID_RE.search(os.path.basename(tensor_file))
+        return m.group(1) if m else os.path.basename(tensor_file)
+
+    def _calculate_hash256(self, tensor_file: str) -> str:
+        sha256 = hashlib.sha256()
+        with open(tensor_file, "rb") as f:
+            while True:
+                chunk = f.read(self._chunk_size)
+                if not chunk:
+                    break
+                sha256.update(chunk)
+        return sha256.hexdigest()
+
+    def _parallel_hash_calculation(
+        self, tensor_files: List[str]
+    ) -> Dict[str, Optional[str]]:
+        max_workers = min(len(tensor_files), self._max_hash_workers)
+        results: Dict[str, Optional[str]] = {}
+
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            future_to_id = {
+                executor.submit(self._calculate_hash256, f): self._get_tensor_id(f)
+                for f in tensor_files
+            }
+            for future in as_completed(future_to_id):
+                tensor_id = future_to_id[future]
+                try:
+                    results[tensor_id] = future.result()
+                except Exception:
+                    logger.exception(
+                        "Failed to calculate hash for tensor id %r", tensor_id
+                    )
+                    results[tensor_id] = None
+
+        return results
+
+    def execute(self) -> Optional[Dict[str, Optional[str]]]:
+        if not self._validate_weight_dir():
+            return None
+
+        tensor_files = self._filter_valid_tensor_files()
+        if not tensor_files:
+            logger.warning("No valid tensor files found in %r", self._weight_dir)
+            return None
+
+        return self._parallel_hash_calculation(tensor_files)
 
 
 class _Ascend(CollectStrategy):
