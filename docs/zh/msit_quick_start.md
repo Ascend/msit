@@ -59,7 +59,10 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
 
     > [!NOTE]   
     > 如果量化后的权重文件需要在MindIE 2.1.RC1及之前版本上部署，需要在执行原量化命令时增加--mindie_format参数，参考命令如下：
-    ```python3 quant_llama.py --model_path ${model_path} --save_directory ${save_directory} --device_type npu --w_bit 8 --a_bit 16 --mindie_format```
+
+    ```shell
+    python3 quant_llama.py --model_path ${model_path} --save_directory ${save_directory} --device_type npu --w_bit 8 --a_bit 16 --mindie_format
+    ```
     
 4. 量化完成后，结果如下图所示，safetensors文件大小由15.1G压缩至8.5G。
 
@@ -103,7 +106,7 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     }
     ```
 
-    dump参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/dump/atb_data_dump_instruct.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)章节中的dump配置文件参数说明。
+    dump参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/dump/atb_data_dump_instruct.md#参数说明)章节中的dump配置文件参数说明。
 
 2. 命令执行
 
@@ -114,7 +117,7 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     source $MSPROBE_HOME_PATH/msprobe/scripts/atb/load_atb_probe.sh --output=/home/test/golden_data --config=/home/test/config.json
     ```
 
-    命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/dump/atb_data_dump_instruct.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)章节中的命令行参数说明。
+    命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/dump/atb_data_dump_instruct.md#参数说明)章节中的命令行参数说明。
 
 3. ATB模型运行
 
@@ -155,7 +158,7 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     }
     ```
 
-    dump参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/dump/atb_data_dump_instruct.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)章节中的dump配置文件参数说明。
+    dump参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/dump/atb_data_dump_instruct.md#参数说明)章节中的dump配置文件参数说明。
 
 2. 命令执行
 
@@ -166,7 +169,7 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     source $MSPROBE_HOME_PATH/msprobe/scripts/atb/load_atb_probe.sh --output=/home/test/target_data --config=/home/test/config.json
     ```
 
-    命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/dump/atb_data_dump_instruct.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)章节中的命令行参数说明。
+    命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/dump/atb_data_dump_instruct.md#参数说明)章节中的命令行参数说明。
 
 3. ATB模型运行
 
@@ -195,11 +198,11 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
 msprobe compare -m atb -gp /home/test/golden_data/atb_dump_data/data/0_{pid}/0/ -tp /home/test/target_data/atb_dump_data/data/0_{pid}/0/
 ```
 
-命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/accuracy_compare/atb_data_compare_instruct.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)章节。
+命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/accuracy_compare/atb_data_compare_instruct.md#参数说明)章节。
 
 **输出说明**
 
-精度数据比对输出文件为Excel表格文件，输出说明介绍请参见[输出说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/accuracy_compare/atb_data_compare_instruct.md#%E8%BE%93%E5%87%BA%E8%AF%B4%E6%98%8E)。
+精度数据比对输出文件为Excel表格文件，输出说明介绍请参见[输出说明](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/accuracy_compare/atb_data_compare_instruct.md#输出说明)。
 
 ### 模型调优
 
@@ -271,7 +274,7 @@ PROF_000001_20241118061102981_MORBFBJDEPNJEQPA目录下的mindstudio_profiler_ou
 
 5. 分析性能数据。
 
-    MindStudio Insight工具将性能数据可视化呈现后，可以更直观地分析性能瓶颈，详细分析特性请参见《MindStudio Insight》的[特性介绍](https://gitcode.com/Ascend/msinsight/blob/26.0.0/docs/zh/user_guide/overview.md#%E7%89%B9%E6%80%A7%E4%BB%8B%E7%BB%8D)。
+    MindStudio Insight工具将性能数据可视化呈现后，可以更直观地分析性能瓶颈，详细分析特性请参见《MindStudio Insight》的[特性介绍](https://gitcode.com/Ascend/msinsight/blob/26.0.0/docs/zh/user_guide/overview.md#特性介绍)。
 
 ### 服务化调优
 
