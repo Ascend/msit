@@ -39,21 +39,21 @@ DumpConfig(dump_path=None, token_range=None, seed=None)
 
 参数说明
 
-| 参数名      | 含义                   | 使用说明                                                     | 是否必填 | 版本 |
-| ----------- | ---------------------- | ------------------------------------------------------------ | -------- | --|
-| dump_path   | 设置dump的数据路径。     | 数据类型：str，默认为当前目录。                                  | 否       | 
-| token_range | 需要dump的token列表。    | 数据类型：list。默认为[0]，只dump第0个token的数据。               | 否       |
-| module_list | 指定要hook的module类型。 | 数据类型：list，默认为[]，即dump所有module的数据。                  | 否       |
-| analyze | 分析dump的数据，生成一个csv文件用于记录数据类型等 | 数据类型：bool，默认为false，即不生成分析文件。           | 否       |
-| api_list | 指定要hook的api类型 | 数据类型：list，默认为[]，即dump所有api的数据。                           | 否       |
-| tensor_part | 指定要dump哪部分数据。   | 数据类型：int，默认为2。当tensor_part=0时，只dump输入数据；当tensor_part=1时，只dump输出数据； 当tensor_part=2时，dump输入和输出的数据。 | 否       |
-| device_id   | 指定要dump的device id 。 | 数据类型：int，默认为None 表示不限制 device。如指定 device_id=1，将跳过其他 device 的 dump。 | 否       |
-| dump_last_logits | 是否需要Dump 模型最后的输出logits。 | 数据类型： bool，默认为False，当开启后，仅 Dump 模型最后输出的 logits，模型中间layer 不会再输出。 可参考 [《logits精度比对》](加速库场景-输出Token的logits精度比对.md) | 否 |
-| mode | 设置dump的模式。 | 可以选择dump api 还是 module，默认是module，也可以传入数组['api', 'module']，表示两种都dump。| 否 | 7.0.0b530 |
-| dump_weight | 设置是否需要dump权重。 | 数据类型：bool，默认是False，不dump。| 否 | 7.0.0b530 |
-| layer_name | 指定需要dump的layer名字。 | 数据类型：str，可以通过该参数控制dump 的权重和tensor。支持 * 表示匹配0或多个随意字符，不支持其他的模式匹配。 | 否 | 7.0.0b530 |
-| seed | 设定启动确定性计算的种子。 | 数据类型：int，可以通过该参数确定是否要启动确定性计算，输入的值表示固定随机性的种子值。 | 否 | 7.0.0rc730 |
-| dump_statistics_mode | 设置统计量Dump模式。 | 数据类型： int，默认为0，不进行统计量dump。当dump_statistics_mode=1时，只dump统计量；当dump_statistics_mode=2时，同时dump统计量和tensor。| 否 | 7.0.0rc1230 |
+|参数名|可选/必选|使用说明|含义|版本|
+|-----------|----------------------| ------------------------------------------------------------|--------|--|
+|dump_path|可选|数据类型：str，默认为当前目录。|设置dump的数据路径。| 
+|token_range|可选|数据类型：list。默认为[0]，只dump第0个token的数据。|需要dump的token列表。|
+|module_list|可选|数据类型：list，默认为[]，即dump所有module的数据。|指定要hook的module类型。|
+|analyze|可选|数据类型：bool，默认为false，即不生成分析文件。|分析dump的数据，生成一个csv文件用于记录数据类型等。|
+|api_list|可选|数据类型：list，默认为[]，即dump所有api的数据。|指定要hook的api类型。|
+|tensor_part|可选|数据类型：int，默认为2。当tensor_part=0时，只dump输入数据；当tensor_part=1时，只dump输出数据；当tensor_part=2时，dump输入和输出的数据。|指定要dump哪部分数据。|
+|device_id|可选|数据类型：int，默认为None 表示不限制 device。如指定 device_id=1，将跳过其他 device 的 dump。|指定要dump的device_id 。|
+|dump_last_logits|可选|数据类型： bool，默认为False，当开启后，仅 Dump 模型最后输出的 logits，模型中间layer 不会再输出。可参考 [《logits精度比对》](加速库场景-输出Token的logits精度比对.md) |是否需要Dump 模型最后的输出logits|
+|mode|可选|可以选择dump api 还是 module，默认是module，也可以传入数组['api', 'module']，表示两种都dump。|设置dump的模式。|7.0.0b530|
+|dump_weight|可选|数据类型：bool，默认是False，不dump。|设置是否需要dump权重。|7.0.0b530|
+|layer_name|可选|数据类型：str，可以通过该参数控制dump 的权重和tensor。支持 * 表示匹配0或多个随意字符，不支持其他的模式匹配。|指定需要dump的layer名字。|7.0.0b530|
+|seed|可选|数据类型：int，可以通过该参数确定是否要启动确定性计算，输入的值表示固定随机性的种子值。|设定启动确定性计算的种子。|7.0.0rc730|
+|dump_statistics_mode|可选|数据类型： int，默认为0，不进行统计量dump。当dump_statistics_mode=1时，只dump统计量；当dump_statistics_mode=2时，同时dump统计量和tensor。|设置统计量Dump模式。|7.0.0rc1230|
 
 ### register_hook
 
