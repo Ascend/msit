@@ -33,7 +33,6 @@ dependencies = [
     "pyyaml",
     "psutil",
     "importlib_metadata; python_version == '3.7'",
-    "msguard",
     "ply",
     "colorama",
     "packaging",

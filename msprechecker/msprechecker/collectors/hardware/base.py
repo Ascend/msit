@@ -14,12 +14,14 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-import os
+# pylint: disable=duplicate-code
+
 import math
+import os
 from abc import abstractmethod
+from pathlib import Path
 
 import yaml
-from msguard.security import open_s
 
 from ..base import BaseCollector
 
@@ -33,23 +35,23 @@ class BaseStressCollector(BaseCollector):
             self.error_handler.add_error(
                 reason=str(e),
                 filename=__file__,
-                function='__init__',
+                function="__init__",
                 lineno=29,
                 what="当前环境没有安装 torch",
             )
             self.torch = None
         else:
             self.torch = torch
-    
+
     @staticmethod
     def _calculate_tensor_memory(shape):
-        return math.prod(shape) * 4 # default to float32
-    
+        return math.prod(shape) * 4  # default to float32
+
     @staticmethod
     def _get_shape_by_type(check_type):
         env_check_dir = os.path.dirname(__file__)
         yaml_file = os.path.join(env_check_dir, "matmul_shape.yaml")
-        with open_s(yaml_file, "r") as f:
+        with Path(yaml_file).open("r", encoding="utf-8") as f:
             shape_dict = yaml.safe_load(f)
 
         batch_size = shape_dict[check_type]["batch_size"]
@@ -69,9 +71,7 @@ class BaseStressCollector(BaseCollector):
 
         batch_size, seq_len, hidden_size, intermediate_size = self._get_shape_by_type(check_type)
 
-        if not self._check_memory_for_matmul(
-            batch_size, seq_len, hidden_size, intermediate_size, device_pos
-        ):
+        if not self._check_memory_for_matmul(batch_size, seq_len, hidden_size, intermediate_size, device_pos):
             return
 
         # 执行多次矩阵运算：mat_c + mat_a × mat_b
@@ -95,13 +95,13 @@ class BaseStressCollector(BaseCollector):
 
         if not has_enough_mem:
             self.error_handler.add_error(
-                reason=f"需要 {total_required / 1024 ** 2:.2f}MB, 可用 {free_memory / 1024 ** 2:.2f}MB (已预留 20%)",
+                reason=f"需要 {total_required / 1024**2:.2f}MB, 可用 {free_memory / 1024**2:.2f}MB (已预留 20%)",
                 severity="high",
                 filename=__file__,
                 function="_check_memory_for_matmul",
                 lineno=94,
-                what="内存不足，无法进行压测"
+                what="内存不足，无法进行压测",
             )
             return False
-        
+
         return True

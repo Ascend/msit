@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,23 +14,27 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
+# pylint: disable=duplicate-code
+
+import ipaddress
 import os
 import shlex
 import shutil
-import subprocess
+import subprocess  # nosec B404
 from abc import abstractmethod
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import ipaddress
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed
+from pathlib import Path
 from typing import Union
 
-from msguard import Rule
 from packaging.version import Version
 
+from ..utils import get_npu_count
+from ..utils import is_in_container
 from .base import BaseCollector
-from ..utils import get_npu_count, is_in_container
 
-    
-HCCN_TOOL_CMD = "/usr/local/Ascend/driver/tools/hccn_tool"
+HCCN_TOOL_CMD = Path("/usr/local/Ascend/driver/tools/hccn_tool").resolve()
+_HCCN_TOOL_AVAILABLE = HCCN_TOOL_CMD.is_file() and os.access(HCCN_TOOL_CMD, os.X_OK)
 
 
 class HCCNCollector(BaseCollector):
@@ -48,22 +51,21 @@ class HCCNCollector(BaseCollector):
     def _run_cmd(self, cmd: str):
         output = None
         try:
-            output = subprocess.check_output(
-                shlex.split(cmd), stderr=subprocess.DEVNULL, text=True
-            )
+            output = subprocess.check_output(shlex.split(cmd), stderr=subprocess.DEVNULL, text=True)  # nosec B603
         except Exception:
             output = "100% packet loss"
 
         return output
 
     def _collect_data(self):
-        if not Rule.input_file_exec.is_satisfied_by(HCCN_TOOL_CMD):
+        if not _HCCN_TOOL_AVAILABLE:
             working_place = "宿主机" if not is_in_container() else "容器"
             self.error_handler.add_error(
                 filename=__file__,
-                function='_collect_data', lineno=55,
-                what=f"{working_place}上没有找到 'hccn_tool' 命令或者权限不符合要求",
-                reason=f"{working_place}上没有找到 'hccn_tool' 命令或者权限不符合要求"
+                function="_collect_data",
+                lineno=55,
+                what=f"{working_place}上没有找到 'hccn_tool' 命令或不可执行",
+                reason=f"{working_place}上没有找到 'hccn_tool' 命令或不可执行",
             )
             return {}
 
@@ -106,12 +108,8 @@ class HCCLCollector(BaseCollector):
     def __init__(self, rank_table, npu_count=None):
         super().__init__()
         self.rank_table = rank_table
-        self.npu_count = npu_count if npu_count else get_npu_count()
-        self.option = (
-            "-hccs_ping"
-            if getattr(rank_table, "version", Version("1.0")) >= Version("1.2")
-            else "-ping"
-        )
+        self.npu_count = npu_count or get_npu_count()
+        self.option = "-hccs_ping" if getattr(rank_table, "version", Version("1.0")) >= Version("1.2") else "-ping"
 
     def _run_cmd(self, device_id: int, device_ip: Union[ipaddress.IPv4Address, ipaddress.IPv6Address]):
         if device_ip.version == 4:
@@ -121,12 +119,11 @@ class HCCLCollector(BaseCollector):
         else:
             raise ValueError(f"Invalid IP version: {device_ip.version}")
 
-        proc = subprocess.Popen(
+        with subprocess.Popen(  # nosec B603
             shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-        )
-
-        ret = proc.wait()
-        output = proc.stdout.read()
+        ) as proc:
+            output = proc.stdout.read()
+            ret = proc.wait()
         return cmd, ret, output
 
     def _run_per_device(self, device_id, device_ips):
@@ -139,17 +136,18 @@ class HCCLCollector(BaseCollector):
         return result
 
     def _collect_data(self):
-        if not shutil.which(HCCN_TOOL_CMD):	
-            working_place = "宿主机" if not is_in_container() else "容器"	
-            self.error_handler.add_error(	
+        if not shutil.which(HCCN_TOOL_CMD):
+            working_place = "宿主机" if not is_in_container() else "容器"
+            self.error_handler.add_error(
                 filename=__file__,
-                function='_collect_data', lineno=63,
+                function="_collect_data",
+                lineno=63,
                 what=f"{working_place}上没有找到 'hccn_tool' 命令",
-                reason=f"[Errno 2] No such file or directory: '{HCCN_TOOL_CMD}'"
+                reason=f"[Errno 2] No such file or directory: '{HCCN_TOOL_CMD}'",
             )
             return {}
 
-        max_workers = min(self.npu_count, os.cpu_count() or 1) # each device can proceed parallel
+        max_workers = min(self.npu_count, os.cpu_count() or 1)  # each device can proceed parallel
 
         all_device_ips = (
             device_info.device_ip
@@ -159,8 +157,7 @@ class HCCLCollector(BaseCollector):
 
         with ThreadPoolExecutor(max_workers) as executor:
             futures = [
-                executor.submit(self._run_per_device, device_id, all_device_ips)
-                for device_id in range(self.npu_count)
+                executor.submit(self._run_per_device, device_id, all_device_ips) for device_id in range(self.npu_count)
             ]
 
             results = {}

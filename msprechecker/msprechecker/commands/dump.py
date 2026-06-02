@@ -16,32 +16,30 @@
 import argparse
 import json
 import logging
-import os
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from ..core.collector import Collector
-from ..core.strategy import (
-    Ascend,
-    Config,
-    CPUHighPerformance,
-    Env,
-    Network,
-    Sys,
-    Weight,
-)
-from ..util import (
-    CONTAINER_CPU_HIGH_PERF_AMBIGUITY_HINT,
-    detect_framework,
-    Framework,
-    is_in_container,
-    parse_rank_table,
-    resolve_weight_dir,
-    WeightDirNotFoundError,
-)
-from .base import CommandType, CommandStrategy
-
+from ..core.strategy import Ascend
+from ..core.strategy import Config
+from ..core.strategy import CPUHighPerformance
+from ..core.strategy import Env
+from ..core.strategy import Network
+from ..core.strategy import Sys
+from ..core.strategy import Weight
+from ..util import CONTAINER_CPU_HIGH_PERF_AMBIGUITY_HINT
+from ..util import Framework
+from ..util import WeightDirNotFoundError
+from ..util import detect_framework
+from ..util import is_in_container
+from ..util import parse_rank_table
+from ..util import resolve_weight_dir
+from ..utils.path_io import existing_dir
+from ..utils.path_io import normalize_user_path
+from ..utils.path_io import readable_file
+from .base import CommandStrategy
+from .base import CommandType
 
 logger = logging.getLogger(__name__)
 
@@ -77,11 +75,9 @@ def setup_dump(subparsers: argparse._SubParsersAction, parents=None):
     dump_parser.add_argument(
         "--output-path",
         metavar="",
+        type=normalize_user_path,
         default="./msprechecker_dumped.json",
-        help=(
-            "Path to save the dumped context (JSON format). "
-            "Default: './msprechecker_dumped.json'."
-        ),
+        help=("Path to save the dumped context (JSON format). Default: './msprechecker_dumped.json'."),
     )
     _add_extra_options(dump_parser)
 
@@ -99,6 +95,7 @@ def _add_extra_options(dump_parser):
     network_group = dump_parser.add_argument_group("Network Options")
     network_group.add_argument(
         "--rank-table-path",
+        type=readable_file,
         help="Path to the rank table file. Supports both A2 and A3 formats.",
     )
 
@@ -120,7 +117,7 @@ def _add_extra_options(dump_parser):
 
     weight_group = dump_parser.add_argument_group("Weight Options")
     weight_group.add_argument(
-        "--weight-dir", metavar="", help="Directory path containing model weights."
+        "--weight-dir", metavar="", type=existing_dir, help="Directory path containing model weights."
     )
     weight_group.add_argument(
         "--chunk-size",
@@ -138,48 +135,44 @@ def _add_extra_options(dump_parser):
 
 class Dump(CommandStrategy):
     @staticmethod
-    def _split_config_field(config_field: str) -> Optional[Tuple[str, str]]:
-        """
-        Parse a single 'name:path' string into (name, path).
+    def _split_config_field(config_field: str) -> Optional[tuple[str, str]]:
+        """Parse a single 'name:path' string into (name, raw_path).
         Returns None and logs a warning if the format is invalid.
         """
         if ":" not in config_field:
-            logger.warning(
-                'Invalid config field format, expected "name:path": %s', config_field
-            )
+            logger.warning('Invalid config field format, expected "name:path": %s', config_field)
             return None
 
-        name, path = config_field.split(":", 1)
-        name, path = name.strip(), path.strip()
+        name, raw_path = config_field.split(":", 1)
+        name, raw_path = name.strip(), raw_path.strip()
 
         if not name:
             logger.warning("Empty config name in field: %s", config_field)
             return None
 
-        return name, path
+        return name, raw_path
 
     @staticmethod
-    def _parse_config_fields(config_fields: List[str]) -> Dict[str, str]:
+    def _parse_config_fields(config_fields: list[str]) -> dict[str, Path]:
+        """Parse and validate a list of 'name:path' config fields.
+        Returns a dict mapping name -> validated Path.
         """
-        Parse and validate a list of 'name:path' config fields.
-        Returns a dict mapping name -> validated path.
-        """
-        name_to_path: Dict[str, str] = {}
+        name_to_path: dict[str, Path] = {}
 
         for field in config_fields:
             result = Dump._split_config_field(field)
             if result is None:
                 continue
 
-            name, path = result
-            if not os.path.isfile(path):
-                logger.warning("Config file %r not found", path)
+            name, raw_path = result
+            try:
+                path = readable_file(raw_path)
+            except argparse.ArgumentTypeError as exc:
+                logger.warning("Config file %r not found: %s", raw_path, exc)
                 continue
 
             if name in name_to_path:
-                logger.warning(
-                    "Duplicate config name %r, overwriting previous path", name
-                )
+                logger.warning("Duplicate config name %r, overwriting previous path", name)
 
             name_to_path[name] = path
 
@@ -188,24 +181,22 @@ class Dump(CommandStrategy):
     @staticmethod
     def _resolve_weight_dir(
         framework: Framework,
-        name_to_path: Dict[str, str],
-        cli_weight_dir: Optional[str],
-    ) -> Tuple[Optional[str], bool]:
-        """
-        Try to resolve weight_dir from config files.
+        name_to_path: dict[str, Path],
+        cli_weight_dir: Optional[Path],
+    ) -> tuple[Optional[Path], bool]:
+        """Try to resolve weight_dir from config files.
 
         Returns (resolved_weight_dir, has_conflict).
         has_conflict=True means the caller should abort.
         """
-        resolved: Optional[str] = None
+        resolved: Optional[Path] = None
 
         for path in name_to_path.values():
-            ext = os.path.splitext(path)[1].lower()
-            if ext not in {".json", ".sh"}:
+            if path.suffix.lower() not in {".json", ".sh"}:
                 continue
 
             try:
-                weight_dir = resolve_weight_dir(framework, config_path=Path(path))
+                weight_dir = resolve_weight_dir(framework, config_path=path)
             except WeightDirNotFoundError:
                 logger.debug("No weight directory found in config %r; skipping", path)
                 continue
@@ -225,13 +216,11 @@ class Dump(CommandStrategy):
     @staticmethod
     def _build_collector(
         framework: Framework,
-        name_to_path: Dict[str, str],
-        weight_dir: Optional[str],
-        rank_table_path: Optional[str],
+        name_to_path: dict[str, Path],
+        weight_dir: Optional[Path],
+        rank_table_path: Optional[Path],
     ) -> Collector:
-        """
-        Assemble a Collector with all applicable strategies.
-        """
+        """Assemble a Collector with all applicable strategies."""
         strategies = [Env(), Sys(), Ascend()]
 
         for name, path in name_to_path.items():
@@ -241,14 +230,14 @@ class Dump(CommandStrategy):
             strategies.append(Weight(weight_dir=weight_dir))
 
         if rank_table_path is not None:
-            rank_table = parse_rank_table(Path(rank_table_path), framework)
+            rank_table = parse_rank_table(rank_table_path, framework)
             strategies.append(Network(rank_table=rank_table))
 
         return Collector(strategies)
 
-    def execute(self, args: argparse.Namespace) -> int:
-        """
-        Execute the dump command.
+    @staticmethod
+    def execute(args: argparse.Namespace) -> int:
+        """Execute the dump command.
 
         This method performs the following steps:
         1. Detect the framework (Ascend or MindIE).
@@ -265,11 +254,9 @@ class Dump(CommandStrategy):
         """
         framework = detect_framework()
 
-        name_to_path = self._parse_config_fields(args.configs) if args.configs else {}
+        name_to_path = Dump._parse_config_fields(args.configs) if args.configs else {}
 
-        weight_dir, has_conflict = self._resolve_weight_dir(
-            framework, name_to_path, args.weight_dir
-        )
+        weight_dir, has_conflict = Dump._resolve_weight_dir(framework, name_to_path, args.weight_dir)
         if has_conflict:
             return 1
 
@@ -281,25 +268,21 @@ class Dump(CommandStrategy):
                 CONTAINER_CPU_HIGH_PERF_AMBIGUITY_HINT,
             )
             print(CONTAINER_CPU_HIGH_PERF_AMBIGUITY_HINT)
-            print(
-                "本次未写入落盘文件，避免产生误导性数据；请按上述说明配置后重新执行 dump。"
-            )
+            print("本次未写入落盘文件，避免产生误导性数据；请按上述说明配置后重新执行 dump。")
             return 1
 
-        collector = self._build_collector(
-            framework, name_to_path, effective_weight_dir, args.rank_table_path
-        )
+        collector = Dump._build_collector(framework, name_to_path, effective_weight_dir, args.rank_table_path)
 
         try:
             data = collector.collect()
-            with open(args.output_path, "w") as f:
+            output_path = args.output_path
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with output_path.open("w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)
         except Exception:
             logger.exception("Error occurred while saving to %r", args.output_path)
             return 1
 
         print(f"All information has been saved in: {args.output_path!r}")
-        print(
-            "You may now use 'msprechecker compare' to compare dumped files for discrepancies!"
-        )
+        print("You may now use 'msprechecker compare' to compare dumped files for discrepancies!")
         return 0

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,14 +14,24 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
+# pylint: disable=duplicate-code
+
 import json
-import shutil
 import logging
-from abc import ABC, abstractmethod
+import shutil
+from abc import ABC
+from abc import abstractmethod
+from pathlib import Path
 
-from msguard.security import open_s
 
-from ..utils import ErrorHandler, CollectErrorHandler, ConfigErrorHandler, CheckErrorHandler, CompareErrorHandler
+from ..utils import CheckErrorHandler
+from ..utils import CollectErrorHandler
+from ..utils import CompareErrorHandler
+from ..utils import ConfigErrorHandler
+from ..utils import ErrorHandler
+
+
+OUTPUT_ENV_SCRIPT = Path("msprechecker_env.sh").resolve()
 
 
 class ErrorDisplayStrategy(ABC):
@@ -60,7 +69,7 @@ class ErrorDisplayStrategy(ABC):
         self.logger.info(f" {title} ".center(cols, fillchar))
 
     def _print_success(self):
-        self.logger.error('\033[92mAll checks passed\033[0m')
+        self.logger.error("\033[92mAll checks passed\033[0m")
 
 
 class CollectErrorDisplay(ErrorDisplayStrategy):
@@ -80,12 +89,7 @@ class CollectErrorDisplay(ErrorDisplayStrategy):
             what = context.what
 
             self._print_title(f"{filename}({lineno}){function}()")
-            self.logger.info(
-                f"%s {self.COLOR_YELLOW}%s{self.COLOR_RESET}. %s",
-                error.severity,
-                what,
-                error.reason
-            )
+            self.logger.info(f"%s {self.COLOR_YELLOW}%s{self.COLOR_RESET}. %s", error.severity, what, error.reason)
 
 
 class CheckErrorDisplay(ErrorDisplayStrategy):
@@ -103,12 +107,12 @@ class CheckErrorDisplay(ErrorDisplayStrategy):
             actual = context.actual
             expected = context.expected
 
-            self.logger.error(f"\033[96m-- {path}\033[0m {error.severity}")
+            self.logger.error("\033[96m-- %s\033[0m %s", path, error.severity)
             self.logger.error(
-                f"    - \033[1;91m{actual}\033[0m "
-                f"\033[1;97m->\033[0m "
-                f"\033[1;92m{expected}\033[0m "
-                f"\033[38;5;247m<-- {error.reason}\033[0m"
+                "    - \033[1;91m%s\033[0m \033[1;97m->\033[0m \033[1;92m%s\033[0m \033[38;5;247m<-- %s\033[0m",
+                actual,
+                expected,
+                error.reason,
             )
 
 
@@ -137,7 +141,7 @@ class ConfigErrorDisplay(ErrorDisplayStrategy):
 
         for lineno in sorted(lineno_mapping):
             value = lineno_mapping[lineno]
-            if isinstance(value, str): 
+            if isinstance(value, str):
                 self.logger.error(f"{self.COLOR_GRAY}{lineno:>{max_lineno}}: %s{self.COLOR_RESET}", value)
                 continue
 
@@ -153,9 +157,15 @@ class ConfigErrorDisplay(ErrorDisplayStrategy):
                 lineno = "?"
 
             line_prefix = " " * start_col
-            actual_line = f'{self.COLOR_RESET}{json.dumps(path)}: {json.dumps(actual)}{self.COLOR_RESET}'
+            actual_line = f"{self.COLOR_RESET}{json.dumps(path)}: {json.dumps(actual)}{self.COLOR_RESET}"
             self.logger.error(
-                f"{self.COLOR_RED}{lineno:>{max_lineno}}:{self.COLOR_RESET} {line_prefix}{actual_line} {severity}"
+                "%s%s:%s %s%s %s",
+                self.COLOR_RED,
+                lineno,
+                self.COLOR_RESET,
+                line_prefix,
+                actual_line,
+                severity,
             )
 
             caret_indent = max_lineno + 2 + start_col + 1
@@ -164,14 +174,15 @@ class ConfigErrorDisplay(ErrorDisplayStrategy):
 
             suggestion_indent = max_lineno + 2 + start_col
             suggestion_line = (
-                " " * suggestion_indent +
-                f'{self.COLOR_MAGENTA}{json.dumps(path)}: {json.dumps(expected)}{self.COLOR_RESET} <--- {reason}'
+                " " * suggestion_indent
+                + f"{self.COLOR_MAGENTA}{json.dumps(path)}: {json.dumps(expected)}{self.COLOR_RESET} <--- {reason}"
             )
             self.logger.error("%s", suggestion_line)
 
 
 class EnvCheckErrorDisplayDecorator(ErrorDisplayStrategy):
     """Decorator for special handling of env errors."""
+
     def __init__(self, decorated_strategy: ErrorDisplayStrategy):
         super().__init__()
         self.decorated = decorated_strategy
@@ -210,10 +221,7 @@ class EnvCheckErrorDisplayDecorator(ErrorDisplayStrategy):
             "else\n"
             "    {activate}\n"
             "fi\n"
-        ).format(
-            deactivate='\n    '.join(deactivate_cmds),
-            activate='\n    '.join(activate_cmds)
-        )
+        ).format(deactivate="\n    ".join(deactivate_cmds), activate="\n    ".join(activate_cmds))
         return script
 
     def display(self, error_handler):
@@ -223,7 +231,7 @@ class EnvCheckErrorDisplayDecorator(ErrorDisplayStrategy):
 
         script_content = self._generate_env_script(error_handler)
 
-        with open_s('./msprechecker_env.sh', 'w') as f:
+        with OUTPUT_ENV_SCRIPT.open("w", encoding="utf-8") as f:
             f.write(script_content)
 
         self.logger.info(
@@ -241,7 +249,7 @@ class CompareErrorDisplay(ErrorDisplayStrategy):
             self._print_title(title)
 
             if not diff.values:
-                self.logger.error('\033[92mThere is no difference found.\033[0m')
+                self.logger.error("\033[92mThere is no difference found.\033[0m")
                 continue
 
             self.logger.error(json.dumps(diff.values, indent=2))
@@ -252,7 +260,7 @@ class ErrorDisplayStrategyFactory:
         CollectErrorHandler: CollectErrorDisplay,
         CheckErrorHandler: CheckErrorDisplay,
         ConfigErrorHandler: ConfigErrorDisplay,
-        CompareErrorHandler: CompareErrorDisplay
+        CompareErrorHandler: CompareErrorDisplay,
     }
 
     @classmethod

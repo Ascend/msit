@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,41 +14,42 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-import os
+# pylint: disable=duplicate-code
+
 import argparse
+import os
 from textwrap import dedent
 
-from .commands import (
-    setup_precheck_parser,
-    setup_dump,
-    setup_compare_parser,
-    setup_cmate_parser,
-    Coordinator
-)
+from .commands import Coordinator
+from .commands import setup_cmate_parser
+from .commands import setup_compare_parser
+from .commands import setup_dump
+from .commands import setup_precheck_parser
 from .utils import global_logger
 
 
 def main():
+    os.umask(0o027)
     if os.geteuid() == 0:
         global_logger.warning(
-            'WARNING: Running as root is not suggested.\n\n'
-            'This may lead to unexpected privilege escalation and system modifications.'
+            "WARNING: Running as root is not suggested.\n\n"
+            "This may lead to unexpected privilege escalation and system modifications."
         )
 
     main_parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=dedent('''\
+        description=dedent("""\
             MindStudio Pre-Checker Tool - A comprehensive validation tool for inference
-        '''),
-        usage='msprechecker [-h] [--version] {precheck,dump,compare} ...',
-        epilog=dedent('''\
+        """),
+        usage="msprechecker [-h] [--version] {precheck,dump,compare} ...",
+        epilog=dedent("""\
             Examples:
               msprechecker precheck                          # Run validations
               msprechecker dump --output-path baseline.json  # Create a snapshot of current context
               msprechecker compare old.json new.json         # Compare two snapshots
 
             For detailed help on each command, use: msprechecker <command> --help
-        ''')
+        """),
     )
     subparsers = main_parser.add_subparsers(dest="command", title="Available Commands", metavar="")
 

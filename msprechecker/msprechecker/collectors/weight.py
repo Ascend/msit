@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,14 +14,16 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-import re
-import os
+# pylint: disable=duplicate-code
+
 import hashlib
-from concurrent.futures import ProcessPoolExecutor, as_completed
+import os
+import re
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import as_completed
 
-from msguard import Rule, where, Path
-from msguard.security import walk_s
-
+from ..utils.path_io import DEFAULT_MAX_FILE_BYTES
+from ..utils.path_io import iter_regular_files
 from .base import BaseCollector
 
 
@@ -36,7 +37,7 @@ class WeightCollector(BaseCollector):
     @staticmethod
     def _calculate_hash256(filepath, chunk_size):
         sha256_hash = hashlib.sha256()
-        with open(filepath, 'rb') as f:
+        with open(filepath, "rb") as f:
             while True:
                 data = f.read(chunk_size)
                 if not data:
@@ -48,49 +49,35 @@ class WeightCollector(BaseCollector):
         if self.weight_dir is None:
             self.error_handler.add_error(
                 filename=__file__,
-                function='_validate_inputs',
+                function="_validate_inputs",
                 lineno=45,
                 what="未传入权重目录",
-                reason=f"未传入权重目录前不应该调用 'WeightCollector'"
+                reason="未传入权重目录前不应该调用 'WeightCollector'",
             )
             return False
-        valid_sizes = [size * 1024 ** 2 for size in [32, 64, 128, 256]]
+        valid_sizes = [size * 1024**2 for size in [32, 64, 128, 256]]
         if self.chunk_size not in valid_sizes:
             self.error_handler.add_error(
                 filename=__file__,
-                function='_validate_inputs',
+                function="_validate_inputs",
                 lineno=55,
                 what="'chunk_size' 不符合要求",
-                reason=f"'chunk_size' 需要为 {valid_sizes}"
+                reason=f"'chunk_size' 需要为 {valid_sizes}",
             )
             return False
         return True
 
     def _get_tensor_files(self, tensor_suffix):
-        max_weight_size = 10 * 1024 ** 3
-        weight_rule = where(
-            os.getuid() == 0,
-            Path.is_file(),
-            Path.is_file() & ~Path.has_soft_link() &
-            Path.is_readable() & ~Path.is_writable_to_group_or_others() &
-            Path.is_consistent_to_current_user() & Path.is_size_reasonable(size_limit=max_weight_size),
-            description="current user is root"
-        )
-
-        tensor_files = [
-            path
-            for path in walk_s(self.weight_dir, file_rule=weight_rule)
-            if os.path.isfile(path) and path.endswith(tensor_suffix)
-        ]
+        tensor_files = list(iter_regular_files(self.weight_dir, suffix=tensor_suffix, max_bytes=DEFAULT_MAX_FILE_BYTES))
         if not tensor_files:
             self.error_handler.add_error(
                 filename=__file__,
-                function='_get_tensor_files',
+                function="_get_tensor_files",
                 lineno=67,
                 what="权重目录下没有找到符合条件的权重路径",
-                reason=f"工具只会收集 {tensor_suffix!r} 结尾的权重路径，且符合安全要求"
+                reason=f"工具只会收集 {tensor_suffix!r} 结尾的权重路径",
             )
-        return tensor_files
+        return [str(path) for path in tensor_files]
 
     def _process_futures(self, futures, tensor_id_pattern):
         results = {}
@@ -104,10 +91,10 @@ class WeightCollector(BaseCollector):
             except Exception as e:
                 self.error_handler.add_error(
                     filename=__file__,
-                    function='_process_futures',
+                    function="_process_futures",
                     lineno=82,
                     what=f"计算文件 sha256 哈希失败: {tensor_file!r}",
-                    reason=str(e)
+                    reason=str(e),
                 )
                 result = "Unknown"
             results[tensor_id] = result
@@ -118,15 +105,13 @@ class WeightCollector(BaseCollector):
         if not self._validate_inputs():
             return results
 
-        tensor_suffix = '.safetensors'
+        tensor_suffix = ".safetensors"
         tensor_files = self._get_tensor_files(tensor_suffix)
         if not tensor_files:
             return results
 
         max_workers = min(len(tensor_files), os.cpu_count() or 1)
-        tensor_id_pattern = re.compile(
-            r'(\d{5})-of-\d{5}' + re.escape(tensor_suffix)
-        )
+        tensor_id_pattern = re.compile(r"(\d{5})-of-\d{5}" + re.escape(tensor_suffix))
 
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             futures = {

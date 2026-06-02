@@ -14,42 +14,41 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-import os
+# pylint: disable=duplicate-code
 
-from msguard.security import open_s
+import os
+from pathlib import Path
 
 
 def is_in_container():
     def check_docker_env_file():
-        docker_env_file = '/.dockerenv'
+        docker_env_file = "/.dockerenv"
         return os.path.exists(docker_env_file)
-    
+
     def check_first_process():
-        first_proc = '/proc/1'
-        schedule_file = os.path.join(first_proc, 'sched')
-        
+        first_proc = "/proc/1"
+        schedule_file = os.path.join(first_proc, "sched")
+
         try:
-            with open_s(schedule_file) as f:
+            with Path(schedule_file).open(encoding="utf-8") as f:
                 first_line = f.readlines(1)
         except Exception:
             return True
-        
-        if first_line and \
-           first_line[0] and \
-           first_line[0].startswith('systemd'):
+
+        if first_line and first_line[0] and first_line[0].startswith("systemd"):
             return False
-        
+
         return True
-    
+
     return check_docker_env_file() or check_first_process()
 
 
 def singleton(cls):
     instances = {}
-    
+
     def get_instance(*args, **kwargs):
         if cls not in instances:
             instances[cls] = cls(*args, **kwargs)
         return instances[cls]
-    
+
     return get_instance
