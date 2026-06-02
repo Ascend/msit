@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,67 +14,65 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-import os
-import json
+# pylint: disable=duplicate-code
+
 import argparse
-from typing import List
+import json
+import os
+from pathlib import Path
 
 import yaml
-from msguard.security import open_s
 
-from .base import CommandType
-from .legacy import show_legacy_warnings
-from .banner import BannerPresenter
-from ..collectors import ConfigCollector, CollectResult
-from ..reporters import Reporter
-from ..presets import RuleManager
-from .base import CommandStrategy, CommandType
-from ..collectors import (
-    BaseCollector,
-    EnvCollector,
-    SysCollector,
-    ConfigCollector,
-    AscendCollector,
-    HCCLCollector,
-    PingCollector,
-    WeightCollector,
-    CPUStressCollector,
-    NPUStressCollector,
-    UserConfigCollector,
-    MindIEEnvCollector,
-    ModelConfigCollector,
-    MIESConfigCollector,
-    TlsCollector,
-    VnicCollector,
-    LinkCollector,
-)
-from ..checkers import (
-    UserConfigChecker,
-    MindIEEnvChecker,
-    ModelConfigChecker,
-    EnvChecker,
-    SysChecker,
-    AscendChecker,
-    HCCLChecker,
-    StressChecker,
-    PDChecker,
-    MIESConfigChecker,
-    TlsChecker,
-    VnicChecker,
-    LinkChecker,
-    PingChecker,
-)
+from ..checkers import AscendChecker
+from ..checkers import EnvChecker
+from ..checkers import HCCLChecker
+from ..checkers import LinkChecker
+from ..checkers import MIESConfigChecker
+from ..checkers import MindIEEnvChecker
+from ..checkers import ModelConfigChecker
+from ..checkers import PDChecker
+from ..checkers import PingChecker
+from ..checkers import StressChecker
+from ..checkers import SysChecker
+from ..checkers import TlsChecker
+from ..checkers import UserConfigChecker
+from ..checkers import VnicChecker
+from ..cmate import inspect
+from ..cmate import run
+from ..cmate.cmate import _parse_configs
+from ..cmate.cmate import _parse_contexts
+from ..collectors import AscendCollector
+from ..collectors import BaseCollector
+from ..collectors import CollectResult
+from ..collectors import CPUStressCollector
+from ..collectors import EnvCollector
+from ..collectors import HCCLCollector
+from ..collectors import LinkCollector
+from ..collectors import MIESConfigCollector
+from ..collectors import MindIEEnvCollector
+from ..collectors import ModelConfigCollector
+from ..collectors import NPUStressCollector
+from ..collectors import PingCollector
+from ..collectors import SysCollector
+from ..collectors import TlsCollector
+from ..collectors import UserConfigCollector
+from ..collectors import VnicCollector
+from ..collectors import WeightCollector
 from ..comparators import Comparator
+from ..presets import RuleManager
 from ..reporters import Reporter
-from ..utils import (
-    Framework, update_model_type,
-    CheckErrorHandler, ConfigErrorHandler, global_logger, singleton,
-    parse_rank_table
-    
-)
-from ..cmate import inspect, run
-from ..cmate.cmate import _parse_configs, _parse_contexts
+from ..utils import CheckErrorHandler
+from ..utils import ConfigErrorHandler
+from ..utils import Framework
+from ..utils import global_logger
+from ..utils import parse_rank_table
+from ..utils import singleton
+from ..utils import update_model_type
+from .banner import BannerPresenter
+from .base import CommandStrategy
+from .base import CommandType
 from .dump import Dump
+from .legacy import show_legacy_warnings
 
 
 class CollectorFactory:
@@ -85,9 +82,8 @@ class CollectorFactory:
             SysCollector(),
             AscendCollector(),
         ]  # all scenes applies
-        if getattr(args, 'framework', 'mindie') == 'vllm' or \
-            getattr(args, 'command') == CommandType.CMD_DUMP:
-            default_collectors.append(EnvCollector(filter_env=getattr(args, 'filter_env', False)))
+        if getattr(args, "framework", "mindie") == "vllm" or args.command == CommandType.CMD_DUMP:
+            default_collectors.append(EnvCollector(filter_env=getattr(args, "filter_env", False)))
 
         special_collectors = CollectorFactory.dispatch_collectors_by_scene(args)
         extra_collectors = CollectorFactory.dispatch_extra_collectors(args)
@@ -95,7 +91,7 @@ class CollectorFactory:
         return list(set(default_collectors + special_collectors + extra_collectors))
 
     @staticmethod
-    def dispatch_collectors_by_scene(args: argparse.Namespace) -> List[BaseCollector]:
+    def dispatch_collectors_by_scene(args: argparse.Namespace) -> list[BaseCollector]:
         collectors = []
 
         # 大 EP
@@ -109,13 +105,13 @@ class CollectorFactory:
 
         # PD Mix
         elif getattr(args, "mies_config_path", None):
-            collectors.append(EnvCollector(filter_env=getattr(args, 'filter_env', False)))
+            collectors.append(EnvCollector(filter_env=getattr(args, "filter_env", False)))
             collectors.append(MIESConfigCollector(config_path=args.mies_config_path))
 
         return collectors
 
     @staticmethod
-    def dispatch_extra_collectors(args: argparse.Namespace) -> List[BaseCollector]:
+    def dispatch_extra_collectors(args: argparse.Namespace) -> list[BaseCollector]:
         collectors = []
 
         if getattr(args, "rank_table_path", None):
@@ -141,12 +137,12 @@ class CollectorFactory:
             )
 
         if getattr(args, "weight_dir", None):
-            model_config_path = os.path.join(args.weight_dir, "config.json")
+            model_config_path = args.weight_dir / "config.json"
             collectors.append(ModelConfigCollector(config_path=model_config_path))
 
             if getattr(args, "command", None) == CommandType.CMD_DUMP:
-                chunk_size = getattr(args, 'chunk_size', 32)
-                chunk_size *= 1024 ** 2
+                chunk_size = getattr(args, "chunk_size", 32)
+                chunk_size *= 1024**2
                 collectors.append(WeightCollector(weight_dir=args.weight_dir, chunk_size=chunk_size))
 
         if getattr(args, "hardware", False):
@@ -234,12 +230,12 @@ class PrecheckStrategy(CommandStrategy):
             if os.path.isabs(path):
                 global_logger.warning("unsafe, key should not be abspath: {path!r}")
                 continue
-            full_path = os.path.join(args.config_parent_dir, path)
-            load_fn = json.load if full_path.endswith(".json") else lambda f: list(yaml.safe_load_all(f))
+            full_path = Path(args.config_parent_dir) / path
+            load_fn = json.load if full_path.suffix == ".json" else lambda f: list(yaml.safe_load_all(f))
             try:
-                with open_s(full_path) as f:
+                with full_path.open(encoding="utf-8") as f:
                     data = load_fn(f)
-            except Exception as e:
+            except Exception:
                 global_logger.error("missing file: %r", full_path)
                 return 1
 
@@ -305,7 +301,7 @@ class CompareStrategy(CommandStrategy):
         path_to_data = {}
 
         for path in file_paths:
-            with open_s(path) as f:
+            with path.open(encoding="utf-8") as f:
                 path_to_data[path] = json.load(f)
 
         return path_to_data
@@ -324,8 +320,16 @@ class RunStrategy(CommandStrategy):
         if not ret:
             return 1
 
-        return run(args.rule, configs, contexts, args.failfast, args.verbose, args.collect_only, args.output_path,
-                   args.severity)
+        return run(
+            args.rule,
+            configs,
+            contexts,
+            args.failfast,
+            args.verbose,
+            args.collect_only,
+            args.output_path,
+            args.severity,
+        )
 
 
 class InspectStrategy(CommandStrategy):

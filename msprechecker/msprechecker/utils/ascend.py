@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,20 +14,24 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-import re
-import os
-import stat
-import json
-import shlex
+# pylint: disable=duplicate-code
+
 import ipaddress
 import itertools
-import subprocess
-from enum import Enum
+import json
+import os
+import re
+import shlex
+import stat
+import subprocess  # nosec B404
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Dict, List, Union, Callable
+from enum import Enum
+from pathlib import Path
+from typing import Union
 
-from msguard.security import open_s
-from packaging.version import Version, InvalidVersion
+from packaging.version import InvalidVersion
+from packaging.version import Version
 
 from .log import global_logger
 
@@ -53,6 +56,7 @@ class NpuType(Enum):
 
 def get_npu_count():
     davinci_path_template = "/dev/davinci{}"
+    device_id = -1
 
     for device_id in itertools.count(0):
         device_path = davinci_path_template.format(device_id)
@@ -69,27 +73,27 @@ def get_npu_count():
 
 def get_npu_type():
     try:
-        output = subprocess.check_output(['/usr/bin/lspci'], stderr=subprocess.DEVNULL, text=True)
+        output = subprocess.check_output(["/usr/bin/lspci"], stderr=subprocess.DEVNULL, text=True)  # nosec B603
     except Exception:
         return None, None
 
-    device_pattern = re.compile(r'device\s*(\w+)', re.IGNORECASE)
+    device_pattern = re.compile(r"device\s*(\w+)", re.IGNORECASE)
     device_list = []
     zip_engine_nums = 0
-    for line in output.split('\n'):
-        if 'accelerator' in line:
+    for line in output.split("\n"):
+        if "accelerator" in line:
             m = device_pattern.search(line)
             if not m:
-                zip_engine_nums += 1 # d803 contains extra zip engines
+                zip_engine_nums += 1  # d803 contains extra zip engines
                 continue
             device_list.append(m.group(1))
-    
+
     if not device_list:
         return None, None
 
     if any(device != device_list[0] for device in device_list):
         return None, None
-    
+
     npu_type = device_list[0]
     if npu_type not in (member.value for member in NpuType):
         return None, None
@@ -100,30 +104,30 @@ def get_npu_type():
 def get_conn_mode():
     lldp_cmd = "hccn_tool -i 0 -lldp -g"
     try:
-        output = subprocess.check_output(shlex.split(lldp_cmd), stderr=subprocess.DEVNULL, text=True)
+        output = subprocess.check_output(shlex.split(lldp_cmd), stderr=subprocess.DEVNULL, text=True)  # nosec B603
     except Exception:
         return None
-    
+
     if not output:
         return None
-    
-    fields = output.split('\n')
-    tlv_desc = 'System Description TLV'
+
+    fields = output.split("\n")
+    tlv_desc = "System Description TLV"
     if tlv_desc not in fields:
         return None
-    
+
     desc_idx = fields.index(tlv_desc)
     if desc_idx >= len(fields):
         return None
-    
+
     route_fields = "Routing"
     fiber_fields = "AscendNPU"
     if route_fields in fields[desc_idx + 1]:
         return "route"
-    
+
     if fiber_fields in fields[desc_idx + 1]:
         return "fiber"
-    
+
     return None
 
 
@@ -143,7 +147,7 @@ class DeviceInfo:
 
 @dataclass
 class RankTable:
-    host_to_devices: Dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], List[DeviceInfo]]
+    host_to_devices: dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], list[DeviceInfo]]
     server_count: int
     version: Version
 
@@ -180,12 +184,10 @@ def _parse_server_count(server_count: Union[int, str]) -> int:
 
 
 def _parse_mindie_host_to_devices(
-    server_list: List[Dict[str, Union[str, List[Dict[str, str]]]]],
-) -> Dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], List[DeviceInfo]]:
+    server_list: list[dict[str, Union[str, list[dict[str, str]]]]],
+) -> dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], list[DeviceInfo]]:
     """Parse host_to_devices from mindie rank table."""
-    host_to_devices: Dict[
-        Union[ipaddress.IPv4Address, ipaddress.IPv6Address], List[DeviceInfo]
-    ] = {}
+    host_to_devices: dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], list[DeviceInfo]] = {}
 
     if not server_list:
         global_logger.warning("Expected server_list in rank table but not found")
@@ -199,23 +201,17 @@ def _parse_mindie_host_to_devices(
         device_list = server_info.get("device", [])
 
         if not host_ip_str:
-            global_logger.warning(
-                "Expected server_id in server_list but not found, skipping"
-            )
+            global_logger.warning("Expected server_id in server_list but not found, skipping")
             continue
 
         if not device_list:
-            global_logger.warning(
-                "Expected list of devices in server_list but not found, skipping"
-            )
+            global_logger.warning("Expected list of devices in server_list but not found, skipping")
             continue
 
         try:
             host_ip = ipaddress.ip_address(host_ip_str)
         except ValueError:
-            global_logger.warning(
-                "Invalid server_id %r found in server_list, skipping", host_ip_str
-            )
+            global_logger.warning("Invalid server_id %r found in server_list, skipping", host_ip_str)
             continue
 
         if host_ip not in host_to_devices:
@@ -234,25 +230,19 @@ def _parse_mindie_host_to_devices(
             try:
                 device_ip = ipaddress.ip_address(device_ip_str)
             except ValueError:
-                global_logger.warning(
-                    "Invalid device_ip %r for %r; skipping", device_ip_str, host_ip_str
-                )
+                global_logger.warning("Invalid device_ip %r for %r; skipping", device_ip_str, host_ip_str)
                 continue
 
             try:
                 device_id = int(device_id_str)
             except ValueError:
-                global_logger.warning(
-                    "Invalid device_id %r for %r; skipping", device_id_str, host_ip_str
-                )
+                global_logger.warning("Invalid device_id %r for %r; skipping", device_id_str, host_ip_str)
                 continue
 
             try:
                 rank_id = int(rank_id_str)
             except ValueError:
-                global_logger.warning(
-                    "Invalid rank_id %r for %r; skipping", rank_id_str, host_ip_str
-                )
+                global_logger.warning("Invalid rank_id %r for %r; skipping", rank_id_str, host_ip_str)
                 continue
 
             host_to_devices[host_ip].append(
@@ -267,13 +257,10 @@ def _parse_mindie_host_to_devices(
 
 
 def _parse_vllm_host_to_devices(
-    prefill_device_list,
-    decode_device_list
-) -> Dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], List[DeviceInfo]]:
+    prefill_device_list, decode_device_list
+) -> dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], list[DeviceInfo]]:
     """Parse host_to_devices from vllm rank table."""
-    host_to_devices: Dict[
-        Union[ipaddress.IPv4Address, ipaddress.IPv6Address], List[DeviceInfo]
-    ] = {}
+    host_to_devices: dict[Union[ipaddress.IPv4Address, ipaddress.IPv6Address], list[DeviceInfo]] = {}
 
     for list_name, device_list in (
         ("prefill_device_list", prefill_device_list),
@@ -284,9 +271,7 @@ def _parse_vllm_host_to_devices(
             continue
 
         if len(device_list) > _HOST_LIMIT * _DEVICE_LIMIT_PER_HOST:
-            raise RankTableParseError(
-                f"{list_name!r} length exceeds limit {_HOST_LIMIT * _DEVICE_LIMIT_PER_HOST}"
-            )
+            raise RankTableParseError(f"{list_name!r} length exceeds limit {_HOST_LIMIT * _DEVICE_LIMIT_PER_HOST}")
 
         for dev in device_list:
             host_ip_str = dev.get("server_id", "")
@@ -313,17 +298,13 @@ def _parse_vllm_host_to_devices(
             try:
                 device_ip = ipaddress.ip_address(device_ip_str)
             except ValueError:
-                global_logger.warning(
-                    "Invalid device_ip %r for %r; skipping", device_ip_str, host_ip_str
-                )
+                global_logger.warning("Invalid device_ip %r for %r; skipping", device_ip_str, host_ip_str)
                 continue
 
             try:
                 device_id = int(device_id_str)
             except ValueError:
-                global_logger.warning(
-                    "Invalid device_id %r for %r; skipping", device_id_str, host_ip_str
-                )
+                global_logger.warning("Invalid device_id %r for %r; skipping", device_id_str, host_ip_str)
                 continue
 
             try:
@@ -366,9 +347,7 @@ def _parse_mindie(path: str) -> RankTable:
     try:
         version = Version(version_str)
     except InvalidVersion as e:
-        raise RankTableParseError(
-            f"Invalid version {version_str!r} found in {path!r}"
-        ) from e
+        raise RankTableParseError(f"Invalid version {version_str!r} found in {path!r}") from e
 
     return RankTable(
         host_to_devices=host_to_devices,
@@ -382,13 +361,9 @@ def _parse_vllm(path: str) -> RankTable:
     data = _load_json(path)
 
     if "prefill_device_list" not in data or "decode_device_list" not in data:
-        raise RankTableParseError(
-            f"Expected 'prefill_device_list' and 'decode_device_list' in rank table: {path!r}"
-        )
+        raise RankTableParseError(f"Expected 'prefill_device_list' and 'decode_device_list' in rank table: {path!r}")
 
-    host_to_devices = _parse_vllm_host_to_devices(
-        data["prefill_device_list"], data["decode_device_list"]
-    )
+    host_to_devices = _parse_vllm_host_to_devices(data["prefill_device_list"], data["decode_device_list"])
 
     if not host_to_devices:
         raise RankTableParseError(f"No devices found in rank table: {path!r}")
@@ -399,9 +374,7 @@ def _parse_vllm(path: str) -> RankTable:
     try:
         version = Version(version_str)
     except InvalidVersion as e:
-        raise RankTableParseError(
-            f"Invalid version {version_str!r} found in {path!r}"
-        ) from e
+        raise RankTableParseError(f"Invalid version {version_str!r} found in {path!r}") from e
 
     return RankTable(
         host_to_devices=host_to_devices,
@@ -410,15 +383,14 @@ def _parse_vllm(path: str) -> RankTable:
     )
 
 
-_RANK_TABLE_PARSERS: Dict[Framework, Callable[[str], RankTable]] = {
+_RANK_TABLE_PARSERS: dict[Framework, Callable[[str], RankTable]] = {
     Framework.MINDIE: _parse_mindie,
     Framework.VLLM: _parse_vllm,
 }
 
 
 def parse_rank_table(path: str, framework: Framework) -> RankTable:
-    """
-    Parse a rank table file for the given framework.
+    """Parse a rank table file for the given framework.
 
     Currently supported frameworks: MINDIE, VLLM.
     SGLang does not define a rank table format and is intentionally unsupported.
@@ -436,9 +408,7 @@ def parse_rank_table(path: str, framework: Framework) -> RankTable:
     """
     parser = _RANK_TABLE_PARSERS.get(framework)
     if parser is None:
-        raise ValueError(
-            f"No rank table parser for {framework!r}. Supported: {list(_RANK_TABLE_PARSERS)}"
-        )
+        raise ValueError(f"No rank table parser for {framework!r}. Supported: {list(_RANK_TABLE_PARSERS)}")
     return parser(path)
 
 
@@ -447,13 +417,13 @@ model_type = None
 
 def update_model_type(args):
     weight_dir = None
-    if getattr(args, 'weight_dir', None):
+    if getattr(args, "weight_dir", None):
         weight_dir = args.weight_dir
-    elif getattr(args, 'mies_config_path', None):
-        with open_s(args.mies_config_path) as f:
+    elif getattr(args, "mies_config_path", None):
+        with Path(args.mies_config_path).open(encoding="utf-8") as f:
             data = json.load(f)
         try:
-            weight_dir = data['BackendConfig']['ModelDeployConfig']['ModelConfig'][0]['modelWeightPath']
+            weight_dir = data["BackendConfig"]["ModelDeployConfig"]["ModelConfig"][0]["modelWeightPath"]
         except Exception:
             weight_dir = None
 
@@ -464,12 +434,12 @@ def update_model_type(args):
 
     global model_type
     try:
-        with open_s(model_config_path) as f:
+        with Path(model_config_path).open(encoding="utf-8") as f:
             data = json.load(f)
     except Exception:
         model_type = None
     else:
-        model_type = data.get('model_type')
+        model_type = data.get("model_type")
 
 
 def get_model_type():

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,16 +14,20 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
+# pylint: disable=duplicate-code
+
 import os
+import platform
 import re
 import shlex
-import platform
-import subprocess
-from abc import ABC, abstractmethod
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import subprocess  # nosec B404
+from abc import ABC
+from abc import abstractmethod
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed
+from pathlib import Path
 
 import psutil
-from msguard.security import open_s
 
 from .base import BaseCollector
 
@@ -32,16 +35,16 @@ from .base import BaseCollector
 # *** LSCPU ***
 class LscpuCollector(BaseCollector):
     MODEL_NAME = "model_name"
-    
+
     # 将翻译映射和优先级逻辑整合在一起
     KEY_MAPPINGS = {
         # 主键优先
         "Model name": MODEL_NAME,
         "型号名称": MODEL_NAME,
         # 备选键（仅在主键未找到时使用）
-        "BIOS Model name": MODEL_NAME
+        "BIOS Model name": MODEL_NAME,
     }
-    
+
     # 主键集合，用于判断是否已经找到主要信息
     PRIMARY_KEYS = {"Model name", "型号名称"}
 
@@ -50,42 +53,37 @@ class LscpuCollector(BaseCollector):
         found_primary_info = {self.MODEL_NAME: False}
 
         for line in output.splitlines():
-            if ':' not in line:
+            if ":" not in line:
                 continue
-                
-            key, value = [x.strip() for x in line.split(':', 1)]
-            
+
+            key, value = [x.strip() for x in line.split(":", 1)]
+
             if key in self.KEY_MAPPINGS:
                 target_field = self.KEY_MAPPINGS[key]
-                
+
                 # 如果是主键或者对应字段还未设置
-                if (key in self.PRIMARY_KEYS or 
-                    not found_primary_info.get(target_field, False)):
+                if key in self.PRIMARY_KEYS or not found_primary_info.get(target_field, False):
                     info[target_field] = value
-                    
+
                     # 标记主键是否已找到
                     if key in self.PRIMARY_KEYS:
                         found_primary_info[target_field] = True
-        
+
         return info
 
     def _collect_data(self):
         try:
-            output = subprocess.check_output(
-                ['/usr/bin/lscpu'], 
-                stderr=subprocess.DEVNULL, 
-                text=True
-            )
+            output = subprocess.check_output(["/usr/bin/lscpu"], stderr=subprocess.DEVNULL, text=True)  # nosec B603
         except Exception as e:
             self.error_handler.add_error(
                 filename=__file__,
-                function='_collect_data',
+                function="_collect_data",
                 lineno=72,
                 what="执行命令失败：'/usr/bin/lscpu'",
-                reason=str(e)
+                reason=str(e),
             )
             return {}
-        
+
         return self._parse_output(output)
 
 
@@ -100,20 +98,20 @@ class VirtualMachineCollector(BaseCollector):
         except Exception as e:
             self.error_handler.add_error(
                 filename=__file__,
-                function='_collect_data',
+                function="_collect_data",
                 lineno=97,
                 what=f"打开文件失败：{self.CPU_INFO_PATH}",
-                reason=str(e)
+                reason=str(e),
             )
             return {}
-    
+
     def _parse_content(self):
-        with open_s(self.CPU_INFO_PATH) as f:
+        with Path(self.CPU_INFO_PATH).open(encoding="utf-8") as f:
             if any(self._check_hypervisor_keyword(line) for line in f):
                 return {"virtual_machine": True}
 
         return {"virtual_machine": False}
-    
+
     def _check_hypervisor_keyword(self, line):
         return any(keyword in line.lower() for keyword in self.HYPERVISOR_KEYWORDS)
 
@@ -121,6 +119,7 @@ class VirtualMachineCollector(BaseCollector):
 # *** CPU High Performance ***
 class CPUHighPerformanceStrategy(ABC):
     """Abstract base class for CPU high performance detection strategies."""
+
     @abstractmethod
     def check(self):
         """"""
@@ -137,19 +136,15 @@ class PsutilStrategy(CPUHighPerformanceStrategy):
 class DmidecodeStrategy(CPUHighPerformanceStrategy):
     DMIDECODE_CMD = shlex.split("dmidecode -t processor")
     DMIDECODE_PATTERNS = (
-        re.compile(r'Max Speed:\s*([^\n]+)', re.IGNORECASE),
-        re.compile(r'Current Speed:\s*([^\n]+)', re.IGNORECASE)
+        re.compile(r"Max Speed:\s*([^\n]+)", re.IGNORECASE),
+        re.compile(r"Current Speed:\s*([^\n]+)", re.IGNORECASE),
     )
 
     def check(self):
         max_speeds = []
         current_speeds = []
         try:
-            dmi_output = subprocess.check_output(
-                self.DMIDECODE_CMD,
-                stderr=subprocess.DEVNULL,
-                text=True
-            )
+            dmi_output = subprocess.check_output(self.DMIDECODE_CMD, stderr=subprocess.DEVNULL, text=True)  # nosec B603
         except Exception:
             return False
 
@@ -167,17 +162,13 @@ class DmidecodeStrategy(CPUHighPerformanceStrategy):
 class CpupowerStrategy(CPUHighPerformanceStrategy):
     CPUPOWER_CMD = shlex.split("cpupower frequency-info")
     CPUPOWER_PATTERNS = (
-        re.compile(r'hardware limits:\s*[\d\.]+\s*[GMK]?Hz\s*-\s*([\d\.]+\s*[GMK]?Hz)', re.IGNORECASE),
-        re.compile(r'current CPU frequency:\s*([\d\.]+\s*[GMK]?Hz)', re.IGNORECASE)
+        re.compile(r"hardware limits:\s*[\d\.]+\s*[GMK]?Hz\s*-\s*([\d\.]+\s*[GMK]?Hz)", re.IGNORECASE),
+        re.compile(r"current CPU frequency:\s*([\d\.]+\s*[GMK]?Hz)", re.IGNORECASE),
     )
 
     def check(self):
         try:
-            output = subprocess.check_output(
-                self.CPUPOWER_CMD,
-                stderr=subprocess.DEVNULL,
-                text=True
-            )
+            output = subprocess.check_output(self.CPUPOWER_CMD, stderr=subprocess.DEVNULL, text=True)  # nosec B603
         except Exception:
             return False
 
@@ -194,18 +185,11 @@ class CpupowerStrategy(CPUHighPerformanceStrategy):
 
 class LshwStrategy(CPUHighPerformanceStrategy):
     LSHW_CMD = shlex.split("lshw -c cpu")
-    LSHW_PATTERNS = (
-        re.compile(r'size:\s*([^\n]+)', re.IGNORECASE),
-        re.compile(r'capacity:\s*([^\n]+)', re.IGNORECASE)
-    )
+    LSHW_PATTERNS = (re.compile(r"size:\s*([^\n]+)", re.IGNORECASE), re.compile(r"capacity:\s*([^\n]+)", re.IGNORECASE))
 
     def check(self):
         try:
-            lshw_output = subprocess.check_output(
-                self.LSHW_CMD,
-                stderr=subprocess.DEVNULL,
-                text=True
-            )
+            lshw_output = subprocess.check_output(self.LSHW_CMD, stderr=subprocess.DEVNULL, text=True)  # nosec B603
         except Exception:
             return False
 
@@ -225,7 +209,7 @@ class LshwStrategy(CPUHighPerformanceStrategy):
 
 
 class ScalingGovernorStrategy(CPUHighPerformanceStrategy):
-    SCALING_GOVERNOR_PATH = '/sys/devices/system/cpu/cpu{}/cpufreq/scaling_governor'
+    SCALING_GOVERNOR_PATH = "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_governor"
 
     def check(self):
         cpu_count = os.cpu_count()
@@ -235,7 +219,7 @@ class ScalingGovernorStrategy(CPUHighPerformanceStrategy):
         for core_id in range(cpu_count):
             gov_path = self.SCALING_GOVERNOR_PATH.format(core_id)
             try:
-                with open_s(gov_path, 'r', encoding='utf-8') as f:
+                with Path(gov_path).open("r", encoding="utf-8") as f:
                     if f.read().strip() != "performance":
                         return False
             except Exception:
@@ -244,13 +228,7 @@ class ScalingGovernorStrategy(CPUHighPerformanceStrategy):
 
 
 class CPUHighPerformanceCollector(BaseCollector):
-    strategies = [
-        DmidecodeStrategy(),
-        ScalingGovernorStrategy(),
-        CpupowerStrategy(),
-        PsutilStrategy(),
-        LshwStrategy()
-    ]
+    strategies = [DmidecodeStrategy(), ScalingGovernorStrategy(), CpupowerStrategy(), PsutilStrategy(), LshwStrategy()]
 
     def __init__(self, error_handler=None, *, strategies=None):
         super().__init__(error_handler)
@@ -264,58 +242,58 @@ class CPUHighPerformanceCollector(BaseCollector):
 
 # *** Kernel Info ***
 class KernelInfoCollector(BaseCollector):
-    TRANSPARENT_HUGEPAGE_PATH = '/sys/kernel/mm/transparent_hugepage/enabled'
+    TRANSPARENT_HUGEPAGE_PATH = "/sys/kernel/mm/transparent_hugepage/enabled"
 
     def _collect_data(self):
         kernel_info = platform.uname()._asdict()
         try:
-            with open_s(self.TRANSPARENT_HUGEPAGE_PATH) as f:
+            with Path(self.TRANSPARENT_HUGEPAGE_PATH).open(encoding="utf-8") as f:
                 content = f.read()
         except Exception as e:
             self.error_handler.add_error(
                 filename=__file__,
-                function='_collect_data',
+                function="_collect_data",
                 lineno=265,
                 what=f"打开文件失败：{self.TRANSPARENT_HUGEPAGE_PATH!r}",
-                reason=str(e)
+                reason=str(e),
             )
             content = None
 
         if content:
-            m = re.search(r'\[(\w+)\]', content)
-            kernel_info['transparent_hugepage'] = m.group(1) if m else content.strip()
+            m = re.search(r"\[(\w+)\]", content)
+            kernel_info["transparent_hugepage"] = m.group(1) if m else content.strip()
         return kernel_info
 
 
 # *** Memory Info ***
 class MemoryInfoCollector(BaseCollector):
-    OVERCOMMIT_MEMORY_PATH = '/proc/sys/vm/overcommit_memory'
+    OVERCOMMIT_MEMORY_PATH = "/proc/sys/vm/overcommit_memory"
 
     def _collect_data(self):
         mem_info = {}
         try:
-            mem_info['page_size'] = os.sysconf("SC_PAGESIZE")
+            mem_info["page_size"] = os.sysconf("SC_PAGESIZE")
         except Exception as e:
             self.error_handler.add_error(
                 filename=__file__,
-                function='_collect_data',
+                function="_collect_data",
                 lineno=289,
                 what="获取 PAGESIZE 失败：os.sysconf('SC_PAGESIZE')",
-                reason=str(e)
+                reason=str(e),
             )
 
         try:
-            with open_s(self.OVERCOMMIT_MEMORY_PATH) as f:
-                mem_info['overcommit_memory'] = f.read().strip()
+            with Path(self.OVERCOMMIT_MEMORY_PATH).open(encoding="utf-8") as f:
+                mem_info["overcommit_memory"] = f.read().strip()
         except Exception as e:
             self.error_handler.add_error(
                 filename=__file__,
-                function='_collect_data',
+                function="_collect_data",
                 lineno=301,
                 what=f"打开文件失败：{self.OVERCOMMIT_MEMORY_PATH!r}",
-                reason=str(e)
+                reason=str(e),
             )
-        
+
         return mem_info
 
 
@@ -325,7 +303,7 @@ class SysCollector(BaseCollector):
         VirtualMachineCollector(),
         CPUHighPerformanceCollector(),
         KernelInfoCollector(),
-        MemoryInfoCollector()
+        MemoryInfoCollector(),
     ]
 
     def __init__(self, error_handler=None, *, subcollectors=None):
@@ -334,7 +312,7 @@ class SysCollector(BaseCollector):
         if subcollectors:
             self.subcollectors = subcollectors
 
-    def _collect_data(self): 
+    def _collect_data(self):
         max_workers = min(len(self.subcollectors), os.cpu_count() or 1)
         ret = {}
 

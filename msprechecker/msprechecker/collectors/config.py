@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,16 +14,17 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-import re
-import json
+# pylint: disable=duplicate-code
 
-from msguard.security import open_s
+import json
+import re
+from pathlib import Path
 
 from .base import BaseCollector
 
 
 class ConfigCollector(BaseCollector):
-    def __init__(self, error_handler=None, *, config_path: str = None):
+    def __init__(self, error_handler=None, *, config_path: Path = None):
         super().__init__(error_handler)
         self.config_path = config_path
 
@@ -38,12 +38,12 @@ class ConfigCollector(BaseCollector):
         for line_num in range(line_count):
             if line_num in depth_changes:
                 current_depth = depth_changes[line_num]
-                
+
                 if not active_blocks or current_depth > depth_changes[active_blocks[-1]]:
                     active_blocks.append(line_num)
                 elif current_depth < depth_changes[active_blocks[-1]]:
                     active_blocks.pop()
-                
+
                 context_hierarchy[line_num] = active_blocks.copy()
 
         # 填充没有直接上下文的行
@@ -62,13 +62,13 @@ class ConfigCollector(BaseCollector):
         key_location_map = {}
 
         current_depth = 0
-        parent_key = ''
-        last_key = ''
+        parent_key = ""
+        last_key = ""
 
         key_pattern = re.compile(r'\s*"([^"]+)"\s*:\s*')
-        with open_s(self.config_path, 'r', encoding='utf-8') as f:
+        with Path(self.config_path).open("r", encoding="utf-8") as f:
             for line_no, line in enumerate(f):
-                line = line.rstrip('\n')
+                line = line.rstrip("\n")
                 lines.append(line)
 
                 if not line.strip():
@@ -77,29 +77,31 @@ class ConfigCollector(BaseCollector):
                 mo = key_pattern.search(line)
                 if mo:
                     key = mo.group(1)
-                    key = f'{parent_key}.{key}' if parent_key else key
+                    key = f"{parent_key}.{key}" if parent_key else key
                     col_start = line.find('"')
                     key_location_map[key] = (line_no, col_start)
                     last_key = key
-                
+
                 previous_depth = current_depth
                 for char in line:
-                    if char in '{[':
+                    if char in "{[":
                         current_depth += 1
-                    elif char in '}]':
+                    elif char in "}]":
                         current_depth -= 1
-                
+
                 if current_depth > previous_depth:
                     parent_key = last_key
                     depth_changes[line_no] = current_depth
                 elif current_depth < previous_depth:
-                    dot_num = parent_key.count('.')
-                    parent_key = '' if dot_num < 2 else parent_key.rsplit('.', 2)[0]
+                    dot_num = parent_key.count(".")
+                    parent_key = "" if dot_num < 2 else parent_key.rsplit(".", 2)[0]
                     depth_changes[line_no] = current_depth
-            
+
             return (
-                json.loads('\n'.join(lines)), lines,
-                key_location_map, self._build_context_hierarchy(lines, depth_changes)
+                json.loads("\n".join(lines)),
+                lines,
+                key_location_map,
+                self._build_context_hierarchy(lines, depth_changes),
             )
 
 
