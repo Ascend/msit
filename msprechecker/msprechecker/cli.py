@@ -20,11 +20,7 @@ import argparse
 import os
 from textwrap import dedent
 
-from .commands import Coordinator
-from .commands import setup_cmate_parser
-from .commands import setup_compare_parser
-from .commands import setup_dump
-from .commands import setup_precheck_parser
+from .commands import Coordinator, setup_cmate_parser, setup_compare_parser, setup_dump, setup_precheck_parser
 from .utils import global_logger
 
 
@@ -41,7 +37,7 @@ def main():
         description=dedent("""\
             MindStudio Pre-Checker Tool - A comprehensive validation tool for inference
         """),
-        usage="msprechecker [-h] [--version] {precheck,dump,compare} ...",
+        usage="msprechecker [-h] {precheck,dump,compare} ...",
         epilog=dedent("""\
             Examples:
               msprechecker precheck                          # Run validations

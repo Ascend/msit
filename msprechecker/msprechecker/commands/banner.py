@@ -24,7 +24,6 @@ from typing import Dict, List, Optional
 from ..core.strategy import Ascend, Lscpu
 from ..util import get_npu_count, get_npu_memory, get_npu_type, get_pkg_version
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -57,9 +56,7 @@ class PythonInfoSection(InfoSection):
 class CpuInfoSection(InfoSection):
     def get_info(self) -> str:
         data = Lscpu().execute()
-        model_name = (
-            data.get("Model name", "Unknown") if isinstance(data, dict) else "Unknown"
-        )
+        model_name = data.get("Model name", "Unknown") if isinstance(data, dict) else "Unknown"
         return f"CPU: {model_name} ({os.cpu_count()} cores)"
 
 
@@ -100,9 +97,7 @@ class AscendInfoSection(InfoSection):
         for key in info:
             key_lower = key.lower()
             # mindie version key name is Ascend-mindie, lower to ascend-mindie
-            if version is None and any(
-                keyword in key_lower for keyword in ["version", "ascend-mindie"]
-            ):
+            if version is None and any(keyword in key_lower for keyword in ["version", "ascend-mindie"]):
                 version = info[key]
             elif commit_id is None and "commit" in key_lower:
                 commit_id = info[key]
@@ -122,7 +117,6 @@ class AscendInfoSection(InfoSection):
 
 
 class BannerPresenter:
-    TITLE = "MindStudio Prechecker Tool"
     PYTHON_INFO_PACKAGES = [
         "msprechecker",
         "torch",
@@ -156,7 +150,7 @@ class BannerPresenter:
     def render(self) -> str:
         """Return the full banner as a string (enables testing and logging)."""
         cols, _ = shutil.get_terminal_size()
-        lines = [f" {self.TITLE} ".center(cols, "=")]
+        lines = []
         for section in self.sections:
             lines.append(section.get_info())
         lines.append("-" * cols)
