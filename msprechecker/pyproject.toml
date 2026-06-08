@@ -13,7 +13,7 @@ find = { exclude = ["test*"] }
 # 运行相关
 [project]
 name = "msprechecker"
-version = "0.5.0"
+version = "0.8.0"
 description = "MindStudio Prechecker"
 authors = [
     {name = "AvadaKedavrua", email = "anonymousdev@163.com"},
@@ -33,6 +33,7 @@ dependencies = [
     "pyyaml",
     "psutil",
     "importlib_metadata; python_version == '3.7'",
+    "typing_extensions; python_version == '3.7'",
     "ply",
     "colorama",
     "packaging",

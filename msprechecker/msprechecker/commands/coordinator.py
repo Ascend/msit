@@ -23,56 +23,60 @@ from pathlib import Path
 
 import yaml
 
-from ..checkers import AscendChecker
-from ..checkers import EnvChecker
-from ..checkers import HCCLChecker
-from ..checkers import LinkChecker
-from ..checkers import MIESConfigChecker
-from ..checkers import MindIEEnvChecker
-from ..checkers import ModelConfigChecker
-from ..checkers import PDChecker
-from ..checkers import PingChecker
-from ..checkers import StressChecker
-from ..checkers import SysChecker
-from ..checkers import TlsChecker
-from ..checkers import UserConfigChecker
-from ..checkers import VnicChecker
-from ..cmate import inspect
-from ..cmate import run
-from ..cmate.cmate import _parse_configs
-from ..cmate.cmate import _parse_contexts
-from ..collectors import AscendCollector
-from ..collectors import BaseCollector
-from ..collectors import CollectResult
-from ..collectors import CPUStressCollector
-from ..collectors import EnvCollector
-from ..collectors import HCCLCollector
-from ..collectors import LinkCollector
-from ..collectors import MIESConfigCollector
-from ..collectors import MindIEEnvCollector
-from ..collectors import ModelConfigCollector
-from ..collectors import NPUStressCollector
-from ..collectors import PingCollector
-from ..collectors import SysCollector
-from ..collectors import TlsCollector
-from ..collectors import UserConfigCollector
-from ..collectors import VnicCollector
-from ..collectors import WeightCollector
+from ..checkers import (
+    AscendChecker,
+    EnvChecker,
+    HCCLChecker,
+    LinkChecker,
+    MIESConfigChecker,
+    MindIEEnvChecker,
+    ModelConfigChecker,
+    PDChecker,
+    PingChecker,
+    StressChecker,
+    SysChecker,
+    TlsChecker,
+    UserConfigChecker,
+    VnicChecker,
+)
+from ..cmate import inspect, run
+from ..cmate.cmate import _parse_configs, _parse_contexts
+from ..collectors import (
+    AscendCollector,
+    BaseCollector,
+    CollectResult,
+    CPUStressCollector,
+    EnvCollector,
+    HCCLCollector,
+    LinkCollector,
+    MIESConfigCollector,
+    MindIEEnvCollector,
+    ModelConfigCollector,
+    NPUStressCollector,
+    PingCollector,
+    SysCollector,
+    TlsCollector,
+    UserConfigCollector,
+    VnicCollector,
+    WeightCollector,
+)
 from ..comparators import Comparator
 from ..presets import RuleManager
 from ..reporters import Reporter
-from ..utils import CheckErrorHandler
-from ..utils import ConfigErrorHandler
-from ..utils import Framework
-from ..utils import global_logger
-from ..utils import parse_rank_table
-from ..utils import singleton
-from ..utils import update_model_type
+from ..utils import (
+    CheckErrorHandler,
+    ConfigErrorHandler,
+    Framework,
+    global_logger,
+    parse_rank_table,
+    singleton,
+    update_model_type,
+)
 from .banner import BannerPresenter
-from .base import CommandStrategy
-from .base import CommandType
+from .base import CommandStrategy, CommandType
 from .dump import Dump
 from .legacy import show_legacy_warnings
+from .logo import print_logo
 
 
 class CollectorFactory:
@@ -370,10 +374,10 @@ class Coordinator:
 
         cmd = getattr(args, "command", None)
         if not cmd:
-            BannerPresenter().print_banner()
             parser.print_help()
             return 1
 
+        print_logo()
         args.command = CommandType(cmd)
         strategy = self._strategy_factory.create_strategy(args.command)
         return strategy.execute(args)
