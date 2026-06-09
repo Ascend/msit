@@ -25,7 +25,6 @@ from .utils import global_logger
 
 
 def main():
-    os.umask(0o027)
     if os.geteuid() == 0:
         global_logger.warning(
             "WARNING: Running as root is not suggested.\n\n"

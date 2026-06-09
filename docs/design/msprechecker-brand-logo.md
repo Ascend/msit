@@ -147,7 +147,7 @@ class BannerPresenter:
 @startuml
 start
 :进程入口 cli.main;
-:umask 与 root 告警;
+:root 运行告警;
 :构建 ArgumentParser 与子解析器;
 :Coordinator.execute;
 
