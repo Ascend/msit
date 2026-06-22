@@ -17,15 +17,108 @@
 # pylint: disable=duplicate-code
 
 import argparse
+import os
+from pathlib import Path
 
 import pytest
-from msprechecker.utils.path_io import as_arg_type
-from msprechecker.utils.path_io import existing_dir
-from msprechecker.utils.path_io import has_suffix
-from msprechecker.utils.path_io import is_file
-from msprechecker.utils.path_io import iter_regular_files
-from msprechecker.utils.path_io import normalize_user_path
-from msprechecker.utils.path_io import readable_file
+
+from msprechecker.utils.path_io import (
+    as_arg_type,
+    existing_dir,
+    has_suffix,
+    is_file,
+    iter_regular_files,
+    normalize_user_path,
+    readable_file,
+    validate_trusted_executable,
+)
+
+_NON_ROOT_UID = 1000
+
+
+def _make_executable(path: Path, *, mode: int = 0o550, uid: int | None = None) -> None:
+    path.write_bytes(b"")
+    path.chmod(mode)
+    if uid is not None:
+        try:
+            os.chown(path, uid, -1)
+        except PermissionError:
+            pytest.skip(f"cannot chown to uid {uid}")
+
+
+def test_validate_trusted_executable_current_user(tmp_path, monkeypatch):
+    monkeypatch.setattr(os, "geteuid", lambda: _NON_ROOT_UID)
+    exe = tmp_path / "tool"
+    _make_executable(exe, mode=0o550, uid=_NON_ROOT_UID)
+    result = validate_trusted_executable(exe)
+    assert result == exe.resolve()
+
+
+def test_validate_trusted_executable_root_owned(tmp_path, monkeypatch):
+    monkeypatch.setattr(os, "geteuid", lambda: _NON_ROOT_UID)
+    exe = tmp_path / "tool"
+    _make_executable(exe, mode=0o550, uid=_NON_ROOT_UID)
+    try:
+        os.chown(exe, 0, -1)
+    except PermissionError:
+        pytest.skip("cannot chown to root")
+    result = validate_trusted_executable(exe)
+    assert result == exe.resolve()
+
+
+def test_validate_trusted_executable_rejects_symlink(tmp_path, monkeypatch):
+    monkeypatch.setattr(os, "geteuid", lambda: _NON_ROOT_UID)
+    real = tmp_path / "real"
+    _make_executable(real, mode=0o550, uid=_NON_ROOT_UID)
+    link = tmp_path / "link"
+    link.symlink_to(real)
+    assert validate_trusted_executable(link) is None
+
+
+def test_validate_trusted_executable_rejects_symlink_in_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(os, "geteuid", lambda: _NON_ROOT_UID)
+    realdir = tmp_path / "realdir"
+    realdir.mkdir()
+    exe = realdir / "tool"
+    _make_executable(exe, mode=0o550, uid=_NON_ROOT_UID)
+    linkdir = tmp_path / "linkdir"
+    linkdir.symlink_to(realdir)
+    assert validate_trusted_executable(linkdir / "tool") is None
+
+
+def test_validate_trusted_executable_rejects_group_writable(tmp_path, monkeypatch):
+    monkeypatch.setattr(os, "geteuid", lambda: _NON_ROOT_UID)
+    exe = tmp_path / "tool"
+    _make_executable(exe, mode=0o770, uid=_NON_ROOT_UID)
+    assert validate_trusted_executable(exe) is None
+
+
+def test_validate_trusted_executable_rejects_other_writable(tmp_path, monkeypatch):
+    monkeypatch.setattr(os, "geteuid", lambda: _NON_ROOT_UID)
+    exe = tmp_path / "tool"
+    _make_executable(exe, mode=0o702, uid=_NON_ROOT_UID)
+    assert validate_trusted_executable(exe) is None
+
+
+def test_validate_trusted_executable_rejects_oversized(tmp_path, monkeypatch):
+    monkeypatch.setattr(os, "geteuid", lambda: _NON_ROOT_UID)
+    monkeypatch.setattr(
+        "msprechecker.utils.path_io.TRUSTED_EXEC_MAX_BYTES",
+        16,
+    )
+    exe = tmp_path / "tool"
+    _make_executable(exe, mode=0o640, uid=_NON_ROOT_UID)
+    exe.write_bytes(b"\0" * 16)
+    exe.chmod(0o550)
+    assert validate_trusted_executable(exe) is None
+
+
+def test_validate_trusted_executable_root_euid_bypass(tmp_path, monkeypatch):
+    exe = tmp_path / "tool"
+    _make_executable(exe, mode=0o550)
+    monkeypatch.setattr(os, "geteuid", lambda: 0)
+    result = validate_trusted_executable(exe)
+    assert result == exe.resolve()
 
 
 def test_normalize_tilde_path(tmp_path, monkeypatch):

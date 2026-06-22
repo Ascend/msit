@@ -16,15 +16,16 @@
 
 # pylint: disable=duplicate-code
 
-import os
 import shlex
 import subprocess  # nosec B404
 from pathlib import Path
 
+from ..utils.path_io import validate_trusted_executable
 from .base import BaseCollector
 
-PING_CMD = Path("/usr/bin/ping").resolve()
-_PING_AVAILABLE = PING_CMD.is_file() and os.access(PING_CMD, os.X_OK)
+PING_PATH = Path("/usr/bin/ping")
+PING_CMD = validate_trusted_executable(PING_PATH)
+_PING_AVAILABLE = PING_CMD is not None
 
 
 class PingCollector(BaseCollector):
@@ -46,7 +47,7 @@ class PingCollector(BaseCollector):
                 function="_collect_data",
                 lineno=36,
                 what="当前环境没有 'ping' 命令或不可执行",
-                reason="需要使用 'ping' 命令来进行多机的连通性检测",
+                reason=f"路径 '{PING_PATH}' 不存在、不可执行或未通过安全校验",
             )
             return result
 

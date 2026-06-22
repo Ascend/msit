@@ -20,14 +20,15 @@ from __future__ import annotations
 
 import argparse
 import os
-from collections.abc import Callable
-from collections.abc import Iterator
+import stat
+from collections.abc import Callable, Iterator
 from functools import partial
 from pathlib import Path
 
 PathCheck = Callable[[Path], Path]
 
 DEFAULT_MAX_FILE_BYTES = 10 * 1024**3
+TRUSTED_EXEC_MAX_BYTES = 50 * 1024**3
 
 
 def normalize_user_path(value: str) -> Path:
@@ -75,6 +76,43 @@ is_readable = check(partial(_path_access, mode=os.R_OK), "{path!r} is not readab
 
 readable_file = as_arg_type(is_file, is_readable)
 existing_dir = as_arg_type(is_dir)
+
+
+def validate_trusted_executable(path: Path) -> Path | None:
+    try:
+        if os.geteuid() == 0:
+            if not path.is_file():
+                return None
+            resolved = path.resolve()
+            if not os.access(resolved, os.X_OK):
+                return None
+            return resolved
+
+        accumulated = Path(path.anchor) if path.is_absolute() else Path(".")
+        start = 1 if path.is_absolute() else 0
+        for part in path.parts[start:]:
+            if part in ("", "."):
+                continue
+            accumulated = accumulated / part
+            if stat.S_ISLNK(accumulated.lstat().st_mode):
+                return None
+
+        final = path.lstat()
+        mode = final.st_mode
+        if (
+            not stat.S_ISREG(mode)
+            or mode & (stat.S_IWGRP | stat.S_IWOTH)
+            or final.st_uid not in (0, os.geteuid())
+            or final.st_size >= TRUSTED_EXEC_MAX_BYTES
+        ):
+            return None
+
+        resolved = path.resolve()
+        if not os.access(resolved, os.X_OK):
+            return None
+        return resolved
+    except OSError:
+        return None
 
 
 def has_suffix(suffix: str) -> PathCheck:

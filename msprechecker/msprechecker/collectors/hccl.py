@@ -19,22 +19,22 @@
 import ipaddress
 import os
 import shlex
-import shutil
 import subprocess  # nosec B404
 from abc import abstractmethod
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Union
 
 from packaging.version import Version
 
-from ..utils import get_npu_count
-from ..utils import is_in_container
+from ..utils import get_npu_count, is_in_container
+from ..utils.path_io import validate_trusted_executable
 from .base import BaseCollector
 
-HCCN_TOOL_CMD = Path("/usr/local/Ascend/driver/tools/hccn_tool").resolve()
-_HCCN_TOOL_AVAILABLE = HCCN_TOOL_CMD.is_file() and os.access(HCCN_TOOL_CMD, os.X_OK)
+HCCN_TOOL_PATH = Path("/usr/local/Ascend/driver/tools/hccn_tool")
+HCCN_TOOL_CMD = validate_trusted_executable(HCCN_TOOL_PATH)
+_HCCN_TOOL_AVAILABLE = HCCN_TOOL_CMD is not None
+_HCCN_TOOL_UNAVAILABLE_REASON = f"路径 '{HCCN_TOOL_PATH}' 不存在、不可执行或未通过安全校验"
 
 
 class HCCNCollector(BaseCollector):
@@ -65,7 +65,7 @@ class HCCNCollector(BaseCollector):
                 function="_collect_data",
                 lineno=55,
                 what=f"{working_place}上没有找到 'hccn_tool' 命令或不可执行",
-                reason=f"{working_place}上没有找到 'hccn_tool' 命令或不可执行",
+                reason=_HCCN_TOOL_UNAVAILABLE_REASON,
             )
             return {}
 
@@ -136,14 +136,14 @@ class HCCLCollector(BaseCollector):
         return result
 
     def _collect_data(self):
-        if not shutil.which(HCCN_TOOL_CMD):
+        if not _HCCN_TOOL_AVAILABLE:
             working_place = "宿主机" if not is_in_container() else "容器"
             self.error_handler.add_error(
                 filename=__file__,
                 function="_collect_data",
                 lineno=63,
-                what=f"{working_place}上没有找到 'hccn_tool' 命令",
-                reason=f"[Errno 2] No such file or directory: '{HCCN_TOOL_CMD}'",
+                what=f"{working_place}上没有找到 'hccn_tool' 命令或不可执行",
+                reason=_HCCN_TOOL_UNAVAILABLE_REASON,
             )
             return {}
 
