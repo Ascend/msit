@@ -17,19 +17,22 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
 | 模型量化工具（msModelSlim）| 提供模型压缩技术，通过降低模型权重和激活值的数值精度，有效减少模型的存储内存占用和计算需求。通常会将高位浮点数转换为低位定点数，从而直接减少模型权重的体积。模型量化工具的输入为能够正常运行的模型和数据，输出为一个可以使用的量化权重和量化因子。|
 | 精度调试工具（msProbe） | 包括精度数据采集（dump）和精度比对等功能，可以帮助定位模型推理过程中的精度问题。|
 | 模型调优工具（msProf）| 支持采集与解析昇腾 AI 处理器的软硬件性能数据，帮助定位模型推理过程中的性能问题。|
+| 服务化调优工具（msServiceProfiler）|提供性能剖析，清晰展示框架调度、模型推理等环节的表现，帮助用户快速找到性能瓶颈，从而有效提升服务性能。|
 | MindStudio Insight | 将通过性能调优工具采集到的性能数据，使用MindStudio Insight进行可视化呈现，快速定位软、硬件性能瓶颈，提升AI任务性能分析的效率。|
 
 **环境准备**
 
 - 部署开发环境，可参见《MindIE安装指南》的“安装MindIE > [方式一：镜像部署方式](https://www.hiascend.com/document/detail/zh/mindie/230/envdeployment/instg/mindie_instg_0021.html)”章节内容部署。
 
-- 安装昇腾NPU驱动和CANN软件（包括Toolkit和ops包）并配置CANN环境变量，详情请参见[CANN快速安装](https://www.hiascend.com/cann/download)。
+- 安装昇腾NPU驱动和CANN软件（包括Toolkit、ops包和NNAL包）并配置CANN环境变量，详情请参见[CANN快速安装](https://www.hiascend.com/cann/download)。
 
-- 安装msModelSlim软件，详情请参见《[msModelSlim工具安装指南](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/getting_started/install_guide.md)》。
+- 安装msModelSlim软件，详情请参见《[msModelSlim工具安装指南](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/getting_started/install_guide.md)》中的[2.3 源码安装](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/getting_started/install_guide.md#23-%E6%BA%90%E7%A0%81%E5%AE%89%E8%A3%85)方式进行安装。。
 
-- 安装msProbe工具，详情请参见《[msProbe工具安装指南](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/msprobe_install_guide.md)》。
+- 安装msProbe工具，详情请参见《[msProbe工具安装指南](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/msprobe_install_guide.md)》中的[2.3 源码安装](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/msprobe_install_guide.md#23-%E6%BA%90%E7%A0%81%E5%AE%89%E8%A3%85)章节使用示例中的“安装基础工具包和atb_probe模块”内容安装对应工具及模块。
 
 - 安装msProf工具，详情请参见《[msProf工具安装指南](https://gitcode.com/Ascend/msprof/blob/26.0.0/docs/zh/msprof_install_guide.md)》。
+
+- 安装msServiceProfiler工具，详情请参见《[msServiceProfiler工具安装指南](https://gitcode.com/Ascend/msserviceprofiler/blob/26.0.0/docs/zh/msserviceprofiler_install_guide.md)》。
 
 - 安装MindStudio Insight工具，详情请参见《[MindStudio Insight安装指南](https://gitcode.com/Ascend/msinsight/blob/26.0.0/docs/zh/user_guide/mindstudio_insight_install_guide.md)》。
 
@@ -210,12 +213,12 @@ msprobe compare -m atb -gp /home/test/golden_data/atb_dump_data/data/0_{pid}/0/ 
 
 msProf支持采集与解析昇腾 AI 处理器的软硬件性能数据，帮助定位模型训练或推理过程中的性能问题。
 
-1. 登录CANN-Toolkit开发套件包所在环境，进入CANN软件安装目录/cann/tools/profiler/bin。
+1. 登录CANN-Toolkit开发套件包所在环境。
 
 2. 执行以下命令，采集性能数据。此处对浮点模型进行性能数据采集。
 
     ```shell
-    msprof --output=${output_dir} bash ${ATB_SPEED_HOME_PATH}/examples/models/llama3/run_pa.sh --model_path ${model_path} ${max_output_length}
+    msprof --output=${output_dir} bash ${ATB_SPEED_HOME_PATH}/examples/models/llama3/run_pa.sh ${model_path} ${max_output_length}
     ```
 
     其中--output为采集到的性能数据的存放路径；max_output_length为对话测试中最大输出token数。
