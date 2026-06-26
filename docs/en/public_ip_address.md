@@ -21,7 +21,7 @@
 | Open-source software| - | msit/components/config/config.ini | <https://gitcode.com/Ascend/msit> | URL of the msit repository|
 | Open-source software| - | msit/components/config/config.ini | <https://gitcode.com/Ascend/msit/tree/master/msit/components/debug/compare> | URL of the msit debug compare repository|
 | Open-source software| - | msit/components/config/config.ini | <https://gitcode.com/Ascend/msit/tree/master/msit/components/debug/opcheck> | URL of the msit debug opcheck repository|
-| Open-source software| - | msit/components/config/config.ini | <https://github.com/nlohmann/json/archive/refs/tags> | URL of the third-party nlohmann repository|
+| Open-source software| - | msit/components/config/config.ini | <https://github.com/nlohmann/json> | URL of the third-party nlohmann repository|
 | Open-source software| - | msit/components/config/config.ini | <https://aisbench.obs.myhuaweicloud.com/packet/ais_bench_infer/0.0.2/ait/> | URL of the aisbench package|
 | Open-source software| - | msit/components/config/config.ini | <https://gitee.com/ascend/tools.git> | URL of the tools repository containing aisbench|
 | Open-source software| - | msit/components/config/config.ini | <http://mirrors.huaweicloud.com/repository/pypi/simple> | URL of the PyPI Huawei Cloud image|

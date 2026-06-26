@@ -20,13 +20,13 @@ The following table describes the functions of each tool during LLM inference.
 
 **Environment Preparation:**
 
-- Set up the development environment. For details, see "Installing MindIE > [Method 1: Image Deployment](<>) in the *MindIE Installation Guide*.
+- Set up the development environment. For details, see "Installing MindIE > [Method 1: Image Deployment](https://www.hiascend.com/document/detail/zh/mindie/230/envdeployment/instg/mindie_instg_0021.html) in the *MindIE Installation Guide*.
 
 - Install the msit tool package. For details, see [Installing msit](https://gitcode.com/Ascend/msit/tree/master/msit/docs/install). Source code installation is recommended.
 
-- Install the msModelSlim software. For details, see [msModelSlim Installation Guide](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/en/install_guide.md).
+- Install the msModelSlim software. For details, see [msModelSlim Installation Guide](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/en/getting_started/install_guide.md).
 
-- Install the large language model debug tool. For details, see [Large Language Model Debug Tool](https://gitcode.com/Ascend/msit/tree/master/msit/docs/llm).
+- Install the large language model debug tool. For details, see [Large Language Model Debug Tool](https://gitcode.com/Ascend/msit/tree/26.0.0/msit/docs/llm).
 
 - Install the matching CANN Toolkit and ops operator packages, and configure CANN environment variables. For details, see the *CANN Installation Guide*.
 

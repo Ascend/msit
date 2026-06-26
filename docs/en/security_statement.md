@@ -20,7 +20,7 @@ You are advised to enable the **address space layout randomization** (ASLR) (lev
 
  2. Proper permission control is essential during installation and use. For details, see the following table.
 
-## File permission control 
+## File Permission Control
 
 | Type                              | Maximum Permission in Linux|
 | ---------------------------------- | ------------------- |
@@ -44,7 +44,7 @@ You are advised to enable the **address space layout randomization** (ASLR) (lev
 
 ## Vulnerability Security Statement 
 
-For details, see [MindStudio Vulnerability Handling Mechanism Description] (./vulnerability_handling_procedure.md).
+For details, see [MindStudio Vulnerability Handling Mechanism Description](./vulnerability_handling_procedure.md).
 
 ## Data Security
 
@@ -97,7 +97,7 @@ This tool does not involve remote communication. However, you are advised to run
 
 1. Inference service EndPoint, which provides a RESTful API for the service-plane inference service. The client initiates inference requests through this EndPoint. This EndPoint configuration corresponds to the `port` field in the `config.json` file. The value ranges from 1024 to 65535. The default value is `1025`. In the PD separation scenario, the default port number is `31015`.
 
-2. Inference service EndPoint, which provides a RESTful API for the management-plane service status. The client initiates requests through this EndPoint for querying the inference service status. This EndPoint configuration corresponds to the `managementPort` field (when the management plane and the service plane use different ports) or `port` (when they share the same port) in the `config.json` file . The value ranges from 1024 to 65535. The default value is `1026`.
+2. Inference service EndPoint, which provides a RESTful API for the management-plane service status. The client initiates requests through this EndPoint for querying the inference service status. This EndPoint configuration corresponds to the `managementPort` field (when the management plane and the service plane use different ports) or `port` (when they share the same port) in the `config.json` file. The value ranges from 1024 to 65535. The default value is `1026`.
 
 3. Inference service EndPoint, which provides a RESTful API for the management-plane service status. The client initiates requests through this EndPoint for querying the inference service status. This EndPoint configuration corresponds to the `metricsPort` field in the `config.json` configuration file. The value ranges from 1024 to 65535. The default value is `1027`.
 
@@ -109,6 +109,6 @@ msprechecker uses `ping` and `hccn_tool` to check the network connectivity of mu
 
 `ping` checks network connectivity by sending ICMP packets directly at the IP layer. `hccn_tool` depends on the RoCE (RDMA) protocol of the Ascend NPU. By default, the hardware communication port 3225 (or 18515 in some scenarios) is used.<br>
 
-`msprechecker tool` calls `hccn_tool` subcommands `vinc`, `tls`, `link`, `ping`, and `hccs_ping` through different default ports. `hccn_tool` ports are related to the hardware ports. For details about a hardware-specific port, see its communication matrix at [Ascend Hardware](https://support.huawei.com/enterprise/en/category/ascend-computing-pid-1557196528909). .
+`msprechecker tool` calls `hccn_tool` subcommands `vinc`, `tls`, `link`, `ping`, and `hccs_ping` through different default ports. `hccn_tool` ports are related to the hardware ports. For details about a hardware-specific port, see its communication matrix at [Ascend Hardware](https://support.huawei.com/enterprise/en/category/ascend-computing-pid-1557196528909).
 
 `msprechecker` uses the protocols and ports above for its checks. No additional port configuration is needed, but the network must support these protocols.
