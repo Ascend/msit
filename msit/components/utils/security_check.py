@@ -103,7 +103,7 @@ def get_valid_read_path(path, extensions=None, size_max=MAX_READ_FILE_SIZE_4G, c
         raise ValueError("The file {} is group writable, or is others writable.".format(path))
     if not os.access(real_path, os.R_OK) or file_stat.st_mode & stat.S_IRUSR == 0:  # At least been 400
         raise ValueError("Current user doesn't have read permission to the file {}.".format(path))
-    if not is_dir and size_max > 0 and file_stat.st_size > size_max:
+    if not is_dir and 0 < size_max < file_stat.st_size:
         raise ValueError("The file {} exceeds size limitation of {}.".format(path, size_max))
     return real_path
 
@@ -189,7 +189,7 @@ def check_dict_character(dict_value, key_max_len=512, param_name="dict"):
         for key, value in inner_dict_value.items():
             key = str(key)
             check_character(key, param_name=f"{param_name} key")
-            if key_max_len > 0 and len(key) > key_max_len:
+            if 0 < key_max_len < len(key):
                 raise ValueError("Length of {} key exceeds limitation {}.".format(param_name, key_max_len))
             if isinstance(value, dict):
                 if depth > max_depth:
@@ -202,10 +202,10 @@ def check_dict_character(dict_value, key_max_len=512, param_name="dict"):
 
 
 def find_existing_path(path, depth):
-    if os.path.exists(path):
-        return path
     if depth <= 0:
         raise RecursionError("Output path was not valied")
+    if os.path.exists(path):
+        return path
     parent_path = os.path.dirname(path)
     # 递归查找父目录
     if parent_path and parent_path != path:
@@ -223,7 +223,7 @@ def is_enough_disk_space_left(dump_path, required_space=MIN_DUMP_DISK_SPACE, max
         logger.warning("Please check your output path parameter, it seems that it does not exist.")
     except RecursionError:
         logger.warning("The depth of the 'output' path is too large, maximum depth is 200.")
-    
+
     if existing_path:
         empty_disk_space = shutil.disk_usage(existing_path).free
     else:
@@ -334,7 +334,8 @@ def valid_ops_map_file(value):
             raise argparse.ArgumentTypeError(f"Not found ge_proto_xx_Build.txt in {input_path}.")
         return ops_map_files
     if not file_stat.is_legal_file_type(["txt"]):
-        err_msg = "Please make sure that the file you provide is correct, " \
-                  "we need files similar to ge_proto_xx_Build.txt"
+        err_msg = (
+            "Please make sure that the file you provide is correct, we need files similar to ge_proto_xx_Build.txt"
+        )
         raise argparse.ArgumentTypeError(err_msg)
     return [input_path]
