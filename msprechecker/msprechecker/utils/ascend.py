@@ -30,10 +30,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Union
 
-from packaging.version import InvalidVersion
-from packaging.version import Version
+from packaging.version import InvalidVersion, Version
 
 from .log import global_logger
+from .path_io import to_user_path
 
 
 class NpuType(Enum):
@@ -170,7 +170,7 @@ def _load_json(path: str) -> dict:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     except Exception as exc:
-        raise RankTableParseError(f"Failed to load JSON from {path!r}") from exc
+        raise RankTableParseError(f"Failed to load JSON from {to_user_path(path)}") from exc
 
 
 def _parse_server_count(server_count: Union[int, str]) -> int:
@@ -332,22 +332,22 @@ def _parse_mindie(path: str) -> RankTable:
     data = _load_json(path)
 
     if "server_list" not in data:
-        raise RankTableParseError(f"'server_list' not found in rank table: {path!r}")
+        raise RankTableParseError(f"'server_list' not found in rank table: {to_user_path(path)}")
 
     if "server_count" not in data:
-        raise RankTableParseError(f"'server_count' not found in rank table: {path!r}")
+        raise RankTableParseError(f"'server_count' not found in rank table: {to_user_path(path)}")
 
     host_to_devices = _parse_mindie_host_to_devices(data["server_list"])
 
     if not host_to_devices:
-        raise RankTableParseError(f"No devices found in rank table: {path!r}")
+        raise RankTableParseError(f"No devices found in rank table: {to_user_path(path)}")
 
     server_count = _parse_server_count(data["server_count"])
     version_str = data.get("version", "1.0")  # version is optional
     try:
         version = Version(version_str)
     except InvalidVersion as e:
-        raise RankTableParseError(f"Invalid version {version_str!r} found in {path!r}") from e
+        raise RankTableParseError(f"Invalid version {version_str!r} found in {to_user_path(path)}") from e
 
     return RankTable(
         host_to_devices=host_to_devices,
@@ -361,12 +361,14 @@ def _parse_vllm(path: str) -> RankTable:
     data = _load_json(path)
 
     if "prefill_device_list" not in data or "decode_device_list" not in data:
-        raise RankTableParseError(f"Expected 'prefill_device_list' and 'decode_device_list' in rank table: {path!r}")
+        raise RankTableParseError(
+            f"Expected 'prefill_device_list' and 'decode_device_list' in rank table: {to_user_path(path)}"
+        )
 
     host_to_devices = _parse_vllm_host_to_devices(data["prefill_device_list"], data["decode_device_list"])
 
     if not host_to_devices:
-        raise RankTableParseError(f"No devices found in rank table: {path!r}")
+        raise RankTableParseError(f"No devices found in rank table: {to_user_path(path)}")
 
     server_count = _parse_server_count(data.get("server_count"))
 
@@ -374,7 +376,7 @@ def _parse_vllm(path: str) -> RankTable:
     try:
         version = Version(version_str)
     except InvalidVersion as e:
-        raise RankTableParseError(f"Invalid version {version_str!r} found in {path!r}") from e
+        raise RankTableParseError(f"Invalid version {version_str!r} found in {to_user_path(path)}") from e
 
     return RankTable(
         host_to_devices=host_to_devices,

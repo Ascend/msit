@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -16,22 +15,24 @@
 # -------------------------------------------------------------------------
 
 from collections import defaultdict
-from ..utils import get_handler, ErrorHandler, ErrorType
+
+from ..utils import CompareErrorHandler, ErrorType, get_handler
+from ..utils.path_io import to_user_path
 
 
 class Comparator:
     MISSING_VALUE = "missing"
 
-    def __init__(self, *, error_handler: ErrorHandler = None):
+    def __init__(self, *, error_handler: CompareErrorHandler = None):
         self.error_handler = error_handler or get_handler(ErrorType.ERR_COMPARE)
 
     @staticmethod
     def _flatten(data, visited_path, file_path, path=()):
         stack = [(data, path)]
-        
+
         while stack:
             current_data, current_path = stack.pop()
-            
+
             if isinstance(current_data, dict):
                 for k, v in current_data.items():
                     new_path = current_path + (k,)
@@ -49,7 +50,7 @@ class Comparator:
     @staticmethod
     def _unflatten(flat_dict):
         root = {}
-        
+
         for path, value in flat_dict.items():
             node = root
             for i, part in enumerate(path[:-1]):
@@ -70,15 +71,12 @@ class Comparator:
     @staticmethod
     def _all_values_equal(values, all_paths) -> bool:
         ref_value = next(iter(values.values()))
-        
-        return all(
-            path in values and values[path] == ref_value
-            for path in all_paths
-        )
+
+        return all(path in values and values[path] == ref_value for path in all_paths)
 
     def compare(self, path_to_data):
         flat_diff = {}
-            
+
         for path, data in path_to_data.items():
             for conf_type, conf_data in data.items():
                 flat_diff.setdefault(conf_type, defaultdict(dict))
@@ -87,18 +85,20 @@ class Comparator:
                 self._flatten(conf_data, conf_diff, path, ())
 
         filtered_flat_diff = {
-            conf_type: self._unflatten({
-                path: {
-                    file_path: values.get(file_path, self.MISSING_VALUE)
-                    for file_path in path_to_data
+            conf_type: self._unflatten(
+                {
+                    path: {
+                        to_user_path(file_path): values.get(file_path, self.MISSING_VALUE) for file_path in path_to_data
+                    }
+                    for path, values in conf_diff.items()
+                    if not self._all_values_equal(values, path_to_data)
                 }
-                for path, values in conf_diff.items()
-                if not self._all_values_equal(values, path_to_data)
-            })
+            )
             for conf_type, conf_diff in flat_diff.items()
         }
 
         for collect_type, values in filtered_flat_diff.items():
-            self.error_handler.add_error(collect_type, values)
-                    
+            if values:
+                self.error_handler.add_diff(collect_type, values)
+
         return self.error_handler

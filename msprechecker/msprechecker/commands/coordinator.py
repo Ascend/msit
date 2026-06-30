@@ -72,6 +72,7 @@ from ..utils import (
     singleton,
     update_model_type,
 )
+from ..utils.path_io import to_user_path
 from .banner import BannerPresenter
 from .base import CommandStrategy, CommandType
 from .dump import Dump
@@ -232,7 +233,7 @@ class PrecheckStrategy(CommandStrategy):
             if "ref" in path:
                 continue
             if os.path.isabs(path):
-                global_logger.warning("unsafe, key should not be abspath: {path!r}")
+                global_logger.warning("unsafe, key should not be abspath: %r", path)
                 continue
             full_path = Path(args.config_parent_dir) / path
             load_fn = json.load if full_path.suffix == ".json" else lambda f: list(yaml.safe_load_all(f))
@@ -240,7 +241,7 @@ class PrecheckStrategy(CommandStrategy):
                 with full_path.open(encoding="utf-8") as f:
                     data = load_fn(f)
             except Exception:
-                global_logger.error("missing file: %r", full_path)
+                global_logger.error("missing file: %s", to_user_path(full_path))
                 return 1
 
             collect_data[path] = data
@@ -293,11 +294,15 @@ class CompareStrategy(CommandStrategy):
             return 1
 
         path_to_data = CompareStrategy._load_dumped_files(args.dumped_path)
+        if path_to_data is None:
+            return 1
+
         reporter = Reporter()
 
         comparator = Comparator()
-        reporter.report(comparator.compare(path_to_data))
-        return 0
+        handler = comparator.compare(path_to_data)
+        reporter.report(handler)
+        return 0 if handler.empty() else 1
 
     @staticmethod
     def _load_dumped_files(file_paths):
@@ -305,8 +310,12 @@ class CompareStrategy(CommandStrategy):
         path_to_data = {}
 
         for path in file_paths:
-            with path.open(encoding="utf-8") as f:
-                path_to_data[path] = json.load(f)
+            try:
+                with path.open(encoding="utf-8") as f:
+                    path_to_data[path] = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                global_logger.error("failed to load %s", to_user_path(path))
+                return None
 
         return path_to_data
 
