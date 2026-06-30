@@ -19,17 +19,10 @@
 import json
 import logging
 import shutil
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from pathlib import Path
 
-
-from ..utils import CheckErrorHandler
-from ..utils import CollectErrorHandler
-from ..utils import CompareErrorHandler
-from ..utils import ConfigErrorHandler
-from ..utils import ErrorHandler
-
+from ..utils import CheckErrorHandler, CollectErrorHandler, CompareErrorHandler, ConfigErrorHandler, ErrorHandler
 
 OUTPUT_ENV_SCRIPT = Path("msprechecker_env.sh").resolve()
 
@@ -244,14 +237,13 @@ class EnvCheckErrorDisplayDecorator(ErrorDisplayStrategy):
 
 class CompareErrorDisplay(ErrorDisplayStrategy):
     def display(self, error_handler):
+        if error_handler.empty():
+            self.logger.error("\033[92mThere is no difference found.\033[0m")
+            return
+
         for diff in error_handler:
             title = f"{diff.key} diff report".upper()
             self._print_title(title)
-
-            if not diff.values:
-                self.logger.error("\033[92mThere is no difference found.\033[0m")
-                continue
-
             self.logger.error(json.dumps(diff.values, indent=2))
 
 

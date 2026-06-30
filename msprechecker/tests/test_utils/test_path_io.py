@@ -21,7 +21,6 @@ import os
 from pathlib import Path
 
 import pytest
-
 from msprechecker.utils.path_io import (
     as_arg_type,
     existing_dir,
@@ -30,6 +29,7 @@ from msprechecker.utils.path_io import (
     iter_regular_files,
     normalize_user_path,
     readable_file,
+    to_user_path,
     validate_trusted_executable,
 )
 
@@ -136,6 +136,30 @@ def test_normalize_dotdot_path(tmp_path, monkeypatch):
     cfg.write_text("{}", encoding="utf-8")
     result = normalize_user_path("sub/../sub/cfg.json")
     assert result == cfg.resolve()
+
+
+def test_to_user_path_str():
+    assert to_user_path("/foo/bar") == "/foo/bar"
+
+
+def test_to_user_path_path():
+    assert to_user_path(Path("/foo/bar")) == "/foo/bar"
+
+
+def test_readable_file_error_no_posixpath(tmp_path):
+    missing = tmp_path / "nope.json"
+    with pytest.raises(argparse.ArgumentTypeError) as exc:
+        readable_file(str(missing))
+    assert "PosixPath" not in str(exc.value)
+
+
+def test_has_suffix_error_no_posixpath(tmp_path):
+    f = tmp_path / "a.json"
+    f.write_text("{}", encoding="utf-8")
+    custom = as_arg_type(is_file, has_suffix(".txt"))
+    with pytest.raises(argparse.ArgumentTypeError) as exc:
+        custom(str(f))
+    assert "PosixPath" not in str(exc.value)
 
 
 def test_readable_file_rejects_missing(tmp_path):

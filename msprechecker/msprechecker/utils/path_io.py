@@ -31,6 +31,10 @@ DEFAULT_MAX_FILE_BYTES = 10 * 1024**3
 TRUSTED_EXEC_MAX_BYTES = 50 * 1024**3
 
 
+def to_user_path(value: os.PathLike[str] | str) -> str:
+    return os.fspath(value)
+
+
 def normalize_user_path(value: str) -> Path:
     return Path(value).expanduser().resolve()
 
@@ -54,7 +58,7 @@ def _path_has_suffix(path: Path, suffix: str) -> bool:
 def check(predicate: Callable[[Path], bool], message: str) -> PathCheck:
     def _check(path: Path) -> Path:
         if not predicate(path):
-            raise argparse.ArgumentTypeError(message.format(path=path))
+            raise argparse.ArgumentTypeError(message.format(path=to_user_path(path)))
         return path
 
     return _check
@@ -70,9 +74,9 @@ def as_arg_type(*checks: PathCheck) -> Callable[[str], Path]:
     return _parse
 
 
-is_file = check(_path_is_file, "{path!r} is not a file")
-is_dir = check(_path_is_dir, "{path!r} is not a directory")
-is_readable = check(partial(_path_access, mode=os.R_OK), "{path!r} is not readable")
+is_file = check(_path_is_file, "{path} is not a file")
+is_dir = check(_path_is_dir, "{path} is not a directory")
+is_readable = check(partial(_path_access, mode=os.R_OK), "{path} is not readable")
 
 readable_file = as_arg_type(is_file, is_readable)
 existing_dir = as_arg_type(is_dir)
@@ -116,7 +120,7 @@ def validate_trusted_executable(path: Path) -> Path | None:
 
 
 def has_suffix(suffix: str) -> PathCheck:
-    message = f"{{path!r}} must end with {suffix!r}"
+    message = f"{{path}} must end with {suffix!r}"
     return check(partial(_path_has_suffix, suffix=suffix), message)
 
 
