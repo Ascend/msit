@@ -14,6 +14,10 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
+from __future__ import annotations
+
+# pylint: disable=too-many-lines,relative-beyond-top-level
+
 import hashlib
 import ipaddress
 import json
@@ -24,19 +28,17 @@ import platform
 import re
 import shlex
 import shutil
-import subprocess
+import subprocess  # nosec B404
 import time
 from abc import ABC, abstractmethod
-
-from concurrent.futures import as_completed, ThreadPoolExecutor, ProcessPoolExecutor
-
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from functools import reduce
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from ..util import get_npu_count, get_pkg_version
 from ..utils.ascend import RankTable
-
+from ..utils.path_io import to_user_path
 
 logger = logging.getLogger(__name__)
 
@@ -58,18 +60,16 @@ class CollectStrategyGroup(CollectStrategy):
     def __init__(
         self,
         name: str,
-        strategies: Optional[List[CollectStrategy]] = None,
+        strategies: Optional[list[CollectStrategy]] = None,
     ) -> None:
         super().__init__(name)
-        self._strategies: List[CollectStrategy] = []
+        self._strategies: list[CollectStrategy] = []
 
         if strategies is not None:
             try:
                 strategies = list(strategies)
             except TypeError:
-                logger.error(
-                    "strategies must be an iterable. Got %s instead", strategies
-                )
+                logger.error("strategies must be an iterable. Got %s instead", strategies)
                 raise
 
             for strategy in strategies:
@@ -79,14 +79,12 @@ class CollectStrategyGroup(CollectStrategy):
         if not isinstance(strategy, CollectStrategy):
             raise TypeError("collect_strategy must be an instance of CollectStrategy")
         if any(s.name == strategy.name for s in self._strategies):
-            raise ValueError(
-                f"A strategy with name {strategy.name!r} already exists in this group"
-            )
+            raise ValueError(f"A strategy with name {strategy.name!r} already exists in this group")
         self._strategies.append(strategy)
         return self
 
-    def execute(self) -> Dict[str, Any]:
-        results: Dict[str, Any] = {}
+    def execute(self) -> dict[str, Any]:
+        results: dict[str, Any] = {}
         for strategy in self._strategies:
             try:
                 results[strategy.name] = strategy.execute()
@@ -122,11 +120,7 @@ class Env(CollectStrategy):
         env_items = os.environ.items()
 
         if self._ascend_only:
-            return {
-                k: v
-                for k, v in env_items
-                if any(item in k for item in self.ENV_FILTERS)
-            }
+            return {k: v for k, v in env_items if any(item in k for item in self.ENV_FILTERS)}
         return dict(env_items)
 
 
@@ -160,9 +154,7 @@ class Lscpu(CollectStrategy):
 
         if self._output is None:
             try:
-                self._output = subprocess.check_output(
-                    [lscpu_path], stderr=subprocess.DEVNULL, text=True
-                )
+                self._output = subprocess.check_output([lscpu_path], stderr=subprocess.DEVNULL, text=True)  # nosec B603
             except Exception:
                 logger.exception("Failed to execute lscpu command:")
                 return None
@@ -202,9 +194,7 @@ class CPUHighPerformance(CollectStrategy):
         if self._dmidecode_output is None:
             cmd = shlex.split(f"{dmidecode_path} -t processor")
             try:
-                self._dmidecode_output = subprocess.check_output(
-                    cmd, stderr=subprocess.DEVNULL, text=True
-                )
+                self._dmidecode_output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)  # nosec B603
             except Exception:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Failed to execute dmidecode command")
@@ -238,9 +228,7 @@ class CPUHighPerformance(CollectStrategy):
         if self._cpupower_output is None:
             cmd = shlex.split(f"{cpupower_path} frequency-info")
             try:
-                self._cpupower_output = subprocess.check_output(
-                    cmd, stderr=subprocess.DEVNULL, text=True
-                )
+                self._cpupower_output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)  # nosec B603
             except Exception:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Failed to execute cpupower command")
@@ -275,9 +263,7 @@ class CPUHighPerformance(CollectStrategy):
         if self._lshw_output is None:
             cmd = shlex.split(f"{lshw_path} -c cpu")
             try:
-                self._lshw_output = subprocess.check_output(
-                    cmd, stderr=subprocess.DEVNULL, text=True
-                )
+                self._lshw_output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)  # nosec B603
             except Exception:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Failed to execute lshw command")
@@ -308,9 +294,7 @@ class CPUHighPerformance(CollectStrategy):
             logger.debug("Unable to determine CPU count")
             return False
 
-        scaling_governor_pattern = (
-            "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_governor"
-        )
+        scaling_governor_pattern = "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_governor"
         for core_id in range(cpu_count):
             gov_path = scaling_governor_pattern.format(core_id)
             if not os.path.isfile(gov_path):
@@ -327,9 +311,7 @@ class CPUHighPerformance(CollectStrategy):
                         return False
             except Exception:
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception(
-                        "Failed to read scaling governor file for CPU core %s", core_id
-                    )
+                    logger.exception("Failed to read scaling governor file for CPU core %s", core_id)
                 return False
         return True
 
@@ -419,7 +401,7 @@ class JeMalloc(CollectStrategy):
             return False
 
         try:
-            result_apt = subprocess.run(
+            result_apt = subprocess.run(  # nosec B603
                 [apt_path, "list", "--installed", "libjemalloc*"],
                 capture_output=True,
                 text=True,
@@ -437,7 +419,7 @@ class JeMalloc(CollectStrategy):
             return False
 
         try:
-            result_yum = subprocess.run(
+            result_yum = subprocess.run(  # nosec B603
                 [yum_path, "list", "installed", "jemalloc*"],
                 capture_output=True,
                 text=True,
@@ -485,13 +467,11 @@ class Config(CollectStrategy):
         }
 
     def _process_json(self, content):
-        logger.debug("Processing JSON configuration file: %r", self._config_path)
+        logger.debug("Processing JSON configuration file: %s", to_user_path(self._config_path))
         try:
             return json.loads(content)
         except json.JSONDecodeError:
-            logger.exception(
-                "Failed to parse JSON configuration file %r", self._config_path
-            )
+            logger.exception("Failed to parse JSON configuration file %s", to_user_path(self._config_path))
             return content
 
     def _process_yaml(self, content):
@@ -503,9 +483,7 @@ class Config(CollectStrategy):
                 return list(yaml.safe_load_all(content))
             return yaml.safe_load(content)
         except yaml.YAMLError:
-            logger.exception(
-                "Failed to parse YAML configuration file %r", self._config_path
-            )
+            logger.exception("Failed to parse YAML configuration file %s", to_user_path(self._config_path))
             return content
 
     def _process_shell(self, content):
@@ -517,22 +495,20 @@ class Config(CollectStrategy):
             logger.warning("Configuration path is empty or not provided")
             return None
         if not os.path.isfile(self._config_path):
-            logger.warning("Configuration file %r not found", self._config_path)
+            logger.warning("Configuration file %s not found", to_user_path(self._config_path))
             return None
         try:
             with open(self._config_path, encoding="utf-8") as f:
                 return f.read()
         except OSError:
-            logger.exception("Failed to read configuration file %r", self._config_path)
+            logger.exception("Failed to read configuration file %s", to_user_path(self._config_path))
             return None
 
     def _parse(self, content: str):
         ext = os.path.splitext(self._config_path)[-1]
         processor = self._processor.get(ext)
         if processor is None:
-            logger.warning(
-                "Unsupported configuration file format: %r", self._config_path
-            )
+            logger.warning("Unsupported configuration file format: %s", to_user_path(self._config_path))
             return content
         return processor(content)
 
@@ -577,9 +553,7 @@ class Weight(CollectStrategy):
 
     def _is_valid_tensor_file(self, path: str) -> bool:
         if os.path.islink(path):
-            logger.warning(
-                "Expected %r to be a regular file. Weight strategy skipped", path
-            )
+            logger.warning("Expected %r to be a regular file. Weight strategy skipped", path)
             return False
 
         if not os.path.isfile(path) or not path.endswith(self._tensor_suffix):
@@ -596,7 +570,7 @@ class Weight(CollectStrategy):
             return False
         return True
 
-    def _filter_valid_tensor_files(self) -> List[str]:
+    def _filter_valid_tensor_files(self) -> list[str]:
         result = []
         for filename in os.listdir(self._weight_dir):
             full_path = os.path.join(self._weight_dir, filename)
@@ -619,30 +593,23 @@ class Weight(CollectStrategy):
                 sha256.update(chunk)
         return sha256.hexdigest()
 
-    def _parallel_hash_calculation(
-        self, tensor_files: List[str]
-    ) -> Dict[str, Optional[str]]:
+    def _parallel_hash_calculation(self, tensor_files: list[str]) -> dict[str, Optional[str]]:
         max_workers = min(len(tensor_files), self._max_hash_workers)
-        results: Dict[str, Optional[str]] = {}
+        results: dict[str, Optional[str]] = {}
 
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            future_to_id = {
-                executor.submit(self._calculate_hash256, f): self._get_tensor_id(f)
-                for f in tensor_files
-            }
+            future_to_id = {executor.submit(self._calculate_hash256, f): self._get_tensor_id(f) for f in tensor_files}
             for future in as_completed(future_to_id):
                 tensor_id = future_to_id[future]
                 try:
                     results[tensor_id] = future.result()
                 except Exception:
-                    logger.exception(
-                        "Failed to calculate hash for tensor id %r", tensor_id
-                    )
+                    logger.exception("Failed to calculate hash for tensor id %r", tensor_id)
                     results[tensor_id] = None
 
         return results
 
-    def execute(self) -> Optional[Dict[str, Optional[str]]]:
+    def execute(self) -> Optional[dict[str, Optional[str]]]:
         if not self._validate_weight_dir():
             return None
 
@@ -683,9 +650,7 @@ class _Ascend(CollectStrategy):
         super().__init__(name or self.NAME)
         self._home_environ = home_environ or self.HOME_ENVIRON
         self._default_home = default_home or self.DEFAULT_HOME
-        self._relative_version_path = (
-            relative_version_path or self.RELATIVE_VERSION_PATH
-        )
+        self._relative_version_path = relative_version_path or self.RELATIVE_VERSION_PATH
 
     def _resolve_home(self) -> Path:
         """Resolve the home path from the environment variable or the default home path."""
@@ -713,10 +678,10 @@ class _Ascend(CollectStrategy):
         return Path(home_path).resolve()
 
     @staticmethod
-    def _parse_version_file(path: Path) -> Dict[str, str]:
+    def _parse_version_file(path: Path) -> dict[str, str]:
         """Parse ``KEY=VALUE`` or ``KEY: VALUE`` lines from *path*."""
         results: dict[str, str] = {}
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -728,7 +693,7 @@ class _Ascend(CollectStrategy):
                 results[parts[0].strip()] = parts[1].strip()
         return results
 
-    def execute(self) -> Optional[Dict[str, str]]:
+    def execute(self) -> Optional[dict[str, str]]:
         home_path = self._resolve_home()
         if not home_path.is_dir():
             logger.debug("Home path %r is not a directory", home_path)
@@ -777,7 +742,7 @@ class TB(_Ascend):
     HOME_ENVIRON = "ATB_HOME_PATH"
     RELATIVE_VERSION_PATH = "../../version.info"
 
-    def __init__(
+    def __init__(  # pylint: disable=useless-parent-delegation
         self,
         name: str = "",
         *,
@@ -801,9 +766,7 @@ class TB(_Ascend):
         except (ImportError, AttributeError):
             abi = 0
         except RuntimeError:
-            logger.warning(
-                "Unexpected Error occurred while importing torch, default to abi 0"
-            )
+            logger.warning("Unexpected Error occurred while importing torch, default to abi 0")
             abi = 0
         return f"/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_{abi}"
 
@@ -837,13 +800,9 @@ class Ascend(CollectStrategyGroup):
 
 
 class Ping(CollectStrategy):
-    def __init__(
-        self, name: str = "ping", *, ip: ipaddress.IPv4Address | ipaddress.IPv6Address
-    ) -> None:
+    def __init__(self, name: str = "ping", *, ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> None:
         if not isinstance(ip, (ipaddress.IPv4Address, ipaddress.IPv6Address)):
-            raise TypeError(
-                f"IP address must be an instance of ipaddress.IPv4Address or ipaddress.IPv6Address: {ip!r}"
-            )
+            raise TypeError(f"IP address must be an instance of ipaddress.IPv4Address or ipaddress.IPv6Address: {ip!r}")
 
         super().__init__(name)
         self._ip = ip
@@ -853,7 +812,7 @@ class Ping(CollectStrategy):
         """Ping the IP address and return the output."""
         cmd = f"{self._ping_path} -c 3 -q -W 2 {self._ip}"
         try:
-            return subprocess.check_output(
+            return subprocess.check_output(  # nosec B603
                 shlex.split(cmd),
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -886,7 +845,7 @@ class HccnTool(CollectStrategy):
         self,
         name: str,
         *,
-        device_ids: List[int],
+        device_ids: list[int],
         max_workers: int = 8,
         timeout: float = 3,
     ):
@@ -896,10 +855,10 @@ class HccnTool(CollectStrategy):
         self._timeout = timeout
         self._bin_path = shutil.which("hccn_tool") or self.HCCN_TOOL_PATH
 
-    def _run(self, cmd: List[str]) -> Optional[str]:
+    def _run(self, cmd: list[str]) -> Optional[str]:
         """Execute a single hccn_tool command and return its stdout and stderr."""
         try:
-            return subprocess.check_output(
+            return subprocess.check_output(  # nosec B603
                 cmd,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -911,7 +870,7 @@ class HccnTool(CollectStrategy):
             return None
 
     @abstractmethod
-    def execute(self) -> List[Any]:
+    def execute(self) -> list[Any]:
         """Execute the hccn_tool command for each device and return a list of results."""
 
 
@@ -929,19 +888,15 @@ class _SingleOption(HccnTool):
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         if not isinstance(getattr(cls, "OPTION", None), str):
-            raise TypeError(
-                f"{cls.__name__} must define a string class variable 'OPTION'"
-            )
+            raise TypeError(f"{cls.__name__} must define a string class variable 'OPTION'")
         if not isinstance(getattr(cls, "DEFAULT_NAME", None), str):
-            raise TypeError(
-                f"{cls.__name__} must define a string class variable 'DEFAULT_NAME'"
-            )
+            raise TypeError(f"{cls.__name__} must define a string class variable 'DEFAULT_NAME'")
 
     def __init__(
         self,
         name: Optional[str] = None,
         *,
-        device_ids: List[int],
+        device_ids: list[int],
         max_workers: int = 8,
         timeout: float = 3,
     ):
@@ -952,10 +907,10 @@ class _SingleOption(HccnTool):
             timeout=timeout,
         )
 
-    def _build_cmd(self, device_id: int) -> List[str]:
+    def _build_cmd(self, device_id: int) -> list[str]:
         return [self._bin_path, "-i", str(device_id), self.OPTION, "-g"]
 
-    def execute(self) -> List[Optional[str]]:
+    def execute(self) -> list[Optional[str]]:
         cmds = [self._build_cmd(device_id) for device_id in self._device_ids]
         with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             return list(executor.map(self._run, cmds))
@@ -977,20 +932,16 @@ class _OptionIp(HccnTool):
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         if not isinstance(getattr(cls, "OPTION", None), str):
-            raise TypeError(
-                f"{cls.__name__} must define a string class variable 'OPTION'"
-            )
+            raise TypeError(f"{cls.__name__} must define a string class variable 'OPTION'")
         if not isinstance(getattr(cls, "DEFAULT_NAME", None), str):
-            raise TypeError(
-                f"{cls.__name__} must define a string class variable 'DEFAULT_NAME'"
-            )
+            raise TypeError(f"{cls.__name__} must define a string class variable 'DEFAULT_NAME'")
 
     def __init__(
         self,
         name: Optional[str] = None,
         *,
-        device_ids: List[int],
-        device_ips: List[str],
+        device_ids: list[int],
+        device_ips: list[str],
         max_workers: int = 8,
         timeout: float = 3,
     ):
@@ -1002,16 +953,14 @@ class _OptionIp(HccnTool):
         )
         self._device_ips = device_ips
 
-    def _build_cmd(self, device_id: int, ip: str) -> List[str]:
+    def _build_cmd(self, device_id: int, ip: str) -> list[str]:
         return [self._bin_path, "-i", str(device_id), self.OPTION, "-g", "address", ip]
 
-    def _probe_device(self, device_id: int) -> Dict[str, Optional[str]]:
+    def _probe_device(self, device_id: int) -> dict[str, Optional[str]]:
         """Run probes for all peer IPs from a single device — sequentially."""
-        return {
-            ip: self._run(self._build_cmd(device_id, ip)) for ip in self._device_ips
-        }
+        return {ip: self._run(self._build_cmd(device_id, ip)) for ip in self._device_ips}
 
-    def execute(self) -> List[Dict[str, Optional[str]]]:
+    def execute(self) -> list[dict[str, Optional[str]]]:
         with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             return list(executor.map(self._probe_device, self._device_ids))
 
@@ -1073,9 +1022,7 @@ class Network(CollectStrategyGroup):
         device_ids = list(range(npu_count))
 
         # Determine which ping class to use based on rank table version
-        ping_cls = (
-            HccsPing if rank_table.version == self.HCCS_PING_VERSION else HcclPing
-        )
+        ping_cls = HccsPing if rank_table.version == self.HCCS_PING_VERSION else HcclPing
 
         # Build strategies list
         # Each Ping needs a unique name based on the IP
@@ -1119,9 +1066,7 @@ class Stress(CollectStrategy):
             ("epochs", epochs),
         ]:
             if not isinstance(param_value, int) or param_value <= 0:
-                raise ValueError(
-                    f"{param_name} must be a positive integer, got {param_value!r}"
-                )
+                raise ValueError(f"{param_name} must be a positive integer, got {param_value!r}")
 
         super().__init__(name)
         self._batch_size = batch_size
@@ -1139,23 +1084,17 @@ class Stress(CollectStrategy):
     def _get_free_memory(self, device: str) -> float:
         pass
 
-    def _calculate_tensor_memory(self, shape: Tuple[int, ...]) -> int:
+    def _calculate_tensor_memory(self, shape: tuple[int, ...]) -> int:
         if not isinstance(shape, tuple):
             shape = (shape,)
 
         return reduce(operator.mul, shape, 1) * 4  # float32 = 4 bytes
 
     def _check_memory_for_matmul(self, device_pos: str) -> bool:
-        mat_a_mem = self._calculate_tensor_memory(
-            (self._batch_size, self._seq_len, self._hidden_size)
-        )
-        mat_b_mem = self._calculate_tensor_memory(
-            (self._batch_size, self._hidden_size, self._intermediate_size)
-        )
+        mat_a_mem = self._calculate_tensor_memory((self._batch_size, self._seq_len, self._hidden_size))
+        mat_b_mem = self._calculate_tensor_memory((self._batch_size, self._hidden_size, self._intermediate_size))
         # addbmm output shape is (seq_len, intermediate_size); unchanged
-        mat_c_mem = self._calculate_tensor_memory(
-            (self._seq_len, self._intermediate_size)
-        )
+        mat_c_mem = self._calculate_tensor_memory((self._seq_len, self._intermediate_size))
         total_required = mat_a_mem + mat_b_mem + mat_c_mem
 
         free_memory = self._get_free_memory(device_pos)
@@ -1163,8 +1102,7 @@ class Stress(CollectStrategy):
         available_with_margin = free_memory * (1 - safety_margin)
         has_enough_mem = total_required <= available_with_margin
         logger.debug(
-            "Device %s - Required memory: %d bytes, Free memory: %d bytes, "
-            "Available with margin: %d bytes",
+            "Device %s - Required memory: %d bytes, Free memory: %d bytes, Available with margin: %d bytes",
             device_pos,
             total_required,
             free_memory,
@@ -1172,9 +1110,7 @@ class Stress(CollectStrategy):
         )
 
         if not has_enough_mem:
-            logger.warning(
-                "Insufficient memory on device %s for matmul operation", device_pos
-            )
+            logger.warning("Insufficient memory on device %s for matmul operation", device_pos)
             return False
 
         return True
@@ -1188,21 +1124,15 @@ class Stress(CollectStrategy):
 
         start_time = time.perf_counter()
         for _ in range(self._epochs):
-            mat_a = self._torch.randn(
-                self._batch_size, self._seq_len, self._hidden_size
-            ).to(device_pos)
-            mat_b = self._torch.randn(
-                self._batch_size, self._hidden_size, self._intermediate_size
-            ).to(device_pos)
-            mat_c = self._torch.zeros(self._seq_len, self._intermediate_size).to(
-                device_pos
-            )
+            mat_a = self._torch.randn(self._batch_size, self._seq_len, self._hidden_size).to(device_pos)
+            mat_b = self._torch.randn(self._batch_size, self._hidden_size, self._intermediate_size).to(device_pos)
+            mat_c = self._torch.zeros(self._seq_len, self._intermediate_size).to(device_pos)
             self._torch.addbmm(mat_c, mat_a, mat_b)
 
         end_time = time.perf_counter()
         return (end_time - start_time) * 1000
 
-    def execute(self) -> Optional[Dict[int, Optional[float]]]:
+    def execute(self) -> Optional[dict[int, Optional[float]]]:
         """Run the stress test and return the elapsed time in milliseconds for each device.
 
         Returns:
@@ -1217,10 +1147,7 @@ class Stress(CollectStrategy):
         cpu_count = os.cpu_count() or 1
         self._torch.set_num_threads(cpu_count)
         with ThreadPoolExecutor(max_workers=cpu_count) as executor:
-            future_to_id = {
-                executor.submit(self._matmul_stress_test, cpu_id): cpu_id
-                for cpu_id in range(cpu_count)
-            }
+            future_to_id = {executor.submit(self._matmul_stress_test, cpu_id): cpu_id for cpu_id in range(cpu_count)}
             for future in as_completed(future_to_id):
                 cpu_id = future_to_id[future]
                 try:
@@ -1320,8 +1247,7 @@ class NPU(Stress):
         total_memory = self._torch_npu.npu.get_device_properties(device).total_memory
         used_memory = self._torch_npu.npu.memory_allocated(device)
         logger.debug(
-            "NPU device %s - Total memory: %d bytes, Used memory: %d bytes, "
-            "Free memory: %d bytes",
+            "NPU device %s - Total memory: %d bytes, Used memory: %d bytes, Free memory: %d bytes",
             device,
             total_memory,
             used_memory,
@@ -1329,7 +1255,7 @@ class NPU(Stress):
         )
         return total_memory - used_memory
 
-    def execute(self) -> Optional[Dict[int, Optional[float]]]:
+    def execute(self) -> Optional[dict[int, Optional[float]]]:
         if not self._torch_npu:
             logger.warning("torch_npu is not available, skip the stress test")
             return None

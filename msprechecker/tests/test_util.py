@@ -15,21 +15,20 @@
 # -------------------------------------------------------------------------
 
 import json
-import pytest
-from unittest.mock import mock_open, patch
 from pathlib import Path
+from unittest.mock import mock_open, patch
 
-from msprechecker.utils.ascend import parse_rank_table, Framework, RankTable, RankTableParseError
+import pytest
+from msprechecker.utils.ascend import Framework, RankTable, RankTableParseError, parse_rank_table
 
 # =============================================================================
 # Tests for parse_rank_table
 # =============================================================================
 
+
 @patch("builtins.open", new_callable=mock_open)
 @patch("pathlib.Path.resolve")
-def test_parse_rank_table_given_mindie_framework_then_calls_mindie_parser(
-    mock_resolve, mock_file
-):
+def test_parse_rank_table_given_mindie_framework_then_calls_mindie_parser(mock_resolve, mock_file):
     """Test parse_rank_table with MINDIE framework."""
     mock_resolve.return_value = Path("/fake/path")
     data = {
@@ -51,9 +50,7 @@ def test_parse_rank_table_given_mindie_framework_then_calls_mindie_parser(
 
 @patch("builtins.open", new_callable=mock_open)
 @patch("pathlib.Path.resolve")
-def test_parse_rank_table_given_vllm_framework_then_calls_vllm_parser(
-    mock_resolve, mock_file
-):
+def test_parse_rank_table_given_vllm_framework_then_calls_vllm_parser(mock_resolve, mock_file):
     """Test parse_rank_table with VLLM framework."""
     mock_resolve.return_value = Path("/fake/path")
     data = {
@@ -85,7 +82,6 @@ def test_parse_rank_table_given_sglang_framework_then_raises_value_error():
     """Test parse_rank_table with SGLANG framework."""
     with pytest.raises(ValueError, match="No rank table parser"):
         parse_rank_table(Path("/fake/path"), Framework.SGLANG)
-
 
 
 @patch("builtins.open", new_callable=mock_open)
@@ -154,8 +150,9 @@ def test_parse_rank_table_mindie_with_invalid_server_id(mock_resolve, mock_file)
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="No devices found in rank table"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match="No devices found in rank table"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.MINDIE)
 
@@ -189,9 +186,7 @@ def test_parse_rank_table_mindie_with_invalid_device_id(mock_resolve, mock_file)
         "server_list": [
             {
                 "server_id": "192.168.1.1",
-                "device": [
-                    {"device_ip": "192.168.2.1", "device_id": "invalid", "rank_id": 0}
-                ],
+                "device": [{"device_ip": "192.168.2.1", "device_id": "invalid", "rank_id": 0}],
             }
         ],
         "server_count": 1,
@@ -212,9 +207,7 @@ def test_parse_rank_table_mindie_with_invalid_rank_id(mock_resolve, mock_file):
         "server_list": [
             {
                 "server_id": "192.168.1.1",
-                "device": [
-                    {"device_ip": "192.168.2.1", "device_id": 0, "rank_id": "invalid"}
-                ],
+                "device": [{"device_ip": "192.168.2.1", "device_id": 0, "rank_id": "invalid"}],
             }
         ],
         "server_count": 1,
@@ -247,8 +240,9 @@ def test_parse_rank_table_vllm_with_invalid_server_id(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="No devices found in rank table"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match="No devices found in rank table"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.VLLM)
 
@@ -284,16 +278,15 @@ def test_parse_rank_table_mindie_exceeds_host_limit(mock_resolve, mock_file):
     mock_resolve.return_value = Path("/fake/path")
     # Create data with more hosts than allowed
     data = {
-        "server_list": [
-            {"server_id": f"192.168.{i}.1", "device": []} for i in range(1001)
-        ],
+        "server_list": [{"server_id": f"192.168.{i}.1", "device": []} for i in range(1001)],
         "server_count": 1001,
         "version": "1.0",
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="Host count exceeds limit"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match="Host count exceeds limit"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.MINDIE)
 
@@ -308,10 +301,7 @@ def test_parse_rank_table_mindie_exceeds_device_limit(mock_resolve, mock_file):
         "server_list": [
             {
                 "server_id": "192.168.1.1",
-                "device": [
-                    {"device_ip": f"192.168.2.{i}", "device_id": i, "rank_id": i}
-                    for i in range(33)
-                ],
+                "device": [{"device_ip": f"192.168.2.{i}", "device_id": i, "rank_id": i} for i in range(33)],
             }
         ],
         "server_count": 1,
@@ -319,8 +309,9 @@ def test_parse_rank_table_mindie_exceeds_device_limit(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="Device count for host .* exceeds limit"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match="Device count for host .* exceeds limit"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.MINDIE)
 
@@ -347,8 +338,9 @@ def test_parse_rank_table_vllm_exceeds_total_limit(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="length exceeds limit"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match="length exceeds limit"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.VLLM)
 
@@ -381,8 +373,9 @@ def test_parse_rank_table_vllm_exceeds_host_limit(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match=r"Host count exceeds limit \d+"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match=r"Host count exceeds limit \d+"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.VLLM)
 
@@ -398,8 +391,9 @@ def test_parse_rank_table_vllm_missing_device_list(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="Expected 'prefill_device_list' and 'decode_device_list'"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match="Expected 'prefill_device_list' and 'decode_device_list'"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.VLLM)
 
@@ -409,9 +403,7 @@ def test_parse_rank_table_vllm_missing_device_list(mock_resolve, mock_file):
 def test_parse_rank_table_json_load_error(mock_resolve, mock_file):
     """Test parse_rank_table with file open error."""
     mock_resolve.return_value = Path("/fake/path")
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError
-    ):
+    with patch.object(Path, "is_file", return_value=True), pytest.raises(RankTableParseError):
         parse_rank_table(Path("/fake/path"), Framework.MINDIE)
 
 
@@ -426,8 +418,9 @@ def test_parse_rank_table_mindie_missing_server_list(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="'server_list' not found in rank table"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match="'server_list' not found in rank table"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.MINDIE)
 
@@ -448,8 +441,9 @@ def test_parse_rank_table_mindie_missing_server_count(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="'server_count' not found in rank table"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match="'server_count' not found in rank table"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.MINDIE)
 
@@ -471,9 +465,7 @@ def test_parse_rank_table_mindie_invalid_version(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="Invalid version"
-    ):
+    with patch.object(Path, "is_file", return_value=True), pytest.raises(RankTableParseError, match="Invalid version"):
         parse_rank_table(Path("/fake/path"), Framework.MINDIE)
 
 
@@ -497,9 +489,7 @@ def test_parse_rank_table_vllm_invalid_version(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="Invalid version"
-    ):
+    with patch.object(Path, "is_file", return_value=True), pytest.raises(RankTableParseError, match="Invalid version"):
         parse_rank_table(Path("/fake/path"), Framework.VLLM)
 
 
@@ -515,8 +505,9 @@ def test_parse_rank_table_mindie_empty_server_list(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="No devices found in rank table"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match="No devices found in rank table"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.MINDIE)
 
@@ -534,7 +525,39 @@ def test_parse_rank_table_vllm_empty_device_lists(mock_resolve, mock_file):
     }
     mock_file.return_value.read.return_value = json.dumps(data)
 
-    with patch.object(Path, "is_file", return_value=True), pytest.raises(
-        RankTableParseError, match="No devices found in rank table"
+    with (
+        patch.object(Path, "is_file", return_value=True),
+        pytest.raises(RankTableParseError, match="No devices found in rank table"),
     ):
         parse_rank_table(Path("/fake/path"), Framework.VLLM)
+
+
+@patch("builtins.open", new_callable=mock_open)
+@patch("pathlib.Path.resolve")
+def test_parse_rank_table_error_message_uses_plain_path(mock_resolve, mock_file):
+    """Rank table errors should show plain paths, not PosixPath repr."""
+    rank_path = Path("/fake/rank_table.json")
+    mock_resolve.return_value = rank_path
+    data = {"server_count": 1, "version": "1.0"}
+    mock_file.return_value.read.return_value = json.dumps(data)
+
+    with patch.object(Path, "is_file", return_value=True), pytest.raises(RankTableParseError) as exc_info:
+        parse_rank_table(rank_path, Framework.MINDIE)
+
+    msg = str(exc_info.value)
+    assert "/fake/rank_table.json" in msg
+    assert "PosixPath" not in msg
+
+
+@patch("builtins.open", side_effect=OSError("Failed to open"))
+@patch("pathlib.Path.resolve")
+def test_parse_rank_table_json_load_error_uses_plain_path(mock_resolve, mock_file):
+    """JSON load errors should show plain paths, not PosixPath repr."""
+    rank_path = Path("/fake/rank_table.json")
+    mock_resolve.return_value = rank_path
+    with patch.object(Path, "is_file", return_value=True), pytest.raises(RankTableParseError) as exc_info:
+        parse_rank_table(rank_path, Framework.MINDIE)
+
+    msg = str(exc_info.value)
+    assert "/fake/rank_table.json" in msg
+    assert "PosixPath" not in msg

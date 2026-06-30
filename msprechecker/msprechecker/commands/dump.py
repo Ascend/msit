@@ -21,25 +21,18 @@ from textwrap import dedent
 from typing import Optional
 
 from ..core.collector import Collector
-from ..core.strategy import Ascend
-from ..core.strategy import Config
-from ..core.strategy import CPUHighPerformance
-from ..core.strategy import Env
-from ..core.strategy import Network
-from ..core.strategy import Sys
-from ..core.strategy import Weight
-from ..util import CONTAINER_CPU_HIGH_PERF_AMBIGUITY_HINT
-from ..util import Framework
-from ..util import WeightDirNotFoundError
-from ..util import detect_framework
-from ..util import is_in_container
-from ..util import parse_rank_table
-from ..util import resolve_weight_dir
-from ..utils.path_io import existing_dir
-from ..utils.path_io import normalize_user_path
-from ..utils.path_io import readable_file
-from .base import CommandStrategy
-from .base import CommandType
+from ..core.strategy import Ascend, Config, CPUHighPerformance, Env, Network, Sys, Weight
+from ..util import (
+    CONTAINER_CPU_HIGH_PERF_AMBIGUITY_HINT,
+    Framework,
+    WeightDirNotFoundError,
+    detect_framework,
+    is_in_container,
+    parse_rank_table,
+    resolve_weight_dir,
+)
+from ..utils.path_io import existing_dir, normalize_user_path, readable_file, to_user_path
+from .base import CommandStrategy, CommandType
 
 logger = logging.getLogger(__name__)
 
@@ -280,9 +273,9 @@ class Dump(CommandStrategy):
             with output_path.open("w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)
         except Exception:
-            logger.exception("Error occurred while saving to %r", args.output_path)
+            logger.exception("Error occurred while saving to %s", to_user_path(args.output_path))
             return 1
 
-        print(f"All information has been saved in: {args.output_path!r}")
+        print(f"All information has been saved in: {to_user_path(args.output_path)}")
         print("You may now use 'msprechecker compare' to compare dumped files for discrepancies!")
         return 0

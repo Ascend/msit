@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # -------------------------------------------------------------------------
 # This file is part of the MindStudio project.
 # Copyright (c) 2025-2026 Huawei Technologies Co.,Ltd.
@@ -15,12 +14,14 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
+from __future__ import annotations
+
 import bisect
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum
 from functools import total_ordering
-from abc import ABC, abstractmethod
-from typing import List, Dict, Tuple, Optional
-from dataclasses import dataclass
+from typing import Optional
 
 
 class ErrorType(Enum):
@@ -36,16 +37,12 @@ class ErrorSeverity(Enum):
     ERR_MEDIUM = "medium"
     ERR_LOW = "low"
 
-    _ORDER_MAP = {
-        "low": 0,
-        "medium": 1,
-        "high": 2
-    }
+    _ORDER_MAP = {"low": 0, "medium": 1, "high": 2}
 
     def __str__(self):
         reset = "\033[0m"
         return f"{self.color_code}[{self.symbol}]{reset}"
-    
+
     def __gt__(self, other):
         order_map = self._ORDER_MAP.value
         if isinstance(other, ErrorSeverity):
@@ -53,23 +50,21 @@ class ErrorSeverity(Enum):
 
         if isinstance(other, str):
             return order_map[self.value] > order_map[other.lower()]
-        
+
         raise TypeError(f"Expected 'other' to be str or ErrorSeverity. Got {type(other).__name__} instead.")
 
     @property
     def symbol(self):
-        return {
-            ErrorSeverity.ERR_HIGH: "NOK",
-            ErrorSeverity.ERR_MEDIUM: "WARNING",
-            ErrorSeverity.ERR_LOW: "RECOMMEND"
-        }[self]
+        return {ErrorSeverity.ERR_HIGH: "NOK", ErrorSeverity.ERR_MEDIUM: "WARNING", ErrorSeverity.ERR_LOW: "RECOMMEND"}[
+            self
+        ]
 
     @property
     def color_code(self):
         return {
             ErrorSeverity.ERR_HIGH: "\033[91m",
             ErrorSeverity.ERR_MEDIUM: "\033[93m",
-            ErrorSeverity.ERR_LOW: "\033[96m"
+            ErrorSeverity.ERR_LOW: "\033[96m",
         }[self]
 
 
@@ -83,7 +78,7 @@ class ErrorContext:
     actual: Optional[str] = None
     expected: Optional[str] = None
     start_col: Optional[int] = None
-    context_lines: Optional[Dict[int, str]] = None
+    context_lines: Optional[dict[int, str]] = None
 
 
 class BaseError(ABC):
@@ -109,12 +104,9 @@ class ConfigError(CheckError):
 
 
 class CompareError(BaseError):
-    def __init__(self,
-                 key: str,
-                 values: Dict[str, str],
-                 reason: str = "",
-                 severity: ErrorSeverity = ErrorSeverity.ERR_LOW
-                ):
+    def __init__(
+        self, key: str, values: dict[str, str], reason: str = "", severity: ErrorSeverity = ErrorSeverity.ERR_LOW
+    ):
         context = ErrorContext()
         super().__init__(reason, severity, context)
         self.key = key
@@ -123,45 +115,45 @@ class CompareError(BaseError):
 
 class ErrorHandler(ABC):
     def __init__(self, *, severity: ErrorSeverity = None, type_: str = ""):
-        self._errors: List[BaseError] = []
+        self._errors: list[BaseError] = []
         self._type = type_
         self._severity = severity or ErrorSeverity.ERR_LOW
-    
+
     def __iter__(self):
         return iter(self._errors)
 
     @property
     def errors(self):
         return self._errors
-    
+
     @property
     def severity(self):
         return self._severity
-    
+
     @property
     def type(self):
         return self._type
-    
+
     @type.setter
     def type(self, another_type):
         self._type = another_type
-    
+
     @abstractmethod
     def add_error(self, reason: str, severity: ErrorSeverity, **context) -> None:
-        """add error to handler"""
+        """Add error to handler"""
 
     def empty(self) -> bool:
         return len(self._errors) == 0
-    
+
     def extend(self, other_handler) -> None:
         if not isinstance(other_handler, ErrorHandler):
             raise TypeError
-        
+
         self._errors.extend(other_handler.errors)
-    
+
     def filter(self, severity: ErrorSeverity):
         return list(filter(lambda error: error.severity >= severity, self._errors))
-    
+
     def clear(self) -> None:
         self._errors.clear()
 
@@ -172,11 +164,7 @@ class CollectErrorHandler(ErrorHandler):
             return
 
         error_context = ErrorContext(**context)
-        self._errors.append(CollectError(
-            reason=reason,
-            severity=severity,
-            context=error_context
-        ))
+        self._errors.append(CollectError(reason=reason, severity=severity, context=error_context))
 
 
 class CheckErrorHandler(ErrorHandler):
@@ -184,22 +172,23 @@ class CheckErrorHandler(ErrorHandler):
         if severity < self._severity:
             return
 
-        path = context.get('path', '')
-        if '%' in path:
-            context['path'] = path.replace('%', '')
+        path = context.get("path", "")
+        if "%" in path:
+            context["path"] = path.replace("%", "")
 
         error_context = ErrorContext(**context)
-        self._errors.append(CheckError(
-            reason=reason,
-            severity=severity,
-            context=error_context
-        ))
+        self._errors.append(CheckError(reason=reason, severity=severity, context=error_context))
 
 
 class ConfigErrorHandler(ErrorHandler):
-    def __init__(self, severity: ErrorSeverity = None, file_lines: List[str] = None, 
-                 key_mapping: Dict[str, Tuple[int, int]] = None, 
-                 context_hierarchy: List[List[int]] = None, type_: str = ""):
+    def __init__(
+        self,
+        severity: ErrorSeverity = None,
+        file_lines: list[str] = None,
+        key_mapping: dict[str, tuple[int, int]] = None,
+        context_hierarchy: list[list[int]] = None,
+        type_: str = "",
+    ):
         super().__init__(severity=severity, type_=type_)
         self._file_lines = file_lines
         self._key_mapping = key_mapping
@@ -210,36 +199,32 @@ class ConfigErrorHandler(ErrorHandler):
         if severity < self._severity:
             return
 
-        path = context.get('path', '')
-        if '%' in path:
-            percent_pos = path.index('%')
-            dot_pos = path[:percent_pos].rfind('.')
-            path = path.replace('%', '')
-            context['path'] = path[dot_pos + 1:]
+        path = context.get("path", "")
+        if "%" in path:
+            percent_pos = path.index("%")
+            dot_pos = path[:percent_pos].rfind(".")
+            path = path.replace("%", "")
+            context["path"] = path[dot_pos + 1 :]
         else:
-            context['path'] = path.rsplit('.', 1)[-1]
+            context["path"] = path.rsplit(".", 1)[-1]
 
         orig_lineno, shifted_lineno, start_col = self._find_lineno_and_col(path)
 
-        context['lineno'] = shifted_lineno + 1
-        context['start_col'] = start_col
-        context['context_lines'] = {
-            context_lineno + 1: self._file_lines[context_lineno] 
+        context["lineno"] = shifted_lineno + 1
+        context["start_col"] = start_col
+        context["context_lines"] = {
+            context_lineno + 1: self._file_lines[context_lineno]
             for context_lineno in self._context_hierarchy[orig_lineno]
         }
 
         error_context = ErrorContext(**context)
-        self._errors.append(ConfigError(
-            reason=reason,
-            severity=severity,
-            context=error_context
-        ))
+        self._errors.append(ConfigError(reason=reason, severity=severity, context=error_context))
 
     def _find_lineno_and_col(self, path):
         if path in self._key_mapping:
             lineno, start_col = self._key_mapping[path]
             return lineno, lineno, start_col
-        
+
         nearest_path = self._find_nearest_path(path)
         lineno, start_col = self._key_mapping[nearest_path]
         lineno_shift = (len(self._errors) + 1) / len(self._file_lines)
@@ -264,8 +249,13 @@ class ConfigErrorHandler(ErrorHandler):
 
 
 class CompareErrorHandler(ErrorHandler):
-    def add_error(self, reason: str, severity: ErrorSeverity, **context):
-        self._errors.append(CompareError(reason, severity))
+    def add_diff(self, key: str, values: dict) -> None:
+        if not values:
+            return
+        self._errors.append(CompareError(key, values))
+
+    def add_error(self, reason: str, severity: ErrorSeverity = ErrorSeverity.ERR_LOW, **context):
+        self._errors.append(CompareError(reason, context.get("values", {}), severity=severity))
 
 
 def get_handler(error_type: ErrorType) -> ErrorHandler:
@@ -280,5 +270,5 @@ def get_handler(error_type: ErrorType) -> ErrorHandler:
 
     if error_type not in cmd_to_handler:
         raise ValueError
-    
+
     return cmd_to_handler[error_type]()
