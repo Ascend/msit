@@ -18,7 +18,7 @@
 CUR_DIR=$(dirname $(readlink -f $0))
 COMPONENTS_DIR=${CUR_DIR}/../../components
 TOP_DIR=${COMPONENTS_DIR}/..
-ALL_VALID_TEST_MODULE=(benchmark convert graph profile tensor_view utils llm debug surgeon analyze)
+ALL_VALID_TEST_MODULE=(benchmark convert graph profile tensor_view utils llm analyze)
 
 
 install_packages() {
@@ -47,9 +47,6 @@ init_msit_env() {
     export PYTHONPATH=${COMPONENTS_DIR}/analyze:${PYTHONPATH}
     export PYTHONPATH=${COMPONENTS_DIR}/benchmark:${PYTHONPATH}
     export PYTHONPATH=${COMPONENTS_DIR}/convert:${PYTHONPATH}
-    export PYTHONPATH=${COMPONENTS_DIR}/debug/compare:${PYTHONPATH}
-    export PYTHONPATH=${COMPONENTS_DIR}/debug/opcheck:${PYTHONPATH}
-    export PYTHONPATH=${COMPONENTS_DIR}/debug/surgeon:${PYTHONPATH}
     export PYTHONPATH=${COMPONENTS_DIR}/expert_load_balancing:${PYTHONPATH}
     export PYTHONPATH=${COMPONENTS_DIR}/graph:${PYTHONPATH}
     export PYTHONPATH=${COMPONENTS_DIR}/llm:${PYTHONPATH}

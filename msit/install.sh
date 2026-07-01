@@ -17,8 +17,6 @@
 
 CURRENT_DIR=$(dirname $(readlink -f $0))
 arg_force_reinstall=
-only_compare=
-only_surgen=
 only_benchmark=
 only_analyze=
 only_convert=
@@ -32,8 +30,6 @@ while [[ "$#" -gt 0 ]]; do case $1 in
   --force-reinstall) arg_force_reinstall=--force-reinstall;;
   -f) arg_force_reinstall=--force-reinstall;;
   --full) full_install=--full;;
-  --compare) only_compare=true;;
-  --surgeon) only_surgeon=true;;
   --benchmark) only_benchmark=true;;
   --analyze) only_analyze=true;;
   --convert) only_convert=true;;
@@ -61,8 +57,6 @@ fi
 if [ "$arg_help" -eq "1" ]; then
   echo "Usage: $0 [options]"
   echo " --help or -h : Print help menu"
-  echo " --surgeon : only install debug surgeon component"
-  echo " --compare : only install debug compare component"
   echo " --benchmark : only install benchmark component"
   echo " --analyze : only install analyze component"
   echo " --convert : only install convert component"
@@ -90,21 +84,11 @@ pre_check_skl2onnx(){
 
 
 uninstall(){
-  pip3 uninstall msit analyze_tool convert_tool compare auto_optimizer msprof ${all_uninstall}
-  if [ -z $only_debug ] && [ -z $only_compare ] && [ -z $only_surgen ] && [ -z $only_benchmark ] && [ -z $only_analyze ] && [ -z $only_convert ] && [ -z $only_profile ] && [ -z $only_llm ] && [ -z $only_tensor_view ]
+  pip3 uninstall msit analyze_tool convert_tool auto_optimizer msprof ${all_uninstall}
+  if [ -z $only_benchmark ] && [ -z $only_analyze ] && [ -z $only_convert ] && [ -z $only_profile ] && [ -z $only_llm ] && [ -z $only_tensor_view ]
   then
-    pip3 uninstall msit msit-analyze aclruntime ais_bench msit-benchmark msit-convert msit-compare msit-surgeon msit-profile msit-llm msit-tensor-view msit-graph ${all_uninstall}
+    pip3 uninstall msit msit-analyze aclruntime ais_bench msit-benchmark msit-convert msit-profile msit-llm msit-tensor-view msit-graph ${all_uninstall}
   else
-    if [ ! -z $only_compare ]
-    then
-      pip3 uninstall msit-compare ${all_uninstall}
-    fi
-
-    if [ ! -z $only_surgeon ]
-    then
-      pip3 uninstall msit-surgeon ${all_uninstall}
-    fi
-
     if [ ! -z $only_benchmark ]
     then
       pip3 uninstall aclruntime ais_bench ${all_uninstall}
@@ -155,66 +139,8 @@ build_opchecker_so() {
 }
 
 
-build_om_so() {
-  echo "Installing libsaveom.so"
-  echo "This part is used for the accuracy comparison of mindir and onnx models. "
-  echo "If installation failed, the usage of other components will not be affected."
-  SITE_PACKAGES_PATH=$(python3 -c "import site; print(site.getsitepackages()[0])")
-
-  if [ "$ASCEND_TOOLKIT_HOME" != "" ]; then
-      toolkit_home=$ASCEND_TOOLKIT_HOME
-  else
-      toolkit_home=$ASCEND_AICPU_PATH
-  fi
-
-  ge_dev_path=$toolkit_home/$(uname -m)-linux/
-  if [ ! -e "$ge_dev_path/include" ] || [ ! -e "$ge_dev_path/lib64" ]; then
-      echo "[WARNING] include or lib64 not found in ge_dev_path=$ge_dev_path, try installing CANN toolkit if comparing mindir and onnx models"
-      return
-  fi
-
-  COMPILE_OPTIONS="-Wl,-z,relro,-z,now,-z,noexecstack -s -fstack-protector-all -ftrapv -D_FORTIFY_SOURCE=2"
-  g++ ${CURRENT_DIR}/components/debug/compare/msquickcmp/save_om_model/export_om_model.cpp \
-          -I ${ge_dev_path}/include \
-          -L ${ge_dev_path}/lib64 \
-          -lge_compiler $COMPILE_OPTIONS \
-          --std=c++11 -fPIC -shared -D_GLIBCXX_USE_CXX11_ABI=0 -o libsaveom.so
-  
-  if [ ! -f "${CURRENT_DIR}/libsaveom.so" ]
-  then
-    echo "libsaveom.so compilation failed"
-  else
-    if [ ! -d "${SITE_PACKAGES_PATH}/msquickcmp/" ]
-    then
-      rm libsaveom.so
-      echo "msquickcmp not exist, failed to install libsaveom.so"
-    else
-      mv libsaveom.so "${SITE_PACKAGES_PATH}/msquickcmp/"
-      echo "Finish libsaveom.so installation."
-    fi
-  fi
-}
-
-
 install(){
   pip3 install ${CURRENT_DIR} ${arg_force_reinstall}
-
-  if [ ! -z $only_compare ]
-  then
-    only_benchmark=true;
-    only_surgeon=true;
-    pre_check_skl2onnx
-    pip3 install ${CURRENT_DIR}/components/debug/compare ${arg_force_reinstall}
-
-    build_om_so
-
-  fi
-
-  if [ ! -z $only_surgeon	 ]
-  then
-    pip3 install ${CURRENT_DIR}/components/debug/surgeon ${arg_force_reinstall}
-
-  fi
 
   if [ ! -z $only_benchmark ]
   then
@@ -251,13 +177,11 @@ install(){
         build_opchecker_so
     fi
 
-  if [ -z $only_compare ] && [ -z $only_surgeon ] && [ -z $only_benchmark ] && [ -z $only_analyze ] && [ -z $only_convert ] && [ -z $only_profile ] && [ -z $only_llm ] && [ -z $only_tensor_view ]
+  if [ -z $only_benchmark ] && [ -z $only_analyze ] && [ -z $only_convert ] && [ -z $only_profile ] && [ -z $only_llm ] && [ -z $only_tensor_view ]
   then
     pre_check_skl2onnx
 
-    pip3 install ${CURRENT_DIR}/components/debug/compare \
-    ${CURRENT_DIR}/components/debug/surgeon \
-    ${CURRENT_DIR}/components/benchmark \
+    pip3 install ${CURRENT_DIR}/components/benchmark \
     ${CURRENT_DIR}/components/analyze \
     ${CURRENT_DIR}/components/convert \
     ${CURRENT_DIR}/components/profile \
@@ -268,7 +192,6 @@ install(){
     bash ${CURRENT_DIR}/components/benchmark/msit_benchmark/install.sh
     bash ${CURRENT_DIR}/components/convert/build.sh
 
-    build_om_so
     build_opchecker_so
   fi
 
