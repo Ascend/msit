@@ -1,208 +1,224 @@
-# **Quick Start**
+# MindStudio Inference Tools Quick Start
 
 ## Overview
 
-MindStudio Inference Tools (msIT) is a one-stop inference development tool dedicated to accelerating model problem locating and improving model inference performance.
+MindStudio Inference Tools provides developers with a one-stop inference development toolkit, dedicated to accelerating model issue localization and improving model inference performance.
 
-This document uses the Llama-3.1-8B-Instruct model as an example to describe how to use LLM inference tools for model quantization, inference data dump, automatic precision comparison, and performance tuning.
+This document uses the Llama-3.1-8B-Instruct model as an example to introduce the use of tools for model quantization, accuracy data dump, accuracy comparison, and model tuning.
 
-**Instructions**
+### Usage Instructions
 
-The following table describes the functions of each tool during LLM inference.
+The functional descriptions of each tool are listed in the following table.
 
-| Tool| Description|
-|-----------------------|-----------------------|
-| Model quantization tool: msModelSlim| It provides model compression capability. It reduces model memory footprint and computational requirements by lowering the numerical precision of model weights and activations. It typically converts high-bit floating-point numbers to low-bit fixed-point numbers, directly reducing the size of model weights. This model quantization tool takes a working model and data as input, and outputs usable quantized weights and quantization factors.|
-| Data dump tool: msit llm dump| It can dump intermediate data generated during acceleration library model inference. The dumped data is used for subsequent precision comparison.|
-| Precision comparison tool: msit llm compare| It provides the one-click precision comparison function, enabling rapid whole-network precision comparison in inference scenarios.|
-| Performance profiling tool| It collects and analyzes key performance metrics at each execution stage of AI tasks running on Ascend AI Processors.|
-| MindStudio Insight | It visualizes profile data collected by the performance profiling tool. It can quickly locate hardware and software performance bottlenecks to improve AI task performance analysis efficiency.|
+| Tool | Function |
+| ----------------------- | ----------------------- |
+| msModelSlim (model quantization tool) | Provides model compression techniques that reduce the numerical precision of model weights and activations, effectively decreasing the model's storage memory footprint and computational requirements. Typically, high-bit floating-point numbers are converted to low-bit fixed-point numbers, thereby directly reducing the size of model weights. The input to the model quantization tool is a normally running model and data, and the output is a usable quantized weight and quantization factor. |
+| msProbe (accuracy debugging tool) | Includes functions such as accuracy data collection (dump) and accuracy comparison, which can help locate accuracy issues during model inference. |
+| msProf (model tuning tool) | Supports profiling and parsing of software and hardware performance data of the Ascend AI Processor, helping locate performance issues during model inference. |
+| MindStudio Insight | Visualizes the performance data collected by the performance tuning tool, quickly identifying software and hardware performance bottlenecks and improving the efficiency of AI task performance analysis. |
 
-**Environment Preparation:**
+### Environment Setup
 
-- Set up the development environment. For details, see "Installing MindIE > [Method 1: Image Deployment](https://www.hiascend.com/document/detail/zh/mindie/230/envdeployment/instg/mindie_instg_0021.html) in the *MindIE Installation Guide*.
+- Deploy the development environment. For details, see the "Installing MindIE > [Method 1: Image Deployment](https://www.hiascend.com/document/detail/en/mindie/230/envdeployment/instg/mindie_instg_0021.html)" section in the *MindIE Installation Guide*.
 
-- Install the msit tool package. For details, see [Installing msit](https://gitcode.com/Ascend/msit/tree/master/msit/docs/install). Source code installation is recommended.
+- Install the Ascend NPU driver and CANN software (including the Toolkit and ops packages) and configure the CANN environment variables. For details, see [CANN Quick Installation](https://www.hiascend.com/en/cann/download).
 
-- Install the msModelSlim software. For details, see [msModelSlim Installation Guide](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/en/getting_started/install_guide.md).
+- Install msModelSlim. For details, see the [msModelSlim Installation Guide](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/en/getting_started/install_guide.md).
 
-- Install the large language model debug tool. For details, see [Large Language Model Debug Tool](https://gitcode.com/Ascend/msit/tree/26.0.0/msit/docs/llm).
+- Install msProbe. For details, see the [msProbe Installation Guide](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/en/msprobe_install_guide.md).
 
-- Install the matching CANN Toolkit and ops operator packages, and configure CANN environment variables. For details, see the *CANN Installation Guide*.
+- Install msProf. For details, see the [msProf Installation Guide](https://gitcode.com/Ascend/msprof/blob/26.0.0/docs/en/getting_started/msprof_install_guide.md).
 
-- Install MindStudio Insight. For details, see [MindStudio Insight Installation Guide](https://gitcode.com/Ascend/msinsight/blob/master/docs/en/user_guide/mindstudio_insight_install_guide.md).
+- Install MindStudio Insight. For details, see the [MindStudio Insight Installation Guide](https://gitcode.com/Ascend/msinsight/blob/26.0.0/docs/en/user_guide/mindstudio_insight_install_guide.md).
 
 ## Model Inference
 
 ### Model Quantization
 
-1. Download the Llama-3.1-8B-Instruct weight and model files to your local machine, as shown in the following figure. To download the files, click the [link] (<https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct>).<a id="1"></a>
+1. Download the Llama-3.1-8B-Instruct weights and model files. As shown in the following figure, click here to [download](https://www.modelscope.cn/models/LLM-Research/Meta-Llama-3.1-8B-Instruct).
 
-    ![](./figures/download_model_file.png)
+    ![download model file](./figures/download_model_file.png)
 
-2. Run the following command to navigate to the `Llama` directory:
+2. Run the following command to enter the Llama directory.
 
     ```bash
     cd ${HOME}/msmodelslim/example/Llama
     ```
 
-    *HOME* indicates the custom path for installing msmodelslim.
+    Here, `HOME` is the user-defined path for installing msmodelslim.
 
-3. Execute the quantization script to generate quantized weight files and save them to a custom storage path. The following example command is the `w8a16` quantization command.
+3. Run the quantization script to generate the quantized weight file and save it to a custom storage path. The example command is for w8a16 quantization.
 
     ```bash
     python3 quant_llama.py --model_path ${model_path} --save_directory ${save_directory} --device_type npu --w_bit 8 --a_bit 16
     ```
- 
-    `model_path` indicates the path for saving the downloaded model file, and `save_directory` indicates the path for saving the generated quantized weight files. For quantization examples of other model files, see [Llama Quantization Examples](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Llama/README.md#llama-%E9%87%8F%E5%8C%96%E8%AF%B4%E6%98%8E).
 
-    > [!NOTE]Note 
-    > If the quantized weight files need to be deployed on MindIE 2.1.RC1 or earlier versions, add the `--mindie_format` parameter when running the quantization command:
-    `python3 quant_llama.py --model_path ${model_path} --save_directory ${save_directory} --device_type npu --w_bit 8 --a_bit 16 --mindie_format`
-    
-4. After quantization is complete, the `safetensors` file is compressed from 15.1 GB to 8.5 GB, as shown in the following figure.
+    Here, `--model_path` is configured as the path to the downloaded model files; `--save_directory` is configured as the storage path for the generated quantized weight file. For quantization examples of other model files, see [LLAMA Quantization Example](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/example/Llama/README_EN.md).
 
-    ![](./figures/quantization_result.png)
+    > [!NOTE]
+    > If the quantized weight files need to be deployed on MindIE 2.1.RC1 or earlier versions, you need to add the `--mindie_format` parameter when executing the original quantization command. The reference command is as follows:
 
-5. The generated `w8a16` quantized weight files are as follows:
+    ```shell
+    python3 quant_llama.py --model_path ${model_path} --save_directory ${save_directory} --device_type npu --w_bit 8 --a_bit 16 --mindie_format
+    ```
+
+4. After quantization is complete, the result is shown in the following figure. The safetensors file size is compressed from 15.1 GB to 8.5 GB.
+
+    ![quantization result](./figures/quantization_result.png)
+
+5. The generated w8a16 quantized weight files are shown below.
 
     ```tex
     ├── config.json                          # Configuration file
-    ├── generation_config.json               # Configuration file
+    ├── generation_config.json               # Configuration File
     ├── quant_model_description.json         # Weight description file after w8a16 quantization
     ├── quant_model_weight_w8a16.safetensors # Weight file after w8a16 quantization
-    ├── tokenizer.json                       # Tokenizer of the model file
-    ├── tokenizer_config.json                # Tokenizer configuration file of the model file
+    ├── tokenizer.json                       # Tokenizer for the model file
+    ├── tokenizer_config.json                # Tokenizer configuration file for the model file
     ```
 
-### Precision Debugging
+### Accuracy Debugging
 
-**Prerequisites**
+#### Prerequisites
 
-- Model quantization has been completed as described in [Model Quantization](#model-quantization).
-- A floating-point model has been prepared as described in [1](#1) in section "Model Quantization".
+- Model quantization has been completed as described in the [Model Quantization](#model-quantization) section.
 
-**Dumping the quantized model**
+#### Floating-point Model Accuracy Data Collection
 
-1. Run the following command to check whether the quantized model can be used for inference:
+The following describes how to use the msProbe tool for **floating-point model** data collection. The data downloaded in step 1 of the [Model Quantization](#model-quantization) section is the **floating-point model** data.
+
+1. Create a configuration file.
+
+    Create a `config.json` file in the `/home/test` directory to configure dump parameters. The content is as follows:
+
+    ```json
+    {
+        "task": "tensor",
+        "dump_enable": true,
+        "exec_range": "all",
+        "ids": "0",
+        "op_name": "",
+        "save_child": false,
+        "device": "",
+        "filter_level": 1
+    }
+    ```
+
+    For an introduction to dump parameters, see the dump configuration file parameter description in the [Precision Data Collection in ATB](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/en/dump/atb_data_dump_instruct.md).
+
+2. Execute the command.
+
+    Use the `pip show mindstudio-probe` command to determine the installation path of the msProbe tool. Assuming the installation path is `/usr/local/lib/python3.11/site-packages`, execute the following command to load the dump module.
 
     ```bash
-    bash ${ATB_SPEED_HOME_PATH}/examples/models/llama3/run_pa.sh ${save_directory} ${max_output_length}
+    MSPROBE_HOME_PATH=/usr/local/lib/python3.11/site-packages
+    source $MSPROBE_HOME_PATH/msprobe/scripts/atb/load_atb_probe.sh --output=/home/test/golden_data --config=/home/test/config.json
     ```
 
-    The parameters are described as follows:
+    For command-line parameter descriptions, see the command-line parameter description in the [Precision Data Collection in ATB](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/en/dump/atb_data_dump_instruct.md).
 
-    - `ATB_SPEED_HOME_PATH`: The default path is `/usr/local/Ascend/atb-models`, which is configured when sourcing the `set_env.sh` script in the model repository.
-    - `max_output_length`: indicates the maximum number of output tokens in the conversation test.
-
-    If the command output contains the following information, the quantized model can be used for inference:
-
-    ```tex
-    Question[0]: What's deep learning?
-    Answer[0]:  Deep learning is a subset of machine learning that uses artificial neural networks to analyze data. It's called
-    Generate[0] token num: (0, 20)
-    ```
-
-2. Run the following command to dump the quantized model and save the result to a user-specified output path. The following table describes the parameters in the command. The following uses the second token as an example. For more parameter information, see [Acceleration Library Model Data Dump](https://gitcode.com/Ascend/msit/blob/master/msit/docs/llm/%E5%B7%A5%E5%85%B7-DUMP%E5%8A%A0%E9%80%9F%E5%BA%93%E6%95%B0%E6%8D%AE%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.md).
+3. Execute the ATB model.
 
     ```bash
-    msit llm dump --exec "bash ${ATB_SPEED_HOME_PATH}/examples/models/llama3/run_pa.sh ${save_directory} ${max_output_length}" --type model tensor -er 2,2 -o ${quant_dump_path}
+    cd $ATB_SPEED_HOME_PATH
+    # Pass in the floating-point model data path, and ensure the security and reliability of the floating-point model data files on your own
+    python examples/run_pa.py --model_path ${model_path}
     ```
 
-    | Parameter| Description| Example|
-    |------------|------------------|------------|
-    | --exec | Specifies the command to execute the program containing ATB.<br> Redirection characters are not supported. To redirect the output, you are advised to write the command to the shell script and then start the shell script.| `--exec "bash run.sh patches/models"`|
-    |--type |Specifies the dump type. The default value is `['tensor', 'model']`.<br> The options are as follows: <br> `-model`: indicates model topology information (by default). When dump type is `model`, layer information is also dumped.<br> `-layer`: indicates topology information in the operation dimension.<br>`-tensor`: indicates tensor data (by default).|`--type layer tensor`|
-    |-er, --execute-range|Specifies the token number range to dump. The interval is inclusive on both ends. Multiple interval sequences are supported. Default is the 0th token.<br>Ensure that the total length of multiple intervals does not exceed 500 characters.|`-er 2,2`<br> `-er 3,5,7,7`: indicates the range [3,5] and [7,7], that is, the 3rd, 4th, 5th, and 7th tokens.|
-    |-o, --output|Specifies the output directory for dumped data. The default value is `./`.|`-o /home/projects/output`|
+    The accuracy data generated during model execution will be saved in the `atb_dump_data` directory under the path specified by `--output`.
 
-3. After the quantized model is dumped, the data dump directory structure is as follows:
+4. Unload the ATB dump module.
 
-    ```tex
-    ├── {quant_dump_path}/              # Data storage path  
-    │    └── msit_dump_{timestamp}/     # Data dump timestamp directory
-        │    ├── layer/                 # Network structure subdirectory
-        │    ├── model/                 # Model information directory
-        │    ├── tensors/               # Tensor subdirectory
-    ```
-
-**Dumping the floating-point model**
-
-1. Run the following command to check whether the floating-point model can be used for inference:
+    After collecting accuracy data, run the following command to unload the dump module.
 
     ```bash
-    bash ${ATB_SPEED_HOME_PATH}/examples/models/llama3/run_pa.sh --model_path ${model_path} ${max_output_length}
+    source $MSPROBE_HOME_PATH/msprobe/scripts/atb/unload_atb_probe.sh
     ```
 
-    If the command output contains the following information, the floating-point model can be used for inference:
+#### Quantized Model Accuracy Data Collection
 
-    ```tex
-    Question[0]: What's deep learning?
-    Answer[0]:  Deep learning is a subset of machine learning that uses artificial neural networks to analyze data. It's called
-    Generate[0] token num: (0, 20)
+The following describes how to use the msProbe tool for **quantized model** data collection. The quantized weight file generated in step 5 of the [Model Quantization](#model-quantization) section is the **quantized model** data.
+
+1. Create a configuration file.
+
+    Create a `config.json` file in the `/home/test` directory to configure dump parameters. The content is as follows:
+
+    ```json
+    {
+        "task": "tensor",
+        "dump_enable": true,
+        "exec_range": "all",
+        "ids": "0",
+        "op_name": "",
+        "save_child": false,
+        "device": "",
+        "filter_level": 1
+    }
     ```
 
-2. Dump the floating-point model and save the result to a user-specified output path. The following uses the second token as an example.
+    For an introduction to dump parameters, see the dump configuration file parameter description in the [Precision Data Collection in ATB](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/en/dump/atb_data_dump_instruct.md).
+
+2. Execute the command.
+
+    Use the `pip show mindstudio-probe` command to determine the installation path of the msProbe tool. Assuming the installation path is `/usr/local/lib/python3.11/site-packages`, execute the following command to load the dump module.
 
     ```bash
-    msit llm dump --exec "bash ${ATB_SPEED_HOME_PATH}/examples/models/llama3/run_pa.sh --model_path ${model_path} ${max_output_length}" --type model tensor -er 2,2 -o ${float_dump_path}
+    MSPROBE_HOME_PATH=/usr/local/lib/python3.11/site-packages
+    source $MSPROBE_HOME_PATH/msprobe/scripts/atb/load_atb_probe.sh --output=/home/test/target_data --config=/home/test/config.json
     ```
 
-3. After the floating-point model is dumped, the `msit_dump_*{timestamp}*` folder is generated in the `float_dump` folder. The data dump directory structure is as follows:
+    For an introduction to command-line parameters, see the command-line parameter description in the [Precision Data Collection in ATB](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/en/dump/atb_data_dump_instruct.md).
 
-    ```tex
-    ├── {float_dump_path}/              # Data storage path  
-    │    └── msit_dump_{timestamp}/     # Data dump timestamp directory
-        │    ├── layer/                 # Network structure subdirectory
-        │    ├── model/                 # Model information directory
-        │    ├── tensors/               # Tensor subdirectory
-    ```
-
-**Comparing precision**
-
-1. Run the following command to perform a precision comparison between the dumped data from the quantized model and the floating-point model. The following table describes the parameters in the command.
+3. Execute the ATB model.
 
     ```bash
-    msit llm compare -gp ${float_dump_path}/msit_dump_{timestamp}/tensors/{device_id}_{process_id}/2/ -mp ${quant_dump_path}/msit_dump_{timestamp}/tensors/{device_id}_{process_id}/2/ -o ${compare_result_dir}
+    cd $ATB_SPEED_HOME_PATH
+    # Pass in the actual weight file path, and ensure the weight file is secure and reliable
+    python examples/run_pa.py --model_path ${save_directory}
     ```
 
-    |Parameter|Description|
-    |--------|-----------------|
-    |-gp|Specifies the golden data path, that is, the directory containing the data dumped from the floating-point model.|
-    |-mp|Specifies the path to the data to compare against, that is, the directory containing the data dumped from the quantized model.|
-    |-o|Specifies the path for saving comparison results.|
+    The accuracy data generated during model execution will be saved in the atb_dump_data directory under the path specified by `--output`.
 
-2. The precision comparison output is as follows. For details about the parameters in the comparison result file, see [Precision Comparison Result Parameters](https://gitcode.com/Ascend/msit/blob/master/msit/docs/llm/%E7%B2%BE%E5%BA%A6%E6%AF%94%E5%AF%B9%E7%BB%93%E6%9E%9C%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E.md).
+4. Unload the ATB dump module.
 
-    ```tex
-    msit_llm_logger - INFO - golden_layer_type: Prefill_layer
-    msit_llm_logger - INFO - my_layer_type: Prefill_layer
-    msit_llm_logger - INFO - golden_layer_type: Decoder_layer
-    msit_llm_logger - INFO - my_layer_type: Decoder_layer
-    msit_llm_logger - INFO - Saved comparing results: ./msit_cmp_report_{timestamp}.csv
+    After collecting the accuracy data, run the following command to uninstall the dump module.
+
+    ```bash
+    source $MSPROBE_HOME_PATH/msprobe/scripts/atb/unload_atb_probe.sh
     ```
 
-### Performance Tuning
+#### Accuracy Comparison
 
-**Prerequisites**
+Execute the following comparison command on the collected **quantized model** data and **floating-point model** data to perform accuracy comparison.
 
-Before using the profiling tools, read about the restrictions in [Before You Start](https://www.hiascend.com/document/detail/zh/mindstudio/830/T&ITools/Profiling/atlasprofiling_16_0002.html) in the *Profiling Tools User Guide*.
+```bash
+# Pass in the actual paths of the quantized model data and floating-point model data
+msprobe compare -m atb -gp /home/test/golden_data/atb_dump_data/data/0_{pid}/0/ -tp /home/test/target_data/atb_dump_data/data/0_{pid}/0/
+```
 
-**Profile Data Collection**
+For command-line parameter introduction, see the parameter description in the [Precision Data Collection in ATB](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/en/accuracy_compare/atb_data_compare_instruct.md).
 
-The msProf command line tool of the profiling tool collects and parses profile data such as AI task profile data and system data of Ascend AI processors.
+- **Output Description**
 
-1. Log in to the environment where the CANN-Toolkit is located and navigate to the CANN software installation directory under `/cann/tools/profiler/bin`.
+The accuracy data comparison output file is an Excel spreadsheet. For output description, see the output description in the [Precision Data Collection in ATB](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/en/accuracy_compare/atb_data_compare_instruct.md#output-description).
 
-2. Run the following command to collect profile data. The following describes how to collect profile data from a floating-point model.
+### Model Tuning
+
+#### Performance Data Profiling
+
+msProf supports profiling and parsing software and hardware performance data of the Ascend AI Processor, helping locate performance issues during model training or inference.
+
+1. Log in to the environment where the CANN-Toolkit development kit is located, and go to the CANN software installation directory `/cann/tools/profiler/bin`.
+
+2. Run the following command to collect performance data. Here, performance data is collected for the floating-point model.
 
     ```shell
     msprof --output=${output_dir} bash ${ATB_SPEED_HOME_PATH}/examples/models/llama3/run_pa.sh --model_path ${model_path} ${max_output_length}
     ```
 
-    `--output` indicates the path for storing the collected data. `max_output_length` indicates the maximum number of output tokens in the conversation test.
+    Where `--output` is the storage path for the collected performance data; `max_output_length` is the maximum number of output tokens in the conversation test.
 
-3. Verify that the command output contains the following information, which indicates that the collection is completed.
+3. After the command is executed, the echo output contains the following content, indicating that profiling is complete.
 
     ```tex
     [INFO] Start export data in PROF_000001_20241118061102981_MORBFBJDEPNJEQPA.
@@ -219,75 +235,73 @@ The msProf command line tool of the profiling tool collects and parses profile d
     [INFO] Process profiling data complete. Data is saved in {output_dir}/PROF_000001_20241118061102981_MORBFBJDEPNJEQPA
     ```
 
-4. After the collection is complete, the `PROF_000001_20241118061102981_MORBFBJDEPNJEQPA` directory is generated under the path specified by `--output`, storing the collected data.
-The `mindstudio_profiler_output` directory under the `PROF_000001_20241118061102981_MORBFBJDEPNJEQPA` directory stores the parsed profile data. The file structure is as follows:<a id="4"></a>
+4. After profiling is complete, a directory named `PROF_000001_20241118061102981_MORBFBJDEPNJEQPA` is generated under the directory specified by `--output`, which stores the profiled performance data.
+The `mindstudio_profiler_output` directory under `PROF_000001_20241118061102981_MORBFBJDEPNJEQPA` stores the parsed performance data, with the file structure as follows.
 
     ```tex
-    ├── host   # Save the original data (no user intervention required).
+    ├── host   # Stores raw data, no user attention required
     │    └── data
-    ├── device_{id}   # Save the original data (no user intervention required).
+    ├── device_{id}   # Stores raw data, no user attention required
     │    └── data
-    ├── mindstudio_profiler_log   # Collection logs
+    ├── mindstudio_profiler_log   # Collection log
     │    └── log
     └── mindstudio_profiler_output
-        ├── msprof_20241118061314.json        # Summary of timeline data
-        ├── op_summary_20241118061317.csv     # AI Core and AICPU operator data
-        ├── task_time_20241118061317.csv # Task scheduling information of Task Scheduler
-        ├── op_statistic_20241118061317.csv   # AI Core and AICPU operator call count and time statistics
-        ├── api_statistic_20241118061317.csv  # CANN layer API execution time statistics
+        ├── msprof_20241118061314.json        # Timeline data summary table
+        ├── op_summary_20241118061317.csv     # AI Core and AI CPU operator data
+        ├── task_time_20241118061317.csv      # Task Scheduler task scheduling information
+        ├── op_statistic_20241118061317.csv   # AI Core and AI CPU operator call count and duration statistics
+        ├── api_statistic_20241118061317.csv  # API execution time statistics at the CANN layer
         └── README.txt
     ```
 
-**Profile Data Analysis**
+#### Performance Data Analysis
 
-You can use MindStudio Insight to visualize the collected profile data, making it easier to identify performance bottlenecks.
+To facilitate the analysis of collected performance data, you can use the MindStudio Insight tool to visualize the performance data, making it easier to intuitively identify performance bottlenecks.
 
-1. Open MindStudio Insight.
+1. Open the MindStudio Insight tool.
 
-2. Copy the profile data collected in [4](#4) to your local machine.
+2. Copy the performance data collected in the above step to the local machine.
 
-3. Click **Import Data** in the upper left corner of the MindStudio Insight page. In the pop-up dialog box, select the profile data file or directory and click **Confirm**, as shown in the following figure.
+3. Click **Import Data** in the upper left corner of the MindStudio Insight interface, select the performance data file or directory in the pop-up dialog box, and then click **Confirm** to import, as shown in the following figure.
 
-    ![](./figures/Import Data .png)
+    ![import data](./figures/import_data.png)
 
-4. Visualize the profile data using MindStudio Insight, as shown in the following figure.
+4. The performance data is visualized by the MindStudio Insight tool, as shown in the following figure.
 
-    ![](./figures/Profile Data Visualization.png)
+    ![display data](./figures/display_data.png)
 
-5. Analyze the profile data.
+5. Analyze the performance data.
 
-    After visualizing the profile data using MindStudio Insight, you can analyze performance bottlenecks easily. For detailed analysis methods, see [MindStudio Insight User Guide](https://www.hiascend.com/document/detail/zh/mindstudio/830/GUI_baseddevelopmenttool/msascendinsightug/Insight_userguide_0002.html).
+After the MindStudio Insight tool visualizes the performance data, you can analyze performance bottlenecks more intuitively. For detailed analysis features, see [Feature Description](https://gitcode.com/Ascend/msinsight/blob/26.0.0/docs/en/user_guide/overview.md#feature-introduction) in *MindStudio Insight*.
 
-### Tuning in Serving Scenarios
+### Serving Tuning
 
-Performance tuning for serving frameworks often feels like a "black box," making issues difficult to locate (for example, slower responses as requests increase, performance differences in different devices).
-msServiceProfiler provides end-to-end performance profiling. It clearly displays the performance of framework scheduling and model inference, helping users quickly locate performance bottlenecks and effectively improve performance.
+Performance tuning for serving frameworks often feels like dealing with a "black box," where issues are difficult to pinpoint (for example, response speed decreases after the number of requests increases, or performance differs after switching devices). msServiceProfiler (serving tuning tool) provides full-link performance profiling, clearly displaying the performance of framework scheduling, model inference, and other stages, helping users quickly identify performance bottlenecks and effectively improve service performance.
 
-**Prerequisites** 
+#### Prerequisites  
 
-- Before using the profiling tools, read about the restrictions in [Before You Start](https://www.hiascend.com/document/detail/zh/mindstudio/830/T&ITools/Profiling/atlasprofiling_16_0002.html) " in the *Profiling Tools User Guide*.
+- Confirm that MindIE Motor can run properly.
 
-- Ensure that MindIE Motor can run properly.
+#### Procedure
 
-**Procedure**
+1. Configure the environment variable.  
 
-1. Configure environment variables. <a id="tuning-in-serving-scenarios-1"></a> 
-    To enable msServiceProfiler's profiling capability, set the environment variable `SERVICE_PROF_CONFIG_PATH` before MindIE Motor service deployment. If the environment variable is misspelled or not set before deploying the MindIE Motor service, the msServiceProfiler collection capability cannot be enabled.
-    
-    The following uses `ms_service_profiler_config.json` as an example to describe how to set environment variables.
+    The collection capability of msServiceProfiler must be enabled by setting the environment variable `SERVICE_PROF_CONFIG_PATH` before deploying the MindIE Motor service. If the environment variable is misspelled or not set before deploying the MindIE Motor service, the collection capability of msServiceProfiler cannot be enabled.
+
+    Taking the file name `ms_service_profiler_config.json` as an example, run the following command to configure the environment variable.
 
     ```shell
     export SERVICE_PROF_CONFIG_PATH="./ms_service_profiler_config.json"
     ```
 
-    The value of `SERVICE_PROF_CONFIG_PATH` must point to the JSON file name. The JSON file is the configuration file for controlling profile data collection. For example, it specifies the path for storing profile metadata and enables or disables operator collection. For details about the fields, see [3](#tuning-in-serving-scenarios-3). If no configuration file exists at the specified path, the tool automatically generates a default configuration (with the profiling feature disabled by default).
+    The `SERVICE_PROF_CONFIG_PATH` must be specified to a JSON file name. This JSON file is the configuration file that controls performance data collection, such as the storage location of collected performance metadata and the operator collection switch. For details about specific fields, see step 3. If no configuration file exists in the path, the tool will automatically generate a default configuration (with the profiling switch turned off by default).
 
-    > [!CAUTION]<br>
-    > In multi-node deployments, it is advised not to place the configuration file or its specified data storage path in a shared directory (such as a network shared location). Because data writing may involve additional network or buffering steps rather than direct disk writing, such configurations may lead to unexpected system behavior or results in certain situations.
+    > [!NOTE]
+    > In multi-node deployment, it is generally not recommended to place the configuration file or its specified data storage path in a shared directory (such as a network share). Because the data writing method may involve additional network or buffering steps rather than direct disk writes, such configurations can lead to unexpected system behavior or results in certain scenarios.
 
 2. Run the MindIE Motor service.
 
-    If the environment variables are correctly configured, the tool outputs the following logs starting with [msservice_profiler] before the service deployment is complete, indicating that msServiceProfiler has been started:
+    If the environment variable is correctly configured, the tool will output logs starting with `[msservice_profiler]` before service deployment is complete, indicating that msServiceProfiler has started, as shown below.
 
     ```tex
     [msservice_profiler] [PID:225] [INFO] [ParseEnable:179] profile enable_: false
@@ -296,50 +310,52 @@ msServiceProfiler provides end-to-end performance profiling. It clearly displays
     [msservice_profiler] [PID:225] [INFO] [LogDomainInfo:357] profile enableDomainFilter_: false
     ```
 
-    If the configuration file specified by `SERVICE_PROF_CONFIG_PATH` does not exist, the tool outputs logs indicating automatic creation. Using the configuration in step [1](#tuning-in-serving-scenarios-1) as an example, the tool outputs the following logs:
+    If the configuration file specified by the SERVICE_PROF_CONFIG_PATH environment variable does not exist, the tool outputs a log indicating automatic creation. Taking the configuration in step 1 as an example, the tool outputs the following log.
 
     ```tex
     [msservice_profiler] [PID:225] [INFO] [SaveConfigToJsonFile:588] Successfully saved profiler configuration to: ./ms_service_profiler_config.json
     ```
 
-3. Collect data. <a id="tuning-in-serving-scenarios-3"></a>
+3. Start data profiling.
 
-    After the MindIE Motor service is successfully deployed, you can precisely control collection behavior by modifying fields in the configuration file.
+    After the MindIE Motor service is successfully deployed, you can precisely control the collection behavior by modifying the fields in the configuration file.
 
     ```shell
     {
         "enable": 1,
         "prof_dir": "${PATH}/prof_dir/",
         "acl_task_time": 0
-        ...              # Only the three fields are shown as an example.
+        ...              # Only the three fields configured above are used as an example here.
         }
     ```
 
-    Table 1 Parameters 
+    Table 1 Parameter description
 
-    |Parameter|Description|Required (Yes/No)|
+    |Parameter|Description|Mandatory|
     |-----|-----|-----|
-    |enable|Globally enables or disables profile data collection. The options are as follows:<br> - `0`: disabled.<br> - `1`: enabled.<br> If this parameter is set to `0`, no data collection occurs even if other parameters enable their corresponding features. If only this parameter is set to `1`, only serving profile data is collected.|Yes|
-    |prof_dir|Path for storing the collected profile data. The default value is `${HOME}/.ms_server_profiler`.<br> This path stores the original profile data. Subsequent parsing steps are required to obtain visualizable profile data files for analysis.<br> If `prof_dir` is modified when `enable` is `0`, the change takes effect when `enable` is later changed to `1`. If `prof_dir` is modified when `enable` is `1`, the change does not take effect.|No|
-    |acl_task_time|Enables or disables profiling for operator delivery time and execution time. The options are as follows:<br> - `0`: disabled. Default value. Setting this parameter to `0` or any other invalid value disables this feature.<br> - `1`: enabled.<br> Enabling this function introduces performance overhead, which may cause inaccurate profile data. For further detailed analysis, you are advised to enable this function only when model execution is abnormal.<br> Operator collection generates large amounts of data. Generally, it is advised to collect data for 3 to 5 seconds. Longer collection time consumes additional disk space and increases parsing time, prolonging performance issue location.<br> The default operator collection level is L0. To enable other operator collection levels, see [Service Profiler](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/devaids/Profiling/mindieprofiling_0001.html) for more parameter information.|No|
-    
-    Generally, if `enable` is set to `1` continuously, the tool collects data from the moment the MindIE Motor inference service receives a request until the request ends. The size of the directory under `prof_dir` will continue to grow. Therefore, it is advised to collect data only during key time periods.
+    |enable|Master switch for performance data collection. Values: <br> - 0: Disabled. <br> - 1: Enabled. <br> Even if other switches are enabled, no data collection will occur if this switch is disabled. If only this switch is enabled, only serving performance data is collected.|Yes|
+    |prof_dir|Storage path for the collected performance data. The default value is ${HOME}/.ms_server_profiler.<br> This path stores raw performance data. You need to perform subsequent parsing steps to obtain visualized performance data files for analysis.<br> When enable is 0, custom modifications to prof_dir take effect after enable is subsequently changed to 1. When enable is 1, directly modifying prof_dir does not take effect.|No|
+    |acl_task_time|Switch for enabling the collection of operator dispatch time and operator execution time data. Values: <br> - 0: Disabled. The default value. Configuring 0 or any other invalid value indicates disabled.<br> - 1: Enabled.<br> Enabling this function consumes a certain amount of device performance, which may cause the collected performance data to be inaccurate. It is recommended to enable this function when the model execution time is abnormal for more detailed analysis.<br> The volume of operator collection data is large. It is generally recommended to collect data for a concentrated period of 3 to 5 seconds. An excessively long duration will occupy additional disk space and consume extra parsing time, thereby prolonging the performance locating time.<br> The default operator collection level is L0. If you need to enable other operator collection levels, see the complete parameter introduction in the [Serving Tuning Tool](https://gitcode.com/Ascend/msserviceprofiler/blob/26.0.0/docs/en/quick_start.md).|No|
 
-    Whenever the `enable` field changes, the tool outputs corresponding logs to indicate the change.
+    Generally, if `enable` remains 1, the tool will continuously collect data from the moment the MindIE Motor inference service receives a request until the request ends, and the directory size under prof_dir will also keep growing. Therefore, it is recommended that you collect information only for key time periods.
 
-    ```tex
-    [msservice_profiler] [PID:3259] [INFO] [DynamicControl:407] Profiler Enabled Successfully!
-    ```
+    Whenever the enable field changes, the tool outputs a corresponding log message.
 
     ```tex
-    [msservice_profiler] [PID:3057] [INFO] [DynamicControl:411] Profiler Disabled Successfully!
+        [msservice_profiler] [PID:3259] [INFO] [DynamicControl:407] Profiler Enabled Successfully!
     ```
 
-    Whenever `enable` is changed from `0` to `1`, all fields in the configuration file are reloaded by the tool, enabling dynamic updates.
+    Or
 
-4. Parse data.
+    ```tex
+        [msservice_profiler] [PID:3057] [INFO] [DynamicControl:411] Profiler Disabled Successfully!
+    ```
 
-    1. Install environment dependencies.
+    Whenever `enable` changes from 0 to 1, all fields in the configuration file are reloaded by the tool, enabling dynamic updates.
+
+4. Parse the data.
+
+   1. Install environment dependencies.
 
         ```shell
         python >= 3.10
@@ -348,26 +364,18 @@ msServiceProfiler provides end-to-end performance profiling. It clearly displays
         psutil >= 5.9.5
         ```
 
-    2. Run the parsing command.
+   2. Example of executing the parsing command.
 
         ```shell
         python3 -m ms_service_profiler.parse --input-path=${PATH}/prof_dir
         ```
 
-        --`input-path` specifies the path set by `prof_dir` in step [3](#tuning-in-serving-scenarios-1). After parsing, parsed profile data files are generated in the directory where the command is executed.
+        --input-path specifies the path set by the `prof_dir` parameter in step 3. After parsing is complete, the parsed performance data file is generated in the command execution directory by default.
 
-5. Tuning Analysis
+5. Perform tuning analysis.
 
-    The parsed profile data includes `db`, `csv`, and `json` formats. You can quickly analyze from different dimensions such as requests and scheduling using CSV files, or import `db` or `json` files into MindStudio Insight for visualized analysis. For detailed operations, see [MindStudio Insight Serving Tuning](https://www.hiascend.com/document/detail/zh/mindstudio/830/GUI_baseddevelopmenttool/msascendinsightug/Insight_userguide_0112.html).
+    The parsed performance data includes `db`, `csv`, and `json` formats. Users can perform quick analysis on different dimensions such as requests and scheduling through csv files, or import db or json files into the MindStudio Insight tool for visual analysis. For detailed operations, see [MindStudio Insight Serving Tuning](https://gitcode.com/Ascend/msinsight/blob/26.0.0/docs/en/user_guide/service_optimization.md).
 
 ## Advanced Development
 
-To explore more advanced features of the LLM inference tools, see the respective tool documentation:
-
-- msModelSlim: See [msModelSlim](https://gitcode.com/Ascend/msmodelslim) for more information.
-
-- For details about the Large Language Model Debug Tool, see [Large Language Model Debug Tool](https://gitcode.com/Ascend/msit/blob/master/msit/docs/llm/v1.0/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86%E7%B2%BE%E5%BA%A6%E5%B7%A5%E5%85%B7%E8%AF%B4%E6%98%8E%E6%96%87%E6%A1%A3.md).
-
-- For details about profiling tools, see [Profiling Tools User Guide](https://www.hiascend.com/document/detail/zh/mindstudio/830/T&ITools/Profiling/atlasprofiling_16_0001.html).
-
-- For details about MindStudio Insight, see [MindStudio Insight](https://gitcode.com/Ascend/msinsight/blob/14f56b2a945c848c9a92487ce94b2f9dfc90ee02/README.md).
+If you want to explore more features of the inference tools, see the introduction to the MindStudio Inference Tools section in [MindStudio](https://www.hiascend.com/document/detail/en/mindstudio/2600/index/index.html).

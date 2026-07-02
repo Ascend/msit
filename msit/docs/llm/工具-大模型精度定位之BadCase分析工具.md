@@ -174,8 +174,6 @@ Analyzer.analyze(synthesizer1, csv2)
 Analyzer.analyze(csv1, synthesizer2)
 ```
 
-[^4]: 必须的表头为，`queries`, `input_token_ids`, `output_token_ids`, `passed`
-
 [^5]：仅供演示，请以实际 csv 路径为主
 
 [^6]：仅供演示，请以实际场景为主

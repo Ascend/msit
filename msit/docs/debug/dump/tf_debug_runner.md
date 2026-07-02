@@ -55,4 +55,4 @@ tfdbg> run
 | -o，--out-path    | 输出文件路径，默认为当前路径                                                                                                                                                                                          | 否  |
 | -s，--input-shape | 模型输入的shape信息，默认为空，例如"input_name1:1,224,224,3;input_name2:3,300",节点中间使用英文分号隔开。input_name必须是转换前的网络模型中的节点名称                                                                                                | 否  |
 | --output-nodes   | 用户设定的需要输出的算子                                                                                                                                                                                            | 是  |
-| -h    --help     | 用于查看全部的参数                                                                                                                                                                                               | 否  | |  |
+| -h    --help     | 用于查看全部的参数                                                                                                                                                                                               | 否  |
