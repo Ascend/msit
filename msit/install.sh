@@ -21,7 +21,6 @@ only_benchmark=
 only_analyze=
 only_convert=
 only_profile=
-only_llm=
 only_tensor_view=
 only_graph=
 arg_help=0
@@ -34,7 +33,6 @@ while [[ "$#" -gt 0 ]]; do case $1 in
   --analyze) only_analyze=true;;
   --convert) only_convert=true;;
   --profile) only_profile=true;;
-  --llm) only_llm=true;;
   --tensor-view) only_tensor_view=true;;
   --graph) only_graph=true;;
   --uninstall) uninstall=true;;
@@ -61,7 +59,6 @@ if [ "$arg_help" -eq "1" ]; then
   echo " --analyze : only install analyze component"
   echo " --convert : only install convert component"
   echo " --profile : only install profile component"
-  echo " --llm : only install llm component"
   echo "--tensor-view: only install tensor-view component"
   echo "--graph: only install graph component"
   echo " --full : using with install, install all components and dependencies, may need sudo privileges"
@@ -73,9 +70,9 @@ fi
 
 uninstall(){
   pip3 uninstall msit analyze_tool convert_tool auto_optimizer msprof ${all_uninstall}
-  if [ -z $only_benchmark ] && [ -z $only_analyze ] && [ -z $only_convert ] && [ -z $only_profile ] && [ -z $only_llm ] && [ -z $only_tensor_view ]
+  if [ -z $only_benchmark ] && [ -z $only_analyze ] && [ -z $only_convert ] && [ -z $only_profile ] && [ -z $only_tensor_view ]
   then
-    pip3 uninstall msit msit-analyze aclruntime ais_bench msit-benchmark msit-convert msit-profile msit-llm msit-tensor-view msit-graph ${all_uninstall}
+    pip3 uninstall msit msit-analyze aclruntime ais_bench msit-benchmark msit-convert msit-profile msit-tensor-view msit-graph ${all_uninstall}
   else
     if [ ! -z $only_benchmark ]
     then
@@ -98,11 +95,6 @@ uninstall(){
       pip3 uninstall msit-profile ${all_uninstall}
     fi
 
-    if [ ! -z $only_llm ]
-    then
-      pip3 uninstall msit-llm ${all_uninstall}
-    fi
-
     if [ ! -z $only_tensor_view ]
     then
       pip3 uninstall msit-tensor-view ${all_uninstall}
@@ -114,16 +106,6 @@ uninstall(){
     fi
   fi
   exit;
-}
-
-
-build_opchecker_so() {
-    echo ""
-    echo "Try building libatb_speed_torch.so for msit llm."
-    cd ${CURRENT_DIR}/components/llm/msit_llm/opcheck/atb_operators
-    bash build.sh
-    cd -
-    echo ""
 }
 
 
@@ -153,32 +135,17 @@ install(){
     pip3 install ${CURRENT_DIR}/components/profile ${arg_force_reinstall}
   fi
 
-  if [ ! -z $only_llm ]
-  then
-      pip3 install ${CURRENT_DIR}/components/llm ${arg_force_reinstall}
-      build_opchecker_so
-  fi
-
-  if [ ! -z $only_tensor_view ]
-    then
-        pip3 install ${CURRENT_DIR}/components/tensor_view ${arg_force_reinstall}
-        build_opchecker_so
-    fi
-
-  if [ -z $only_benchmark ] && [ -z $only_analyze ] && [ -z $only_convert ] && [ -z $only_profile ] && [ -z $only_llm ] && [ -z $only_tensor_view ]
+  if [ -z $only_benchmark ] && [ -z $only_analyze ] && [ -z $only_convert ] && [ -z $only_profile ] && [ -z $only_tensor_view ]
   then
     pip3 install ${CURRENT_DIR}/components/benchmark \
     ${CURRENT_DIR}/components/analyze \
     ${CURRENT_DIR}/components/convert \
     ${CURRENT_DIR}/components/profile \
-    ${CURRENT_DIR}/components/llm \
     ${CURRENT_DIR}/components/tensor_view \
     ${arg_force_reinstall}
 
     bash ${CURRENT_DIR}/components/benchmark/msit_benchmark/install.sh
     bash ${CURRENT_DIR}/components/convert/build.sh
-
-    build_opchecker_so
   fi
 
   rm -rf ${CURRENT_DIR}/msit.egg-info
