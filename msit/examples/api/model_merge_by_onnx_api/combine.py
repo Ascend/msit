@@ -18,15 +18,12 @@ import logging
 from typing import Dict, List, MutableMapping, Optional, Set, Tuple
 
 import onnx
-from onnx import GraphProto, ModelProto, TensorProto, checker, helper, utils
+from onnx import GraphProto, ModelProto, helper, utils
 from components.utils.check.rule import Rule
-
-from msit.msit.components.debug.surgeon.test.testcase.optimizer.knowledges.test_knowledge_avgpool_split import \
-    make_dynamic_model
 
 
 def check_overlapping_names(
-        g1: GraphProto, g2: GraphProto, io_map: Optional[List[Tuple[str, str]]] = None
+    g1: GraphProto, g2: GraphProto, io_map: Optional[List[Tuple[str, str]]] = None
 ) -> List[Tuple[str, List[str]]]:
     """Checks whether there are name collisions between two graphs
 
@@ -69,15 +66,11 @@ def check_overlapping_names(
     if overlap:
         result.append(("edge", overlap))
 
-    overlap = _overlapping(
-        [e.name for e in g1.value_info], [e.name for e in g2.value_info]
-    )
+    overlap = _overlapping([e.name for e in g1.value_info], [e.name for e in g2.value_info])
     if overlap:
         result.append(("value_info", overlap))
 
-    overlap = _overlapping(
-        [e.name for e in g1.initializer], [e.name for e in g2.initializer]
-    )
+    overlap = _overlapping([e.name for e in g1.initializer], [e.name for e in g2.initializer])
     if overlap:
         result.append(("initializer", overlap))
 
@@ -95,12 +88,14 @@ def check_overlapping_names(
 
 
 class MergeGraphsInfo:
-    def __init__(self,
-                 io_map: List[Tuple[str, str]],
-                 inputs: Optional[List[str]] = None,
-                 outputs: Optional[List[str]] = None,
-                 prefix1: Optional[str] = None,
-                 prefix2: Optional[str] = None):
+    def __init__(
+        self,
+        io_map: List[Tuple[str, str]],
+        inputs: Optional[List[str]] = None,
+        outputs: Optional[List[str]] = None,
+        prefix1: Optional[str] = None,
+        prefix2: Optional[str] = None,
+    ):
         """
         Arguments:
             io_map (list of pairs of string): The pairs of names [(out0, in0), (out1, in1), ...]
@@ -123,11 +118,11 @@ class MergeGraphsInfo:
 
 
 def merge_graphs(  # pylint: disable=too-many-branches,too-many-statements
-        g1: GraphProto,
-        g2: GraphProto,
-        merge_graphs_info: MergeGraphsInfo,
-        name: Optional[str] = None,
-        doc_string: Optional[str] = None,
+    g1: GraphProto,
+    g2: GraphProto,
+    merge_graphs_info: MergeGraphsInfo,
+    name: Optional[str] = None,
+    doc_string: Optional[str] = None,
 ) -> GraphProto:
     """Combines two ONNX graphs into a single one.
 
@@ -191,9 +186,7 @@ def merge_graphs(  # pylint: disable=too-many-branches,too-many-statements
             input_set = set(inputs)
             g1_inputs = [g1_input.name for g1_input in g1.input if g1_input.name in input_set]
             g2_inputs = [
-                g2_input.name
-                for g2_input in g2.input
-                if g2_input.name in input_set or g2_input.name in io_map_g2_ins
+                g2_input.name for g2_input in g2.input if g2_input.name in input_set or g2_input.name in io_map_g2_ins
             ]
 
         if not outputs:
@@ -266,18 +259,10 @@ def merge_graphs(  # pylint: disable=too-many-branches,too-many-statements
         g.output.extend(g2.output)
 
     g.initializer.extend(g1.initializer)
-    g.initializer.extend(
-        [init for init in g2.initializer if init.name not in io_map_g2_ins]
-    )
+    g.initializer.extend([init for init in g2.initializer if init.name not in io_map_g2_ins])
 
     g.sparse_initializer.extend(g1.sparse_initializer)
-    g.sparse_initializer.extend(
-        [
-            init
-            for init in g2.sparse_initializer
-            if init.values.name not in io_map_g2_ins
-        ]
-    )
+    g.sparse_initializer.extend([init for init in g2.sparse_initializer if init.values.name not in io_map_g2_ins])
 
     g.value_info.extend(g1.value_info)
     g.value_info.extend([vi for vi in g2.value_info if vi.name not in io_map_g2_ins])
@@ -286,14 +271,14 @@ def merge_graphs(  # pylint: disable=too-many-branches,too-many-statements
 
     if doc_string is None:
         doc_string = (
-                f"Graph combining {g1.name} and {g2.name}\n"
-                + g1.name
-                + "\n\n"
-                + g1.doc_string
-                + "\n\n"
-                + g2.name
-                + "\n\n"
-                + g2.doc_string
+            f"Graph combining {g1.name} and {g2.name}\n"
+            + g1.name
+            + "\n\n"
+            + g1.doc_string
+            + "\n\n"
+            + g2.name
+            + "\n\n"
+            + g2.doc_string
         )
     g.doc_string = doc_string
 
@@ -301,19 +286,19 @@ def merge_graphs(  # pylint: disable=too-many-branches,too-many-statements
 
 
 def merge_models(  # pylint: disable=too-many-branches
-        m1: ModelProto,
-        m2: ModelProto,
-        io_map: List[Tuple[str, str]],
-        inputs: Optional[List[str]] = None,
-        outputs: Optional[List[str]] = None,
-        prefix1: Optional[str] = None,
-        prefix2: Optional[str] = None,
-        name: Optional[str] = None,
-        doc_string: Optional[str] = None,
-        producer_name: Optional[str] = "onnx.compose.merge_models",
-        producer_version: Optional[str] = "1.0",
-        domain: Optional[str] = "",
-        model_version: Optional[int] = 1,
+    m1: ModelProto,
+    m2: ModelProto,
+    io_map: List[Tuple[str, str]],
+    inputs: Optional[List[str]] = None,
+    outputs: Optional[List[str]] = None,
+    prefix1: Optional[str] = None,
+    prefix2: Optional[str] = None,
+    name: Optional[str] = None,
+    doc_string: Optional[str] = None,
+    producer_name: Optional[str] = "onnx.compose.merge_models",
+    producer_version: Optional[str] = "1.0",
+    domain: Optional[str] = "",
+    model_version: Optional[int] = 1,
 ) -> ModelProto:
     """Combines two ONNX models into a single one.
 
@@ -356,8 +341,7 @@ def merge_models(  # pylint: disable=too-many-branches
 
     if m1.ir_version != m2.ir_version:
         raise ValueError(
-            f"IR version mismatch {m1.ir_version} != {m2.ir_version}."
-            " Both models should have the same IR version"
+            f"IR version mismatch {m1.ir_version} != {m2.ir_version}. Both models should have the same IR version"
         )
     ir_version = m1.ir_version
 
@@ -429,9 +413,7 @@ def merge_models(  # pylint: disable=too-many-branches
     helper.set_model_props(model, model_props)
 
     # Merging functions
-    function_overlap = list(
-        {f.name for f in m1.functions} & {f.name for f in m2.functions}
-    )
+    function_overlap = list({f.name for f in m1.functions} & {f.name for f in m2.functions})
     if function_overlap:
         raise ValueError(
             "Can't merge models with overlapping local function names."
@@ -445,16 +427,16 @@ def merge_models(  # pylint: disable=too-many-branches
 
 
 def add_prefix_graph(  # pylint: disable=too-many-branches
-        graph: GraphProto,
-        prefix: str,
-        rename_nodes: Optional[bool] = True,
-        rename_edges: Optional[bool] = True,
-        rename_inputs: Optional[bool] = True,
-        rename_outputs: Optional[bool] = True,
-        rename_initializers: Optional[bool] = True,
-        rename_value_infos: Optional[bool] = True,
-        inplace: Optional[bool] = False,
-        name_map: Optional[Dict[str, str]] = None,
+    graph: GraphProto,
+    prefix: str,
+    rename_nodes: Optional[bool] = True,
+    rename_edges: Optional[bool] = True,
+    rename_inputs: Optional[bool] = True,
+    rename_outputs: Optional[bool] = True,
+    rename_initializers: Optional[bool] = True,
+    rename_value_infos: Optional[bool] = True,
+    inplace: Optional[bool] = False,
+    name_map: Optional[Dict[str, str]] = None,
 ) -> GraphProto:
     """Adds a prefix to names of elements in a graph: nodes, edges, inputs, outputs,
     initializers, sparse initializer, value infos.
@@ -511,20 +493,14 @@ def add_prefix_graph(  # pylint: disable=too-many-branches
             g_node.name = _prefixed(prefix, g_node.name)
             for attribute in g_node.attribute:
                 if attribute.g:
-                    _ = add_prefix_graph(
-                        attribute.g, prefix, inplace=True, name_map=name_map
-                    )
+                    _ = add_prefix_graph(attribute.g, prefix, inplace=True, name_map=name_map)
 
     if rename_initializers:
         for init in g.initializer:
             name_map[init.name] = _prefixed(prefix, init.name)
         for sparse_init in g.sparse_initializer:
-            name_map[sparse_init.values.name] = _prefixed(
-                prefix, sparse_init.values.name
-            )
-            name_map[sparse_init.indices.name] = _prefixed(
-                prefix, sparse_init.indices.name
-            )
+            name_map[sparse_init.values.name] = _prefixed(prefix, sparse_init.values.name)
+            name_map[sparse_init.indices.name] = _prefixed(prefix, sparse_init.indices.name)
 
     if rename_value_infos:
         for entry in g.value_info:
@@ -562,16 +538,16 @@ def add_prefix_graph(  # pylint: disable=too-many-branches
 
 
 def add_prefix(
-        model: ModelProto,
-        prefix: str,
-        rename_nodes: Optional[bool] = True,
-        rename_edges: Optional[bool] = True,
-        rename_inputs: Optional[bool] = True,
-        rename_outputs: Optional[bool] = True,
-        rename_initializers: Optional[bool] = True,
-        rename_value_infos: Optional[bool] = True,
-        rename_functions: Optional[bool] = True,
-        inplace: Optional[bool] = False,
+    model: ModelProto,
+    prefix: str,
+    rename_nodes: Optional[bool] = True,
+    rename_edges: Optional[bool] = True,
+    rename_inputs: Optional[bool] = True,
+    rename_outputs: Optional[bool] = True,
+    rename_initializers: Optional[bool] = True,
+    rename_value_infos: Optional[bool] = True,
+    rename_functions: Optional[bool] = True,
+    inplace: Optional[bool] = False,
 ) -> ModelProto:
     """Adds a prefix to names of elements in a graph: nodes, edges, inputs, outputs,
     initializers, sparse initializer, value infos, and local functions.
@@ -653,7 +629,7 @@ following_model_inputs = args.following_model_inputs
 len_previous_model_outputs = len(previous_model_outputs)
 len_following_model_inputs = len(following_model_inputs)
 if len(previous_model_outputs) != len(following_model_inputs):
-    raise Exception("Each input and output must match!")
+    raise Exception("Each input and output must match!")  # pylint: disable=broad-exception-raised
 
 connection_list = []
 for previous_model_output, following_model_input in zip(previous_model_outputs, following_model_inputs):
@@ -670,9 +646,6 @@ max_ir_version = max(previous_model.ir_version, following_model.ir_version)
 previous_model.ir_version = max_ir_version
 following_model.ir_version = max_ir_version
 
-combined_model = merge_models(
-    previous_model, following_model,
-    io_map=connection_list
-)
+combined_model = merge_models(previous_model, following_model, io_map=connection_list)
 onnx.save(combined_model, merge_model_path)
 logging.info("merge %s and % s into %s", previous_model_path, previous_model_path, merge_model_path)
