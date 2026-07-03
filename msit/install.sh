@@ -70,18 +70,6 @@ if [ "$arg_help" -eq "1" ]; then
   exit;
 fi
 
-# 若pip源为华为云，则优先安装skl2onnx(当前mirrors.huaweicloud.com中skl2onnx已停止更新，不包含1.14.1及以上版本)
-pre_check_skl2onnx(){
-  http_mirror_url=$(python3 -c "from components.utils.install import get_public_url; print(get_public_url('http_mirror_url'))")
-  https_mirror_url=$(python3 -c "from components.utils.install import get_public_url; print(get_public_url('https_mirror_url'))")
-  pip_source_index_url=$(pip3 config list | grep index-url | awk -F'=' '{print $2}' | tr -d "'")
-  if [ "${pip_source_index_url}" == "${http_mirror_url}" ] || [ "${pip_source_index_url}" == "${https_mirror_url}" ]
-  then
-    mirror_tools_url=$(python3 -c "from components.utils.install import get_public_url; print(get_public_url('mirror_tools_url'))")
-    pip3 install skl2onnx==1.14.1 -i $mirror_tools_url --trusted-host mirrors.tools.huawei.com
-  fi
-}
-
 
 uninstall(){
   pip3 uninstall msit analyze_tool convert_tool auto_optimizer msprof ${all_uninstall}
@@ -179,8 +167,6 @@ install(){
 
   if [ -z $only_benchmark ] && [ -z $only_analyze ] && [ -z $only_convert ] && [ -z $only_profile ] && [ -z $only_llm ] && [ -z $only_tensor_view ]
   then
-    pre_check_skl2onnx
-
     pip3 install ${CURRENT_DIR}/components/benchmark \
     ${CURRENT_DIR}/components/analyze \
     ${CURRENT_DIR}/components/convert \

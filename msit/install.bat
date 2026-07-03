@@ -24,18 +24,12 @@ SET llvm_path=
 SET mingw_w64_path=
 SET skip_check_cert=
 
-SET all_component=1
-SET select_surgeon=
 SET uninstall=
 SET all_uninstall=
 
 :loop
 IF NOT "%1"=="" (
-    IF "%1"=="--surgeon" (
-        SET select_surgeon=1
-        SET all_component=0
-        SHIFT
-    ) ELSE IF "%1"=="--full" (
+    IF "%1"=="--full" (
         SET full_install=--full
         SHIFT
     ) ELSE IF "%1"=="-k"  (
@@ -103,13 +97,7 @@ IF NOT %errorlevel%==0 (
 
 :uninstall_func
 
-IF DEFINED select_surgeon (
-    pip3 uninstall msit-surgeon %all_uninstall%
-) 
-
-IF %all_component%==1 (
-    pip3 uninstall msit msit-surgeon %all_uninstall%
-)
+pip3 uninstall msit %all_uninstall%
 
 GOTO:eof
 
@@ -120,19 +108,6 @@ pip3 install "%CURRENT_DIR%/" %arg_force_reinstall%
 IF NOT %errorlevel%==0 (
     ECHO pip install msit failed, please check the failure reason.
     EXIT /B 1
-)
-
-IF %all_component%==1 (
-    SET select_surgeon=1
-)
-
-IF DEFINED select_surgeon (
-    @REM install surgeon component
-    pip3 install "%CURRENT_DIR%/components/debug/surgeon" %arg_force_reinstall%
-    IF NOT %errorlevel%==0 (
-        ECHO pip install surgeon failed, please check the failure reason.
-        EXIT /B 1
-    )
 )
 
 GOTO:eof
