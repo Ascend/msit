@@ -135,6 +135,11 @@ install(){
     pip3 install ${CURRENT_DIR}/components/profile ${arg_force_reinstall}
   fi
 
+  if [ ! -z $only_tensor_view ]
+  then
+    pip3 install ${CURRENT_DIR}/components/tensor_view ${arg_force_reinstall}
+  fi
+
   if [ -z $only_benchmark ] && [ -z $only_analyze ] && [ -z $only_convert ] && [ -z $only_profile ] && [ -z $only_tensor_view ]
   then
     pip3 install ${CURRENT_DIR}/components/benchmark \
