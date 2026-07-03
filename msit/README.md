@@ -2,11 +2,11 @@
 
 ## 简介
 
-MindStudio Inference Tools(msit)作为昇腾统一推理工具，提供一体化开发功能，帮助用户进行模型迁移以及性能与精度的调试调优。目前，该工具包括benchmark、analyze、convert、profile、llm、tensor-view等组件。
+MindStudio Inference Tools(msit)作为昇腾统一推理工具，提供一体化开发功能，帮助用户进行模型迁移以及性能与精度的调试调优。目前，该工具包括benchmark、analyze、convert、profile、tensor-view等组件。
 
 **注意**
 
-msit中的llm组件功能在[msprobe](https://gitcode.com/Ascend/msprobe)中已有对应的优化实现，msit中相关功能已停止演进，建议前往使用msprobe工具。
+原msit中的llm、debug组件功能在[msprobe](https://gitcode.com/Ascend/msprobe)中已有对应的优化实现，msit中相关功能已日落，建议前往使用msprobe工具。
 
 ## 注意事项
 
@@ -30,28 +30,11 @@ msit <TASK> <SUB_TASK> [OPT] [ARGS]
 
 |参数|说明|
 |-----|-----|
-|TASK|任务类型，当前支持 benchmark、analyze、convert、profile、llm、graph、tensor-view，具体任务介绍可参见 [各组件功能介绍章节](#各组件功能介绍)。<br> 也可通过执行```msit -h```命令查看当前支持的任务列表。|
+|TASK|任务类型，当前支持 benchmark、analyze、convert、profile、graph、tensor-view，具体任务介绍可参见 [各组件功能介绍章节](#各组件功能介绍)。<br> 也可通过执行```msit -h```命令查看当前支持的任务列表。|
 |SUB_TASK| `<TASK>` 下包含的子任务类型，以 `graph` 任务为例，可以通过执行```msit graph -h```命令，查看每个任务支持的子功能列表。|
-|OPT和ARGS|可选项及参数，每个任务下的可选项和参数可能不同，以 `llm` 任务下的 `dump` 子任务为例，可以通过执行```msit llm dump -h```命令获取可选项和参数。|
-
-例如使用llm的dump功能，启动命令为：
-
-```bash
-msit llm dump <options>
-```
+|OPT和ARGS|可选项及参数，每个任务下的可选项和参数可能不同。|
 
 ## 各组件功能介绍
-
-### llm
-
-提供[**MindIE**](https://www.hiascend.com/software/mindie)和[**torchair**](./docs/glossary/README.md)框架下的[大模型推理调试工具](./docs/llm/README.md)，包含模块参见下表。
-
-|模块|说明|
-|-----|-----|
-|dump|提供了大模型推理过程的数据dump功能，包含ATB和PyTorch场景。使用指南请分别参见[atb dump用户指南](./docs/llm/工具-DUMP加速库数据使用说明.md)和[Pytorch dump用户指南](./docs/llm/工具-Pytorch场景数据dump.md)。|
-|compare|提供大模型推理的自动比对功能，快速定位算子精度问题。使用指南请参见[compare用户指南](./docs/llm/工具-大模型精度比对.md)。|
-|opcheck|提供加速库（ATB）的单算子精度预检功能，检测加速库算子精度是否达标。使用指南请参见[opcheck用户指南](./docs/llm/工具-精度预检使用说明.md)。|
-|errcheck|提供异常检测能力，目前仅支持算子溢出检测。使用指南请参见[异常检测使用说明](./docs/llm/工具-异常检测使用说明.md)。|
 
 ### analyze
 
