@@ -2,11 +2,11 @@
 
 ## 简介
 
-MindStudio Inference Tools(msit)作为昇腾统一推理工具，提供一体化开发功能，帮助用户进行模型迁移以及性能与精度的调试调优。目前，该工具包括benchmark、debug、analyze、convert、profile、llm、tensor-view等组件。
+MindStudio Inference Tools(msit)作为昇腾统一推理工具，提供一体化开发功能，帮助用户进行模型迁移以及性能与精度的调试调优。目前，该工具包括benchmark、analyze、convert、profile、llm、tensor-view等组件。
 
 **注意**
 
-msit中的llm组件，debug组件功能在[msprobe](https://gitcode.com/Ascend/msprobe)中已有对应的优化实现，msit中相关功能已停止演进，建议前往使用msprobe工具。
+msit中的llm组件功能在[msprobe](https://gitcode.com/Ascend/msprobe)中已有对应的优化实现，msit中相关功能已停止演进，建议前往使用msprobe工具。
 
 ## 注意事项
 
@@ -30,9 +30,9 @@ msit <TASK> <SUB_TASK> [OPT] [ARGS]
 
 |参数|说明|
 |-----|-----|
-|TASK|任务类型，当前支持 debug、benchmark、analyze、convert、profile、llm、graph、tensor-view，具体任务介绍可参见 [各组件功能介绍章节](#各组件功能介绍)。<br> 也可通过执行```msit -h```命令查看当前支持的任务列表。|
-|SUB_TASK| `<TASK>` 下包含的子任务类型，以 `debug` 任务为例，可以通过执行```msit debug -h```m命令，查看每个任务支持的子功能列表。|
-|OPT和ARGS|可选项及参数，每个任务下的可选项和参数可能不同，以 `debug` 任务下的 `compare` 子任务为例，可以通过执行```msit debug compare -h```命令获取可选项和参数。|
+|TASK|任务类型，当前支持 benchmark、analyze、convert、profile、llm、graph、tensor-view，具体任务介绍可参见 [各组件功能介绍章节](#各组件功能介绍)。<br> 也可通过执行```msit -h```命令查看当前支持的任务列表。|
+|SUB_TASK| `<TASK>` 下包含的子任务类型，以 `graph` 任务为例，可以通过执行```msit graph -h```命令，查看每个任务支持的子功能列表。|
+|OPT和ARGS|可选项及参数，每个任务下的可选项和参数可能不同，以 `llm` 任务下的 `dump` 子任务为例，可以通过执行```msit llm dump -h```命令获取可选项和参数。|
 
 例如使用llm的dump功能，启动命令为：
 
@@ -52,17 +52,6 @@ msit llm dump <options>
 |compare|提供大模型推理的自动比对功能，快速定位算子精度问题。使用指南请参见[compare用户指南](./docs/llm/工具-大模型精度比对.md)。|
 |opcheck|提供加速库（ATB）的单算子精度预检功能，检测加速库算子精度是否达标。使用指南请参见[opcheck用户指南](./docs/llm/工具-精度预检使用说明.md)。|
 |errcheck|提供异常检测能力，目前仅支持算子溢出检测。使用指南请参见[异常检测使用说明](./docs/llm/工具-异常检测使用说明.md)。|
-
-### debug
-
-提供一站式调试功能，用于传统小模型下定位用户推理过程中的问题，确保模型的正确性。包含模块参见下表。
-
-|模块|说明|
-|-----|-----|
-|dump|提供了传统小模型场景下的数据dump功能，适用于TensorFlow、TensorFlow 2.0、ONNX、Caffe、MindIE-Torch框架。使用指南请参见[dump用户指南](./docs/debug/dump/README.md)。|
-|compare|提供了传统小模型推理场景下的自动化比对功能，用于定位问题算子，适用于TensorFlow、TensorFlow 2.0、ONNX、Caffe、MindIE-Torch框架。使用指南请参见[compare用户指南](./docs/debug/compare/README.md)和[融合pass比对](./docs/debug/compare/融合算子匹配对应pass使用说明.md)。|
-|opcheck|提供了传统小模型场景下精度预检功能，支持对经过GE推理后dump落盘数据进行算子精度预检，检测kernel级别的算子精度是否达标。使用指南请参见[opcheck用户指南](./docs/debug/opcheck/README.md)。<br> 目前只支持TensorFlow 2.6.5。|
-|surgeon|使能ONNX模型在昇腾芯片的优化，并提供基于ONNX的改图功能。使用指南请参见[surgeon用户指南](./docs/debug/surgeon/README.md)。|
 
 ### analyze
 
@@ -112,5 +101,5 @@ msit工具收集了msit安装常见问题和其它问题，可分别参见对应
 | protobuf | 4.25.8、5.29.5、6.31.1 |
 | numpy    | 1.22.0版本以上           |
 
-> [!NOTE] 说明  
+> [!NOTE] 说明
 > 安全版本依赖包可能不满足业务需求，请根据实际场景，选择合适的版本依赖。
