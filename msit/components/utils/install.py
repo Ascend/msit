@@ -69,11 +69,6 @@ class AitInstaller:
 
 INSTALL_INFO_MAP = [
     {
-        "arg-name": "llm",
-        "pkg-name": "msit-llm",
-        "pkg-path": "llm",
-    },
-    {
         "arg-name": "analyze",
         "pkg-name": "msit-analyze",
         "pkg-path": "analyze",
