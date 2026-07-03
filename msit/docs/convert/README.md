@@ -69,7 +69,3 @@ msit convert aoe [args]
 ```shell
 msit convert aoe --model resnet50.onnx --job_type 2 --output resnet50
 ```
-
-## FAQ
-
-使用convert组件进行模型转换时如遇问题，请先行查阅[FAQ](FAQ.md)

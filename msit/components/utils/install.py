@@ -15,7 +15,7 @@
 # -------------------------------------------------------------------------
 import os
 import sys
-import subprocess
+import subprocess  # nosec
 from typing import Union
 
 from components.utils.log import logger
@@ -74,12 +74,6 @@ INSTALL_INFO_MAP = [
         "pkg-path": "llm",
     },
     {
-        "arg-name": "surgeon",
-        "pkg-name": "msit-surgeon",
-        "pkg-path": os.path.join("debug", "surgeon"),
-        "support_windows": True,
-    },
-    {
         "arg-name": "analyze",
         "pkg-name": "msit-analyze",
         "pkg-path": "analyze",
@@ -94,38 +88,18 @@ INSTALL_INFO_MAP = [
         "pkg-name": "msit-profile",
         "pkg-path": "profile",
     },
-    {
-        "arg-name": "tensor-view",
-        "pkg-name": "msit-tensor-view",
-        "pkg-path": "tensor_view"
-    },
+    {"arg-name": "tensor-view", "pkg-name": "msit-tensor-view", "pkg-path": "tensor_view"},
     {
         "arg-name": "benchmark",
         "pkg-name": "msit-benchmark",
         "pkg-path": "benchmark",
     },
     {
-        "arg-name": "compare",
-        "pkg-name": "msit-compare",
-        "pkg-path": os.path.join("debug", "compare"),
-        "depends": ["msit-benchmark", "msit-surgeon"],
-    },
-    {
-        "arg-name": "opcheck",
-        "pkg-name": "msit-opcheck",
-        "pkg-path": os.path.join("debug", "opcheck"),
-    },
-    {
         "arg-name": "graph",
         "pkg-name": "msit-graph",
         "pkg-path": "graph",
     },
-    {
-        "arg-name": "elb",
-        "pkg-name": "msit-elb",
-        "pkg-path": "expert_load_balancing"
-    },
-        
+    {"arg-name": "elb", "pkg-name": "msit-elb", "pkg-path": "expert_load_balancing"},
 ]
 
 
@@ -137,9 +111,7 @@ def get_install_info_follow_depends(install_infos):
     if len(all_names) == len(install_infos):
         return install_infos
     else:
-        return list(
-            filter(lambda info: info["pkg-name"] in all_names, INSTALL_INFO_MAP)
-        )
+        return list(filter(lambda info: info["pkg-name"] in all_names, INSTALL_INFO_MAP))
 
 
 def install_tools(names, find_links):
@@ -153,9 +125,7 @@ def install_tools(names, find_links):
     if "all" in names:
         install_infos = INSTALL_INFO_MAP
     else:
-        install_infos = list(
-            filter(lambda info: info["arg-name"] in names, INSTALL_INFO_MAP)
-        )
+        install_infos = list(filter(lambda info: info["arg-name"] in names, INSTALL_INFO_MAP))
 
         install_infos = get_install_info_follow_depends(install_infos)
 
@@ -173,11 +143,15 @@ def install_tool(tool_info, find_links):
     pkg_path = get_real_pkg_path(tool_info.get("pkg-path"))
 
     if find_links is not None:
-        subprocess.run([sys.executable, "-m", "pip", "install", pkg_path, "--no-index", "-f", find_links])
-        subprocess.run([sys.executable, "-m", "components", "build-extra", arg_name, "-f", find_links])
+        subprocess.run(  # nosec
+            [sys.executable, "-m", "pip", "install", pkg_path, "--no-index", "-f", find_links], shell=False, check=False
+        )
+        subprocess.run(  # nosec
+            [sys.executable, "-m", "components", "build-extra", arg_name, "-f", find_links], shell=False, check=False
+        )
     else:
-        subprocess.run([sys.executable, "-m", "pip", "install", pkg_path])
-        subprocess.run([sys.executable, "-m", "components", "build-extra", arg_name])
+        subprocess.run([sys.executable, "-m", "pip", "install", pkg_path], shell=False, check=False)  # nosec
+        subprocess.run([sys.executable, "-m", "components", "build-extra", arg_name], shell=False, check=False)  # nosec
 
 
 def get_installer(pkg_name) -> Union[AitInstaller, None]:
@@ -240,7 +214,7 @@ def download_comps(names, dest):
         install_infos = INSTALL_INFO_MAP
     else:
         install_infos = filter(lambda info: info["arg-name"] in names, INSTALL_INFO_MAP)
-   
+
     install_infos = get_install_info_follow_depends(list(install_infos))
 
     for tool_info in install_infos:
@@ -252,24 +226,26 @@ def download_comp(tool_info, dest):
     pkg_name = tool_info.get("pkg-name")
     support_windows = tool_info.get("support_windows", False)
     if not support_windows and warning_in_windows(pkg_name):
-        return 
+        return
     logger.info(f"installing {pkg_name}")
     pkg_path = get_real_pkg_path(tool_info.get("pkg-path"))
 
-    subprocess.run([sys.executable, "-m", "pip", "download", "-d", dest, pkg_path], shell=False)
-    subprocess.run([sys.executable, "-m", "pip", "install", "--no-index", "-f", dest, pkg_path], shell=False)
-    
+    subprocess.run([sys.executable, "-m", "pip", "download", "-d", dest, pkg_path], shell=False, check=False)  # nosec
+    subprocess.run(  # nosec
+        [sys.executable, "-m", "pip", "install", "--no-index", "-f", dest, pkg_path], shell=False, check=False
+    )
+
     pkg_installer = get_installer(pkg_name)
 
     if not pkg_installer:
         pkg_installer = AitInstaller()
     pkg_installer.download_extra(dest)
- 
+
 
 def get_public_url(url_name):
     if not isinstance(url_name, str):
         raise ValueError("%s is not a str." % url_name)
-    
+
     from pkg_resources import resource_filename
     from configparser import ConfigParser
 

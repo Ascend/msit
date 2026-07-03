@@ -24,27 +24,8 @@ config = ConfigParser()
 config.read("./components/config/config.ini")
 
 abs_path = os.path.dirname(os.path.realpath(__file__))
-with open(os.path.join(abs_path, "requirements.txt")) as f:
+with open(os.path.join(abs_path, "requirements.txt"), encoding="utf-8") as f:
     required = f.read().splitlines()
-
-msit_sub_tasks = [
-    {
-        "name": "debug",
-        "help_info": "debug a wide variety of model issues",
-        "module": "components.debug.__init__",
-        "attr": "debug_task",
-    }
-]
-
-msit_sub_task_entry_points = []
-for t in msit_sub_tasks:
-    name = t.get('name')
-    help_info = t.get('help_info')
-    module = t.get('module')
-    attr = t.get('attr')
-
-    entory_point = f"{name}:{help_info} = {module}:{attr}"
-    msit_sub_task_entry_points.append(entory_point)
 
 
 class DevelopWithShUmask(develop):
@@ -93,7 +74,6 @@ setup(
     install_requires=required,
     entry_points={
         "console_scripts": ["msit=components.__main__:main"],
-        "msit_sub_task": msit_sub_task_entry_points,
     },
     cmdclass={"develop": DevelopWithShUmask, "install": InstallWithShUmask},
 )
