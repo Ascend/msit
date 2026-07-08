@@ -12,7 +12,7 @@
 | Open-source software| -            | msmodelslim/msmodelslim/quant/processor/quant/autoround_utils/sign_sgd.py | <http://www.cs.toronto.edu/%7Ehinton/absps/momentum.pdf>                       | Public network addresses in comments          |
 | Open-source software| - | msit/install.sh | <http://mirrors.huaweicloud.com/repository/pypi/simple> | If the pip source is Huawei Cloud, install skl2onnx first (mirrors.huaweicloud.com no longer updates skl2onnx and does not provide version 1.14.1 or later).|
 | Open-source software| - | msit/install.sh | <https://mirrors.huaweicloud.com/repository/pypi/simple> | If the pip source is Huawei Cloud, install skl2onnx first (mirrors.huaweicloud.com no longer updates skl2onnx and does not provide version 1.14.1 or later).|
-| Open-source software| - | msit/install.sh | <https://mirrors.tools.huawei.com/pypi/simple> | If the pip source is Huawei Cloud, install skl2onnx first (mirrors.huaweicloud.com no longer updates skl2onnx and does not provide version 1.14.1 or later).|
+| Open-source software| - | msit/install.sh | <https://repo.huaweicloud.com/repository/pypi/simple/> | If the pip source is Huawei Cloud, install skl2onnx first (mirrors.huaweicloud.com no longer updates skl2onnx and does not provide version 1.14.1 or later).|
 | Open-source software| - | msit/setup.py | <https://gitcode.com/Ascend/msit> | Homepage URL for the msit Python package|
 | Open-source software| - | msit/components/debug/compare/setup.py | <https://gitcode.com/Ascend/msit/tree/master/msit/components/debug/compare> | Homepage URL for the compare component Python package|
 | Open-source software| - | msit/components/debug/surgeon/setup.py | <https://gitcode.com/Ascend/msit.git> | URL of the msit repository|
@@ -26,5 +26,5 @@
 | Open-source software| - | msit/components/config/config.ini | <https://gitee.com/ascend/tools.git> | URL of the tools repository containing aisbench|
 | Open-source software| - | msit/components/config/config.ini | <http://mirrors.huaweicloud.com/repository/pypi/simple> | URL of the PyPI Huawei Cloud image|
 | Open-source software| - | msit/components/config/config.ini | <https://mirrors.huaweicloud.com/repository/pypi/simple> | URL of the PyPI Huawei Cloud image|
-| Open-source software| - | msit/components/config/config.ini | <https://mirrors.tools.huawei.com/pypi/simple> | URL of the PyPI image| 
+| Open-source software| - | msit/components/config/config.ini | <https://repo.huaweicloud.com/repository/pypi/simple/> | URL of the PyPI image| 
 | Open-source software| - | msit/components/config/config.ini | <http://www.apache.org/licenses/LICENSE-2.0> | License information|
