@@ -2,7 +2,7 @@
 
 <br>
 
-## 概述
+## 1. 概述
 
 MindStudio Inference Tools为开发者提供一站式推理开发工具，致力于加速模型问题定位效率，提升模型推理性能。
 
@@ -28,7 +28,7 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
 
 - 安装msModelSlim软件，详情请参见《[msModelSlim工具安装指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/install_guide/install_guide.md)》中的[2.3 源码安装](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/install_guide/install_guide.md#23-%E6%BA%90%E7%A0%81%E5%AE%89%E8%A3%85)方式进行安装。
 
-- 安装msProbe工具，详情请参见《[msProbe工具安装指南](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/msprobe_install_guide.md)》中的[2.3 源码安装](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/msprobe_install_guide.md#23-%E6%BA%90%E7%A0%81%E5%AE%89%E8%A3%85)章节使用示例中的“安装基础工具包和atb_probe模块”内容安装对应工具及模块。
+- 安装msProbe工具，详情请参见《[msProbe工具安装指南](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/install_guide/msprobe_install_guide.md)》中的[2.3 源码安装](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/install_guide/msprobe_install_guide.md#23-%E6%BA%90%E7%A0%81%E5%AE%89%E8%A3%85)章节使用示例中的“安装基础工具包和atb_probe模块”内容安装对应工具及模块。
 
 - 安装msProf工具，详情请参见《[msProf工具安装指南](https://gitcode.com/Ascend/msprof/blob/master/docs/zh/install_guide/msprof_install_guide.md)》。
 
@@ -36,9 +36,9 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
 
 - 安装MindStudio Insight工具，详情请参见《[MindStudio Insight安装指南](https://gitcode.com/Ascend/msinsight/blob/master/docs/zh/install_guide/mindstudio_insight_install_guide.md)》。
 
-## 模型推理
+## 2. 模型推理
 
-### 模型量化
+### 2.1 模型量化
 
 1. 下载Llama-3.1-8B-Instruct权重和模型文件，如下图所示，单击[链接](https://www.modelscope.cn/models/LLM-Research/Meta-Llama-3.1-8B-Instruct)下载。<a id="步骤1"></a>
 
@@ -82,15 +82,15 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     ├── tokenizer_config.json                # 模型文件的tokenizer配置文件
     ```
 
-### 精度调试
+### 2.2 精度调试
 
 **前提条件**
 
-- 已参见[模型量化](#模型量化)章节完成模型量化。
+- 已参见[模型量化](#21-模型量化)章节完成模型量化。
 
-#### 浮点模型精度数据采集
+#### 2.2.1 浮点模型精度数据采集
 
-以下介绍使用msProbe工具进行**浮点模型**数据采集，[模型量化](#模型量化)章节的[步骤1](#步骤1)下载的即为**浮点模型**数据。
+以下介绍使用msProbe工具进行**浮点模型**数据采集，[模型量化](#21-模型量化)章节的[步骤1](#步骤1)下载的即为**浮点模型**数据。
 
 1. 配置文件创建
 
@@ -109,7 +109,7 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     }
     ```
 
-    dump参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/dump/atb_data_dump_instruct.md#参数说明)章节中的dump配置文件参数说明。
+    dump参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/user_guide/dump/atb_data_dump_instruct.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)章节中的dump配置文件参数说明。
 
 2. 命令执行
 
@@ -120,7 +120,7 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     source $MSPROBE_HOME_PATH/msprobe/scripts/atb/load_atb_probe.sh --output=/home/test/golden_data --config=/home/test/config.json
     ```
 
-    命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/dump/atb_data_dump_instruct.md#参数说明)章节中的命令行参数说明。
+    命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/user_guide/dump/atb_data_dump_instruct.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)章节中的命令行参数说明。
 
 3. ATB模型运行
 
@@ -140,9 +140,9 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     source $MSPROBE_HOME_PATH/msprobe/scripts/atb/unload_atb_probe.sh
     ```
 
-#### 量化模型精度数据采集
+#### 2.2.2 量化模型精度数据采集
 
-以下介绍使用msProbe工具进行**量化模型**数据采集，[模型量化](#模型量化)章节的[步骤5](#步骤5)生成的量化权重文件即为**量化模型**数据。
+以下介绍使用msProbe工具进行**量化模型**数据采集，[模型量化](#21-模型量化)章节的[步骤5](#步骤5)生成的量化权重文件即为**量化模型**数据。
 
 1. 配置文件创建
 
@@ -161,7 +161,7 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     }
     ```
 
-    dump参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/dump/atb_data_dump_instruct.md#参数说明)章节中的dump配置文件参数说明。
+    dump参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/user_guide/dump/atb_data_dump_instruct.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)章节中的dump配置文件参数说明。
 
 2. 命令执行
 
@@ -172,7 +172,7 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     source $MSPROBE_HOME_PATH/msprobe/scripts/atb/load_atb_probe.sh --output=/home/test/target_data --config=/home/test/config.json
     ```
 
-    命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/dump/atb_data_dump_instruct.md#参数说明)章节中的命令行参数说明。
+    命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/user_guide/dump/atb_data_dump_instruct.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)章节中的命令行参数说明。
 
 3. ATB模型运行
 
@@ -192,7 +192,7 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
     source $MSPROBE_HOME_PATH/msprobe/scripts/atb/unload_atb_probe.sh
     ```
 
-#### 精度比对
+#### 2.2.3 精度比对
 
 将采集到的**量化模型**数据和**浮点模型**数据执行以下比对命令进行精度比对。
 
@@ -201,13 +201,13 @@ MindStudio Inference Tools为开发者提供一站式推理开发工具，致力
 msprobe compare -m atb -gp /home/test/golden_data/atb_dump_data/data/0_{pid}/0/ -tp /home/test/target_data/atb_dump_data/data/0_{pid}/0/
 ```
 
-命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/accuracy_compare/atb_data_compare_instruct.md#参数说明)章节。
+命令行参数介绍请参见[参数说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/user_guide/accuracy_compare/atb_data_compare_instruct.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)章节。
 
 **输出说明**
 
-精度数据比对输出文件为Excel表格文件，输出说明介绍请参见[输出说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/accuracy_compare/atb_data_compare_instruct.md#输出说明)。
+精度数据比对输出文件为Excel表格文件，输出说明介绍请参见[输出说明](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/user_guide/accuracy_compare/atb_data_compare_instruct.md#%E8%BE%93%E5%87%BA%E8%AF%B4%E6%98%8E)。
 
-### 模型调优
+### 2.3 模型调优
 
 **性能数据采集**
 
@@ -279,7 +279,7 @@ PROF_000001_20241118061102981_MORBFBJDEPNJEQPA目录下的mindstudio_profiler_ou
 
     MindStudio Insight工具将性能数据可视化呈现后，可以更直观地分析性能瓶颈，详细分析特性请参见《MindStudio Insight》的[特性介绍](https://gitcode.com/Ascend/msinsight/blob/master/docs/zh/user_guide/overview.md#特性介绍)。
 
-### 服务化调优
+### 2.4 服务化调优
 
 服务化框架性能调优常常像面对“黑盒”，问题难以定位（例如，请求增多后响应速度降低，更换设备后性能不同等）。
 msServiceProfiler（服务化调优工具）提供全链路性能剖析，清晰展示框架调度、模型推理等环节的表现，帮助用户快速找到性能瓶颈，从而有效提升服务性能。
@@ -381,6 +381,6 @@ msServiceProfiler（服务化调优工具）提供全链路性能剖析，清晰
 
     解析后的性能数据包含db格式、csv格式和json格式，用户可以通过csv进行请求、调度等不同维度的快速分析，也可以通过MindStudio Insight工具导入db文件或者json文件进行可视化分析，详细操作请参见《[MindStudio Insight服务化调优](https://gitcode.com/Ascend/msinsight/blob/master/docs/zh/user_guide/service_optimization.md)》。
 
-## 进阶开发
+## 3. 进阶开发
 
 如果您想体验推理开发工具更丰富的功能，请参见[MindStudio](https://www.hiascend.com/document/detail/zh/mindstudio/2600/index/index.html)中推理开发工具部分的介绍。
