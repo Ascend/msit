@@ -2,7 +2,7 @@
 
 ## 1. Contribution process and regulations
 
-Before participating in the development, please be familiar with the contribution process and related specifications. For details, see.[Contribution Process and Specifications](../common/contribute_workflow.md)    .
+Before participating in the development, please be familiar with the contribution process and related specifications. For details, see[Contribution Process and Specifications](../common/contribute_workflow.md).
 
 ## 2. Contribution method
 

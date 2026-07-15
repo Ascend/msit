@@ -15,6 +15,7 @@ The functional descriptions of each tool are listed in the following table.
 | msModelSlim (model quantization tool) | Provides model compression techniques that reduce the numerical precision of model weights and activations, effectively decreasing the model's storage memory footprint and computational requirements. Typically, high-bit floating-point numbers are converted to low-bit fixed-point numbers, thereby directly reducing the size of model weights. The input to the model quantization tool is a normally running model and data, and the output is a usable quantized weight and quantization factor. |
 | msProbe (accuracy debugging tool) | Includes functions such as accuracy data collection (dump) and accuracy comparison, which can help locate accuracy issues during model inference. |
 | msProf (model tuning tool) | Supports profiling and parsing of software and hardware performance data of the Ascend AI Processor, helping locate performance issues during model inference. |
+| msServiceProfiler (profiling tool) |Collect start and end times for key processes, identify main functions or iterations, and record important events during the MindIE and vLLM inference serving. msServiceProfiler profiles various data and helps pinpoint performance issues quickly.|
 | MindStudio Insight | Visualizes the performance data collected by the performance tuning tool, quickly identifying software and hardware performance bottlenecks and improving the efficiency of AI task performance analysis. |
 
 ### Environment Setup

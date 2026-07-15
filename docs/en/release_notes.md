@@ -71,12 +71,12 @@ None
 1. The msModelSlim supports automatic optimization of the quantization precision feedback and can automatically search for the optimal quantization configuration based on precision requirements.
 2. The msModelSlim supports self-quantized multi-modal understanding models and quantitative access to multi-modal understanding models.
 3. The msModelSlim supports multi-card quantization and distributed layer-by-layer quantization, improving the quantization efficiency of large models.
-4. msModelSlim supports DeepSeek-V3.2 W8A8 quantization. A single card can be executed with 64 GB video memory and 100 GB memory.
-5. msModelSlim supports DeepSeek-V3.2-Exp W4A8 quantization. A single card can be executed with 64 GB video memory and 100 GB memory.
+4. msModelSlim supports DeepSeek-V3.2 W8A8 quantization. It can be executed on a single card with 64GB video memory and 100GB memory.
+5. msModelSlim supports DeepSeek-V3.2-Exp W4A8 quantization. It can be executed on a single card with 64GB video memory and 100GB memory.
 6. msModelSlim supports Qwen3-VL-235B-A22B W8A8 quantization.
 7. The msModelSlim model adaptation supports plug-in, configuration registration, and dependency pre-check.
-8. The msModelSlim supports Qwen3-235B-A22B W4A8, Qwen3-30B-A3B W4A8 quantization. The vLLM Ascend supports quantitative model inference deployment.
-9. The msModelSlim supports DeepSeek-V3.2-Exp W8A8 quantization. A single card has 64 GB video memory and 100 GB memory can be executed.
+8. The msModelSlim supports Qwen3-235B-A22B W4A8, Qwen3-30B-A3B W4A8 quantization. The vLLM Ascend supports quantized model inference deployment.
+9. The msModelSlim supports DeepSeek-V3.2-Exp W8A8 quantization. It can be executed on a single card with 64GB video memory and 100GB memory.
 10. MsModelSlim has fixed the problem that Qwen3-235B-A22B frequently appears abnormal tokens such as "game copy" under W8A8 quantization.
 11. msModelSlim supports DeepSeek R1 W4A8 per-channel quantization \[Prototype\].
 12. The msModelSlim supports large model quantitative sensitive layer analysis.

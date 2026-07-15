@@ -27,7 +27,7 @@ You can support this project in the following ways:
 
  * **Coding specifications: Comply with**[PEP 8](https://peps.python.org/pep-0008/), recommended`flake8`or the`pylint`Perform static checks.
  * **Style requirements: The length of a single line of code cannot exceed 120 characters. If the length of a function exceeds 30 lines, split the code to improve readability.**
- * **Comment requirements: Complex logic and public interfaces must be commented out. Modules, classes, and key functions must be described with docstring to describe the usage, parameters, and return values.**
+ * **Comment requirements: Complex logic and public interfaces must be commented. Modules, classes, and key functions must be described with docstring to describe the usage, parameters, and return values.**
  * **Exception handling: Handle exceptions correctly. Do not swallow exceptions without handling or recording them. Resources must be released for critical paths.**
 
 ### 2.2 C++ Code Specifications
@@ -39,7 +39,7 @@ You can support this project in the following ways:
 
 ## 3. Document Specifications
 
- * **Concise expression: Use concise and clear Chinese expressions to avoid ambiguity and redundancy, and maintain unified technical terms.**
+ * **Concise expression: Use concise and clear expressions to avoid ambiguity and redundancy, and maintain unified technical terms.**
  * **Clear structure: The title level is clear, the chapters are properly divided, and important conclusions or precautions can be highlighted.**
  * **Complete example: provides complete example code that can be runnable and specifies the running environment or dependency. Key steps are provided with descriptions.**
  * **Graphical and textual: The complex processes, configuration items, or GUI operations must be provided with necessary diagrams for easy understanding.**

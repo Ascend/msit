@@ -67,14 +67,14 @@ You are welcome to contribute to the community. If you have any questions or sug
 
 |                                      📱 Follow the MindStudio WeChat Account                                      | 💬 Communication and Support Channels                                                                                                                                                                                                                                                                                                                                                                                                                    |
 |:-----------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <img src="./docs/en/figures/readme/officialAccount.png" width="120"><br><sub>*Scan the QR code to follow us and get the latest updates.*</sub>| 💡 **Join the WeChat group**:<br>Follow the WeChat account and reply "communication group" to obtain the QR code for joining the group.<br><br>🛠️ ️**Other channels**:<br><br>|
+| <img src="./docs/en/figures/readme/officialAccount.png" width="120"><br><sub>*Scan the QR code to follow us and get the latest updates.*</sub>| 💡 **Join the WeChat group**:<br>Follow the WeChat account and reply "communication group" to obtain the QR code for joining the group.<br><br>🛠️ ️**Other channels**:<br>👉 Ascend Assistant: [![WeChat](https://img.shields.io/badge/WeChat-07C160?style=flat-square&logo=wechat&logoColor=white)](https://gitcode.com/Ascend/mstt/blob/master/docs/zh/figures/readme/xiaozhushou.png)<br>👉 Ascend Forum: [![Website](https://img.shields.io/badge/Website-%231e37ff?style=flat-square&logo=RSS&logoColor=white)](https://www.hiascend.com/forum/) |
 
 ## 🙏 Acknowledgements
 
-msIT is jointly developed by the following Huawei departments:
-🔹 Ascend Computing MindStudio Development Department
-🔹 Ascend Computing Ecosystem Enablement Department
-🔹 Huawei Cloud AI Compute Service
-🔹 Parallel Distributed Computing Laboratory (2012)
-🔹 Network Technology Laboratory (2012)
+msIT is jointly developed by the following Huawei departments:<br>
+🔹 Ascend Computing MindStudio Development Department<br>
+🔹 Ascend Computing Ecosystem Enablement Department<br>
+🔹 Huawei Cloud AI Compute Service<br>
+🔹 Parallel Distributed Computing Laboratory (2012)<br>
+🔹 Network Technology Laboratory (2012)<br>
 Thank you to everyone in the community for your PRs. We warmly welcome contributions to msIT!
