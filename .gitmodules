@@ -16,3 +16,9 @@
 [submodule "msprobe"]
 	path = msprobe
 	url = https://gitcode.com/Ascend/msprobe.git
+[submodule "msmodelslim"]
+	path = msmodelslim
+	url = https://gitcode.com/Ascend/msmodelslim.git
+[submodule "msserviceprofiler"]
+	path = msserviceprofiler
+	url = https://gitcode.com/Ascend/msserviceprofiler.git
