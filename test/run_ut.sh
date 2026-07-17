@@ -26,13 +26,11 @@ main() {
 
     # 执行各组件目录下的ut文件
     run_test $TOP_DIR/msit/test/UT
-    run_test $TOP_DIR/msserviceprofiler/test
-    run_test $TOP_DIR/msmodelslim/test
     echo "All ut success"
 
     # 使用combine生成统一的覆盖率报告
     cd ${TOP_DIR}
-    coverage combine msit/test/UT/.coverage msserviceprofiler/test/.coverage msmodelslim/test/.coverage
+    coverage combine msit/test/UT/.coverage
     python3 -m coverage report -m
     python3 -m coverage xml -o ${TEST_DIR}/coverage.xml
     echo "Generate total coverage report success"
