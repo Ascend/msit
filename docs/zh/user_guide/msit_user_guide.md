@@ -1,17 +1,19 @@
-# MindStudio Inference Tools 使用指南
+# msIT 工具选型指南
 
 <br>
 
-MindStudio Inference Tools（msIT）面向昇腾 AI 模型推理开发中的关键挑战，通过提供模型压缩、调试与调优等能力，高效解决推理效率低、资源开销大等问题，助力用户实现最优推理性能。
+msIT 工具链包含多款专项工具，覆盖推理开发的各个阶段。面对具体任务时，精准选型往往比盲目尝试更具效率。
 
-## 工具场景化推荐
+本文以 **”我要做什么”** 为导向，帮助您快速锁定最匹配的工具及直达入口。
 
-本节以“我要做什么”为导向，旨在解决“当前问题应选用哪个工具”的困惑，结合典型场景为您推荐合适的工具，请点击对应工具链接跳转至其代码仓库，深入了解使用方法：
+<br>
+
+## 场景化工具推荐
 
 | 我要做什么 | 推荐工具 | 为什么推荐 |
 |-----------|----------|------------|
 | 我想要在部署场景前，评估模型性能、服务吞吐以及参数配置效果 |[**msModeling**](https://gitcode.com/Ascend/msmodeling)| 覆盖模型性能仿真、吞吐优化、服务级仿真和参数寻优，帮助提前评估性能瓶颈并优化部署配置 |
-| 我想快速部署AI推理服务、复现性能基线、定位部署与性能问题 |[**msprechecker**](https://gitcode.com/Ascend/msit/tree/26.1.0/msprechecker)|工具提供预检（precheck）、环境信息落盘（dump）和差异比对（compare）三大核心功能|
+| 我想快速检查当前环境是否具备部署条件，以及复现对比两台设备的环境配置差异 |[**msprechecker**](https://gitcode.com/Ascend/msit/tree/26.1.0/msprechecker)|工具提供预检（precheck）、环境信息落盘（dump）和差异比对（compare）三大核心功能 |
 | 我有一个开源模型，想生成量化权重 | [**msModelSlim**](https://gitcode.com/Ascend/msmodelslim) | 支持一键量化功能，提供量化模型的最佳实践库，快速生成量化权重 |
 | 我量化后精度掉太多，想“自动找一套能达标的方案” | [**msModelSlim**](https://gitcode.com/Ascend/msmodelslim) | 给出精度目标即可，工具自动迭代：生成 yaml → 量化 → vLLM-Ascend 拉起服务 → AISBench 评估 → 不达标再换一套，直到命中目标。 |
 | 我在量化精度调优过程中，不知道该回退哪些层 | [**msModelSlim**](https://gitcode.com/Ascend/msmodelslim) | 提供多种粒度，给出对量化敏感层的建议 |
