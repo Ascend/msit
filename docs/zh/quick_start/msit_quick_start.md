@@ -1,22 +1,38 @@
-# **推理开发工具快速入门**
+# **推理开发工具链快速入门**
 
 <br>
 
 ## 1. 概述
 
-MindStudio Inference Tools（msIT）为开发者提供一站式推理开发工具链，涵盖模型量化、精度调试、性能调优、服务化调优、可视化分析等能力。本文档作为快速入门入口，帮助您根据需求快速定位对应工具，并跳转至各工具的详细快速入门指南。
+### 1.1 功能简介
+
+MindStudio Inference Tools（msIT）是面向昇腾 AI 平台的开源推理开发工具链，为开发者提供从模型部署到在线运维的全流程工具支持。工具链涵盖预检、量化、精度调试、性能调优和在线监控五大环节，包含多款专项工具，帮助开发者在昇腾硬件上高效完成大语言模型（含稠密模型与 MoE 架构）、多模态模型及传统模型的推理开发与优化。
+
+### 1.2 核心能力
+
+msIT 围绕推理开发的关键阶段，提供以下核心能力：
+
+- **部署预检**：在正式部署前完成环境校验、连通性检测和推理结果比对，提前发现配置异常，降低部署风险。
+- **模型压缩**：提供量化与压缩能力，支持一键量化和自动化精度迭代，在保障模型精度的前提下降低推理资源开销。
+- **精度调试**：支持全场景精度采集与对比分析，帮助开发者快速定位精度偏差的根因。
+- **性能调优**：覆盖数据采集、瓶颈分析、可视化诊断、服务化调优和建模仿真，提供从单算子到服务集群的多层级性能优化手段。
+- **在线监控**：面向集群的实时性能监控与故障定位，保障推理服务的稳定运行。
+
+### 1.3 本文用途
+
+本文汇总工具链中各工具的功能定位与快速入门入口，帮助您根据当前的开发阶段和业务需求，快速选择合适的工具并完成上手操作。
 
 ## 2. 工具快速导航
 
-| 分类 | 工具 | 功能说明 | 快速入门链接 |
-|------|------|----------|------------|
-| 量化 | 模型量化工具（msModelSlim）| 提供模型压缩技术，通过降低模型权重和激活值的数值精度，有效减少模型的存储内存占用和计算需求。通常会将高位浮点数转换为低位定点数，从而直接减少模型权重的体积。模型量化工具的输入为能够正常运行的模型和数据，输出为一个可以使用的量化权重和量化因子。| [msModelSlim 快速入门](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/quick_start/quantization_quick_start.md) |
-| 精度 | 精度调试工具（msProbe） | 包括精度数据采集（dump）和精度比对等功能，可以帮助定位模型推理过程中的精度问题。| [msProbe 快速入门](https://gitcode.com/Ascend/msprobe/tree/master/docs/zh/quick_start) |
-| 性能 | 模型调优工具（msProf）| 支持采集与解析昇腾 AI 处理器的软硬件性能数据，帮助定位模型推理过程中的性能问题。| [msProf 快速入门](https://gitcode.com/Ascend/msprof/blob/master/docs/zh/quick_start/msprof_quick_start.md) |
-| 性能 | 性能分析工具（msprof-analyze）| 基于采集的性能数据进行分析，提供昇腾设备性能瓶颈快速识别能力。| [msprof-analyze 快速入门](https://gitcode.com/Ascend/msprof-analyze/blob/master/docs/zh/quick_start/msprof-analyze_quick_start.md) |
-| 性能 | 服务化调优工具（msServiceProfiler）| 提供性能剖析，清晰展示框架调度、模型推理等环节的表现，帮助用户快速找到性能瓶颈，从而有效提升服务性能。| [msServiceProfiler 快速入门](https://gitcode.com/Ascend/msserviceprofiler/blob/master/docs/zh/quick_start.md) |
-| 性能 | 在线监控工具（msMonitor）| 一站式在线监控工具，支持落盘和在线性能数据采集，提供集群场景性能监测及定位能力。| [msMonitor 快速入门](https://gitcode.com/Ascend/msmonitor/blob/master/docs/zh/quick_start/msmonitor_quick_start.md) |
-| 性能 | 预检工具（msprechecker）| 提供预检（precheck）、环境信息落盘（dump）和差异比对（compare）三大核心功能，并支持基于可扩展规则引擎的 `run` 和 `inspect` 子命令，允许用户自定义检查规则。帮助用户在昇腾环境中快速部署 AI 推理服务、复现性能基线、定位部署与性能问题。| [msprechecker 快速入门](../../../msprechecker/README.md) |
-| 性能 | 性能建模工具（msModeling）| 专为昇腾 AI 处理器打造的神经网络推理性能仿真与分析框架，提供单模型性能仿真、服务级吞吐优化、服务化参数自动寻优与可视化分析能力，帮助开发者在无物理硬件或部署前期预测模型性能、识别瓶颈并优化配置。| [msModeling 快速入门](https://gitcode.com/Ascend/msmodeling/blob/master/docs/zh/quick_start/tensorcast_throughput_optimizer_quick_start.md) |
-| 可视化 | 可视化工具（msInsight）| 将通过性能调优工具采集到的性能数据，使用 msInsight 进行可视化呈现，快速定位软、硬件性能瓶颈，提升AI任务性能分析的效率。| [msInsight 快速入门](https://gitcode.com/Ascend/msinsight/tree/master/docs/zh/quick_start) |
-| 内存 | 内存工具（msMemScope）| 针对昇腾显存调试调优场景的专用工具，提供整网级多维度显存数据采集、自动诊断、优化分析能力。| [msMemScope 快速入门](https://gitcode.com/Ascend/msmemscope/blob/master/docs/zh/quick_start/quick_start.md) |
+| 类别 | 工具名称                                                                         | 功能简介                                                 |                                                            快速入门链接                                                            |
+|:--:|:-----------------------------------------------------------------------------|:-----------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------:|
+| 预检 | **msPrechecker** | **【预检工具】** 支持环境预检、连通性预检及推理过程落盘和比对，帮助用户在部署前发现异常问题。    |                                           [点击查看](../../../msprechecker/README.md#快速入门)                                           |
+| 量化 | **msModelSlim**                    | **【模型压缩】** 包含量化和压缩等推理优化技术，支持大语言稠密模型、MoE 模型、多模态模型等。   |          [点击查看](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/quick_start/quantization_quick_start.md)          |
+| 精度 | **msProbe**                            | **【精度调试】** 昇腾全场景精度工具，用于精度调试与问题定位。                    |                          [点击查看](https://gitcode.com/Ascend/msprobe/tree/master/docs/zh/quick_start)                          |
+| 性能 | **msProf**                              | **【模型调优】** 全场景性能调优底座，采集软硬件全栈性能数据，提升设备调优效率。           |               [点击查看](https://gitcode.com/Ascend/msprof/blob/master/docs/zh/quick_start/msprof_quick_start.md)                |
+| 性能 | **msprof-analyze**              | **【性能分析】** 基于采集数据做性能分析，快速识别性能瓶颈。                     |       [点击查看](https://gitcode.com/Ascend/msprof-analyze/blob/master/docs/zh/quick_start/msprof-analyze_quick_start.md)        |
+| 性能 | **msServiceProfiler**        | **【服务调优】** 支持请求调度、模型执行过程可视化，提升服务化性能分析效率。             |                   [点击查看](https://gitcode.com/Ascend/msserviceprofiler/blob/master/docs/zh/quick_start.md)                    |
+| 性能 | **msMemScope**                     | **【内存调优】** 内存调优专用工具：整网级多维度内存采集，支持自动诊断与优化分析。          |                 [点击查看](https://gitcode.com/Ascend/msmemscope/blob/master/docs/zh/quick_start/quick_start.md)                 |
+| 性能 | **msInsight**                        | **【可视调优】** 可视化性能分析，覆盖系统、算子、服务化等场景，辅助完成性能诊断。          |                         [点击查看](https://gitcode.com/Ascend/msinsight/tree/master/docs/zh/quick_start)                         |
+| 性能 | **msModeling**                      | **【建模仿真】** 神经网络推理性能仿真框架，助力开发者在无硬件或部署前预测性能、识别瓶颈并优化配置。 | [点击查看](https://gitcode.com/Ascend/msmodeling/blob/master/docs/zh/quick_start/tensorcast_throughput_optimizer_quick_start.md) |
+| 监控 | **msMonitor**                        | **【在线监控】** 一站式监控，支持落盘与在线采集，面向集群的监测与问题定位。             |            [点击查看](https://gitcode.com/Ascend/msmonitor/blob/master/docs/zh/quick_start/msmonitor_quick_start.md)             |
