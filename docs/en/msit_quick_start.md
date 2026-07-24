@@ -20,7 +20,7 @@ The functional descriptions of each tool are listed in the following table.
 
 ### Environment Setup
 
-- Deploy the development environment. For details, see the "Installing MindIE > [Method 1: Image Deployment](https://www.hiascend.com/document/detail/en/mindie/230/envdeployment/instg/mindie_instg_0021.html)" section in the *MindIE Installation Guide*.
+- Deploy the development environment. For details, see the "Installing MindIE > [Method 1: Image Deployment](https://www.hiascend.com/document/detail/en/mindie/230/envpre/instg/mindie_instg_0021.html)" section in the *MindIE Installation Guide*.
 
 - Install the Ascend NPU driver and CANN software (including the Toolkit and ops packages) and configure the CANN environment variables. For details, see [CANN Quick Installation](https://www.hiascend.com/en/cann/download).
 
