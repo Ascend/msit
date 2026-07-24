@@ -84,15 +84,19 @@
 
   <rect x="492" y="180" width="140" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
   <text x="562" y="200" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">msServiceProfiler</text>
-  <text x="562" y="220" text-anchor="middle" fill="#64748b" font-size="11">服务化性能优化</text>
+  <text x="562" y="220" text-anchor="middle" fill="#64748b" font-size="11">服务化性能分析</text>
 
   <rect x="640" y="180" width="140" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
   <text x="710" y="200" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msMemScope</text>
   <text x="710" y="220" text-anchor="middle" fill="#64748b" font-size="11">内存采集与自动诊断</text>
 
-  <rect x="492" y="240" width="288" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="636" y="260" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msInsight</text>
-  <text x="636" y="278" text-anchor="middle" fill="#64748b" font-size="11">可视化性能分析</text>
+  <rect x="492" y="240" width="140" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="562" y="260" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msModeling</text>
+  <text x="562" y="278" text-anchor="middle" fill="#64748b" font-size="11">推理性能仿真</text>
+
+  <rect x="640" y="240" width="140" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="710" y="260" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msInsight</text>
+  <text x="710" y="278" text-anchor="middle" fill="#64748b" font-size="11">可视化性能分析</text>
 
   <rect x="800" y="72" width="144" height="36" rx="8" fill="url(#stage)" filter="url(#shadow)"/>
   <text x="872" y="96" text-anchor="middle" fill="white" font-size="14" font-weight="bold">监控</text>
