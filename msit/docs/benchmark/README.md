@@ -5,12 +5,6 @@
 
 本文介绍benchmark功能，用来针对指定的推理模型运行推理程序，并能够测试推理模型的性能（包括吞吐率、时延）。
 
-## 工具安装
-
-- 工具安装请见 [msit一体化工具使用指南](../install/README.md)
-<br>如果在 `msit install benchmark` 的时候出现报错，显示需要 `use --no-check-certificate`，可通过`msit install benchmark --no-check`安装。
-<br>但是，需要注意的是，--no-check参数，即--no-check-certificate会跳过检查目标网站的证书信息，有一定的安全风险，用户需要谨慎使用并自行承担后果。
-
 ## 使用方法
 
 ### 功能介绍
@@ -88,7 +82,7 @@ benchmark推理功能可以通过配置不同的参数，来应对各种测试�
 
 ### FAQ
 
-使用过程中遇到问题可以参考[FAQ](https://gitcode.com/Ascend/msit/wiki/benchmark_FAQ%2Fait%20benchmark%20%E4%BD%BF%E7%94%A8%E8%BF%87%E7%A8%8B%20FAQ.md)
+- 使用过程中遇到问题可以参考《[FAQ](https://gitcode.com/Ascend/msit/wiki/benchmark_FAQ%2Fait%20benchmark%20%E4%BD%BF%E7%94%A8%E8%BF%87%E7%A8%8B%20FAQ.md)》。
 
 ### 使用场景
 
