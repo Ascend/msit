@@ -110,3 +110,7 @@ msit convert aoe [args]
 ```shell
 msit convert aoe --model resnet50.onnx --job_type 2 --output resnet50
 ```
+
+## FAQ
+
+- 安装过程中出现问题可先行查阅《[FAQ](../install/FAQ.md)》。
