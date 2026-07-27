@@ -106,4 +106,5 @@ msit analyze -gm /tmp/test.onnx -o /tmp/out
 
 ## FAQ
 
-- 使用过程中出现问题可先行查阅[FAQ](FAQ.md)
+- 安装过程中出现问题可先行查阅《[FAQ-安装](../install/FAQ.md)》；
+- 使用过程中出现问题可先行查阅《[FAQ-使用](FAQ.md)》。
