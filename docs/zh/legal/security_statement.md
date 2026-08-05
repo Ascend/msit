@@ -101,7 +101,7 @@ OM模型保存、AIE模型转换的源码在安装过程中编译后使用，编
 
 3. 推理服务EndPoint提供管理面服务状态查询rest接口，客户端通过该端口请求发起推理服务状态查询请求。对应config.json配置文件中的metricsPort字段，可配范围为1024~65535，默认配置为1027。
 
-具体可参考[MindIE资料说明](https://www.hiascend.com/document/detail/zh/mindie/20RC2/ref/commumatrix/Communication0000.html)。
+具体可参考[MindIE资料说明](https://www.hiascend.com/document/detail/zh/mindie/latest/ref/commumatrix/docs/zh/user_guide/communication_matrix.md)。
 
 msserviceprofiler optimizer工具会使用aisbench，vllm_benchmark等产品，通过端口和mindie-service以及vllm serve服务端进行交互，使用的端口需和服务端保持一致，请用户自行配置，并保证端口和服务端一致。
 
