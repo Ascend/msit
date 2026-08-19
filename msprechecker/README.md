@@ -23,12 +23,12 @@ msprechecker (MindStudio Prechecker Tool)：MindStudio 预检工具。这是一�
 
 | 产品类型 | 是否支持 |
 | ------------ | :------: |
-| Ascend 950 系列产品 |  √  |
-| Atlas A3 训练系列产品/Atlas A3 推理系列产品  |    √     |
-| Atlas A2 训练系列产品/Atlas A2 推理系列产品  |    √     |
-| Atlas 200I/500 A2 推理产品  |    ×    |
-| Atlas 推理系列产品  |    √    |
-| Atlas 训练系列产品   |    ×    |
+| 昇腾950PR&950DT系列产品 |  √  |
+| 昇腾A3系列产品  |    √     |
+| 昇腾A2系列产品  |    √     |
+| 昇腾310B系列产品  |    ×    |
+| 昇腾310P系列产品  |    √    |
+| 昇腾910系列产品   |    ×    |
 
 ## 使用前准备
 
@@ -66,7 +66,7 @@ msprechecker (MindStudio Prechecker Tool)：MindStudio 预检工具。这是一�
 **约束**
 
 * 当前工具主要支持 Atlas 800I A2, Atlas 800I A3 和 Atlas 9000 A2 (G8600) 等训练服务器。
-* 当前工具在 MindIE 场景下暂不支持 Ascend 950 系列产品。
+* 当前工具在 MindIE 场景下暂不支持昇腾950PR&950DT系列产品。
 * 支持 MindIE 和 VLLM-Ascend (v0.9.1-dev) 推理框架的校验。
 * `dump` 功能暂不支持对多机 PD 分离、单机 PD 分离场景的配置文件进行落盘。
 
