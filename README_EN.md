@@ -28,7 +28,7 @@ English | [简体中文](./README.md)
 
 MindStudio Inference Tools (msIT) is an inference development toolchain that focuses on key challenges in the inference development of LLMs and traditional models. By providing capabilities such as model compression, debugging, and tuning, it efficiently addresses issues such as low inference efficiency and high resource consumption, helping users achieve optimal inference performance.
 
-<img src="./docs/en/figures/readme/fullview.png" width="1200"/>
+<img src="./docs/en/figures/readme/msit-fullview.svg" width="1200"/>
 
 ## ⚙️ Features
 
