@@ -26,7 +26,7 @@ This document summarizes the functional positioning and quick start entry of eac
 
 | Category | Tool | Description | Quick Start Link |
 |:--:|:--|:--|:--:|
-| Pre-check | **msPrechecker** | **Pre-check tool**: Supports environment pre-check, connectivity pre-check, and dump and comparison of inference data, helping users identify anomalies before deployment. | [Click to view](../../../msprechecker/README.md#快速入门) |
+| Pre-check | **msPrechecker** | **Pre-check tool**: Supports environment pre-check, connectivity pre-check, and dump and comparison of inference data, helping users identify anomalies before deployment. | [Click to view](../../../msprechecker/README_EN.md#quick-start) |
 | Quantization | **msModelSlim** | **Model compression**: Provides inference optimization techniques such as quantization and compression, supporting dense LLMs, MoE models, multimodal models, and so on. | [Click to view](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/quick_start/quantization_quick_start.md) |
 | Accuracy | **msProbe** | **Accuracy debugging**: an all-scenario accuracy tool for Ascend, used for accuracy debugging and issue localization | [Click to view](https://gitcode.com/Ascend/msprobe/blob/26.1.0/docs/en/user_guide/dump/atb_data_dump_instruct.md#%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8) |
 | Performance | **msProf** | **Model tuning**: the all-scenario performance tuning foundation that collects full-stack hardware and software performance data to improve device tuning efficiency | [Click to view](https://gitcode.com/Ascend/msprof/blob/26.1.0/docs/en/quick_start/msprof_quick_start.md) |
