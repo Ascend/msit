@@ -24,4 +24,4 @@ msIT 工具链包含多款专项工具，覆盖推理开发的各个阶段。面
 | 我想采集和解析MindIE/vLLM/SGLang框架性能数据，分析性能瓶颈给出调优建议|[**msServiceProfiler**](https://gitcode.com/Ascend/msserviceprofiler/blob/master/README.md)|基于采集到的性能数据进行分析，帮助定位服务化框架、计算、通信以及调度的性能瓶颈|
 | 我想分析训练或推理任务的显存使用，对显存调试调优 | [**msMemScope**](https://gitcode.com/Ascend/msmemscope/blob/master/README.md) | 昇腾全场景显存数据采集，配套可视化、比对、拆解等分析能力 |
 | 我想在定位性能问题时，可以通过图形化呈现的方式直观反映性能问题 | [**msInsight**](https://gitcode.com/Ascend/msinsight/blob/master/README.md) | 可视化性能分析，覆盖系统、算子、服务化等场景，辅助完成性能诊断 |
-| 我想在通过线监控轻量获取集群性能数据 | [**msMonitor**](https://gitcode.com/Ascend/msmonitor/blob/master/README.md) | 一站式监控，支持落盘与在线采集，面向集群的监测与问题定位 |
+| 我想通过在线监控轻量获取集群性能数据 | [**msMonitor**](https://gitcode.com/Ascend/msmonitor/blob/master/README.md) | 一站式监控，支持落盘与在线采集，面向集群的监测与问题定位 |
