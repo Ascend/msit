@@ -12,8 +12,10 @@
 | Open-source software| - | msit/components/convert/setup.py | <https://gitcode.com/Ascend/msit> | URL of the msit repository|
 | Open-source software| - | msit/components/analyze/setup.py | <https://gitcode.com/Ascend/msit> | URL of the msit repository|
 | Open-source software| - | msit/components/config/config.ini | <https://gitcode.com/Ascend/msit> | URL of the msit repository|
+| Open-source software| - | msit/components/config/config.ini | <https://github.com/nlohmann/json> | URL of the third-party nlohmann repository|
 | Open-source software| - | msit/components/config/config.ini | <https://aisbench.obs.myhuaweicloud.com/packet/ais_bench_infer/0.0.2/ait/> | URL of the aisbench package|
 | Open-source software| - | msit/components/config/config.ini | <https://gitee.com/ascend/tools.git> | URL of the tools repository containing aisbench|
 | Open-source software| - | msit/components/config/config.ini | <http://mirrors.huaweicloud.com/repository/pypi/simple> | URL of the PyPI Huawei Cloud image|
 | Open-source software| - | msit/components/config/config.ini | <https://mirrors.huaweicloud.com/repository/pypi/simple> | URL of the PyPI Huawei Cloud image|
+| Open-source software| - | msit/components/config/config.ini | <https://repo.huaweicloud.com/repository/pypi/simple/> | URL of the PyPI image| 
 | Open-source software| - | msit/components/config/config.ini | <http://www.apache.org/licenses/LICENSE-2.0> | License information|

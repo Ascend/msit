@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 346" font-family="'Microsoft YaHei','PingFang SC','Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8faff;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#eef2ff;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="header" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1a56db"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="stage" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="footerBg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f8fafc"/>
+      <stop offset="100%" style="stop-color:#eff6ff"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-2%" y="-2%" width="104%" height="108%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.15"/>
+    </filter>
+    <filter id="shadowSm" x="-2%" y="-2%" width="104%" height="108%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.12"/>
+    </filter>
+
+    <clipPath id="round-corner">
+      <rect width="960" height="346" rx="16"/>
+    </clipPath>
+  </defs>
+
+  <rect width="960" height="346" rx="16" fill="url(#bg)"/>
+
+  <rect x="0" y="0" width="960" height="52" fill="url(#header)" clip-path="url(#round-corner)"/>
+
+  <g transform="translate(340, 26)">
+    <circle cx="0" cy="0" r="11" fill="none" stroke="#93c5fd" stroke-width="2"/>
+    <polygon points="3,-9 -5,1 1,1 -3,9 5,-1 -1,-1" fill="#ffffff" stroke="#ffffff" stroke-width="1" stroke-linejoin="round"/>
+  </g>
+
+  <text x="366" y="34" text-anchor="start" fill="white" font-size="18" font-weight="bold">Ascend AI inference development toolchain overview</text>
+
+  <line x1="168" y1="72" x2="168" y2="292" stroke="#cbd5e1" stroke-width="1" stroke-opacity="0.5"/>
+  <line x1="324" y1="72" x2="324" y2="292" stroke="#cbd5e1" stroke-width="1" stroke-opacity="0.5"/>
+  <line x1="480" y1="72" x2="480" y2="292" stroke="#cbd5e1" stroke-width="1" stroke-opacity="0.5"/>
+  <line x1="792" y1="72" x2="792" y2="292" stroke="#cbd5e1" stroke-width="1" stroke-opacity="0.5"/>
+
+  <rect x="16" y="72" width="144" height="36" rx="8" fill="url(#stage)" filter="url(#shadow)"/>
+  <text x="88" y="96" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Pre-check</text>
+
+  <rect x="20" y="120" width="136" height="172" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="88" y="134" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msPrechecker</text>
+  <text x="88" y="158" text-anchor="middle" fill="#64748b" font-size="10">
+    <tspan x="88">Environment and</tspan>
+    <tspan x="88" dy="14">connectivity pre-checks</tspan>
+    <tspan x="88" dy="22">Persist and compare</tspan>
+    <tspan x="88" dy="14">inference processes</tspan>
+    <tspan x="88" dy="22">Identify issues before</tspan>
+    <tspan x="88" dy="14">deployment</tspan>
+  </text>
+
+  <rect x="176" y="72" width="140" height="36" rx="8" fill="url(#stage)" filter="url(#shadow)"/>
+  <text x="246" y="87" text-anchor="middle" fill="white" font-size="12" font-weight="bold">
+    <tspan x="246">Quantization</tspan>
+    <tspan x="246" dy="16">&amp; compression</tspan>
+  </text>
+
+  <rect x="180" y="120" width="132" height="172" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="246" y="134" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msModelSlim</text>
+  <text x="246" y="158" text-anchor="middle" fill="#64748b" font-size="10">
+    <tspan x="246">Inference optimizations</tspan>
+    <tspan x="246" dy="14">such as quantization</tspan>
+    <tspan x="246" dy="14">and compression</tspan>
+    <tspan x="246" dy="22">Supports dense large</tspan>
+    <tspan x="246" dy="14">language models</tspan>
+    <tspan x="246" dy="22">MoE, multimodal,</tspan>
+    <tspan x="246" dy="14">and other models</tspan>
+  </text>
+
+  <rect x="332" y="72" width="140" height="36" rx="8" fill="url(#stage)" filter="url(#shadow)"/>
+  <text x="402" y="96" text-anchor="middle" fill="white" font-size="13.5" font-weight="bold">Accuracy debugging</text>
+
+  <rect x="336" y="120" width="132" height="172" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="402" y="144" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msProbe</text>
+  <text x="402" y="164" text-anchor="middle" fill="#64748b" font-size="10">
+    <tspan x="402">Ascend accuracy tools</tspan>
+    <tspan x="402" dy="15">for all scenarios</tspan>
+    <tspan x="402" dy="23">Accuracy debugging</tspan>
+    <tspan x="402" dy="15">and issue localization</tspan>
+  </text>
+
+  <rect x="488" y="72" width="296" height="36" rx="8" fill="url(#stage)" filter="url(#shadow)"/>
+  <text x="636" y="96" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Performance tuning</text>
+
+  <rect x="492" y="120" width="140" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="562" y="136" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msProf</text>
+  <text x="562" y="152" text-anchor="middle" fill="#64748b" font-size="10">
+    <tspan x="562">CANN and NPU</tspan>
+    <tspan x="562" dy="14">data collection</tspan>
+  </text>
+
+  <rect x="640" y="120" width="140" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="710" y="136" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msprof-analyze</text>
+  <text x="710" y="152" text-anchor="middle" fill="#64748b" font-size="10">
+    <tspan x="710">Performance bottleneck</tspan>
+    <tspan x="710" dy="14">identification</tspan>
+  </text>
+
+  <rect x="492" y="180" width="140" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="562" y="196" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">msServiceProfiler</text>
+  <text x="562" y="212" text-anchor="middle" fill="#64748b" font-size="10">
+    <tspan x="562">Service performance</tspan>
+    <tspan x="562" dy="14">analysis</tspan>
+  </text>
+
+  <rect x="640" y="180" width="140" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="710" y="196" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msMemScope</text>
+  <text x="710" y="212" text-anchor="middle" fill="#64748b" font-size="10">
+    <tspan x="710">Memory collection and</tspan>
+    <tspan x="710" dy="14">automatic diagnosis</tspan>
+  </text>
+
+  <rect x="492" y="240" width="140" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="562" y="256" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msModeling</text>
+  <text x="562" y="272" text-anchor="middle" fill="#64748b" font-size="10">
+    <tspan x="562">Inference performance</tspan>
+    <tspan x="562" dy="14">simulation</tspan>
+  </text>
+
+  <rect x="640" y="240" width="140" height="52" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="710" y="256" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msInsight</text>
+  <text x="710" y="272" text-anchor="middle" fill="#64748b" font-size="10">
+    <tspan x="710">Visual performance</tspan>
+    <tspan x="710" dy="14">analysis</tspan>
+  </text>
+
+  <rect x="800" y="72" width="144" height="36" rx="8" fill="url(#stage)" filter="url(#shadow)"/>
+  <text x="872" y="96" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Monitoring</text>
+
+  <rect x="804" y="120" width="136" height="172" rx="8" fill="white" filter="url(#shadowSm)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="872" y="134" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">msMonitor</text>
+  <text x="872" y="158" text-anchor="middle" fill="#64748b" font-size="10">
+    <tspan x="872">One-stop monitoring</tspan>
+    <tspan x="872" dy="22">Supports on-drive and</tspan>
+    <tspan x="872" dy="14">online collection</tspan>
+    <tspan x="872" dy="22">Cluster monitoring and</tspan>
+    <tspan x="872" dy="14">issue localization</tspan>
+  </text>
+
+  <rect x="16" y="302" width="928" height="36" rx="10" fill="url(#footerBg)" filter="url(#shadow)" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="140" y="325" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">For Ascend NPUs</text>
+  <circle cx="250" cy="320" r="2.5" fill="#94a3b8"/>
+  <text x="430" y="325" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">Focused on high-performance inference development</text>
+  <circle cx="610" cy="320" r="2.5" fill="#94a3b8"/>
+  <text x="785" y="325" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">Covers the full inference development lifecycle</text>
+</svg>
