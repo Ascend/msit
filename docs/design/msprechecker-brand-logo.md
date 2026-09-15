@@ -405,7 +405,7 @@ end note
 | 指标 | 目标值 | 设计考量 | 推算依据 |
 |------|--------|----------|----------|
 | 子命令 Logo 输出覆盖率 | 100%，五类子命令非 help 场景均输出 | 触发点收口至 `Coordinator` | 需求要求五类子命令均输出统一 Logo |
-| 交互式终端彩色显示正确率 | 100%，SecureCRT、Putty、Xshell、MobaXterm、VSCode、Cursor 六类终端人工抽检通过 | 使用标准 ANSI 256 色转义，不依赖 `colorama` | 需求要求交互式终端彩色显示 |
+| 交互式终端彩色显示正确率 | 100%，SecureCRT、PuTTY、Xshell、MobaXterm、VSCode、Cursor 六类终端人工抽检通过 | 使用标准 ANSI 256 色转义，不依赖 `colorama` | 需求要求交互式终端彩色显示 |
 | 非 TTY 降级正确率 | 100%，管道与重定向场景输出纯 ASCII | `_supports_color` 双重判定 | 需求要求非 TTY 或 TERM 受限时无色降级 |
 | Logo 渲染耗时 | 小于 1 ms | 纯字符串拼接加一次 write | 本地 `time.perf_counter` 实测单次调用 |
 | 额外内存占用 | 小于 2 KiB | 常量模板常驻，无动态分配 | 字符串长度估算 |
@@ -493,7 +493,7 @@ Logo 输出不经 `logging`，直接写 stderr，运维在交互式终端可直�
 
 ### 平台限制
 
-改造仅涉及 msprechecker Python 源码与测试，面向 Linux 及 WSL2 环境。Logo 着色依赖终端对 ANSI 转义的支持，规范要求验证 SecureCRT、Putty、Xshell、MobaXterm、VSCode、Cursor 六类终端。管道、重定向与 CI 无 TTY 场景自动降级纯 ASCII，不保证着色。Python 版本要求保持 `requires-python >= 3.7`；`logo.py` 通过 `typing.Final` 或 `typing_extensions.Final` 标注常量，实现方式见实现思路代码示例。
+改造仅涉及 msprechecker Python 源码与测试，面向 Linux 及 WSL2 环境。Logo 着色依赖终端对 ANSI 转义的支持，规范要求验证 SecureCRT、PuTTY、Xshell、MobaXterm、VSCode、Cursor 六类终端。管道、重定向与 CI 无 TTY 场景自动降级纯 ASCII，不保证着色。Python 版本要求保持 `requires-python >= 3.7`；`logo.py` 通过 `typing.Final` 或 `typing_extensions.Final` 标注常量，实现方式见实现思路代码示例。
 
 ### 软件依赖
 
