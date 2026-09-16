@@ -14,7 +14,7 @@ MindStudio Inference Tools（MindStudio昇腾推理工具链，msIT），为用�
 - [**msMonitor（MindStudio Monitor）**](https://gitcode.com/Ascend/msmonitor/blob/master/docs/zh/quick_start/msmonitor_quick_start.md)<br>
     **在线监控工具**一站式在线监控工具，支持落盘和在线性能数据采集，提供集群场景性能监测及定位能力。
 
-- [**msServiceProfiler（MindStudio Service Profiler）**](https://gitcode.com/Ascend/msserviceprofiler/blob/master/docs/zh/quick_start.md)<br>
+- [**msServiceProfiler（MindStudio Service Profiler）**](https://gitcode.com/Ascend/msserviceprofiler/blob/master/docs/zh/quick_start/quick_start.md)<br>
     **服务化性能调优工具**：昇腾亲和的服务化性能调优工具，支持请求调度、模型执行过程可视化，提升服务化性能分析效率。
 
 - [**msprechecker（MindStudio Prechecker Tool）**](https://gitcode.com/Ascend/msit/blob/master/msprechecker/README.md)<br>
