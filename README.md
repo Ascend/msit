@@ -37,7 +37,7 @@ MindStudio Inference Tools（msIT）推理开发工具链，聚焦大模型与�
 
 | 类别 | 工具名称                                                                         | 功能简介                                                 |
 |:--:|:-----------------------------------------------------------------------------|:-----------------------------------------------------|
-| 预检 | [**msPrechecker**](https://gitcode.com/Ascend/msit/tree/master/msprechecker) | **【预检工具】** 支持环境预检、连通性预检及推理过程落盘和比对，帮助用户在部署前发现异常问题。    |
+| 预检 | [**msPrechecker**](https://gitcode.com/Ascend/msit/tree/26.2.0/msprechecker) | **【预检工具】** 支持环境预检、连通性预检及推理过程落盘和比对，帮助用户在部署前发现异常问题。    |
 | 量化 | [**msModelSlim**](https://gitcode.com/Ascend/msmodelslim)                    | **【模型压缩】** 包含量化和压缩等推理优化技术，支持大语言稠密模型、MoE 模型、多模态模型等。   |
 | 精度 | [**msProbe**](https://gitcode.com/Ascend/msprobe)                            | **【精度调试】** 昇腾全场景精度工具，用于精度调试与问题定位。                    |
 | 性能 | [**msProf**](https://gitcode.com/Ascend/msprof)                              | **【模型调优】** 全场景性能调优底座，采集软硬件全栈性能数据，提升设备调优效率。           |
@@ -50,11 +50,11 @@ MindStudio Inference Tools（msIT）推理开发工具链，聚焦大模型与�
 
 ## 🚀 快速入门
 
-如需快速上手各工具，请参见《[推理开发工具链快速入门](docs/zh/quick_start/msit_quick_start.md)》。
+MindStudio Inference Tools（msIT）是面向昇腾 AI 平台的开源推理开发工具链，为开发者提供从模型部署到在线运维的全流程工具支持。工具链涵盖预检、量化、精度调试、性能调优和在线监控五大环节，包含多款专项工具，帮助开发者在昇腾硬件上高效完成大语言模型（含稠密模型与 MoE 架构）、多模态模型及传统模型的推理开发与优化。如需快速上手各工具，请参见《[推理开发工具链快速入门](docs/zh/quick_start/msit_quick_start.md)》。
 
 ## 📦 安装指南
 
-请通过上方表格链接进入对应源码仓库，参见 README 中的《安装指南》。
+请通过上方“[功能介绍](#️-功能介绍)”章节表格链接进入对应源码仓库，详情参见仓库《README》文档中的“安装指南”章节。
 
 ## 📘 使用指南
 
@@ -69,13 +69,13 @@ MindStudio Inference Tools（msIT）推理开发工具链，聚焦大模型与�
 
 ## 🛠️ 贡献指南
 
-欢迎参与项目贡献，请参见 《[贡献指南](https://gitcode.com/Ascend/msit/blob/master/docs/zh/contributing/contributing_guide.md)》。
+欢迎参与项目贡献，请参见 《[贡献指南](https://gitcode.com/Ascend/msit/blob/26.2.0/docs/zh/contributing/contributing_guide.md)》。
 
 ## ⚖️ 相关说明
  
-🔹 《[许可证声明](https://gitcode.com/Ascend/msit/blob/master/docs/zh/legal/license_notice.md)》     
-🔹 《[安全声明](https://gitcode.com/Ascend/msit/blob/master/docs/zh/legal/security_statement.md)》     
-🔹 《[免责声明](https://gitcode.com/Ascend/msit/blob/master/docs/zh/legal/disclaimer.md)》     
+🔹 《[许可证声明](https://gitcode.com/Ascend/msit/blob/26.2.0/docs/zh/legal/license_notice.md)》     
+🔹 《[安全声明](https://gitcode.com/Ascend/msit/blob/26.2.0/docs/zh/legal/security_statement.md)》     
+🔹 《[免责声明](https://gitcode.com/Ascend/msit/blob/26.2.0/docs/zh/legal/disclaimer.md)》     
 
 ## 🤝 建议与交流
 
