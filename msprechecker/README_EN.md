@@ -21,14 +21,24 @@ First use the `precheck` function to perform a comprehensive check of the target
 >
 >For specific models of Ascend products, see [Ascend Product Form Overview](https://www.hiascend.com/document/detail/en/AscendFAQ/ProduTech/productform/hardwaredesc_0001.html).
 
-| Product Type | Supported |
-| ------------ | :-------: |
-| Ascend 950 series products | √ |
-| Atlas A3 training products/Atlas A3 inference products | √ |
-| Atlas A2 training products/Atlas A2 inference products | √ |
-| Atlas 200I/500 A2 inference products | × |
-| Atlas inference products | √ |
-| Atlas training products | × |
+<!-- npu="950" id1 -->
+- Ascend 950PR&950DT products: Supported
+<!-- end id1 -->
+<!-- npu="A3" id2 -->
+- Atlas A3 products: Supported
+<!-- end id2 -->
+<!-- npu="910b" id3 -->
+- Atlas A2 products: Supported
+<!-- end id3 -->
+<!-- npu="310b" id4 -->
+- Atlas 200I/500 A2 inference products: Not supported
+<!-- end id4 -->
+<!-- npu="310p" id5 -->
+- Atlas inference products: Supported
+<!-- end id5 -->
+<!-- npu="910" id6 -->
+- Atlas training products: Not supported
+<!-- end id6 -->
 
 ## Preparation
 
@@ -57,7 +67,7 @@ First use the `precheck` function to perform a comprehensive check of the target
     - Source Installation
 
         ```bash
-        git clone https://gitcode.com/Ascend/msit.git
+        git clone https://atomgit.com/Ascend/msit.git
         pip install -e msit/msprechecker
         ```
 
@@ -66,7 +76,7 @@ First use the `precheck` function to perform a comprehensive check of the target
 **Constraints**
 
 - The current tool primarily supports training servers such as Atlas 800I A2, Atlas 800I A3, and Atlas 9000 A2 (G8600).
-- The current tool does not support Ascend 950 series products in MindIE scenarios.
+- The current tool does not support Ascend 950PR&950DT products in MindIE scenarios.
 - Supports MindIE and vLLM-Ascend (v0.9.1-dev) inference verification.
 - The `dump` function does not currently support drive flushing of configuration files for multi-node PD separation and single-node PD separation scenarios.
 
@@ -200,7 +210,7 @@ msprechecker precheck --scene vllm
 ```
 
 **Example 2: Precheck for MindIE Large EP Scenarios**
-Check the configuration for the large Elastic Parallelism (EP) deployment scenario.
+Check the configuration for the large Elastic Processing (EP) deployment scenario.
 
 ```bash
 msprechecker precheck --scene mindie,ep --user-config-path /path/to/user_config.json --mindie-env-path /path/to/mindie_env.json
