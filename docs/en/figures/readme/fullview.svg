@@ -33,12 +33,12 @@
 
   <rect x="0" y="0" width="960" height="52" fill="url(#header)" clip-path="url(#round-corner)"/>
 
-  <g transform="translate(340, 26)">
+  <g transform="translate(194, 26)">
     <circle cx="0" cy="0" r="11" fill="none" stroke="#93c5fd" stroke-width="2"/>
     <polygon points="3,-9 -5,1 1,1 -3,9 5,-1 -1,-1" fill="#ffffff" stroke="#ffffff" stroke-width="1" stroke-linejoin="round"/>
   </g>
 
-  <text x="366" y="34" text-anchor="start" fill="white" font-size="18" font-weight="bold">Ascend AI inference development toolchain overview</text>
+  <text x="480" y="34" text-anchor="middle" fill="white" font-size="18" font-weight="bold">Ascend AI inference development toolchain overview</text>
 
   <line x1="168" y1="72" x2="168" y2="292" stroke="#cbd5e1" stroke-width="1" stroke-opacity="0.5"/>
   <line x1="324" y1="72" x2="324" y2="292" stroke="#cbd5e1" stroke-width="1" stroke-opacity="0.5"/>

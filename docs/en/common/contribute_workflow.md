@@ -71,7 +71,7 @@ Before submitting a Pull Request, make sure that:
 
 ### 5.2 Creating a PR
 
-When creating a pull request on [GitCode](https://gitcode.com/), fill in the following information:
+When creating a pull request on [AtomGit](https://atomgit.com/), fill in the following information:
 
 1. **Title: Briefly outline the theme or function of the change.**
 2. **Description: Describe the changes, reasons, and self-test (including the environment and results) to facilitate the reviewer's understanding.**
