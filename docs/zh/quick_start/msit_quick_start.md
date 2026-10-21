@@ -36,3 +36,4 @@ msIT 围绕推理开发的关键阶段，提供以下核心能力：
 | 性能 | **msInsight**                        | **【可视调优】** 可视化性能分析，覆盖系统、算子、服务化等场景，辅助完成性能诊断。          |                         [点击查看](https://gitcode.com/Ascend/msinsight/blob/26.2.0/docs/zh/quick_start/system_tuning_quick_start.md)                         |
 | 性能 | **msModeling**                      | **【建模仿真】** 神经网络推理性能仿真框架，助力开发者在无硬件或部署前预测性能、识别瓶颈并优化配置。 | [点击查看](https://gitcode.com/Ascend/msmodeling/blob/26.2.0/docs/zh/quick_start/tensorcast_throughput_optimizer_quick_start.md) |
 | 监控 | **msMonitor**                        | **【在线监控】** 一站式监控，支持落盘与在线采集，面向集群的监测与问题定位。             |            [点击查看](https://gitcode.com/Ascend/msmonitor/blob/26.2.0/docs/zh/quick_start/msmonitor_quick_start.md)             |
+| 智能体 | **msAgent**        | **【调试调优】** 在性能调优、精度分析、模型量化、算子优化、文档体验与代码审查等任务中更快定位问题并形成可执行建议 | [点击查看](https://gitcode.com/Ascend/msagent/blob/26.2.0/docs/zh/quick_start/msagent_quick_start.md) |
