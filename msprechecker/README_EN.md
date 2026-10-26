@@ -77,7 +77,7 @@ First use the `precheck` function to perform a comprehensive check of the target
 
 - The current tool primarily supports training servers such as Atlas 800I A2, Atlas 800I A3, and Atlas 9000 A2 (G8600).
 - The current tool does not support Ascend 950PR&950DT products in MindIE scenarios.
-- Supports MindIE and vLLM-Ascend (v0.9.1-dev) inference verification.
+- Supports MindIE and VLLM-Ascend (v0.9.1-dev) inference verification.
 - The `dump` function does not currently support drive flushing of configuration files for multi-node PD separation and single-node PD separation scenarios.
 
 **Security and Permissions**
@@ -202,15 +202,15 @@ The `compare` subcommand accepts one or more file paths as positional parameters
 
 ### Usage Examples
 
-**Example 1: Precheck for vLLM-Ascend General Scenarios**
-Check the basic environment for vLLM-Ascend framework deployment.
+**Example 1: Precheck for VLLM-Ascend General Scenarios**
+Check the basic environment for VLLM-Ascend framework deployment.
 
 ```bash
 msprechecker precheck --scene vllm
 ```
 
 **Example 2: Precheck for MindIE Large EP Scenarios**
-Check the configuration for the large Elastic Processing (EP) deployment scenario.
+Check the configuration for the large Expert Parallelism (EP) deployment scenario.
 
 ```bash
 msprechecker precheck --scene mindie,ep --user-config-path /path/to/user_config.json --mindie-env-path /path/to/mindie_env.json
@@ -302,7 +302,7 @@ a:
 
 Starting from version 2025.12.16, msprechecker introduces a new, more powerful rule engine, operated through the `run` and `inspect` subcommands. Rules are defined via files in `cmate` format, supporting more complex assertion logic, conditional branching, modular organization, and rich context control.
 
-- **Built-in rules**: The tool has built-in common check rules for the MindIE and vLLM-Ascend frameworks in the `mindie.cmate` and `vllm.cmate` files under the `msprechecker/preset/` directory. Users can use them directly or as a reference for writing their own.
+- **Built-in rules**: The tool has built-in common check rules for the MindIE and VLLM-Ascend frameworks in the `mindie.cmate` and `vllm.cmate` files under the `msprechecker/preset/` directory. Users can use them directly or as a reference for writing their own.
 - **Usage process**:
     1. **View rules**: Use `msprechecker inspect <rule.cmate>` to view the context variables, configuration files, and rule descriptions required by the rule file.
     2. **Execute rules**: Use `msprechecker run <rule.cmate>` with the `-C` (pass context) and `-c` (pass configuration file) parameters to execute checks.
@@ -317,7 +317,7 @@ For detailed syntax and authoring guides for `cmate` files, please refer to the 
 
 ### FAQs
 
-1. **Q: How do I specify a rank table for the vLLM-Ascend framework to perform a check?**
+1. **Q: How do I specify a rank table for the VLLM-Ascend framework to perform a check?**
 
     A: When executing the command, you must explicitly specify the framework using `--scene vllm` so that the tool parses the rank table in the correct format. For example: `msprechecker precheck --scene vllm --rank-table-path /path/to/vllm_hccl.json`
 

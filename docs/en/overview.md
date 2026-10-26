@@ -24,7 +24,7 @@ As the unified inference development tool chain of the Ascend platform, it conta
     Ascend performance analysis tool: Analyzes collected performance data and quickly identifies performance bottlenecks of Ascend devices.
 
 - [**msInsight (MindStudio Insight)**](https://atomgit.com/Ascend/msinsight/blob/26.2.0/docs/en/user_guide/overview.md)<br>
-    MindStudio Insight: supports multi-dimensional performance analysis in multiple scenarios, such as system-level, operator-level, and servitization, and in-depth performance data analysis, helping developers complete performance diagnosis.
+    MindStudio Insight: supports multi-dimensional performance analysis in multiple scenarios, such as system-level, operator-level, and service-oriented, and in-depth performance data analysis, helping developers complete performance diagnosis.
 
 - [**msModeling (MindStudio Modeling)**](https://atomgit.com/Ascend/msmodeling/blob/26.2.0/README.md)<br>
     Ascend AI model performance modeling and simulation tool: Neural network inference performance simulation and analysis framework designed for Ascend AI processors. It provides single-model performance simulation, service-level throughput optimization, service-oriented parameter auto-optimization, and visual analysis capabilities, helping developers predict model performance, identify bottlenecks, and optimize configurations without physical hardware or in the pre-deployment phase.
@@ -37,7 +37,7 @@ As the unified inference development tool chain of the Ascend platform, it conta
 - [**msMemScope (MindStudio MemScope)**](https://atomgit.com/Ascend/msmemscope/blob/26.2.0/docs/en/quick_start/quick_start.md)<br>
     Memory tool: It is a dedicated tool for Ascend memory debugging and optimization. It provides network-wide multi-dimensional accelerator memory data collection, automatic diagnosis, optimization, and analysis capabilities.
 
-### Quantification Tool
+### Quantization Tool
 
 - [**msModelSlim (MindStudio ModelSlim)**](https://atomgit.com/Ascend/msmodelslim/blob/26.2.0/docs/en/quick_start/quantization_quick_start.md)<br>
-    Model compression tool: Ascend model compression tool, an affinity compression tool that aims at acceleration, compression, and Ascend. It includes a series of reasoning optimization technologies such as quantization and compression, and supports large language dense models, MoE models, multi-modal understanding models, and multi-modal generation models.
+    Model compression tool: Ascend model compression tool, an affinity compression tool that aims at acceleration, compression, and Ascend. It includes a series of inference optimization technologies such as quantization and compression, and supports large language dense models, MoE models, multi-modal understanding models, and multi-modal generation models.
