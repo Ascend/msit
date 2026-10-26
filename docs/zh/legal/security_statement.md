@@ -109,6 +109,6 @@ msprechecker工具会通过`ping`和`hccn_tool`进行多机网络连通性检查
 
 其中`ping`网络连通性检查​​，基于ICMP协议​​，通过IP层直接通信。​`​hccn_tool`依赖昇腾NPU的​RoCE（RDMA）协议​​，默认使用硬件通信端口3225​​（部分场景可能为18515）。<br>
 
-`msprechecker`工具调用了`hccn_tool`的`vinc`,`tls`,`link`,`ping`和`hccs_ping`子命令，不同命令可能使用了不同的默认端口。`hccn_tool` 端口与硬件本身端口相关，具体可参考[昇腾硬件](https://support.huawei.com/enterprise/zh/category/ascend-computing-pid-1557196528909)选择您对应的硬件产品查阅通信矩阵。
+`msprechecker`工具调用了`hccn_tool`的`vnic`,`tls`,`link`,`ping`和`hccs_ping`子命令，不同命令可能使用了不同的默认端口。`hccn_tool` 端口与硬件本身端口相关，具体可参考[昇腾硬件](https://support.huawei.com/enterprise/zh/category/ascend-computing-pid-1557196528909)选择您对应的硬件产品查阅通信矩阵。
 
 `msprechecker`工具通过上述协议与端口完成检查，无需用户额外配置端口，但需确保网络环境满足协议要求。
