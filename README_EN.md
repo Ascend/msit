@@ -4,12 +4,12 @@
 
 <p><b><span style="font-size:24px;">Ascend AI Inference Development Toolchain</span></b></p>
 
- [![快速入门](https://badgen.net/badge/快速入门/QuickStart/blue)](./docs/en/quick_start/msit_quick_start.md)
- [![AI问答(DeepWiki)](https://badgen.net/badge/AI问答/DeepWiki/blue)](https://deepwiki.com/mindstudio-docs/26.1.0)
- [![AI问答(ZRead)](https://badgen.net/badge/AI问答/ZRead/blue)](https://zread.ai/mindstudio-docs/26.1.0)
- [![精确搜索](https://badgen.net/badge/精确搜索/ReadTheDocs/blue)](https://mindstudio-docs-2610.readthedocs.io)
- [![昇腾社区](https://badgen.net/badge/昇腾社区/Community/blue)](https://www.hiascend.com/cn/developer/software/mindstudio)
- [![报告问题](https://badgen.net/badge/报告问题/Issues/blue)](https://gitcode.com/Ascend/msit/issues)
+ [![Quick Start](https://badgen.net/badge/Quick%20Start/QuickStart/blue)](./docs/en/quick_start/msit_quick_start.md)
+ [![AI Q&A (DeepWiki)](https://badgen.net/badge/AI%20Q%26A/DeepWiki/blue)](https://deepwiki.com/mindstudio-docs/master)
+ [![AI Q&A (ZRead)](https://badgen.net/badge/AI%20Q%26A/ZRead/blue)](https://zread.ai/mindstudio-docs/master)
+ [![Exact Search](https://badgen.net/badge/Exact%20Search/ReadTheDocs/blue)](https://mindstudio-docs-master.readthedocs.io)
+ [![Ascend Community](https://badgen.net/badge/Ascend%20Community/Community/blue)](https://www.hiascend.com/eng/developer/software/mindstudio)
+ [![Report Issues](https://badgen.net/badge/Report%20Issues/Issues/blue)](https://gitcode.com/Ascend/msit/issues)
 </div>
 
 English | [简体中文](./README.md)
@@ -17,7 +17,8 @@ English | [简体中文](./README.md)
 ## ✨ What's New
 
 <span style="font-size:14px;">
-  
+
+🔹 **[Sep 9, 2026]**: The msIT repository has announced the sunset of its profile and benchmark modules. For details, see the [announcement](https://gitcode.com/Ascend/msit/discussions/4)    
 🔹 **[Mar 30, 2026]**: The msIT repository has announced the sunset of its precision debugging, inference service tuning, and model quantization modules. For details, see the [announcement](https://gitcode.com/Ascend/msit/discussions/2)  
 🔹 **[Jan 12, 2026]**: The license of this repository has changed. For details, see the [announcement](https://gitcode.com/Ascend/msit/discussions/1)    
 🔹 **[Dec 31, 2025]**: The MindStudio Inference Development Toolchain was fully open-sourced
@@ -36,7 +37,7 @@ The inference development toolchain provides the following series of tools:
 
 | Category | Tool                                                                          | Description                                               |
 |:--:|:-----------------------------------------------------------------------------|:---------------------------------------------------|
-| Precheck | [**msPrechecker**](https://gitcode.com/Ascend/msit/tree/26.1.0/msprechecker) | **[Precheck tool]** Supports environment prechecks, connectivity prechecks, and dumping and comparing inference process data to help users identify issues before deployment.  |
+| Precheck | [**msPrechecker**](https://gitcode.com/Ascend/msit/tree/master/msprechecker) | **[Precheck tool]** Supports environment prechecks, connectivity prechecks, and dumping and comparing inference process data to help users identify issues before deployment.  |
 | Quantization | [**msModelSlim**](https://gitcode.com/Ascend/msmodelslim)                    | **[Model compression]** Provides quantization, compression, and other inference optimization techniques, supporting dense LLMs, MoE models, and multimodal models. |
 | Precision | [**msProbe**](https://gitcode.com/Ascend/msprobe)                            | **[Precision debugging]** A full-scenario precision tool for Ascend, used for precision debugging and issue localization.                  |
 | Performance | [**msProf**](https://gitcode.com/Ascend/msprof)                              | **[Model tuning]** A full-scenario performance tuning foundation that collects full-stack hardware and software performance data to improve device tuning efficiency.    |
@@ -49,38 +50,38 @@ The inference development toolchain provides the following series of tools:
 
 ## 🚀 Quick Start
 
-To quickly get started with the tools, see [Inference Development Toolchain Quick Start](docs/en/quick_start/msit_quick_start.md).
+MindStudio Inference Tools (msIT) is an open-source inference development toolchain for the Ascend AI platform. It provides developers with end-to-end tool support from model deployment to online operations and maintenance. The toolchain covers five areas: precheck, quantization, precision debugging, performance tuning, and online monitoring. It also includes multiple specialized tools that help developers efficiently develop and optimize inference for LLMs (including dense models and MoE architectures), multimodal models, and traditional models on Ascend hardware. To quickly get started with the tools, see [Inference Development Toolchain Quick Start](docs/en/quick_start/msit_quick_start.md).
 
 ## 📦 Installation Guide
 
-Follow the links in the table above to access the corresponding source repositories, and see the Installation Guide in their README files.
+Follow the links in the [Features](#️-features) table above to access the corresponding source repositories. For details, see the "Installation Guide" section in the repository README file.
 
 ## 📘 User Guide
 
-Follow the links in the table above to access the corresponding source repositories, and see the User Guide in their README files. To select tools by scenario, see the [msIT Tool Selection Guide](./docs/en/user_guide/msit_user_guide.md).    
+Follow the links in the table above to access the corresponding source repositories, and see the *User Guide* in their README files. To select tools by scenario, see the [msIT Tool Selection Guide](./docs/en/user_guide/msit_user_guide.md).    
 
 ## 🌌 Intelligent Search
 
 To make it easier to access information in the documentation, we provide several efficient search methods:  
-🔹 [AI Q&A (DeepWiki)](https://deepwiki.com/mindstudio-docs/26.1.0): Ask questions in natural language to quickly understand the project architecture and relationships between modules.   
-🔹 [AI Q&A (ZRead)](https://zread.ai/mindstudio-docs/26.1.0): Provides a better Chinese Q&A experience and accurately locates feature usage and details.   
-🔹 [Precise Search (ReadTheDocs)](https://mindstudio-docs-2610.readthedocs.io): Search the full text by keyword to find information about interfaces, parameters, and error messages directly.  
+🔹 [AI Q&A (DeepWiki)](https://deepwiki.com/mindstudio-docs/master): Ask questions in natural language to quickly understand the project architecture and relationships between modules.   
+🔹 [AI Q&A (ZRead)](https://zread.ai/mindstudio-docs/master): Provides a better Chinese Q&A experience and accurately locates feature usage and details.   
+🔹 [Precise Search (ReadTheDocs)](https://mindstudio-docs-master.readthedocs.io): Search the full text by keyword to find information about interfaces, parameters, and error messages directly.  
 
 ## 🛠️ Contribution Guide
 
-You are welcome to contribute to the project. For details, see the [Contribution Guide](https://gitcode.com/Ascend/msit/blob/26.1.0/docs/en/contributing/contributing_guide.md).
+You are welcome to contribute to the project. For details, see the [Contribution Guide](https://gitcode.com/Ascend/msit/blob/master/docs/en/contributing/contributing_guide.md).
 
 ## ⚖️ Related Information
  
-🔹 [License Notice](https://gitcode.com/Ascend/msit/blob/26.1.0/docs/en/legal/license_notice.md)     
-🔹 [Security Statement](https://gitcode.com/Ascend/msit/blob/26.1.0/docs/en/legal/security_statement.md)     
-🔹 [Disclaimer](https://gitcode.com/Ascend/msit/blob/26.1.0/docs/en/legal/disclaimer.md)     
+🔹 [License Statement](https://gitcode.com/Ascend/msit/blob/master/docs/en/legal/license_notice.md)     
+🔹 [msIT Security Statement](https://gitcode.com/Ascend/msit/blob/master/docs/en/legal/security_statement.md)     
+🔹 [Disclaimer](https://gitcode.com/Ascend/msit/blob/master/docs/en/legal/disclaimer.md)     
 
 ## 🤝 Suggestions and Feedback
 
 You are welcome to contribute to the community. If you have any questions or suggestions, please submit [Issues](https://gitcode.com/Ascend/msit/issues). We will reply as soon as possible. Thank you for your support.
 
-|                                                                         Live Interaction (WeChat Group)                                                                          |                                                                               Official Updates (Official Account)                                                                                | In-depth Support (Assistant/Forum)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+|                                                                         Live Interaction (WeChat Group)                                                                          |                                                                               Official Updates (Official Account)                                                                                | In-Depth Support (Assistant/Forum)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 |:----------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | <img src="https://raw.gitcode.com/Ascend/docs/files/master/common/Writing_Template/figures/qr_code_wechat_work.png" width="120"><br><sub>*Scan the QR code to join the technical discussion group*</sub> | <img src="https://raw.gitcode.com/Ascend/docs/files/master/common/Writing_Template/figures/qr_code_wechat_official_account.png" width="120"><br><sub>*Scan the QR code to follow the official account*</sub> | Scan the QR codes to join the group and follow the official account, providing the fastest way to connect with MindStudio users and developers:<br> **Ask questions quickly:** Discuss technical issues with community members in real time<br>**Stay up to date:** Get notifications about version releases and feature updates as soon as they are available<br> **Share experience:** Exchange best practices and hands-on experience with developers  <br> <br> **More support channels**: 👉 Ascend Assistant: [![WeChat](https://img.shields.io/badge/WeChat-07C160?style=flat-square&logo=wechat&logoColor=white)](https://gitcode.com/Ascend/msit/blob/master/docs/zh/figures/readme/xiaozhushou.png) 👉 Ascend Forum: [![Website](https://img.shields.io/badge/Website-%231e37ff?style=flat-square&logo=RSS&logoColor=white)](https://www.hiascend.com/forum/) |
 
