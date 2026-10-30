@@ -109,6 +109,6 @@ msprechecker uses `ping` and `hccn_tool` to check the network connectivity of mu
 
 `ping` checks network connectivity by sending ICMP packets directly at the IP layer. `hccn_tool` depends on the RoCE (RDMA) protocol of the Ascend NPU. By default, the hardware communication port 3225 (or 18515 in some scenarios) is used.<br>
 
-msprechecker tool calls `hccn_tool` subcommands `vinc`, `tls`, `link`, `ping`, and `hccs_ping` through different default ports. `hccn_tool` ports are related to the hardware ports. For details about a hardware-specific port, see its communication matrix at [Ascend Hardware](https://support.huawei.com/enterprise/en/category/ascend-computing-pid-1557196528909).
+msprechecker tool calls `hccn_tool` subcommands `vnic`, `tls`, `link`, `ping`, and `hccs_ping` through different default ports. `hccn_tool` ports are related to the hardware ports. For details about a hardware-specific port, see its communication matrix at [Ascend Hardware](https://support.huawei.com/enterprise/en/category/ascend-computing-pid-1557196528909).
 
 msprechecker uses the protocols and ports above for its checks. No additional port configuration is needed, but the network must support these protocols.
