@@ -9,7 +9,7 @@ msprechecker (MindStudio Prechecker Tool)：MindStudio 预检工具。这是一�
 - PD混部（Prefill-Decode混合部署）：一种部署模式，将模型的 Prefill 阶段​ 和 Decode 阶段​ 部署在同一个计算实例（Pod/容器）​ 中。
 - PD分离（Prefill-Decode分离部署）：一种部署模式，将 Prefill 阶段​ 和 Decode 阶段​ 解耦，部署在不同的、可独立伸缩的计算实例或Pod上。
 - Rank Table：一种描述昇腾 NPU 芯片在多机多卡环境中拓扑连接关系的配置文件，用于指导分布式训练或推理的任务启动和通信。
-- cmate 文件：一种基于特定语法定义的规则文件，用于描述对系统、环境变量、配置文件等对象的检查和断言逻辑。工具内置了 MindIE 和 VLLM-Ascend 框架的常用规则集。
+- cmate 文件：一种基于特定语法定义的规则文件，用于描述对系统、环境变量、配置文件等对象的检查和断言逻辑。工具内置了 MindIE 和 vLLM-Ascend 框架的常用规则集。
 
 **工具使用流程**
 
@@ -77,7 +77,7 @@ msprechecker (MindStudio Prechecker Tool)：MindStudio 预检工具。这是一�
 
 * 当前工具主要支持 Atlas 800I A2, Atlas 800I A3 和 Atlas 9000 A2 (G8600) 等训练服务器。
 * 当前工具在 MindIE 场景下暂不支持Ascend 950PR&950DT 系列产品。
-* 支持 MindIE 和 VLLM-Ascend (v0.9.1-dev) 推理框架的校验。
+* 支持 MindIE 和 vLLM-Ascend (v0.9.1-dev) 推理框架的校验。
 * `dump` 功能暂不支持对多机 PD 分离、单机 PD 分离场景的配置文件进行落盘。
 
 **安全与权限**
@@ -128,7 +128,7 @@ msprechecker 包含五个子命令：`precheck`, `dump`, `compare`, `run`, `insp
 ### 注意事项
 
 - 多机 PD 混部场景需要在**每台**目标机器上分别执行预检命令，工具不支持从单点控制多机。
-- 使用 `--rank-table-path` 进行网络检查时，工具默认按 MindIE 格式解析 rank table 文件。若用于 VLLM-Ascend 框架，请务必通过 `--scene vllm` 参数指定。
+- 使用 `--rank-table-path` 进行网络检查时，工具默认按 MindIE 格式解析 rank table 文件。若用于 vLLM-Ascend 框架，请务必通过 `--scene vllm` 参数指定。
 - 部分环境变量（如 `RANK_TABLE_FILE`）的正确性需要用户结合自身部署规划手动确认。
 
 ### 命令格式
@@ -202,8 +202,8 @@ msprechecker <subcommand> [options]
 
 ### 使用示例
 
-**示例1：VLLM-Ascend 通用场景预检**
-检查 VLLM-Ascend 框架部署的基本环境。
+**示例1：vLLM-Ascend 通用场景预检**
+检查 vLLM-Ascend 框架部署的基本环境。
 
 ```bash
 msprechecker precheck --scene vllm
@@ -302,7 +302,7 @@ a:
 
 自 2025.12.16 版本起，msprechecker 引入了全新的、功能更强大的规则引擎，通过 `run` 和 `inspect` 子命令进行操作。规则通过 `cmate` 格式的文件定义，支持更复杂的断言逻辑、条件分支、模块化组织和丰富的上下文控制。
 
-* **内置规则**: 工具已将 MindIE 和 VLLM-Ascend 框架的常用检查规则内置在 `msprechecker/preset/` 目录下的 `mindie.cmate` 和 `vllm.cmate` 文件中，用户可以直接使用或作为编写参考。
+* **内置规则**: 工具已将 MindIE 和 vLLM-Ascend 框架的常用检查规则内置在 `msprechecker/preset/` 目录下的 `mindie.cmate` 和 `vllm.cmate` 文件中，用户可以直接使用或作为编写参考。
 * **使用流程**:
     1. **查看规则**：使用 `msprechecker inspect <rule.cmate>` 查看规则文件所需的上下文变量、配置文件和规则描述。
     2. **执行规则**：使用 `msprechecker run <rule.cmate>` 并配合 `-C` (传入上下文) 和 `-c` (传入配置文件) 参数来执行检查。
@@ -317,7 +317,7 @@ a:
 
 ### FAQ
 
-1. **Q: 如何为 VLLM-Ascend 框架指定 rank table 进行检查？**
+1. **Q: 如何为 vLLM-Ascend 框架指定 rank table 进行检查？**
 
     A: 在执行命令时，必须通过 `--scene vllm` 明确指定框架，工具才会使用正确的格式解析 rank table。例如：`msprechecker precheck --scene vllm --rank-table-path /path/to/vllm_hccl.json`
 

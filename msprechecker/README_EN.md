@@ -9,7 +9,7 @@ MindStudio prechecker tool (msprechecker): A tool that helps users quickly deplo
 - Prefill-Decode colocation deployment (PD colocation): A deployment mode where the prefill phase and decode phase of a model are deployed in the same compute instance (Pod/container).
 - Prefill-Decode separation deployment (PD separation): A deployment mode where the prefill phase and decode phase are decoupled and deployed on different, independently scalable compute instances or Pods.
 - Rank table: A configuration file that describes the topological connection relationships of Ascend NPU chips in a multi-node multi-device environment, used to guide task startup and communication for distributed training or inference.
-- `cmate` file: A rule file defined based on a specific syntax, used to describe check and assertion logic for objects such as systems, environment variables, and configuration files. The tool has built-in common rule sets for the MindIE and VLLM-Ascend frameworks.
+- `cmate` file: A rule file defined based on a specific syntax, used to describe check and assertion logic for objects such as systems, environment variables, and configuration files. The tool has built-in common rule sets for the MindIE and vLLM-Ascend frameworks.
 
 **Tool Usage Flow**
 
@@ -67,7 +67,7 @@ First use the `precheck` function to perform a comprehensive check of the target
     - Source Installation
 
         ```bash
-        git clone https://atomgit.com/Ascend/msit.git
+        git clone https://gitcode.com/Ascend/msit.git
         pip install -e msit/msprechecker
         ```
 
@@ -77,7 +77,7 @@ First use the `precheck` function to perform a comprehensive check of the target
 
 - The current tool primarily supports training servers such as Atlas 800I A2, Atlas 800I A3, and Atlas 9000 A2 (G8600).
 - The current tool does not support Ascend 950PR&950DT products in MindIE scenarios.
-- Supports MindIE and VLLM-Ascend (v0.9.1-dev) inference verification.
+- Supports MindIE and vLLM-Ascend (v0.9.1-dev) inference verification.
 - The `dump` function does not currently support drive flushing of configuration files for multi-node PD separation and single-node PD separation scenarios.
 
 **Security and Permissions**
@@ -128,7 +128,7 @@ msprechecker includes five subcommands: `precheck`, `dump`, `compare`, `run`, an
 ### Precautions
 
 - In a multi-node PD colocation scenario, the precheck command must be executed separately on **each** target node. The tool does not support controlling multiple machines from a single point.
-- When using `--rank-table-path` for network checks, the tool parses the rank table file in MindIE format by default. If used for the VLLM-Ascend framework, be sure to specify this with the `--scene vllm` parameter.
+- When using `--rank-table-path` for network checks, the tool parses the rank table file in MindIE format by default. If used for the vLLM-Ascend framework, be sure to specify this with the `--scene vllm` parameter.
 - The correctness of some environment variables (such as `RANK_TABLE_FILE`) requires users to manually confirm based on their own deployment planning.
 
 ### Command Format
@@ -202,8 +202,8 @@ The `compare` subcommand accepts one or more file paths as positional parameters
 
 ### Usage Examples
 
-**Example 1: Precheck for VLLM-Ascend General Scenarios**
-Check the basic environment for VLLM-Ascend framework deployment.
+**Example 1: Precheck for vLLM-Ascend General Scenarios**
+Check the basic environment for vLLM-Ascend framework deployment.
 
 ```bash
 msprechecker precheck --scene vllm
@@ -302,7 +302,7 @@ a:
 
 Starting from version 2025.12.16, msprechecker introduces a new, more powerful rule engine, operated through the `run` and `inspect` subcommands. Rules are defined via files in `cmate` format, supporting more complex assertion logic, conditional branching, modular organization, and rich context control.
 
-- **Built-in rules**: The tool has built-in common check rules for the MindIE and VLLM-Ascend frameworks in the `mindie.cmate` and `vllm.cmate` files under the `msprechecker/preset/` directory. Users can use them directly or as a reference for writing their own.
+- **Built-in rules**: The tool has built-in common check rules for the MindIE and vLLM-Ascend frameworks in the `mindie.cmate` and `vllm.cmate` files under the `msprechecker/preset/` directory. Users can use them directly or as a reference for writing their own.
 - **Usage process**:
     1. **View rules**: Use `msprechecker inspect <rule.cmate>` to view the context variables, configuration files, and rule descriptions required by the rule file.
     2. **Execute rules**: Use `msprechecker run <rule.cmate>` with the `-C` (pass context) and `-c` (pass configuration file) parameters to execute checks.
@@ -317,7 +317,7 @@ For detailed syntax and authoring guides for `cmate` files, please refer to the 
 
 ### FAQs
 
-1. **Q: How do I specify a rank table for the VLLM-Ascend framework to perform a check?**
+1. **Q: How do I specify a rank table for the vLLM-Ascend framework to perform a check?**
 
     A: When executing the command, you must explicitly specify the framework using `--scene vllm` so that the tool parses the rank table in the correct format. For example: `msprechecker precheck --scene vllm --rank-table-path /path/to/vllm_hccl.json`
 
