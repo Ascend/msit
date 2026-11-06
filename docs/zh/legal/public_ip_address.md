@@ -5,9 +5,6 @@
 | 开源软件 | -            | 所有文件                                       | <http://www.apache.org/licenses/LICENSE-2.0>             | 文件头中的license信息说明  |
 | 开源软件 | -            | msprechecker/pyproject.toml                   | <https://gitcode.com/Ascend/msit/tree/master/msprechecker> | msprechecker工具的仓库地址 |
 | 开源软件 | -            | msprechecker/pyproject.toml                   | <https://gitcode.com/Ascend/msit/issues>                   | msit仓的issue地址          |
-| 开源软件 | -            | msmodelslim/config/config.ini                 | <https://gitcode.com/Ascend/msit>                          | msit仓的地址               |
-| 开源软件 | -            | msmodelslim/example/osp1_2/model/scheduler.py | <https://arxiv.org/abs/2305.08891>                       | 注释中的公网地址           |
-| 开源软件 | -            | msmodelslim/msmodelslim/quant/processor/quant/autoround_utils/sign_sgd.py | <http://www.cs.toronto.edu/%7Ehinton/absps/momentum.pdf>                       | 注释中的公网地址           |
 | 开源软件 | - | msit/setup.py | <https://gitcode.com/Ascend/msit> | 用于msit工具打包成python包的主页说明 |
 | 开源软件 | - | msit/components/convert/setup.py | <https://gitcode.com/Ascend/msit> | msit的gitcode仓地址 |
 | 开源软件 | - | msit/components/analyze/setup.py | <https://gitcode.com/Ascend/msit> | msit的gitcode仓地址 |

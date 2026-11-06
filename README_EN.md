@@ -7,7 +7,7 @@
  [![Quick Start](https://badgen.net/badge/Quick%20Start/QuickStart/blue)](./docs/en/quick_start/msit_quick_start.md)
  [![AI Q&A (DeepWiki)](https://badgen.net/badge/AI%20Q%26A/DeepWiki/blue)](https://deepwiki.com/mindstudio-docs/master)
  [![AI Q&A (ZRead)](https://badgen.net/badge/AI%20Q%26A/ZRead/blue)](https://zread.ai/mindstudio-docs/master)
- [![Exact Search](https://badgen.net/badge/Exact%20Search/ReadTheDocs/blue)](https://mindstudio-docs-master.readthedocs.io)
+ [![Exact Search](https://badgen.net/badge/Exact%20Search/ReadTheDocs/blue)](https://mindstudio-docs-2620.readthedocs.io)
  [![Ascend Community](https://badgen.net/badge/Ascend%20Community/Community/blue)](https://www.hiascend.com/eng/developer/software/mindstudio)
  [![Report Issues](https://badgen.net/badge/Report%20Issues/Issues/blue)](https://gitcode.com/Ascend/msit/issues)
 </div>
@@ -65,7 +65,7 @@ Follow the links in the table above to access the corresponding source repositor
 To make it easier to access information in the documentation, we provide several efficient search methods:  
 🔹 [AI Q&A (DeepWiki)](https://deepwiki.com/mindstudio-docs/master): Ask questions in natural language to quickly understand the project architecture and relationships between modules.   
 🔹 [AI Q&A (ZRead)](https://zread.ai/mindstudio-docs/master): Provides a better Chinese Q&A experience and accurately locates feature usage and details.   
-🔹 [Precise Search (ReadTheDocs)](https://mindstudio-docs-master.readthedocs.io): Search the full text by keyword to find information about interfaces, parameters, and error messages directly.  
+🔹 [Precise Search (ReadTheDocs)](https://mindstudio-docs-2620.readthedocs.io): Search the full text by keyword to find information about interfaces, parameters, and error messages directly.  
 
 ## 🛠️ Contribution Guide
 
