@@ -103,7 +103,7 @@ OM模型保存、AIE模型转换的源码在安装过程中编译后使用，编
 
 具体可参考[MindIE资料说明](https://www.hiascend.com/document/detail/zh/mindie/latest/ref/commumatrix/docs/zh/user_guide/communication_matrix.md)。
 
-msserviceprofiler optimizer工具会使用aisbench，vllm_benchmark等产品，通过端口和mindie-service以及vllm serve服务端进行交互，使用的端口需和服务端保持一致，请用户自行配置，并保证端口和服务端一致。
+msserviceprofiler optimizer工具会使用aisbench，vllm_benchmark等产品，通过端口和mindie-service以及vllm serve服务端进行交互，使用的端口需和服务端保持一致，请用户自行配置。
 
 msprechecker工具会通过`ping`和`hccn_tool`进行多机网络连通性检查，以及通过HCCL通信状态验证。<br>
 

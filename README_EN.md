@@ -65,7 +65,7 @@ Follow the links in the table above to access the corresponding source repositor
 To make it easier to access information in the documentation, we provide several efficient search methods:  
 🔹 [AI Q&A (DeepWiki)](https://deepwiki.com/mindstudio-docs/26.2.0): Ask questions in natural language to quickly understand the project architecture and relationships between modules.   
 🔹 [AI Q&A (ZRead)](https://zread.ai/mindstudio-docs/26.2.0): Provides a better Chinese Q&A experience and accurately locates feature usage and details.   
-🔹 [Precise Search (ReadTheDocs)](https://mindstudio-docs-26.2.0.readthedocs.io): Search the full text by keyword to find information about interfaces, parameters, and error messages directly.  
+🔹 [Precise Search (ReadTheDocs)](https://mindstudio-docs-2620.readthedocs.io): Search the full text by keyword to find information about interfaces, parameters, and error messages directly.  
 
 ## 🛠️ Contribution Guide
 
