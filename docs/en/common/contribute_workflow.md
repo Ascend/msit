@@ -17,7 +17,7 @@ You can support this project in the following ways:
 
 1. **Derived Repository**: Fork the source code repository to a personal repository, and then clone the personal repository to the local development environment.
 2. **Creating a Branch**: Create a functional branch based on the latest main branch. The branch name should be concise and reflect the changes (for example, `fix_xxx_bug`, `feature_xxx`).
-3. **Code Development** : Perform development on the function branch.Follow the [2. Code Specifications](#2-code-specifications) and keep submission records clear and atomic.
+3. **Code Development**: Perform development on the function branch.Follow the [2. Code Specifications](#2-code-specifications) and keep submission records clear and atomic.
 4. **Local Test**: Verify the functions of the code and supplement unit tests as required based on the development module situation to ensure that all tests are passed.
 5. **Document Update**: Supplement or update the documents related to the change. Follow the [3. Document Specifications](#3-document-specifications).
 6. **Request to merge**: Submit a PR and comply with the [4. Pull Request Specifications](#4-pull-request-specifications). For details, see [5. Pull Request Process Description](#5-pull-request-process-description).
