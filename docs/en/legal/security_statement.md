@@ -101,7 +101,7 @@ msserviceprofiler optimizer runs on the server through `MindIE-Service`. `MindIE
 
 3. Inference service EndPoint, which provides a RESTful API for the management-plane service status. The client initiates requests through this EndPoint for querying the inference service status. This EndPoint configuration corresponds to the `metricsPort` field in the `config.json` configuration file. The value ranges from 1024 to 65535. The default value is 1027.
 
-For details, see [MindIE Documentation](https://www.hiascend.com/document/detail/en/mindie/latest/reference/commumatrix/docs/en/user_guide/communication_matrix.md).
+For details, see [MindIE Documentation](https://www.hiascend.com/document/detail/en/mindie/310/reference/commumatrix/docs/en/user_guide/communication_matrix.md).
 
 msserviceprofiler optimizer uses tools such as `aisbench` and `vllm_benchmark` to interact with the MindIE-Service and vLLM serve servers through ports. You need to configure the ports to ensure that the ports match those on the servers.
 
