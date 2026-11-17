@@ -2,7 +2,7 @@
 
 ## 简介
 
-msprechecker (MindStudio Prechecker Tool)：MindStudio 预检工具。这是一个帮助用户在昇腾（Ascend）环境中快速部署 AI 推理服务、复现性能基线、定位部署与性能问题的工具。工具提供预检（precheck）、环境信息落盘（dump）和差异比对（compare）三大核心功能，**并于 2025.12.16 版本起**，新增支持基于可扩展规则引擎的 `run` 和 `inspect` 子命令，允许用户自定义和分享复杂的检查规则。
+msprechecker (MindStudio Prechecker Tool)：MindStudio 预检工具。这是一个帮助用户在昇腾（Ascend）环境中快速部署 AI 推理服务、复现性能基线、定位部署与性能问题的工具。工具提供预检（precheck）、环境信息落盘（dump）和差异比对（compare）三大核心功能，**并于 2025年12月16日 版本起**，新增支持基于可扩展规则引擎的 `run` 和 `inspect` 子命令，允许用户自定义和分享复杂的检查规则。
 
 **基本概念**
 
@@ -71,11 +71,11 @@ msprechecker (MindStudio Prechecker Tool)：MindStudio 预检工具。这是一�
         pip install -e msit/msprechecker
         ```
 
-4. 安装必要的第三方依赖：`psutil`, `pyyaml`, `importlib_metadata`，`ply`。通常这些会在安装 msprechecker 时自动解决。
+4. 安装必要的第三方依赖：`psutil`、`pyyaml`、`importlib_metadata`、`ply`。通常这些会在安装 msprechecker 时自动解决。
 
 **约束**
 
-* 当前工具主要支持 Atlas 800I A2, Atlas 800I A3 和 Atlas 9000 A2 (G8600) 等训练服务器。
+* 当前工具主要支持 Atlas 800I A2、Atlas 800I A3 和 Atlas 9000 A2 (G8600) 等训练服务器。
 * 当前工具在 MindIE 场景下暂不支持Ascend 950PR&950DT 系列产品。
 * 支持 MindIE 和 vLLM-Ascend (v0.9.1-dev) 推理框架的校验。
 * `dump` 功能暂不支持对多机 PD 分离、单机 PD 分离场景的配置文件进行落盘。
@@ -99,7 +99,7 @@ msprechecker (MindStudio Prechecker Tool)：MindStudio 预检工具。这是一�
 3. 确保待部署的模型权重目录可访问。
 
 > [!Warning]
-> 注意：MindIE 已于 2026 年 3 月全面开源。在此之后，其配置文件位置可能已发生变化。若在上述默认路径未找到，您可以通过环境变量 `MINDIE_LLM_HOME_PATH` 定位，配置文件的完整路径通常为 `$MINDIE_LLM_HOME_PATH/conf/config.json`。
+> 注意：MindIE 已于 2026年3月 全面开源。在此之后，其配置文件位置可能已发生变化。若在上述默认路径未找到，您可以通过环境变量 `MINDIE_LLM_HOME_PATH` 定位，配置文件的完整路径通常为 `$MINDIE_LLM_HOME_PATH/conf/config.json`。
 
 **操作步骤**
 
@@ -128,12 +128,12 @@ msprechecker 包含五个子命令：`precheck`, `dump`, `compare`, `run`, `insp
 ### 注意事项
 
 - 多机 PD 混部场景需要在**每台**目标机器上分别执行预检命令，工具不支持从单点控制多机。
-- 使用 `--rank-table-path` 进行网络检查时，工具默认按 MindIE 格式解析 rank table 文件。若用于 vLLM-Ascend 框架，请务必通过 `--scene vllm` 参数指定。
+- 使用 --rank-table-path 进行网络检查时，工具默认按 MindIE 格式解析 rank table 文件。若用于 vLLM-Ascend 框架，请务必通过 `--scene vllm` 参数指定。
 - 部分环境变量（如 `RANK_TABLE_FILE`）的正确性需要用户结合自身部署规划手动确认。
 
 ### 命令格式
 
-```shell
+```bash
 msprechecker <subcommand> [options]
 ```
 
@@ -147,58 +147,58 @@ msprechecker <subcommand> [options]
 
 ### 参数说明
 
-#### `precheck` 子命令主要参数
+#### precheck 子命令主要参数
 
 | 参数 | 可选/必选 | 说明 |
 | :--- | :--- | :--- |
-| `--scene` | 可选 | 指定部署场景。格式：`<framework>,<deploy-mode>[,<npu_type>,<npu_count>,<arch>,<model_type>]`。例如：`mindie,pd_mix` 或 `vllm,ep,A2,8,arm`。用于辅助工具识别框架、部署模式、硬件等信息。默认值：`None` |
-| `--mies-config-path` | 可选 (MindIE PD混部) | MindIE PD混部场景的配置文件路径，通常为 `/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json`。默认值：`None` |
-| `--config-parent-dir` | 可选 (PD分离) | PD分离场景下，包含所有需修改的 `conf/*.json` 和 `deployments/*.yaml` 配置文件的父目录路径（通常名为 `kubernetes_deploy_scripts`）。需与 `--scene pd_disaggregation` 或 `--scene pd_disaggregation_single_container` 联用。默认值：`None` |
-| `--user-config-path` | 可选 (大EP场景) | 大 EP 场景下的 `user_config.json` 文件路径。默认值：`None` |
-| `--mindie-env-path` | 可选 (大EP场景) | 大 EP 场景下的 `mindie_env.json` 文件路径。默认值：`None` |
-| `--rank-table-path` | 可选 | 指定 rank table 文件路径，用于触发 NPU 间网络连通性测试及相关配置检查。默认值：`None` |
-| `--weight-dir` | 可选 | 指定模型权重目录路径，用于检查该目录下的 `config.json` 配置文件。默认值：`None` |
-| `--hardware` | 可选 | 启用 CPU 和 NPU 硬件压测，检测是否存在算力异常的核或卡。默认值：`None` |
-| `--threshold` | 可选 | 硬件压测的筛选阈值，取值范围 `[0-100]` 闭区间。单位为百分比。当某个核/卡的计算时间超过平均值的比例大于此阈值时，被标记为异常。默认值：20 |
-| `--custom-config-path` | 可选 | 用户自定义检查规则文件的路径 (YAML 格式)。默认值：`None` |
-| `-l`, `--severity-level` | 可选 | 控制输出信息的严重级别。可选值：`low`(显示所有)、`medium`(显示WARNING和NOK)、`high`(仅显示NOK)。默认值：`low` |
+| --scene | 可选 | 指定部署场景。格式：`<framework>,<deploy-mode>[,<npu_type>,<npu_count>,<arch>,<model_type>]`。例如：`mindie,pd_mix` 或 `vllm,ep,A2,8,arm`。用于辅助工具识别框架、部署模式、硬件等信息。默认值：`None` |
+| --mies-config-path | 可选 (MindIE PD混部) | MindIE PD混部场景的配置文件路径，通常为 `/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json`。默认值：`None` |
+| --config-parent-dir | 可选 (PD分离) | PD分离场景下，包含所有需修改的 `conf/*.json` 和 `deployments/*.yaml` 配置文件的父目录路径（通常名为 `kubernetes_deploy_scripts`）。需与 `--scene pd_disaggregation` 或 `--scene pd_disaggregation_single_container` 联用。默认值：`None` |
+| --user-config-path | 可选 (大EP场景) | 大EP场景下的 `user_config.json` 文件路径。默认值：`None` |
+| --mindie-env-path | 可选 (大EP场景) | 大 EP 场景下的 `mindie_env.json` 文件路径。默认值：`None` |
+| --rank-table-path | 可选 | 指定 rank table 文件路径，用于触发 NPU 间网络连通性测试及相关配置检查。默认值：`None` |
+| --weight-dir | 可选 | 指定模型权重目录路径，用于检查该目录下的 `config.json` 配置文件。默认值：`None` |
+| --hardware | 可选 | 启用 CPU 和 NPU 硬件压测，检测是否存在算力异常的核或卡。默认值：`None` |
+| --threshold | 可选 | 硬件压测的筛选阈值，取值范围 `[0-100]` 闭区间，单位为百分比。当某个核/卡的计算时间超过平均值的比例大于此阈值时，被标记为异常。默认值：20 |
+| --custom-config-path | 可选 | 用户自定义检查规则文件的路径 (YAML 格式)。默认值：`None` |
+| -l, --severity-level | 可选 | 控制输出信息的严重级别。可选值：`low`(显示所有)、`medium`(显示WARNING和NOK)、`high`(仅显示NOK)。默认值：`low` |
 
-#### `dump` 子命令主要参数
+#### dump 子命令主要参数
 
 | 参数 | 可选/必选 | 说明 |
 | :--- | :--- | :--- |
-| `--output-path` | 可选 | 文件路径，指定落盘数据文件的保存路径。默认值：`./msprechecker_dumped.json`。 |
-| `--filter` | 可选 | 若启用，则只落盘与昇腾研发相关的环境变量，过滤无关变量。默认值：`False` |
-| `--user-config-path` | 可选 | 文件路径，额外落盘指定的 `user_config.json` 文件内容。默认值：`None` |
-| `--mindie-env-path` | 可选 | 文件路径，额外落盘指定的 `mindie_env.json` 文件内容。默认值：`None` |
-| `--mies-config-path` | 可选 | 文件路径，额外落盘指定的 MindIE 服务 `config.json` 文件内容。默认值：`None` |
-| `--rank-table-path` | 可选 | 文件路径，额外落盘指定的 rank table 文件内容。默认值：`None` |
-| `--weight-dir` | 可选 | 目录路径，额外落盘指定权重目录下的 `config.json` 和所有权重文件的 SHA256 哈希值。默认值：`None` |
-| `--chunk-size` | 可选 | 计算权重文件哈希时，每次读取的数据块大小 (MB)。可选值：32, 64, 128, 256。默认值：`32`。 |
+| --output-path | 可选 | 文件路径，指定落盘数据文件的保存路径。默认值：`./msprechecker_dumped.json`。 |
+| --filter | 可选 | 若启用，则只落盘与昇腾研发相关的环境变量，过滤无关变量。默认值：`False` |
+| --user-config-path | 可选 | 文件路径，额外落盘指定的 `user_config.json` 文件内容。默认值：`None` |
+| --mindie-env-path | 可选 | 文件路径，额外落盘指定的 `mindie_env.json` 文件内容。默认值：`None` |
+| --mies-config-path | 可选 | 文件路径，额外落盘指定的 MindIE 服务 `config.json` 文件内容。默认值：`None` |
+| --rank-table-path | 可选 | 文件路径，额外落盘指定的 rank table 文件内容。默认值：`None` |
+| --weight-dir | 可选 | 目录路径，额外落盘指定权重目录下的 `config.json` 和所有权重文件的 SHA256 值。默认值：`None` |
+| --chunk-size | 可选 | 计算权重文件哈希时，每次读取的数据块大小 (MB)。可选值：32, 64, 128, 256。默认值：`32`。 |
 
-#### `compare` 子命令参数
+#### compare 子命令参数
 
 `compare` 子命令接受一个或多个文件路径作为位置参数，用于比较这些文件内容的差异。
 
-#### `run` 子命令主要参数
+#### run 子命令主要参数
 
 | 参数                      | 可选/必选 | 说明                                                                                                                         |
 |:------------------------| :--- |:---------------------------------------------------------------------------------------------------------------------------|
-| `rule`                  | **必选** (位置参数) | 要执行的 `cmate` 规则文件的路径。                                                                                                      |
-| `-C`, `--contexts`      | 可选 | 传入规则所需的上下文变量。语法：`-C 变量名:变量值`。例如：`-C npu_count:2` 传入整数 2，`-C model_name:"deepseek"` 传入字符串 "deepseek"。可多次使用传入多个变量。默认值：`None` |
-| `-c`, `--configs`       | 可选 | 传入规则所需的配置文件路径。语法：`-c 规则中的配置变量名:实际文件路径`。可指定解析类型：`配置变量名:文件路径@解析类型` (如 `json`, `yaml`)。不指定则用规则定义或文件后缀。可多次使用。默认值：`None`        |
-| `-co`, `--collect-only` | 可选 | 仅收集要执行的规则项，但不实际执行。类似于测试框架的 `--collect-only`。                                                                               |
-| `--output-path`         | 可选 | 预检结果的保存路径，保存文件的格式为`msprechecker_{timestamp}_output.json`。默认值：`''`（表示直接打印预检结果）                                              |
-| `-x`, `--fail-fast`     | 可选 | 遇到第一个规则检查失败后立即停止执行。默认值：`False`                                                                                             |
-| `-v`, `--verbose`       | 可选 | 详细输出模式，显示每个规则在 cmate 文件中的行号和具体校验内容。默认值：`False`                                                                             |
-| `-s`, `--severity`      | 可选 | 运行规则的最小严重级别。可选值：`info` (运行全部)、`warning` (不运行 info 级别)、`error` (仅运行 error 级别)。默认值：`info`                                    |
+| rule                  | **必选** (位置参数) | 要执行的 `cmate` 规则文件的路径。                                                                                                      |
+| -C, --contexts      | 可选 | 传入规则所需的上下文变量。语法：`-C 变量名:变量值`。例如：`-C npu_count:2` 传入整数 2，`-C model_name:"deepseek"` 传入字符串 "deepseek"。可多次使用传入多个变量。默认值：`None` |
+| -c, --configs       | 可选 | 传入规则所需的配置文件路径。语法：`-c 规则中的配置变量名:实际文件路径`。可指定解析类型：`配置变量名:文件路径@解析类型` (如 `json`, `yaml`)。不指定则用规则定义或文件后缀。可多次使用。默认值：`None`        |
+| -co, --collect-only | 可选 | 仅收集要执行的规则项，但不实际执行。类似于测试框架的 `--collect-only`。                                                                               |
+| --output-path        | 可选 | 预检结果的保存路径，保存文件的格式为`msprechecker_{timestamp}_output.json`。默认值：`''`（表示直接打印预检结果）                                              |
+| -x, --fail-fast     | 可选 | 遇到第一个规则检查失败后立即停止执行。默认值：`False`                                                                                             |
+| -v, --verbose       | 可选 | 详细输出模式，显示每个规则在 cmate 文件中的行号和具体校验内容。默认值：`False`                                                                             |
+| -s, --severity      | 可选 | 运行规则的最小严重级别。可选值：`info` (运行全部)、`warning` (不运行 info 级别)、`error` (仅运行 error 级别)。默认值：`info`                                    |
 
-#### `inspect` 子命令参数
+#### inspect 子命令参数
 
 | 参数 | 可选/必选 | 说明 |
 | :--- | :--- | :--- |
-| `rule` | **必选** (位置参数) | 要查看的 `cmate` 规则文件的路径。 |
-| `-f`, `--format` | 可选 | 输出格式。可选值：`text` (文本)，`json` (JSON格式)。默认值：`text` |
+| rule | **必选** (位置参数) | 要查看的 `cmate` 规则文件的路径。 |
+| -f, --format | 可选 | 输出格式。可选值：`text` (文本)，`json` (JSON格式)。默认值：`text` |
 
 ### 使用示例
 
@@ -210,7 +210,7 @@ msprechecker precheck --scene vllm
 ```
 
 **示例2：MindIE 大 EP 场景预检**
-检查大 EP (Elastic Processing) 部署场景的配置。
+检查大 EP (Expert Parallelism) 部署场景的配置。
 
 ```bash
 msprechecker precheck --scene mindie,ep --user-config-path /path/to/user_config.json --mindie-env-path /path/to/mindie_env.json
@@ -300,12 +300,12 @@ a:
 
 ### 自定义规则引擎 (cmate 文件)
 
-自 2025.12.16 版本起，msprechecker 引入了全新的、功能更强大的规则引擎，通过 `run` 和 `inspect` 子命令进行操作。规则通过 `cmate` 格式的文件定义，支持更复杂的断言逻辑、条件分支、模块化组织和丰富的上下文控制。
+自 2025年12月16日版本起，msprechecker 引入了全新的、功能更强大的规则引擎，通过 `run` 和 `inspect` 子命令进行操作。规则通过 `cmate` 格式的文件定义，支持更复杂的断言逻辑、条件分支、模块化组织和丰富的上下文控制。
 
 * **内置规则**: 工具已将 MindIE 和 vLLM-Ascend 框架的常用检查规则内置在 `msprechecker/preset/` 目录下的 `mindie.cmate` 和 `vllm.cmate` 文件中，用户可以直接使用或作为编写参考。
 * **使用流程**:
     1. **查看规则**：使用 `msprechecker inspect <rule.cmate>` 查看规则文件所需的上下文变量、配置文件和规则描述。
-    2. **执行规则**：使用 `msprechecker run <rule.cmate>` 并配合 `-C` (传入上下文) 和 `-c` (传入配置文件) 参数来执行检查。
+    2. **执行规则**：使用 `msprechecker run <rule.cmate>` 并配合 `-C`（传入上下文）和 `-c`（传入配置文件） 参数来执行检查。
 * **优势**：
     * **可扩展**：用户可以基于 `cmate` 语法自行开发新的规则集，并在团队或社区内分享。
     * **灵活**：规则文件支持定义多种数据源（环境变量、配置文件、系统状态）的检查，并可通过上下文变量动态控制检查逻辑。
